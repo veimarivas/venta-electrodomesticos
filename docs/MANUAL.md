@@ -443,6 +443,30 @@ aparece, el lector no es el problema. Si no lee nada —etiqueta rota, borrosa o
 mal impresa—, el botón del **teclado** arriba a la derecha deja escribir el
 código a mano y sigue el mismo camino.
 
+### Registrar y editar el catálogo desde el teléfono
+
+En **Catálogo**, el botón **+** de la barra de arriba registra lo de la pestaña
+que tengas abierta: una categoría, una marca o un producto.
+
+Para **editar o eliminar**, mantén el dedo sobre la fila y elige la opción. En la
+ficha de un producto también hay un lápiz arriba. Las opciones que no puedes usar
+no aparecen: dependen de tus permisos.
+
+Al registrar un producto se piden nombre, SKU, categoría, precio y rebaja máxima;
+lo demás es opcional. Puedes elegir una foto de la galería. **Las
+especificaciones se editan solo desde el panel**, pero no se pierden: si editas
+el precio desde el teléfono, siguen ahí.
+
+Tres cosas que conviene saber antes de eliminar:
+
+- Una **categoría con subcategorías** no se puede eliminar. Mueve o elimina
+  primero las que cuelgan de ella.
+- Una **marca con productos** tampoco. Las marcas además **no van a la papelera**:
+  eliminar una es definitivo.
+- Un **producto sí se puede eliminar aunque tenga aparatos en stock**. Va a la
+  papelera: las ventas que ya lo incluyen se conservan y se puede recuperar desde
+  el panel. Deja de ofrecerse en el punto de venta.
+
 ### Registrar el serial con la cámara
 
 El serial del fabricante ya no obliga a entrar al panel: se puede registrar desde

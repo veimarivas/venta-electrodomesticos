@@ -2,13 +2,16 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogoController;
+use App\Http\Controllers\Api\V1\CategoriaController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DispositivoController;
 use App\Http\Controllers\Api\V1\NotificacionController;
+use App\Http\Controllers\Api\V1\MarcaController;
 use App\Http\Controllers\Api\V1\PersonalController;
 use App\Http\Controllers\Api\V1\PosController;
+use App\Http\Controllers\Api\V1\ProductoController;
 use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\ReporteController;
 use App\Http\Controllers\Api\V1\UnidadController;
@@ -89,13 +92,41 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('catalogo.producto');
         });
 
-        // Única escritura del catálogo desde el teléfono: el serial del
-        // fabricante, que se lee con la cámara en el almacén. Va con su propio
-        // permiso porque cambia un dato del inventario, no solo lo consulta.
+        // El serial del fabricante, que se lee con la cámara en el almacén. Va
+        // con su propio permiso porque cambia un dato del inventario.
         Route::middleware('permission:unidades.editar')->group(function () {
             Route::post('/unidades/{unidad}/serial', [UnidadController::class, 'registrarSerial'])
                 ->name('unidades.serial');
         });
+
+        // ---- Escritura del catálogo ---------------------------------------
+        // Las reglas son las mismas del panel: si aquí fueran más laxas se
+        // colarían datos que el otro formulario rechaza.
+        //
+        // La edición va por POST y no por PUT porque el cuerpo puede ser
+        // multipart —el logo de la marca, la foto del producto— y PUT con
+        // multipart obliga a falsear el método desde el cliente. Un verbo
+        // uniforme evita esa trampa en las tres entidades.
+        Route::post('/catalogo/categorias', [CategoriaController::class, 'store'])
+            ->middleware('permission:categorias.crear')->name('catalogo.categorias.store');
+        Route::post('/catalogo/categorias/{categoria}', [CategoriaController::class, 'update'])
+            ->middleware('permission:categorias.editar')->name('catalogo.categorias.update');
+        Route::delete('/catalogo/categorias/{categoria}', [CategoriaController::class, 'destroy'])
+            ->middleware('permission:categorias.eliminar')->name('catalogo.categorias.destroy');
+
+        Route::post('/catalogo/marcas', [MarcaController::class, 'store'])
+            ->middleware('permission:marcas.crear')->name('catalogo.marcas.store');
+        Route::post('/catalogo/marcas/{marca}', [MarcaController::class, 'update'])
+            ->middleware('permission:marcas.editar')->name('catalogo.marcas.update');
+        Route::delete('/catalogo/marcas/{marca}', [MarcaController::class, 'destroy'])
+            ->middleware('permission:marcas.eliminar')->name('catalogo.marcas.destroy');
+
+        Route::post('/catalogo/productos', [ProductoController::class, 'store'])
+            ->middleware('permission:productos.crear')->name('catalogo.productos.store');
+        Route::post('/catalogo/productos/{producto}', [ProductoController::class, 'update'])
+            ->middleware('permission:productos.editar')->name('catalogo.productos.update');
+        Route::delete('/catalogo/productos/{producto}', [ProductoController::class, 'destroy'])
+            ->middleware('permission:productos.eliminar')->name('catalogo.productos.destroy');
 
         // Personal y clientes: también solo consulta. Cada uno con su permiso,
         // porque quien lleva las ventas no tiene por qué ver la ficha laboral

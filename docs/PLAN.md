@@ -433,6 +433,12 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/catalogo/marcas` | marcas con sus productos y sus unidades en stock |
 | GET | `/catalogo/productos?buscar&categoria_id&marca_id&solo_disponibles` | listado paginado |
 | GET | `/catalogo/productos/{id}` | ficha con especificaciones y unidades disponibles |
+| **POST** | `/catalogo/categorias` · `/catalogo/categorias/{id}` | alta y edición (el `{id}` es la edición; POST y no PUT por el multipart) |
+| **DELETE** | `/catalogo/categorias/{id}` | baja; se niega si tiene subcategorías |
+| **POST** | `/catalogo/marcas` · `/catalogo/marcas/{id}` | alta y edición, con logo opcional |
+| **DELETE** | `/catalogo/marcas/{id}` | baja **real** (no hay papelera); se niega si tiene productos |
+| **POST** | `/catalogo/productos` · `/catalogo/productos/{id}` | alta y edición, con foto opcional |
+| **DELETE** | `/catalogo/productos/{id}` | baja lógica; las unidades y el histórico se conservan |
 | GET | `/personal/cargos` | cargos con cuánta gente los ocupa (vigentes y bajas) |
 | GET | `/personal/trabajadores?buscar&cargo_id&estado` | listado paginado |
 | GET | `/personal/trabajadores/{id}` | ficha con su cuenta de acceso y lo que vendió |
@@ -743,7 +749,79 @@ Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### El POS del teléfono se alinea con el del mostrador (2026-08-23)
+#### El catálogo se edita desde el teléfono (2026-08-23)
+
+Hasta ahora la app solo consultaba el catálogo. Se revierte esa decisión —está
+razonada en el README de la app— porque en la tienda se registran productos con
+la caja delante, y llegar al panel para eso obliga a anotar y volver.
+
+Se añaden nueve endpoints, tres por entidad:
+
+| | |
+|---|---|
+| `POST /catalogo/categorias`, `POST /catalogo/categorias/{id}`, `DELETE …` | `categorias.crear\|editar\|eliminar` |
+| `POST /catalogo/marcas`, `POST /catalogo/marcas/{id}`, `DELETE …` | `marcas.crear\|editar\|eliminar` |
+| `POST /catalogo/productos`, `POST /catalogo/productos/{id}`, `DELETE …` | `productos.crear\|editar\|eliminar` |
+
+**Las reglas son literalmente las del panel.** Si aquí fueran más laxas, el
+catálogo acabaría con dos criterios según por dónde se tocó: un SKU que el panel
+rechaza entrando por el teléfono, y nadie sabría por qué.
+
+> **La edición va por POST y no por PUT.** El cuerpo puede ser multipart —el
+> logo de la marca, la foto del producto— y PUT con multipart obliga a falsear
+> el método desde el cliente. Un verbo uniforme en las tres entidades evita esa
+> trampa; el precio es que no es REST de manual.
+
+#### Decisiones que no estaban en el panel
+
+**El slug no se pide.** En el panel es un campo visible que se autocompleta al
+escribir el nombre; en el teléfono es un dato técnico que nadie teclea de pie en
+la tienda. La API lo acepta si viene y lo deriva del nombre si no. Derivarlo
+obliga a resolver los choques en el servidor: dos productos llamados igual darían
+el mismo slug y el índice único rechazaría el segundo con un error que no dice
+nada, así que se le añade un sufijo numérico (`audio`, `audio-2`).
+
+**Las especificaciones no se editan desde el teléfono**, pero se conservan. Son
+una tabla de pares que se llena con calma; lo que sí importaba era que editar el
+precio desde el mostrador **no las borrara**, así que el formulario las manda tal
+cual estaban y lo dice en pantalla.
+
+#### Guardas de borrado, iguales que en el panel
+
+- **Categoría con subcategorías: no se borra.** Sus ramas quedarían huérfanas y
+  desaparecidas del árbol.
+- **Marca con productos: no se borra.** `Marca` **no tiene borrado lógico** y la
+  clave foránea es `restrictOnDelete`; sin la guarda, el fallo llegaría como un
+  error de base de datos. La app avisa además *antes* de gastar el viaje, porque
+  el listado ya sabe cuántos productos tiene.
+- **Producto: borrado lógico y sin guardas.** Sus unidades y las ventas que las
+  incluyen siguen apuntando aquí y el histórico tiene que poder mostrarlas; el
+  producto solo deja de ofrecerse. **Su imagen no se borra**: restaurarlo desde
+  el panel debe devolverlo completo, no sin foto.
+
+#### Tres bugs que cazaron los tests antes de producción
+
+**Las especificaciones se guardaban en el formato equivocado.** La app las manda
+como lista de pares (así se pintan en orden), pero en la base viven como objeto
+JSON —`{"Pantalla": "55 pulgadas"}`, con `true` para las que no llevan valor—,
+que es lo que escribe el panel y lo que `ProductoResource` sabe leer. Guardar la
+lista habría dejado **dos formatos en la misma columna** según por dónde se
+hubiera creado el producto, y la ficha de unos se vería vacía.
+
+**El SKU no se pasaba a mayúsculas.** El panel hace `strtoupper`; se compara a
+ojo contra la etiqueta y «tv-55» y «TV-55» tienen que ser el mismo.
+
+**Los Resources dan por hechos atributos que solo pone la consulta del listado**
+—`productos_count`, `disponibles`, `nivel`, `productos_rama`—. Laravel no exige
+atributos en un modelo **recién creado**, así que las altas parecían funcionar y
+**las ediciones devolvían un 500**, porque ahí el modelo viene *leído* de la
+base. Cada controlador termina recargando la fila con lo que su recurso necesita.
+Es el mismo tropiezo que apareció en `desdePersona`: conviene recordarlo al
+escribir el siguiente controlador que escriba y devuelva un recurso.
+
+Cubierto por `CatalogoEscrituraApiTest` (19 casos).
+
+### El POS del teléfono se alinea con el del mostrador (2026-08-23)
 
 Con la app ya en uso salieron dos diferencias con el POS web. Ninguna era de
 diseño: eran deudas de cuando la API se escribió antes que las reglas actuales.
