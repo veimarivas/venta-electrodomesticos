@@ -160,6 +160,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/proveedores/{proveedor}', [ProveedorController::class, 'show'])->name('proveedores.show');
         });
 
+        // Mantenimiento de proveedores. Mismas reglas que el panel.
+        Route::post('/proveedores', [ProveedorController::class, 'store'])
+            ->middleware('permission:proveedores.crear')->name('proveedores.store');
+        Route::post('/proveedores/{proveedor}', [ProveedorController::class, 'update'])
+            ->middleware('permission:proveedores.editar')->name('proveedores.update');
+        Route::delete('/proveedores/{proveedor}', [ProveedorController::class, 'destroy'])
+            ->middleware('permission:proveedores.eliminar')->name('proveedores.destroy');
+
         Route::middleware('permission:compras.ver')->group(function () {
             Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
             Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');

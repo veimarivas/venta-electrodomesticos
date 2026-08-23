@@ -463,6 +463,8 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **POST** | `/clientes/desde-persona` | le abre la ficha de cliente con los datos que ya tiene (restaura la archivada si la hubo) |
 | GET | `/proveedores?buscar&estado` | listado paginado con lo invertido en cada uno |
 | GET | `/proveedores/{id}` | ficha con sus últimas órdenes |
+| **POST** | `/proveedores` · `/proveedores/{id}` | alta y edición |
+| **DELETE** | `/proveedores/{id}` | baja lógica; se niega si tiene compras registradas |
 | GET | `/compras?buscar&proveedor_id&estado&desde&hasta` | listado paginado |
 | GET | `/compras/{id}` | ficha con el desglose y las líneas con su costo real |
 | GET | `/compras/{id}/unidades` | aparatos que entraron con esa compra |
@@ -759,7 +761,44 @@ Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### Personal y clientes desde el teléfono, y el dashboard al día (2026-08-23)
+#### Proveedores desde el teléfono (2026-08-23)
+
+Cuarta y última tanda. Con ella, **todo lo que se administra en el panel se
+puede administrar también desde el teléfono**, salvo lo que se dejó a propósito:
+anular ventas, recepcionar compras, las especificaciones de los productos y la
+papelera.
+
+| | |
+|---|---|
+| `POST /proveedores` · `/proveedores/{id}` | `proveedores.crear` · `proveedores.editar` |
+| `DELETE /proveedores/{id}` | `proveedores.eliminar` |
+
+**No se puede eliminar un proveedor con compras registradas.** Dejaría el
+histórico de costos sin origen: de dónde salió la mercadería es parte del
+kardex. Lo que se busca casi siempre es **desactivarlo**, que se hace editándolo
+y lo saca del listado sin perder nada.
+
+> **`proveedores.eliminar` solo lo tiene el administrador.** El supervisor puede
+> dar de alta y editar, pero no borrar; es el único permiso de proveedores que
+> no está en su rol, y el test lo fija para que no se pierda en un refactor.
+
+#### La escritura va en el mismo controlador que la consulta
+
+A diferencia del catálogo —donde los controladores de escritura son nuevos y
+separados—, aquí las tres acciones se añaden a `ProveedorController`. La razón
+es concreta: `ProveedorResource` lee cuatro agregados —lo invertido, la última
+compra, las unidades— que solo existen si la consulta los añadió con
+`withCount`/`withSum`, y esa consulta ya vive ahí en `consultaBase()`.
+Duplicarla en un controlador aparte sería tenerla desincronizada a la primera
+que alguien tocara una.
+
+Es la tercera vez que aparece el mismo tropiezo —el modelo recién creado que
+perdona los atributos que faltan y el leído que no—, así que aquí se resolvió
+reutilizando en vez de repitiendo.
+
+Cubierto por `ProveedorEscrituraApiTest` (9 casos).
+
+### Personal y clientes desde el teléfono, y el dashboard al día (2026-08-23)
 
 Tercera y última tanda de escritura, más la puesta al día de los reportes de la
 app contra los del panel.

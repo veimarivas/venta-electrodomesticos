@@ -455,6 +455,19 @@ aparece, el lector no es el problema. Si no lee nada —etiqueta rota, borrosa o
 mal impresa—, el botón del **teclado** arriba a la derecha deja escribir el
 código a mano y sigue el mismo camino.
 
+### Proveedores desde el teléfono
+
+En **Compras → Proveedores**, el botón **+** registra uno nuevo. En su ficha, el
+menú de los tres puntos permite editarlo o eliminarlo.
+
+> **Un proveedor con compras registradas no se puede eliminar**: el histórico de
+> costos quedaría sin saber de dónde salió la mercadería. Lo que se hace en ese
+> caso es **desactivarlo**, editándolo y apagando el interruptor «Activo»: sale
+> del listado y conserva todo su historial.
+
+El **registro de órdenes de compra** sigue en el panel: se hace con las facturas
+delante y su recepción genera las unidades del almacén.
+
 ### Personal y clientes desde el teléfono
 
 En **Personas**, el botón **+** registra un cargo o un trabajador, según la
