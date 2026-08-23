@@ -42,9 +42,13 @@ class PosController extends Controller
     {
         $datos = $request->validate([
             'termino' => ['required', 'string', 'min:2', 'max:100'],
+            // Lo manda el escáner. Tecleando no se envía: quien escribe media
+            // palabra no espera que le digan que «no existe en el inventario».
+            'escaneado' => ['nullable', 'boolean'],
         ]);
 
         $termino = trim($datos['termino']);
+        $escaneado = (bool) ($datos['escaneado'] ?? false);
 
         $unidades = Unidad::query()
             ->with('producto.marca')
@@ -71,8 +75,81 @@ class PosController extends Controller
             'meta' => [
                 'exacto' => $exacta?->id,
                 'total' => $unidades->count(),
+                // Solo cuando la cámara leyó algo y ese algo no se puede
+                // vender: explica por qué, en vez de dejar la pantalla vacía.
+                'diagnostico' => $escaneado && $exacta === null
+                    ? $this->diagnosticar($termino)
+                    : null,
             ],
         ]);
+    }
+
+    /**
+     * Explica por qué un código escaneado no entró al carrito.
+     *
+     * Sin esto, escanear la etiqueta de un aparato ya vendido y escanear una
+     * etiqueta de otra tienda dan exactamente el mismo resultado —una lista
+     * vacía—, y desde el mostrador no hay forma de saber cuál de las dos cosas
+     * pasó. Son problemas distintos: uno se resuelve buscando la venta, el otro
+     * revisando si el aparato llegó a darse de alta.
+     *
+     * La búsqueda es sobre el código EXACTO y sin filtrar por estado: aquí
+     * interesan justamente las unidades que el buscador de arriba descarta.
+     *
+     * @return array<string, mixed>
+     */
+    private function diagnosticar(string $termino): array
+    {
+        $unidad = Unidad::query()
+            ->with(['producto', 'ventaDetalle.venta'])
+            ->where(fn ($q) => $q->whereRaw('LOWER(serial) = ?', [mb_strtolower($termino)])
+                ->orWhereRaw('LOWER(codigo_interno) = ?', [mb_strtolower($termino)]))
+            ->first();
+
+        if ($unidad === null) {
+            return [
+                'tipo' => 'desconocido',
+                'titulo' => 'Código no registrado',
+                'detalle' => "Ningún aparato del inventario tiene el código «{$termino}». "
+                    .'Puede ser el código de barras del fabricante en vez de la '
+                    .'etiqueta de la tienda, o un aparato que todavía no se '
+                    .'recepcionó en su compra.',
+            ];
+        }
+
+        $venta = $unidad->ventaDetalle?->venta;
+
+        // Una venta anulada devuelve la unidad al stock. Si aparece aquí como
+        // vendida con su venta anulada, el estado se quedó desincronizado y
+        // decirle «ya se vendió» al cajero lo mandaría a buscar un recibo que
+        // no existe.
+        $detalle = match ($unidad->estado) {
+            'vendido' => $venta === null
+                ? 'Este aparato figura como vendido, pero su venta no aparece. Revísalo en el panel antes de entregarlo.'
+                : ($venta->estado === 'anulada'
+                    ? "Se vendió en la venta {$venta->codigo} y esa venta está anulada, "
+                        .'pero el aparato no volvió al stock. Hay que corregirlo en el panel.'
+                    : "Ya se vendió el {$venta->vendida_en?->format('d/m/Y')} "
+                        ."en la venta {$venta->codigo}."),
+            'reservado' => 'Está reservado para un cliente. Libéralo en el panel si la reserva ya no vale.',
+            'devuelto' => 'Fue devuelto y todavía no se revisó. Hay que darlo de alta otra vez antes de venderlo.',
+            'danado' => 'Está marcado como dañado, así que no se puede vender.',
+            'garantia' => 'Está en garantía: salió a reparación y no es vendible mientras tanto.',
+            'perdido' => 'Está dado por perdido en el inventario.',
+            default => 'No está disponible para la venta.',
+        };
+
+        return [
+            'tipo' => 'no_vendible',
+            'titulo' => Unidad::ESTADOS[$unidad->estado] ?? 'No disponible',
+            'detalle' => $detalle,
+            'codigo_interno' => $unidad->codigo_interno,
+            'serial' => $unidad->serial,
+            'producto' => $unidad->producto?->nombre,
+            'estado' => $unidad->estado,
+            // Para que la app pueda ofrecer «ver la venta» de un toque.
+            'venta_id' => $venta?->estado === 'completada' ? $venta->id : null,
+        ];
     }
 
     /**

@@ -69,6 +69,65 @@ class PosApiTest extends TestCase
         $this->assertSame($unidad->id, $respuesta->json('data.0.unidad_id'));
     }
 
+    public function test_un_codigo_escaneado_de_un_aparato_vendido_dice_en_que_venta_salio(): void
+    {
+        $unidad = $this->unidadEnStock(serial: 'SN-VENDIDO-1');
+        $venta = Venta::factory()->create(['estado' => 'completada']);
+
+        $unidad->update(['estado' => 'vendido']);
+        $unidad->ventaDetalle()->create([
+            'venta_id' => $venta->id,
+            'producto_id' => $unidad->producto_id,
+            'unidad_vendida_id' => $unidad->id,
+            'precio_unitario' => $unidad->precio_venta,
+            'costo_unitario' => $unidad->costo_unitario,
+            'descuento' => 0,
+            'ganancia' => 0,
+        ]);
+
+        Sanctum::actingAs($this->vendedor());
+
+        $respuesta = $this
+            ->getJson('/api/v1/pos/buscar?termino=SN-VENDIDO-1&escaneado=1')
+            ->assertOk();
+
+        // Sin esto, el mostrador ve una lista vacía y no puede distinguir «ya
+        // se vendió» de «este aparato no existe».
+        $this->assertSame('no_vendible', $respuesta->json('meta.diagnostico.tipo'));
+        $this->assertSame($venta->id, $respuesta->json('meta.diagnostico.venta_id'));
+        $this->assertStringContainsString(
+            $venta->codigo,
+            $respuesta->json('meta.diagnostico.detalle'),
+        );
+    }
+
+    public function test_un_codigo_escaneado_que_no_esta_en_el_inventario_lo_dice(): void
+    {
+        $this->unidadEnStock(serial: 'SN-ABC-12345');
+
+        Sanctum::actingAs($this->vendedor());
+
+        $respuesta = $this
+            ->getJson('/api/v1/pos/buscar?termino=CODIGO-DE-OTRA-TIENDA&escaneado=1')
+            ->assertOk();
+
+        $this->assertSame('desconocido', $respuesta->json('meta.diagnostico.tipo'));
+        $this->assertSame([], $respuesta->json('data'));
+    }
+
+    public function test_escribiendo_a_mano_no_se_devuelve_diagnostico(): void
+    {
+        $this->unidadEnStock(serial: 'SN-ABC-12345');
+
+        Sanctum::actingAs($this->vendedor());
+
+        // Quien teclea media palabra no espera que le digan que «no existe en
+        // el inventario»: el diagnóstico es solo para lo que leyó la cámara.
+        $respuesta = $this->getJson('/api/v1/pos/buscar?termino=zzz')->assertOk();
+
+        $this->assertNull($respuesta->json('meta.diagnostico'));
+    }
+
     public function test_la_busqueda_parcial_no_inventa_una_coincidencia_exacta(): void
     {
         $this->unidadEnStock(serial: 'SN-ABC-12345');

@@ -318,10 +318,32 @@ El **dashboard** muestra los indicadores del día y las últimas ventas. El pane
 queda quieto, es que el servidor de WebSockets no está corriendo: **no afecta a
 las ventas**, que se registran igual.
 
-La **app Flutter** es de solo lectura, para el administrador: dashboard por
-período, histórico de ventas con búsqueda por serial, **catálogo** y avisos
-cuando se registra una venta. Registrar y anular se hace en el mostrador, con el
-aparato delante.
+La **app del teléfono** sirve para dos cosas: **consultar** cómo va la tienda
+(dashboard por período, histórico de ventas con búsqueda por serial, catálogo,
+personas, compras y avisos) y **vender desde el mostrador**, escaneando la
+etiqueta del aparato con la cámara. Anular ventas, recepcionar compras y editar
+el catálogo se siguen haciendo en el panel web.
+
+### Instalarla en el teléfono
+
+Se pasa el archivo `app-release.apk` al teléfono (por cable, WhatsApp o
+descarga) y se toca para instalarlo. Android pedirá permitir **«instalar
+aplicaciones de orígenes desconocidos»** para la app desde la que se abrió: es
+normal en una app que no viene de Play Store.
+
+La app ya viene apuntando al servidor de la tienda, así que **funciona con datos
+móviles fuera del local**, sin configurar nada al abrirla. Se entra con el mismo
+usuario y contraseña del panel web.
+
+> **Para actualizarla, normalmente basta con instalar el APK nuevo encima.** Solo
+> si Android se queja de que la aplicación «no se pudo instalar» hay que
+> desinstalar antes la anterior; eso pasa cuando el APK se generó en otro
+> equipo. Al desinstalar solo se pierde la sesión: los datos están en el
+> servidor.
+
+Si al entrar dice que **no se pudo conectar con el servidor**, casi siempre es el
+teléfono sin internet o el servidor caído; se comprueba abriendo la dirección del
+panel en el navegador del mismo teléfono.
 
 En la pestaña **Catálogo** hay tres solapas:
 
@@ -383,6 +405,79 @@ El botón **Vender** aparece en cualquier pantalla de la app, abajo a la derecha
 
 > Si la cámara no está disponible o falta el permiso, la pantalla lo dice y deja
 > teclear el serial a mano. Anular una venta sigue haciéndose desde el panel.
+
+#### Si el escáner no mete el aparato al carrito
+
+La primera vez conviene saber que **el escáner lee la etiqueta que imprime el
+panel** (Inventario → seleccionar unidades → *Etiquetas*), no el código de barras
+que trae la caja del fabricante. Son códigos distintos: el de la caja solo sirve
+si además se registró como serial de esa unidad.
+
+Cuando el código leído no entra al carrito, la app **dice por qué** y enseña el
+código que leyó:
+
+- **«Vendido»** — ese aparato ya salió. Se indica la fecha y la venta, con un
+  botón para abrirla. Si el cliente lo está devolviendo, la devolución se hace
+  desde el panel.
+- **«Reservado», «Dañado», «En garantía», «Devuelto»** — existe pero no es
+  vendible en ese estado, y se explica qué haría falta.
+- **«Código no registrado»** — ningún aparato de la tienda tiene ese código.
+  Suele ser una de dos cosas: se escaneó el código del fabricante en vez de la
+  etiqueta de la tienda, o el aparato no llegó a recepcionarse en su compra.
+
+Ver el código leído en pantalla es la señal de que **la cámara funciona**: si
+aparece, el lector no es el problema. Si no lee nada —etiqueta rota, borrosa o
+mal impresa—, el botón del **teclado** arriba a la derecha deja escribir el
+código a mano y sigue el mismo camino.
+
+### Registrar el serial con la cámara
+
+El serial del fabricante ya no obliga a entrar al panel: se puede registrar desde
+el teléfono, con el aparato en la mano.
+
+Entra a **Catálogo → Productos → el producto**. En *Aparatos en stock*, cada
+unidad tiene un botón de cámara a la derecha:
+
+1. Tócalo y **apunta al código de barras del fabricante**, el de la caja o el de
+   detrás del aparato.
+2. La app enseña lo que leyó y en qué unidad lo va a guardar. Revisa y confirma.
+3. Queda guardado al instante, sin recargar: se pueden encadenar varios.
+
+Las unidades **sin serial se listan en rojo**, así se ve de un vistazo cuáles
+faltan por registrar.
+
+Al confirmar, la app dice **de qué tipo era la etiqueta** («Leído como EAN-13»).
+Si ese texto aparece, la cámara hizo su trabajo.
+
+> **Cuidado con los códigos de la caja: un EAN-13 o un UPC no es un serial.**
+> Identifican el **modelo**, no el aparato concreto: todos los televisores
+> iguales traen el mismo número. Si lo guardas como serial, el siguiente igual
+> se rechazará por repetido y ya tendrás uno mal registrado. La app te avisa
+> cuando lo leído es de ese tipo. **El serial de verdad suele estar en otra
+> etiqueta, junto a «S/N»**, detrás del aparato.
+
+> **Si el serial ya está en otra unidad, la app lo rechaza y dice en cuál.** Casi
+> siempre significa que ese aparato ya se registró antes, o que se está
+> escaneando el código equivocado (el del modelo en vez del de la pieza).
+
+#### Qué códigos lee la cámara
+
+Lee prácticamente todo lo que llega a la tienda: **Code 128** (las etiquetas que
+imprime el panel), **EAN-13, EAN-8, UPC-A y UPC-E** (cajas de fábrica), **Code 39,
+Code 93, Codabar, Entrelazado 2 de 5 e ITF-14**, y los bidimensionales **QR, Data
+Matrix, PDF417 y Aztec**.
+
+Hay tres simbologías raras que **ningún lector de teléfono reconoce** —Code-11,
+MSI y Telepen—, propias de otros rubros y no de electrodomésticos. Y
+«Flattermarken», que aparece en los generadores de códigos, **no es un código de
+barras**: es la marca de encuadernación del lomo de los libros y no lleva ningún
+dato dentro.
+
+Si te topas con una de esas, o con una etiqueta rota, usa el botón del **teclado**
+y escribe los dígitos que van impresos bajo las barras.
+
+> Hace falta el permiso de **editar unidades**: sin él, el botón no aparece. El
+> registro en lote de una compra entera sigue estando en el panel (§5).
 
 ---
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\PersonalController;
 use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\ReporteController;
+use App\Http\Controllers\Api\V1\UnidadController;
 use App\Http\Controllers\Api\V1\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -86,6 +87,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('catalogo.productos');
             Route::get('/catalogo/productos/{producto}', [CatalogoController::class, 'producto'])
                 ->name('catalogo.producto');
+        });
+
+        // Única escritura del catálogo desde el teléfono: el serial del
+        // fabricante, que se lee con la cámara en el almacén. Va con su propio
+        // permiso porque cambia un dato del inventario, no solo lo consulta.
+        Route::middleware('permission:unidades.editar')->group(function () {
+            Route::post('/unidades/{unidad}/serial', [UnidadController::class, 'registrarSerial'])
+                ->name('unidades.serial');
         });
 
         // Personal y clientes: también solo consulta. Cada uno con su permiso,

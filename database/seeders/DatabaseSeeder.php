@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $persona = Persona::create([
-            'carnet' => 'USR'.str_pad((string) $usuario->id, 5, '0', STR_PAD_LEFT),
+            'carnet' => 'USR' . str_pad((string) $usuario->id, 5, '0', STR_PAD_LEFT),
             'nombres' => $nombre,
             'apellido_paterno' => $nombre,
             'correo' => $usuario->email,

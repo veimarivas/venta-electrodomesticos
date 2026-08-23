@@ -54,6 +54,52 @@ El `db:seed` crea roles, permisos, cargos, el árbol de categorías, marcas,
 productos de ejemplo y **dos cuentas de prueba**. Ver §6: hay que cambiarlas
 antes de abrir la tienda.
 
+### Actualizar una instalación que ya está en marcha
+
+Subir los archivos **no basta**: el despliegue deja las rutas y la configuración
+cacheadas (§4), y Laravel sigue leyendo esa copia hasta que se regenera. Una ruta
+nueva responde **404 aunque su archivo ya esté en el servidor**.
+
+El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
+
+```bash
+php artisan migrate --force
+```
+
+```bash
+php artisan optimize:clear
+```
+
+```bash
+php artisan config:cache && php artisan route:cache && php artisan view:cache
+```
+
+Si además cambió algo de la interfaz web:
+
+```bash
+npm ci && npm run build
+```
+
+Para comprobar que una ruta nueva llegó de verdad, sin entrar a la aplicación:
+
+```bash
+php artisan route:list --path=api/v1
+```
+
+Desde fuera, una ruta viva contesta **401** (existe, pide sesión) y una que falta
+contesta **404**. Es la diferencia que distingue «no subí el código» de «no tengo
+permiso»:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://ventas.posgradosinnovaciencia.com/api/v1/unidades/1/serial -H "Accept: application/json"
+```
+
+> **La app móvil no se actualiza sola con el servidor.** Si una versión del APK
+> ya repartida usa un endpoint que todavía no subiste, esa pantalla falla y el
+> resto sigue funcionando. Conviene **subir el backend antes** de repartir un
+> APK nuevo: al revés, los teléfonos ven errores hasta que el servidor se pone
+> al día.
+
 ### Datos de demostración (opcional)
 
 Para enseñar el sistema o revisar los reportes con historia real:
@@ -221,7 +267,49 @@ cachés (`php artisan optimize:clear`).
 
 ---
 
-## 7. Comprobaciones rápidas
+## 7. La app del teléfono
+
+La app móvil (`../electronica_hogar_app`) habla con este mismo servidor por
+`/api/v1`, con tokens de Sanctum. No hay nada que instalar en el servidor para
+que funcione: la API ya va montada con la aplicación web.
+
+**La dirección del servidor se congela al compilar el APK**, no es un ajuste
+dentro de la app:
+
+```bash
+flutter build apk --release --dart-define=API_URL=https://ventas.posgradosinnovaciencia.com/api/v1
+```
+
+Si el dominio cambia, hay que **generar e instalar un APK nuevo**. El APK va
+firmado con la clave de depuración, así que para reemplazarlo hay que desinstalar
+antes el anterior. El detalle está en el README de la app.
+
+Lo que este servidor tiene que cumplir para que el teléfono funcione:
+
+- **`APP_URL` con la dirección pública y https.** De ahí salen las URL de las
+  imágenes (QR de cobro, fotos de productos, logos). Con `APP_URL` apuntando a
+  `localhost`, la app carga los datos pero las imágenes salen vacías.
+- **Certificado válido.** Android rechaza un certificado caducado o autofirmado y
+  la app solo dirá que no pudo conectar. El aviso de caducidad conviene tenerlo
+  en el calendario.
+- **Que `/api/v1/auth/login` devuelva JSON**, no el HTML de error de Laravel:
+
+```bash
+curl -s -X POST https://ventas.posgradosinnovaciencia.com/api/v1/auth/login -H "Accept: application/json" -d '{}'
+```
+
+Debe responder un JSON con `message` y `errors` (faltan `usuario`, `password` y
+`dispositivo`). Si devuelve HTML, la app fallará con un error de red que no
+explica nada.
+
+> **Las notificaciones push están apagadas.** Falta el proyecto de Firebase; la
+> app arranca igual y solo se queda sin avisos en el teléfono. El historial de
+> avisos se lee por API y funciona. Para activarlas hacen falta el
+> `google-services.json` en la app y `FIREBASE_CREDENTIALS` en este `.env`.
+
+---
+
+## 8. Comprobaciones rápidas
 
 ```bash
 php artisan about
@@ -243,7 +331,7 @@ php artisan test
 
 ---
 
-## 8. Lo que el sistema ya trae puesto
+## 9. Lo que el sistema ya trae puesto
 
 - **Cabeceras de seguridad** en todas las respuestas
   (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`,

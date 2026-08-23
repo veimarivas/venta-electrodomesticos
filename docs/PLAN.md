@@ -438,7 +438,8 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/personal/trabajadores/{id}` | ficha con su cuenta de acceso y lo que vendió |
 | GET | `/clientes?buscar&estado` | listado paginado con el resumen de compras |
 | GET | `/clientes/{id}` | ficha con sus últimas compras |
-| GET | `/pos/buscar?termino=` | aparatos vendibles; marca la coincidencia exacta del escáner |
+| GET | `/pos/buscar?termino=&escaneado=1` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe |
+| **POST** | `/unidades/{id}/serial` | registra el serial del fabricante leído con la cámara (`unidades.editar`) |
 | GET | `/pos/qrs` | QR de cobro vigentes, con su imagen |
 | **POST** | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante) |
 | **POST** | `/clientes` | alta rápida de cliente desde el mostrador |
@@ -733,6 +734,231 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+
+### El escáner explica lo que lee, y registra seriales (2026-08-23)
+
+Con la app ya instalada en un teléfono real apareció el primer informe de uso:
+«el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
+era todo lo que venía después.
+
+#### Qué formatos lee el escáner (2026-08-23, tras probar con etiquetas reales)
+
+Probando códigos generados en una web salieron seis nombres —Code-11,
+Entrelazado 2 de 5, Code-93, Flattermarken, MSI, Telepen Alpha— y la pregunta de
+si el lector los cubre. La respuesta, contra la lista real de MLKit:
+
+| | |
+|---|---|
+| **Lineales** | Code 128, Code 39, Code 93, Codabar, Entrelazado 2 de 5 (ITF), ITF-14, EAN-13, EAN-8, UPC-A, UPC-E, GS1 DataBar |
+| **2D** | QR, micro QR, Data Matrix, PDF417, Aztec, MaxiCode |
+
+Cubre lo que hay en la tienda: **Code 128** es lo que imprime `GeneradorEtiquetas`
+para cada unidad, y **EAN-13 / UPC-A** lo que traen las cajas de fábrica. De la
+lista probada, **Entrelazado 2 de 5 y Code-93 ya funcionan** —estaban fuera del
+filtro viejo, junto con UPC—.
+
+**Code-11, MSI/Plessey y Telepen no los lee ningún motor de teléfono**, tampoco
+ZXing. Son simbologías de nicho (telecomunicaciones, estantería de supermercado,
+bibliotecas británicas) ajenas a los electrodomésticos. Y **«Flattermarken» no es
+un código de barras**: es la marca escalonada de encuadernación del lomo de los
+libros, no codifica dato alguno. Aparecían en la prueba porque son opciones de un
+**generador** de códigos, no porque estén en los aparatos.
+
+Para cualquier etiqueta ilegible queda el teclado: los dígitos van impresos bajo
+las barras.
+
+> **La lectura enseña ahora de qué formato salió** («Leído como EAN-13»). Es lo
+> que permite distinguir un formato no soportado de una etiqueta mal impresa sin
+> probar a ciegas, y zanja la duda de «¿lee este tipo de código?».
+
+> **Un EAN-13 o un UPC no sirve como serial.** Identifica el **modelo**, no la
+> pieza: dos televisores iguales traen el mismo número, así que el segundo se
+> rechazaría por duplicado con el primero ya mal registrado. La app avisa al
+> confirmar cuando lo leído es de ese tipo. El serial va en otra etiqueta, junto
+> a «S/N».
+
+#### El filtro de formatos descartaba códigos en silencio
+
+`PantallaEscaner` declaraba una lista de formatos —Code128, Code39, QR, EAN13,
+EAN8— pensando en la etiqueta que imprime el panel. El problema es que **un
+formato fuera de la lista no da error**: MLKit simplemente no detecta nada, y
+desde el mostrador eso se ve exactamente igual que un lector roto. Los códigos
+del fabricante vienen en ITF, DataMatrix o PDF417 según la marca, y el filtro
+los tiraba sin decir nada.
+
+Ahora no se declara ninguna lista: se aceptan todos los formatos que MLKit
+reconoce. Quien decide si el código sirve es el servidor, que lo busca en el
+inventario y responde qué es. El coste de aceptar de más es nulo —un código que
+no está en la base se responde como desconocido—; el de aceptar de menos era una
+avería invisible.
+
+> **El motor de MLKit va empaquetado en el APK**, no se descarga por Google Play
+> Services (es la opción por defecto de `mobile_scanner` y explica buena parte de
+> los 76 MB). El escáner funciona sin conexión y en teléfonos sin Play Store; si
+> alguna vez falla, no es por el modelo.
+
+#### «No hay resultados» no es una respuesta
+
+El buscador del POS solo mira unidades `en_stock`. Escanear un aparato **ya
+vendido** y escanear la etiqueta de **otra tienda** daban el mismo resultado: una
+lista vacía. Son problemas distintos —uno se resuelve buscando la venta, el otro
+revisando si el aparato llegó a darse de alta— y el mostrador no tenía forma de
+distinguirlos.
+
+`GET /pos/buscar` acepta ahora `escaneado=1` y, cuando no hay nada vendible,
+devuelve `meta.diagnostico`:
+
+- **`no_vendible`** — la unidad existe pero su estado no permite venderla. El
+  detalle depende del estado: si está vendida dice **en qué venta y en qué
+  fecha**, con `venta_id` para que la app la abra de un toque; si está reservada,
+  dañada, devuelta o en garantía, lo dice y qué habría que hacer.
+- **`desconocido`** — ningún aparato tiene ese código. El mensaje apunta a las
+  dos causas reales: es el código de barras del fabricante en vez de la etiqueta
+  de la tienda, o el aparato no se recepcionó en su compra.
+
+> **El diagnóstico solo se calcula para lo que leyó la cámara.** Tecleando no se
+> manda `escaneado`, porque a quien escribe media palabra en el buscador no hay
+> que decirle que «no existe en el inventario».
+
+> **Una venta anulada que dejó la unidad en `vendido` se trata aparte.** Anular
+> devuelve el aparato al stock; si aparece vendido con su venta anulada, el
+> estado se quedó desincronizado y decirle «ya se vendió» al cajero lo mandaría a
+> buscar un recibo que no existe. El mensaje dice que hay que corregirlo.
+
+En la app esto no es un SnackBar de dos segundos sino un diálogo, y **muestra
+siempre el código leído en monoespaciada**: es la prueba de que la cámara sí
+funcionó. Sin verlo, «no se puede vender» se confunde con «el lector está roto» y
+se acaba tecleando a mano sin necesidad.
+
+#### Salida manual cuando la etiqueta no se deja leer
+
+El escáner tiene ahora un botón de teclado que devuelve el código escrito **por
+el mismo camino** que uno leído, así que quien lo abrió no distingue de dónde
+vino. Antes, el botón «Escribirlo a mano» de la pantalla sin cámara solo cerraba
+el escáner y no llevaba a ninguna parte. Una etiqueta rota o mal impresa dejaba
+el trabajo bloqueado.
+
+#### Registrar el serial con la cámara, desde la ficha del producto
+
+`POST /unidades/{unidad}/serial`, con permiso `unidades.editar`. Es **la única
+escritura del catálogo desde el teléfono**: el resto de la edición de unidades
+—precio, ubicación, estado— se queda en el panel, que es donde se revisa con
+calma.
+
+El código interno lo pone el sistema al recepcionar la compra, pero el serial va
+impreso en la caja y se registra después, con el aparato delante. Hasta ahora eso
+obligaba a entrar al panel; en la ficha del producto cada unidad tiene un botón
+de cámara que lo lee y lo guarda.
+
+- **Se confirma antes de guardar**, enseñando qué leyó la cámara sobre qué
+  unidad. El serial es único en toda la tienda y corregirlo después obliga a
+  entrar al panel. Si la unidad ya tenía serial, se avisa de que se reemplaza.
+- **El duplicado no se comprueba con `Rule::unique`** sino a mano: así se mira
+  después del `trim` («ABC123 » y «ABC123» son el mismo serial) y sin distinguir
+  mayúsculas, y sobre todo el mensaje puede decir **en qué unidad está ya** ese
+  serial. Con la regla estándar el aviso era «ya está registrado», que deja al
+  almacenero sin saber dónde buscar. Escanear dos veces el mismo aparato es el
+  error más fácil de cometer en el almacén.
+- **Un serial de solo espacios se rechaza**, no se guarda como cadena vacía: la
+  columna es única y una cadena vacía bloquearía a la segunda unidad sin serial.
+- Las unidades sin serial se listan **marcadas en rojo**: es una tarea pendiente,
+  no un dato más, y así se ve de un vistazo cuáles faltan.
+- Los seriales recién guardados se pintan sin recargar la ficha, porque con el
+  aparato en la mano se registran varios seguidos.
+
+Cubierto por `UnidadSerialApiTest` (8 casos: duplicado, mayúsculas, espacios,
+blanco, reescribir el propio, permisos y sesión) y tres casos nuevos en
+`PosApiTest` para el diagnóstico.
+
+### La app del teléfono apunta al servidor de producción (2026-08-23)
+
+El backend quedó publicado en `https://ventas.posgradosinnovaciencia.com`, y la
+app móvil se compiló contra esa dirección para instalarla en un teléfono físico.
+
+```bash
+flutter build apk --release --dart-define=API_URL=https://ventas.posgradosinnovaciencia.com/api/v1
+```
+
+**No hizo falta tocar el código de la app.** La URL nunca estuvo escrita en los
+fuentes: `Constantes.apiUrl` la lee con `String.fromEnvironment('API_URL')`, así
+que apuntar a otro servidor es un parámetro de compilación. El valor por defecto
+(`10.0.2.2:8000`, el «localhost» del PC visto desde el emulador) solo aplica
+cuando no se pasa `--dart-define`.
+
+Tampoco hubo que tocar `network_security_config.xml`: la excepción de tráfico sin
+cifrar que hay ahí es solo para las direcciones de desarrollo, y producción va
+por **https**, que Android acepta sin permisos extra.
+
+Comprobado contra el servidor ya publicado, antes de dar el APK por bueno:
+
+- `POST /api/v1/auth/login` responde **JSON en español** (`{"message":…,"errors":…}`),
+  no el HTML de error de Laravel — que es lo que delataría un `Accept` mal puesto.
+- Los campos que valida el servidor (`usuario`, `password`, `dispositivo`) son
+  exactamente los tres que envía `RepositorioApi.entrar()`.
+- La URL de producción quedó **embebida en el APK** (se verificó buscándola en el
+  binario), no leída en tiempo de ejecución.
+
+> **`APP_URL` del `.env` del servidor tiene que ser la dirección pública.** De ahí
+> salen las URL de las imágenes (QR de cobro, fotos de productos, logos): si
+> apuntara a `localhost`, el teléfono intentaría cargarlas de sí mismo y solo se
+> verían los textos de reserva. En el servidor ya está correcta.
+
+**Las notificaciones push siguen apagadas, y eso no rompe nada.** Falta el
+`google-services.json` de Firebase, así que `Firebase.initializeApp()` lanza; el
+servicio lo captura, devuelve `false` y la app arranca igual, solo sin push. El
+historial de avisos se lee por API y funciona.
+
+#### El APK no compilaba en este equipo: «Unable to establish loopback connection»
+
+Antes de generar nada hubo que resolver un fallo del **equipo**, no del proyecto:
+Gradle moría a los 4 segundos, antes de compilar una sola línea.
+
+La causa está lejos de donde apunta el mensaje. El `Selector` de Java que Gradle
+usa para hablar con su demonio abre un «self-pipe» interno con un **socket de
+dominio Unix (AF_UNIX)**, cuyo archivo se crea en el TEMP del usuario. En este
+equipo, con ese TEMP por defecto el `connect` de AF_UNIX falla con «Invalid
+argument», y sin el pipe no arranca nada. La solución es mover ese socket a una
+ruta corta y limpia:
+
+```bash
+setx JAVA_TOOL_OPTIONS "-Djdk.net.unixdomain.tmpdir=C:\gradle-tmp"
+```
+
+Ya quedó puesta de forma permanente en el usuario de Windows (`C:\gradle-tmp`
+debe existir). El detalle completo está en el README de la app.
+
+Lo que se descartó por el camino, para no repetir el diagnóstico:
+
+- **No es la red ni el firewall.** El loopback TCP normal (127.0.0.1) conecta sin
+  problema; lo único roto es AF_UNIX. `Pipe.open()` (que usa TCP) funciona y
+  `Selector.open()` (que usa AF_UNIX) no.
+- **No es la versión del JDK.** Falla igual con el JDK 25 de Android Studio y con
+  un Temurin 17 instalado a propósito para descartarlo: el pipe AF_UNIX está
+  también en las actualizaciones del 17, y ninguno cae de vuelta a TCP.
+- **No es `-Djava.io.tmpdir`.** Para estos sockets manda otra propiedad,
+  `jdk.net.unixdomain.tmpdir`.
+- **No basta ponerlo en `gradle.properties`.** `org.gradle.jvmargs` solo llega al
+  demonio, y el proceso lanzador abre su propio `Selector` antes de leer el
+  archivo. `JAVA_TOOL_OPTIONS` es la que hereda **toda** JVM hija, que es lo que
+  hace falta.
+
+#### Instalar el APK en el teléfono
+
+`app-release.apk` (76 MB) queda en `build/app/outputs/flutter-apk/`. Se copia al
+teléfono y se instala permitiendo «orígenes desconocidos».
+
+Va firmado con la **clave de depuración** de este equipo: `build.gradle.kts`
+mantiene `signingConfig = signingConfigs.getByName("debug")`. Compilando siempre
+aquí la firma no cambia y las actualizaciones se instalan encima sin desinstalar;
+un APK generado en **otra máquina** llevaría otra firma y Android rechazaría la
+actualización.
+
+Se decidió **no montar todavía una clave de release** (2026-08-23): la app se
+reparte a mano entre unos pocos teléfonos y se compila siempre desde este equipo.
+Cuando se reparta en serio —o si se sube a Play Store— hará falta un `.jks`
+propio referenciado desde un `key.properties` fuera del control de versiones. En
+ese momento también conviene `--split-per-abi`, que baja el APK de 76 MB a unos
+25 MB por arquitectura.
 
 ### Punto de venta: precio pactado, descuento autorizado y cobro por QR (2026-08-20)
 
