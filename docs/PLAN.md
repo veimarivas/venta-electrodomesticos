@@ -456,7 +456,18 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/clientes/{id}` | ficha con sus últimas compras |
 | GET | `/pos/buscar?termino=&escaneado=1` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe |
 | **POST** | `/unidades/{id}/serial` | registra el serial del fabricante leído con la cámara (`unidades.editar`) |
-| GET | `/pos/qrs` | QR de cobro vigentes, con su imagen |
+| GET | `/pos/qrs` | QR de cobro **vigentes**, con su imagen (lo que el mostrador puede usar) |
+| GET | `/qrs-cobro?estado=vigentes\|caducados\|todos` | **todos** los QR, con `vigente` ya resuelto |
+| **POST** | `/qrs-cobro` · `/qrs-cobro/{id}` | alta y edición; la imagen solo es obligatoria al crear |
+| **DELETE** | `/qrs-cobro/{id}` | archiva; su imagen **no** se borra |
+| GET | `/usuarios?buscar&estado&rol` | cuentas de acceso con sus roles |
+| GET | `/usuarios/personas?termino=` | personas que aún no tienen cuenta |
+| **POST** | `/usuarios` · `/usuarios/{id}` | alta y edición; contraseña vacía = no cambiarla |
+| **POST** | `/usuarios/{id}/estado` | activa o desactiva la cuenta |
+| **DELETE** | `/usuarios/{id}` | elimina la cuenta; la persona se conserva |
+| GET | `/roles` · `/roles/permisos` · `/roles/{id}/permisos` | roles, matriz por módulo y lo que tiene marcado |
+| **POST** | `/roles` · `/roles/{id}` · `/roles/{id}/permisos` | alta, nombre y sincronización de permisos |
+| **DELETE** | `/roles/{id}` | baja; se niega si alguien lo tiene asignado |
 | **POST** | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante) |
 | **POST** | `/clientes` | alta de cliente desde cero, cuando no aparece por ningún lado |
 | GET | `/personas/sin-ficha?termino=` | segundo peldaño del buscador: personas ya registradas que aún no son clientes |
@@ -761,7 +772,78 @@ Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### Proveedores desde el teléfono (2026-08-23)
+#### El 404 de /ventas/qr-cobro, y la administración en el teléfono (2026-08-23)
+
+#### La ruta se comía a la otra
+
+`/ventas/qr-cobro` devolvía 404 con la vista y el componente en su sitio. La
+causa era el **orden de declaración**: `/ventas/{venta}` estaba antes, así que
+Laravel casaba primero la ruta con parámetro, intentaba cargar una venta con id
+`«qr-cobro»`, el model binding fallaba y respondía 404 sin explicar nada.
+
+Se mueve la estática delante y, además, se acota el parámetro con
+`->whereNumber('venta')`. El orden basta para arreglarlo hoy; el `whereNumber`
+es lo que impide que una ruta estática nueva bajo `/ventas` vuelva a caer en la
+trampa aunque se declare después.
+
+> **Uno de los tres tests que llevaban tiempo fallando era este.**
+> `QrCobroCrudTest::test_un_vendedor_no_puede_registrar_qr` visita
+> `route('ventas.qrs-cobro.index')` y esperaba un 200. Estaba señalando el bug
+> desde el principio y se había dado por «preexistente». Quedan dos.
+
+Es la tercera colisión de este tipo en el proyecto —ya pasó al colgar
+`/personas/sin-ficha` y `/usuarios/personas` de rutas con parámetro—, así que
+conviene la regla: **las rutas estáticas van antes que las paramétricas**, y el
+parámetro se acota cuando se sabe su forma.
+
+#### Administración desde la app
+
+Tres módulos que solo existían en el panel:
+
+| | |
+|---|---|
+| `GET/POST /qrs-cobro`, `POST /qrs-cobro/{id}`, `DELETE` | `qrs_cobro.*` |
+| `GET/POST /usuarios`, `POST /usuarios/{id}`, `/estado`, `DELETE` | `usuarios.*` |
+| `GET /usuarios/personas` | personas sin cuenta (`usuarios.ver`) |
+| `GET/POST /roles`, `POST /roles/{id}`, `DELETE` | `roles.*` |
+| `GET /roles/permisos` · `GET/POST /roles/{id}/permisos` | matriz de permisos |
+
+**Los QR se listan todos, no solo los vigentes.** `/pos/qrs` sigue devolviendo
+solo los vigentes porque es lo que el mostrador puede usar; para administrarlos
+hacen falta también los caducados, que son justo los que hay que renovar. El
+listado trae `vigente` ya resuelto —activo **y** sin caducar, la condición de
+`scopeVigentes`— para que la app no recalcule una regla que vive en el modelo.
+La app distingue «caducado» de «apagado»: se arreglan distinto.
+
+**Las guardas de usuarios son las del panel.** Nadie puede desactivar ni borrar
+su propia cuenta —se quedaría fuera en el acto— y no se puede eliminar al último
+administrador. Se añade una que el panel no tenía explícita: **tampoco se le
+puede quitar el rol al único administrador**, que deja el sistema igual de
+huérfano que borrarlo. La contraseña vacía al editar significa «no cambiarla», y
+**nunca viaja de vuelta**.
+
+**El rol `admin` está protegido**: no se edita, no se le tocan los permisos y no
+se borra. Tiene acceso total por `Gate::before()`, así que su lista de permisos
+es irrelevante. La app le oculta los botones en vez de dejar que el servidor los
+rechace uno a uno.
+
+#### Dos tropiezos de spatie que solo aparecen en la API
+
+**`withCount('users')` sobre un rol revienta.** La relación `users()` resuelve el
+modelo desde el `guard_name` del rol, y al construir un `withCount` Eloquent la
+pide sobre una instancia **sin atributos**: el guard sale nulo, el morph se queda
+sin clase y la respuesta es un 500. Se cuenta con una subconsulta sobre
+`model_has_roles`, que no depende del guard.
+
+**El route model binding de `Role` usa el guard por defecto**, que bajo Sanctum
+es `sanctum`; los roles se crean con guard `web` y la petición muere con «There
+is no role with ID X for guard sanctum». Los controladores resuelven el rol con
+una consulta normal. El mismo detalle afecta a `Role::findById()` **en los
+tests**, que necesita el guard explícito.
+
+Cubierto por `AdministracionApiTest` (20 casos).
+
+### Proveedores desde el teléfono (2026-08-23)
 
 Cuarta y última tanda. Con ella, **todo lo que se administra en el panel se
 puede administrar también desde el teléfono**, salvo lo que se dejó a propósito:

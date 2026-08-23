@@ -15,9 +15,12 @@ use App\Http\Controllers\Api\V1\PersonalController;
 use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductoController;
 use App\Http\Controllers\Api\V1\ProveedorController;
+use App\Http\Controllers\Api\V1\QrCobroController;
 use App\Http\Controllers\Api\V1\ReporteController;
+use App\Http\Controllers\Api\V1\RolController;
 use App\Http\Controllers\Api\V1\TrabajadorController;
 use App\Http\Controllers\Api\V1\UnidadController;
+use App\Http\Controllers\Api\V1\UsuarioController;
 use App\Http\Controllers\Api\V1\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -227,6 +230,54 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:trabajadores.eliminar')->name('personal.trabajadores.baja');
         Route::post('/personal/trabajadores/{trabajador}/reactivar', [TrabajadorController::class, 'reactivar'])
             ->middleware('permission:trabajadores.editar')->name('personal.trabajadores.reactivar');
+
+        // ---- QR de cobro ---------------------------------------------------
+        // `/pos/qrs` sigue existiendo y devuelve solo los vigentes, que es lo
+        // que el mostrador puede usar. Aquí se ven todos, que es lo que hace
+        // falta para administrarlos.
+        Route::get('/qrs-cobro', [QrCobroController::class, 'index'])
+            ->middleware('permission:qrs_cobro.ver')->name('qrs-cobro.index');
+        Route::post('/qrs-cobro', [QrCobroController::class, 'store'])
+            ->middleware('permission:qrs_cobro.crear')->name('qrs-cobro.store');
+        Route::post('/qrs-cobro/{qr}', [QrCobroController::class, 'update'])
+            ->middleware('permission:qrs_cobro.editar')->name('qrs-cobro.update');
+        Route::delete('/qrs-cobro/{qr}', [QrCobroController::class, 'destroy'])
+            ->middleware('permission:qrs_cobro.eliminar')->name('qrs-cobro.destroy');
+
+        // ---- Usuarios y roles ----------------------------------------------
+        // `/usuarios/personas` va ANTES que `/usuarios/{usuario}`: si no,
+        // Laravel lo tomaría por el id de un usuario llamado «personas» y
+        // respondería 404.
+        Route::middleware('permission:usuarios.ver')->group(function () {
+            Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+            Route::get('/usuarios/personas', [UsuarioController::class, 'personasVinculables'])
+                ->name('usuarios.personas');
+        });
+
+        Route::post('/usuarios', [UsuarioController::class, 'store'])
+            ->middleware('permission:usuarios.crear')->name('usuarios.store');
+        Route::post('/usuarios/{usuario}', [UsuarioController::class, 'update'])
+            ->middleware('permission:usuarios.editar')->name('usuarios.update');
+        Route::post('/usuarios/{usuario}/estado', [UsuarioController::class, 'alternarEstado'])
+            ->middleware('permission:usuarios.editar')->name('usuarios.estado');
+        Route::delete('/usuarios/{usuario}', [UsuarioController::class, 'destroy'])
+            ->middleware('permission:usuarios.eliminar')->name('usuarios.destroy');
+
+        Route::middleware('permission:roles.ver')->group(function () {
+            Route::get('/roles', [RolController::class, 'index'])->name('roles.index');
+            Route::get('/roles/permisos', [RolController::class, 'permisos'])->name('roles.permisos');
+            Route::get('/roles/{rol}/permisos', [RolController::class, 'permisosDelRol'])
+                ->name('roles.permisos-del-rol');
+        });
+
+        Route::post('/roles', [RolController::class, 'store'])
+            ->middleware('permission:roles.crear')->name('roles.store');
+        Route::post('/roles/{rol}', [RolController::class, 'update'])
+            ->middleware('permission:roles.editar')->name('roles.update');
+        Route::post('/roles/{rol}/permisos', [RolController::class, 'sincronizarPermisos'])
+            ->middleware('permission:roles.editar')->name('roles.sincronizar-permisos');
+        Route::delete('/roles/{rol}', [RolController::class, 'destroy'])
+            ->middleware('permission:roles.eliminar')->name('roles.destroy');
 
         // ---- Punto de venta -----------------------------------------------
         // La única parte de la API que escribe. Existe porque en el mostrador

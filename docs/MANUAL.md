@@ -455,6 +455,47 @@ aparece, el lector no es el problema. Si no lee nada —etiqueta rota, borrosa o
 mal impresa—, el botón del **teclado** arriba a la derecha deja escribir el
 código a mano y sigue el mismo camino.
 
+### Administración desde el teléfono
+
+En el **Resumen**, el icono del engranaje arriba a la derecha abre
+**Administración**, con tres solapas según tus permisos.
+
+**QR de cobro.** Se ven todos, no solo los que sirven hoy, para poder renovar
+los vencidos. Cada uno indica su estado:
+
+- **Vigente** — se ofrece en el punto de venta. En ámbar cuando le quedan menos
+  de 7 días: renovarlo obliga a ir al banco.
+- **Caducado** — pasó su fecha. Hay que editarlo y poner la nueva.
+- **Apagado** — su interruptor está en «no». Se enciende editándolo.
+
+Archivar un QR lo retira del punto de venta; las ventas cobradas con él
+conservan su comprobante.
+
+**Usuarios.** Cada cuenta muestra si está activa y con qué roles entra. Con
+pulsación larga puedes editarla, **desactivarla** (deja de poder entrar, sin
+borrar nada) o eliminarla.
+
+> **No puedes desactivar ni eliminar tu propia cuenta**: te cerraría la sesión
+> en el acto. La app ni siquiera te ofrece esas opciones sobre ti.
+
+> **Tampoco se puede dejar el sistema sin administrador**: ni borrando al último
+> ni quitándole el rol.
+
+Al crear una cuenta se elige primero **a qué persona pertenece** — solo aparecen
+quienes aún no tienen una, porque cada persona puede tener solo una. Al editar,
+**dejar la contraseña vacía significa no cambiarla**.
+
+**Roles.** Tocar un rol abre su **matriz de permisos**, agrupada por módulo, con
+atajos de «todos» y «ninguno» por grupo. Con pulsación larga se cambia el nombre
+o se elimina.
+
+> **El rol de administrador no se toca**: tiene acceso total por diseño, así que
+> no se edita ni se le marcan permisos ni se elimina.
+
+> **Un rol que alguien tenga asignado no se puede eliminar.** Esos usuarios se
+> quedarían sin ningún permiso y nadie se enteraría hasta que intentaran entrar
+> a algo.
+
 ### Proveedores desde el teléfono
 
 En **Compras → Proveedores**, el botón **+** registra uno nuevo. En su ficha, el

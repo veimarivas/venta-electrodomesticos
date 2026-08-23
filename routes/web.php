@@ -60,23 +60,30 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Historial' => null],
     ])->middleware('permission:ventas.ver')->name('ventas.index');
 
+    // ANTES que `/ventas/{venta}`: si va después, Laravel casa primero la ruta
+    // con parámetro, intenta cargar una venta con id «qr-cobro», el model
+    // binding falla y la pantalla responde 404 sin explicar nada.
+    Route::view('/ventas/qr-cobro', 'backend.qrs-cobro.index', [
+        'title' => 'QR de cobro',
+        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'QR de cobro' => null],
+    ])->middleware('permission:qrs_cobro.ver')->name('ventas.qrs-cobro.index');
+
+    // `whereNumber` es el cinturón además del orden: deja fuera cualquier
+    // segmento que no sea un id, así una ruta estática nueva bajo /ventas no
+    // vuelve a caer en la misma trampa aunque se declare después.
     Route::get('/ventas/{venta}', function (\App\Models\Venta $venta) {
         return view('backend.ventas.detalle', [
             'title' => 'Venta '.$venta->codigo,
             'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, $venta->codigo => route('ventas.index')],
             'venta' => $venta,
         ]);
-    })->middleware('permission:ventas.ver')->name('ventas.show');
+    })->whereNumber('venta')->middleware('permission:ventas.ver')->name('ventas.show');
 
     // Recibo en PDF. Se genera al vuelo desde la venta guardada: no se
     // archiva un PDF por venta, porque una venta no se edita nunca.
     Route::get('/ventas/{venta}/recibo', ReciboController::class)
+        ->whereNumber('venta')
         ->middleware('permission:ventas.ver')->name('ventas.recibo');
-
-    Route::view('/ventas/qr-cobro', 'backend.qrs-cobro.index', [
-        'title' => 'QR de cobro',
-        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'QR de cobro' => null],
-    ])->middleware('permission:qrs_cobro.ver')->name('ventas.qrs-cobro.index');
 
     Route::view('/clientes', 'backend.clientes.index', [
         'title' => 'Clientes',
