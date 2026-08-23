@@ -131,10 +131,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/clientes/{cliente}', [ClienteController::class, 'show'])->name('clientes.show');
         });
 
-        // Alta rápida desde el mostrador, dentro de una venta.
-        Route::post('/clientes', [ClienteController::class, 'store'])
-            ->middleware('permission:clientes.crear')
-            ->name('clientes.store');
+        // Alta desde el mostrador, dentro de una venta. Dos caminos: si quien
+        // compra ya está en `personas` se le crea la ficha con esos datos, y
+        // solo si no aparece se registra de cero.
+        //
+        // `/personas/sin-ficha` va con prefijo propio a propósito: colgarlo de
+        // `/clientes/...` chocaría con `/clientes/{cliente}`, que lo tomaría
+        // como el id de un cliente llamado «sin-ficha».
+        Route::middleware('permission:clientes.crear')->group(function () {
+            Route::post('/clientes', [ClienteController::class, 'store'])
+                ->name('clientes.store');
+            Route::get('/personas/sin-ficha', [ClienteController::class, 'personasSinFicha'])
+                ->name('clientes.personas-sin-ficha');
+            Route::post('/clientes/desde-persona', [ClienteController::class, 'desdePersona'])
+                ->name('clientes.desde-persona');
+        });
 
         // ---- Punto de venta -----------------------------------------------
         // La única parte de la API que escribe. Existe porque en el mostrador

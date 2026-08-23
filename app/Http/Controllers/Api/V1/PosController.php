@@ -189,7 +189,12 @@ class PosController extends Controller
             'lineas.*.unidad_id' => ['required', 'integer', 'distinct', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
             'lineas.*.precio' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'cliente_id' => ['nullable', 'integer', Rule::exists('clientes', 'id')->whereNull('deleted_at')],
-            'metodo_pago' => ['required', Rule::in(array_keys(Venta::METODOS_PAGO))],
+            // METODOS_POS, no METODOS_PAGO: `tarjeta` y `transferencia` siguen
+            // en la lista histórica para que el listado pueda mostrar ventas
+            // viejas cobradas así, pero el mostrador ya no los ofrece. Validar
+            // contra la lista larga dejaba cobrar desde el teléfono con un
+            // método que en la web está retirado.
+            'metodo_pago' => ['required', Rule::in(Venta::METODOS_POS)],
             'notas' => ['nullable', 'string', 'max:1000'],
             'qr_cobro_id' => ['nullable', 'integer', Rule::exists('qrs_cobro', 'id')->whereNull('deleted_at')],
             'monto_efectivo' => ['nullable', 'numeric', 'min:0'],

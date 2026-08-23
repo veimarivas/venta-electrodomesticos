@@ -394,12 +394,25 @@ El botón **Vender** aparece en cualquier pantalla de la app, abajo a la derecha
    *referencia* es el precio de lista y es el máximo; por abajo, el límite es el
    descuento autorizado del producto, con atajos para *precio de lista* y
    *rebaja máxima*. La diferencia se registra sola como descuento.
-3. **Cobrar** lleva a la pantalla de cobro: cliente (búscalo y, si no aparece,
-   se habilita *Registrar nuevo cliente*), método de pago y notas.
-4. En **QR** y **Mixto** se muestra el QR de la tienda para que el cliente lo
-   escanee, y hay que **adjuntar la foto del comprobante** antes de cobrar. En
-   mixto, al escribir una de las dos cantidades la otra se completa con la
-   diferencia.
+3. **Cobrar** lleva a la pantalla de cobro: cliente, método de pago y notas.
+   El cliente se busca por nombre, carnet o código, y funciona igual que en el
+   panel, en dos peldaños:
+   - Si aparece como **cliente**, tócalo y listo.
+   - Si no, salen las **personas ya registradas** que todavía no tienen ficha de
+     cliente (por ejemplo, un trabajador). Tocar una **le crea la ficha con sus
+     datos**: no hay que volver a teclear carnet ni apellidos. Si su ficha
+     estaba archivada, se restaura con su código y su historial de compras.
+   - Solo si no aparece en ninguno de los dos se habilita *Registrar nuevo
+     cliente*. Es a propósito: dar de alta a alguien que ya existe duplicaría
+     su ficha y partiría su historial.
+4. Los métodos de pago son **los mismos tres del mostrador**: *Efectivo*, *QR* y
+   *Mixto*. En **QR** y **Mixto** se muestra el QR de la tienda para que el
+   cliente lo escanee, y hay que **adjuntar la foto del comprobante** antes de
+   cobrar. En mixto, al escribir una de las dos cantidades la otra se completa
+   con la diferencia.
+
+   > *Tarjeta* y *Transferencia* ya no se ofrecen, ni aquí ni en el panel. Las
+   > ventas viejas cobradas así siguen viéndose en el histórico.
 5. **Cobrar** registra la venta: los aparatos pasan a *vendido* y salen del
    stock, igual que en el mostrador.
 

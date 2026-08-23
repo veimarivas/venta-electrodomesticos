@@ -442,7 +442,9 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **POST** | `/unidades/{id}/serial` | registra el serial del fabricante leído con la cámara (`unidades.editar`) |
 | GET | `/pos/qrs` | QR de cobro vigentes, con su imagen |
 | **POST** | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante) |
-| **POST** | `/clientes` | alta rápida de cliente desde el mostrador |
+| **POST** | `/clientes` | alta de cliente desde cero, cuando no aparece por ningún lado |
+| GET | `/personas/sin-ficha?termino=` | segundo peldaño del buscador: personas ya registradas que aún no son clientes |
+| **POST** | `/clientes/desde-persona` | le abre la ficha de cliente con los datos que ya tiene (restaura la archivada si la hubo) |
 | GET | `/proveedores?buscar&estado` | listado paginado con lo invertido en cada uno |
 | GET | `/proveedores/{id}` | ficha con sus últimas órdenes |
 | GET | `/compras?buscar&proveedor_id&estado&desde&hasta` | listado paginado |
@@ -741,7 +743,68 @@ Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### Qué formatos lee el escáner (2026-08-23, tras probar con etiquetas reales)
+#### El POS del teléfono se alinea con el del mostrador (2026-08-23)
+
+Con la app ya en uso salieron dos diferencias con el POS web. Ninguna era de
+diseño: eran deudas de cuando la API se escribió antes que las reglas actuales.
+
+#### La app cobraba con métodos que la tienda retiró
+
+`PosController::cobrar` validaba contra `Venta::METODOS_PAGO`, que es la lista
+**histórica** —incluye `tarjeta` y `transferencia`, que existen solo para que el
+listado pueda mostrar ventas viejas cobradas así—. El POS web valida contra
+`METODOS_POS`, que son los tres que el mostrador acepta hoy: efectivo, QR y
+mixto.
+
+El resultado era que desde el teléfono se podía registrar una venta con un
+método retirado, y quedaba en el histórico como si la tienda siguiera
+aceptándolo. Ahora la API valida contra `METODOS_POS` y la app ofrece solo esos
+tres botones; antes los pintaba los cinco, así que el cajero llegaba al 422 con
+el carrito ya armado.
+
+#### El alta de cliente se saltaba un peldaño
+
+El POS web busca en dos niveles. Primero clientes; si no hay ninguno, busca en
+**`personas`** —gente que ya está en el sistema porque trabaja aquí o porque
+alguien la registró por otro motivo— y ofrece crearle la ficha con los datos que
+ya tiene. Solo si no aparece por ningún lado se registra de cero.
+
+La app tenía únicamente el tercer camino. Con alguien ya presente en `personas`,
+el alta chocaba contra el índice único del carnet y la venta se atascaba con el
+cliente delante, sin explicar que esa persona ya existía.
+
+Se añaden los dos endpoints que faltaban:
+
+| | |
+|---|---|
+| `GET /personas/sin-ficha?termino=` | personas ya registradas que aún no son clientes (`clientes.crear`) |
+| `POST /clientes/desde-persona` | le abre la ficha de cliente con los datos que ya tiene (`clientes.crear`) |
+
+- **La ficha archivada se restaura, no se duplica.** Conserva su código y su
+  historial de compras, y el índice único de `persona_id` rechazaría la segunda.
+- **Si ya tenía ficha se devuelve la suya con un 200**, en vez de fallar: pudo
+  crearse desde el panel mientras la pantalla del teléfono estaba abierta.
+- En la app, el alta desde cero **solo se habilita cuando no hay nada en ninguno
+  de los dos niveles**, igual que en la web.
+
+> **`/personas/sin-ficha` cuelga de su propio prefijo a propósito.** Como
+> `/clientes/sin-ficha` habría chocado con `/clientes/{cliente}`, que lo tomaría
+> por el id de un cliente llamado «sin-ficha». Es el tipo de colisión que no da
+> error al arrancar y se manifiesta como un 404 raro en producción.
+
+> **Un modelo recuperado de la base no perdona los atributos que faltan.**
+> `ClienteResource` lee `compras_count` y sus hermanos, que solo existen si la
+> consulta los agregó con `withCount`. Laravel no exige esos atributos en un
+> modelo **recién creado**, así que el alta de siempre funcionaba; pero el
+> camino de restaurar una ficha archivada devuelve un modelo *leído*, y ahí
+> `MissingAttributeException` tumbaba la respuesta con un 500. Por eso
+> `desdePersona` termina siempre volviendo a consultar por `consultaBase()` en
+> vez de devolver el modelo que ya tenía a mano. Lo cazó el test.
+
+Cubierto por `ClienteDesdePersonaApiTest` (6 casos) y uno nuevo en `PosApiTest`
+para los métodos retirados.
+
+### Qué formatos lee el escáner (2026-08-23, tras probar con etiquetas reales)
 
 Probando códigos generados en una web salieron seis nombres —Code-11,
 Entrelazado 2 de 5, Code-93, Flattermarken, MSI, Telepen Alpha— y la pregunta de

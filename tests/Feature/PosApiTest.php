@@ -250,6 +250,27 @@ class PosApiTest extends TestCase
         $this->assertSame(1, Venta::count());
     }
 
+    public function test_no_se_puede_cobrar_con_un_metodo_que_el_mostrador_retiro(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->vendedor());
+
+        // `tarjeta` y `transferencia` siguen en METODOS_PAGO para que el
+        // histórico muestre ventas viejas cobradas así, pero el POS ya no los
+        // ofrece. La API validaba contra esa lista larga y dejaba colarlos
+        // desde el teléfono.
+        foreach (['tarjeta', 'transferencia'] as $metodo) {
+            $this->postJson('/api/v1/pos/cobrar', [
+                'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+                'metodo_pago' => $metodo,
+            ])->assertStatus(422)->assertJsonValidationErrors('metodo_pago');
+        }
+
+        $this->assertSame(0, Venta::count());
+        $this->assertSame('en_stock', $unidad->fresh()->estado);
+    }
+
     public function test_cobrar_por_qr_exige_el_respaldo_del_pago(): void
     {
         $unidad = $this->unidadEnStock();

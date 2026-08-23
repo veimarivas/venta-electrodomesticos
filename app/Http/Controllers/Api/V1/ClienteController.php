@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClienteResource;
+use App\Http\Resources\PersonaResource;
 use App\Models\Cliente;
 use App\Models\Persona;
 use App\Support\GeneradorCodigoCliente;
@@ -15,10 +16,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
- * Consulta de clientes desde la app.
+ * Clientes desde la app.
  *
- * Solo lectura: registrar a un cliente se hace en el mostrador, dentro de la
- * venta, que es cuando la persona está delante para dar su carnet.
+ * La consulta es de solo lectura; lo único que escribe es el **alta dentro de
+ * una venta**, que es cuando la persona está delante para dar su carnet.
+ *
+ * Esa alta tiene dos caminos, los mismos que el POS web: si quien compra ya
+ * está en `personas` se le crea la ficha con los datos que tiene
+ * ([desdePersona]), y solo si no aparece por ningún lado se registra de cero
+ * ([store]).
  */
 class ClienteController extends Controller
 {
@@ -89,6 +95,87 @@ class ClienteController extends Controller
         return (new ClienteResource($cliente->load('persona')))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * Segundo peldaño del buscador de cliente: gente que YA está en `personas`
+     * pero todavía no tiene ficha de cliente.
+     *
+     * Mucha gente está en `personas` porque trabaja aquí o porque alguien la
+     * registró antes por otro motivo. Sin este paso, el mostrador teclea otra
+     * vez su carnet, el índice único lo rechaza y la venta se atasca con el
+     * cliente delante. Con él, se le abre la ficha con los datos que ya tiene.
+     *
+     * Se consulta solo cuando la búsqueda de clientes no devolvió nada; de eso
+     * se encarga la app, igual que el POS web.
+     */
+    public function personasSinFicha(Request $request): AnonymousResourceCollection
+    {
+        $datos = $request->validate([
+            'termino' => ['required', 'string', 'min:2', 'max:100'],
+        ]);
+
+        $personas = Persona::query()
+            ->buscar($datos['termino'])
+            // Las que ya son clientes salen por el buscador normal. Las que
+            // tienen la ficha archivada sí aparecen: al elegirlas se restaura
+            // la suya en vez de crear otra.
+            ->whereDoesntHave('cliente')
+            ->orderBy('apellido_paterno')
+            ->orderBy('nombres')
+            ->limit(6)
+            ->get();
+
+        return PersonaResource::collection($personas);
+    }
+
+    /**
+     * Convierte en cliente a alguien que ya estaba en `personas`.
+     *
+     * No se piden datos porque ya los tiene todos: volver a registrarlos
+     * duplicaría a la misma persona y el índice único del carnet lo rechazaría.
+     */
+    public function desdePersona(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'persona_id' => ['required', 'integer', Rule::exists('personas', 'id')->whereNull('deleted_at')],
+        ]);
+
+        $persona = Persona::with('cliente')->findOrFail($datos['persona_id']);
+
+        $creada = false;
+
+        if ($persona->cliente !== null) {
+            // Pudo crearse desde el panel mientras esta pantalla estaba
+            // abierta: se devuelve la que hay en vez de fallar.
+            $cliente = $persona->cliente;
+        } else {
+            $archivada = Cliente::withTrashed()->where('persona_id', $persona->id)->first();
+
+            if ($archivada !== null) {
+                // Restaurar, no crear otra: la ficha conserva su código y su
+                // historial de compras, y el índice único de `persona_id`
+                // rechazaría la segunda.
+                $archivada->restore();
+
+                $cliente = $archivada;
+            } else {
+                $cliente = app(GeneradorCodigoCliente::class)->crearCon(['persona_id' => $persona->id]);
+                $creada = true;
+            }
+        }
+
+        // Se vuelve a consultar por `consultaBase` en vez de devolver el modelo
+        // que tenemos a mano: `ClienteResource` lee `compras_count` y sus
+        // hermanos, que solo existen si la consulta los agregó. Un modelo
+        // recién creado lo perdona —Laravel no exige atributos en modelos que
+        // acaba de insertar—, pero uno recuperado de la base lanza
+        // `MissingAttributeException` y la respuesta se cae con un 500.
+        $ficha = $this->consultaBase($request)->withTrashed()->findOrFail($cliente->id);
+
+        return (new ClienteResource($ficha))
+            ->response()
+            ->setStatusCode($creada ? 201 : 200);
     }
 
     public function show(Request $request, string $cliente): ClienteResource
