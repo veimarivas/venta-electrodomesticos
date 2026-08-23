@@ -1,19 +1,22 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CargoController;
 use App\Http\Controllers\Api\V1\CatalogoController;
 use App\Http\Controllers\Api\V1\CategoriaController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DispositivoController;
-use App\Http\Controllers\Api\V1\NotificacionController;
 use App\Http\Controllers\Api\V1\MarcaController;
+use App\Http\Controllers\Api\V1\NotificacionController;
+use App\Http\Controllers\Api\V1\PersonaController;
 use App\Http\Controllers\Api\V1\PersonalController;
 use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductoController;
 use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\ReporteController;
+use App\Http\Controllers\Api\V1\TrabajadorController;
 use App\Http\Controllers\Api\V1\UnidadController;
 use App\Http\Controllers\Api\V1\VentaController;
 use Illuminate\Support\Facades\Route;
@@ -67,6 +70,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/dashboard/grafica', [DashboardController::class, 'grafica'])->name('dashboard.grafica');
             Route::get('/dashboard/top-productos', [DashboardController::class, 'topProductos'])
                 ->name('dashboard.top-productos');
+            Route::get('/dashboard/por-vendedor', [DashboardController::class, 'porVendedor'])
+                ->name('dashboard.por-vendedor');
+            Route::get('/dashboard/por-metodo-pago', [DashboardController::class, 'porMetodoPago'])
+                ->name('dashboard.por-metodo-pago');
+            // Sin rango: es una foto del inventario de ahora, no un acumulado.
+            Route::get('/dashboard/inventario', [DashboardController::class, 'inventario'])
+                ->name('dashboard.inventario');
 
             Route::get('/reportes/proveedores', [ReporteController::class, 'rentabilidadPorProveedor'])
                 ->name('reportes.proveedores');
@@ -177,6 +187,38 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/clientes/desde-persona', [ClienteController::class, 'desdePersona'])
                 ->name('clientes.desde-persona');
         });
+
+        // Archivar y restaurar. Un cliente NO se borra: las ventas que hizo
+        // siguen apuntando a su ficha.
+        Route::delete('/clientes/{cliente}', [ClienteController::class, 'destroy'])
+            ->middleware('permission:clientes.eliminar')->name('clientes.destroy');
+        Route::post('/clientes/{cliente}/restaurar', [ClienteController::class, 'restaurar'])
+            ->middleware('permission:clientes.editar')->name('clientes.restaurar');
+
+        // ---- Personas, cargos y trabajadores ------------------------------
+        // Los datos personales se editan en un solo sitio: la misma persona
+        // puede ser cliente y trabajadora a la vez, y con un formulario por
+        // módulo corregir un celular habría que hacerlo dos veces.
+        Route::post('/personas/{persona}', [PersonaController::class, 'update'])
+            ->middleware('permission:personas.editar')->name('personas.update');
+
+        Route::post('/personal/cargos', [CargoController::class, 'store'])
+            ->middleware('permission:cargos.crear')->name('personal.cargos.store');
+        Route::post('/personal/cargos/{cargo}', [CargoController::class, 'update'])
+            ->middleware('permission:cargos.editar')->name('personal.cargos.update');
+        Route::delete('/personal/cargos/{cargo}', [CargoController::class, 'destroy'])
+            ->middleware('permission:cargos.eliminar')->name('personal.cargos.destroy');
+
+        // La baja va en su propia ruta y no en un DELETE: un trabajador no se
+        // borra, se cierra su ficha con fecha y motivo, y con ella su cuenta.
+        Route::post('/personal/trabajadores', [TrabajadorController::class, 'store'])
+            ->middleware('permission:trabajadores.crear')->name('personal.trabajadores.store');
+        Route::post('/personal/trabajadores/{trabajador}', [TrabajadorController::class, 'update'])
+            ->middleware('permission:trabajadores.editar')->name('personal.trabajadores.update');
+        Route::post('/personal/trabajadores/{trabajador}/baja', [TrabajadorController::class, 'baja'])
+            ->middleware('permission:trabajadores.eliminar')->name('personal.trabajadores.baja');
+        Route::post('/personal/trabajadores/{trabajador}/reactivar', [TrabajadorController::class, 'reactivar'])
+            ->middleware('permission:trabajadores.editar')->name('personal.trabajadores.reactivar');
 
         // ---- Punto de venta -----------------------------------------------
         // La única parte de la API que escribe. Existe porque en el mostrador

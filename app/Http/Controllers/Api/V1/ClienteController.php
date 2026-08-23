@@ -178,6 +178,39 @@ class ClienteController extends Controller
             ->setStatusCode($creada ? 201 : 200);
     }
 
+    /**
+     * Archiva un cliente. **No lo borra.**
+     *
+     * Las ventas que hizo siguen apuntando a su ficha y el histórico tiene que
+     * poder mostrarlas; lo que se busca es sacarlo del listado de siempre, no
+     * perder lo que compró.
+     */
+    public function destroy(Cliente $cliente): JsonResponse
+    {
+        $cliente->delete();
+
+        return response()->json(['mensaje' => 'Cliente archivado. Su historial se conserva.']);
+    }
+
+    /**
+     * Lo devuelve al listado activo **conservando su código**.
+     *
+     * Crear una ficha nueva en su lugar le partiría el historial de compras en
+     * dos y el índice único de `persona_id` lo rechazaría.
+     */
+    public function restaurar(Request $request, int $cliente): ClienteResource
+    {
+        $ficha = Cliente::withTrashed()->findOrFail($cliente);
+
+        if ($ficha->trashed()) {
+            $ficha->restore();
+        }
+
+        return new ClienteResource(
+            $this->consultaBase($request)->withTrashed()->findOrFail($ficha->id)
+        );
+    }
+
     public function show(Request $request, string $cliente): ClienteResource
     {
         // Con `withTrashed` a mano y no por route model binding: un cliente

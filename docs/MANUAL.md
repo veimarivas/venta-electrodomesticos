@@ -318,11 +318,23 @@ El **dashboard** muestra los indicadores del día y las últimas ventas. El pane
 queda quieto, es que el servidor de WebSockets no está corriendo: **no afecta a
 las ventas**, que se registran igual.
 
-La **app del teléfono** sirve para dos cosas: **consultar** cómo va la tienda
+La **app del teléfono** sirve para tres cosas: **consultar** cómo va la tienda
 (dashboard por período, histórico de ventas con búsqueda por serial, catálogo,
-personas, compras y avisos) y **vender desde el mostrador**, escaneando la
-etiqueta del aparato con la cámara. Anular ventas, recepcionar compras y editar
-el catálogo se siguen haciendo en el panel web.
+personas, compras y avisos), **vender desde el mostrador** escaneando la
+etiqueta del aparato, y **mantener los datos**: catálogo, personal y clientes se
+registran y se editan desde el teléfono.
+
+Se quedan solo en el panel web: **anular ventas**, **recepcionar compras**, las
+**especificaciones** de los productos y la **papelera** (restaurar lo archivado).
+
+Su **dashboard** muestra ahora lo mismo que Reportes en el panel: totales del
+período con su comparativo, gráfica diaria, más vendidos, **ventas por
+vendedor**, **reparto por método de pago**, **valor del inventario** y stock
+bajo mínimo. Los importes de costo y ganancia solo los ve quien tiene permiso
+para verlos.
+
+> La tarjeta de **Inventario** no cambia al mover el selector de período: es una
+> foto de lo que hay en la estantería ahora mismo, no un acumulado.
 
 ### Instalarla en el teléfono
 
@@ -442,6 +454,37 @@ Ver el código leído en pantalla es la señal de que **la cámara funciona**: s
 aparece, el lector no es el problema. Si no lee nada —etiqueta rota, borrosa o
 mal impresa—, el botón del **teclado** arriba a la derecha deja escribir el
 código a mano y sigue el mismo camino.
+
+### Personal y clientes desde el teléfono
+
+En **Personas**, el botón **+** registra un cargo o un trabajador, según la
+solapa abierta. Al dar de alta a un trabajador que **ya está en el sistema** no
+se le vuelven a pedir sus datos.
+
+En la **ficha de un trabajador**, el menú de los tres puntos permite editar su
+cargo y su fecha de ingreso, corregir sus datos personales, **darlo de baja** o
+**reincorporarlo**.
+
+> **Dar de baja no borra nada.** Se guarda la fecha y el motivo, y sus ventas y
+> compras se conservan. Lo que sí pasa es que **su cuenta de acceso se
+> desactiva**: deja de poder entrar al sistema. Al reincorporarlo, su cuenta
+> vuelve a funcionar sola.
+
+> **No puedes darte de baja a ti mismo.** Te cerraría la sesión en el acto.
+> Pídeselo a otro administrador.
+
+En la **ficha de un cliente**, el mismo menú permite corregir sus datos y
+**archivarlo**. Archivar solo lo saca del listado: sus compras se conservan y al
+devolverlo recupera su código y su historial. El **alta** de clientes no está
+aquí sino dentro de la venta, que es cuando la persona está delante para dar su
+carnet (§3).
+
+Un cargo **no se puede eliminar si alguna vez tuvo trabajadores**, aunque hoy no
+tenga a nadie: las fichas antiguas siguen apuntando a él.
+
+> **Los datos personales se editan en un solo sitio.** La misma persona puede
+> ser cliente y trabajadora a la vez; se corrige una vez y queda corregido en
+> los dos lados.
 
 ### Registrar y editar el catálogo desde el teléfono
 

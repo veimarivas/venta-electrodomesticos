@@ -427,6 +427,9 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/dashboard/resumen?rango=hoy\|semana\|mes` | total vendido, nº de ventas, ganancia, ticket promedio y comparativo con el periodo anterior |
 | GET | `/dashboard/grafica?rango=semana\|mes` | serie temporal para la gráfica |
 | GET | `/dashboard/top-productos?rango=` | ranking de los más vendidos |
+| GET | `/dashboard/por-vendedor?rango=` | cuánto vendió cada uno (la ganancia solo con `ver_costos`) |
+| GET | `/dashboard/por-metodo-pago?rango=` | reparto del ingreso, con la etiqueta ya traducida |
+| GET | `/dashboard/inventario` | qué hay en la estantería **ahora** (sin rango; costo solo con `ver_costos`) |
 | GET | `/ventas?desde&hasta&pagina&vendedor_id` | listado paginado |
 | GET | `/ventas/{id}` | detalle con unidades, seriales, costos y ganancia |
 | GET | `/catalogo/categorias` | árbol de categorías aplanado, con su nivel y conteos |
@@ -440,6 +443,13 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **POST** | `/catalogo/productos` · `/catalogo/productos/{id}` | alta y edición, con foto opcional |
 | **DELETE** | `/catalogo/productos/{id}` | baja lógica; las unidades y el histórico se conservan |
 | GET | `/personal/cargos` | cargos con cuánta gente los ocupa (vigentes y bajas) |
+| **POST** | `/personal/cargos` · `/personal/cargos/{id}` | alta y edición |
+| **DELETE** | `/personal/cargos/{id}` | baja **real**; se niega si alguna vez tuvo trabajadores |
+| **POST** | `/personal/trabajadores` · `/personal/trabajadores/{id}` | alta (persona nueva o existente) y edición de la ficha laboral |
+| **POST** | `/personal/trabajadores/{id}/baja` · `/reactivar` | cierra o reabre la ficha, y con ella la cuenta de acceso |
+| **POST** | `/personas/{id}` | datos personales; **el único sitio donde se editan** |
+| **DELETE** | `/clientes/{id}` | archiva la ficha; su historial se conserva |
+| **POST** | `/clientes/{id}/restaurar` | la devuelve al listado con su código |
 | GET | `/personal/trabajadores?buscar&cargo_id&estado` | listado paginado |
 | GET | `/personal/trabajadores/{id}` | ficha con su cuenta de acceso y lo que vendió |
 | GET | `/clientes?buscar&estado` | listado paginado con el resumen de compras |
@@ -749,7 +759,74 @@ Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### El catálogo se edita desde el teléfono (2026-08-23)
+#### Personal y clientes desde el teléfono, y el dashboard al día (2026-08-23)
+
+Tercera y última tanda de escritura, más la puesta al día de los reportes de la
+app contra los del panel.
+
+#### Cargos, trabajadores y clientes
+
+| | |
+|---|---|
+| `POST /personal/cargos` · `/{id}` · `DELETE /{id}` | `cargos.crear\|editar\|eliminar` |
+| `POST /personal/trabajadores` · `/{id}` | `trabajadores.crear\|editar` |
+| `POST /personal/trabajadores/{id}/baja` | `trabajadores.eliminar` |
+| `POST /personal/trabajadores/{id}/reactivar` | `trabajadores.editar` |
+| `POST /personas/{id}` | `personas.editar` |
+| `DELETE /clientes/{id}` · `POST /clientes/{id}/restaurar` | `clientes.eliminar` · `clientes.editar` |
+
+**Un trabajador no se borra: se da de baja**, y por eso la baja va en su propia
+ruta y no en un `DELETE`. No es lo mismo: la ficha guarda la fecha y el motivo, y
+las ventas y compras que registró siguen apuntando a ella. Con la baja **se
+desactiva también su cuenta de acceso** —un trabajador dado de baja que sigue
+pudiendo entrar es justo lo que la baja evita—, y reincorporarlo la reactiva.
+
+> **Nadie puede darse de baja a sí mismo.** Cerraría su sesión en el acto (el
+> middleware `active` expulsa a las cuentas desactivadas) y dejaría al
+> administrador fuera del sistema a mitad de la operación.
+
+> **Un cargo no se borra si alguna vez tuvo a alguien**, aunque hoy esté vacío:
+> se cuentan también las fichas dadas de baja, porque la clave foránea las ve
+> igual y el borrado fallaría contra la base de datos.
+
+**Los datos personales se editan en un solo sitio**, `POST /personas/{id}`. La
+misma persona puede ser cliente y trabajadora a la vez; con un formulario por
+módulo, corregir un celular habría que hacerlo dos veces y el sistema acabaría
+con dos versiones del mismo dato. Las fichas guardan lo suyo —el código, el
+cargo, la fecha de ingreso— y para lo demás apuntan aquí.
+
+**Un cliente se archiva, no se borra**, y al restaurarlo conserva su código y su
+historial de compras. Crear una ficha nueva se lo partiría en dos y el índice
+único de `persona_id` lo rechazaría.
+
+> El **alta de cliente no está en la pantalla de personas**: se hace dentro de
+> la venta, que es cuando la persona está delante para dar su carnet. Es donde
+> ya vive, con su búsqueda en dos peldaños.
+
+#### El dashboard alcanza al panel
+
+Al panel le sobraban tres análisis que la app no tenía. Se añaden a
+`/dashboard`, con el mismo permiso `reportes.ver`:
+
+| | |
+|---|---|
+| `GET /dashboard/por-vendedor?rango=` | cuánto vendió cada uno |
+| `GET /dashboard/por-metodo-pago?rango=` | reparto del ingreso |
+| `GET /dashboard/inventario` | qué hay en la estantería |
+
+- **La ganancia por vendedor y el costo del inventario solo viajan con
+  `reportes.ver_costos`.** No se ocultan en la app: no salen del servidor. Con
+  el ingreso y el número de ventas ya se ve el rendimiento de cada uno.
+- **La etiqueta del método de pago viaja resuelta** («Efectivo», «Mixto»): el
+  histórico incluye métodos retirados que la app ya no conoce, y traducirlos
+  allá obligaría a mantener la lista en dos sitios.
+- **`/dashboard/inventario` no lleva rango** porque es una foto de ahora, no un
+  acumulado. La tarjeta lo dice en su subtítulo; sin avisarlo, parecería que se
+  quedó colgada al cambiar de período.
+
+Cubierto por `PersonasEscrituraApiTest` (17 casos) y `ReportesAppApiTest` (6).
+
+### El catálogo se edita desde el teléfono (2026-08-23)
 
 Hasta ahora la app solo consultaba el catálogo. Se revierte esa decisión —está
 razonada en el README de la app— porque en la tienda se registran productos con
