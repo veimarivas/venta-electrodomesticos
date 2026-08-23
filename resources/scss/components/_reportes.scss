@@ -1,0 +1,98 @@
+// -----------------------------------------------------------------------------
+// Gráficas Chart.js — Reportes
+// -----------------------------------------------------------------------------
+// Contenedores de las gráficas dinámicas. Sigue el patrón de Velzon
+// (charts-echarts.html): clase .e-charts con altura fija, data-colors
+// para la resolución de variables CSS del tema.
+// -----------------------------------------------------------------------------
+
+// Altura base para los contenedores de gráfica, similar a .e-charts de Velzon.
+// Los canvas de Chart.js con maintainAspectRatio:false necesitan un padre con
+// altura definida para evitar el colapso.
+.reportes-chart-container {
+    position: relative;
+    width: 100%;
+
+    // Altura según tipo de gráfica — alineada con Velzon (350px típico).
+    &.chart-barras {
+        height: 350px;
+    }
+
+    &.chart-doughnut {
+        height: 350px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &.chart-proveedor {
+        height: 350px;
+    }
+
+    &.chart-serie {
+        height: 250px;
+    }
+
+    canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+}
+
+// Estado vacío: cuando no hay datos, mostramos un mensaje sobre el canvas.
+.reportes-chart-vacio {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #858d98;
+    font-size: 0.85rem;
+    font-family: 'Poppins', sans-serif;
+    text-align: center;
+    pointer-events: none;
+
+    i {
+        font-size: 1.5rem;
+        opacity: 0.4;
+        margin-bottom: 0.5rem;
+    }
+}
+
+// Canvas transparente cuando no hay datos.
+.reportes-chart-container.vacio canvas {
+    opacity: 0;
+}
+
+// Responsive: en móvil las barras son más cortas.
+@media (max-width: 767.98px) {
+    .reportes-chart-container {
+        &.chart-barras,
+        &.chart-proveedor {
+            height: 260px;
+        }
+
+        &.chart-doughnut {
+            height: 280px;
+        }
+
+        &.chart-serie {
+            height: 200px;
+        }
+    }
+}
+
+// En tabletas (entre xl y lg), las 3 columnas se apilan en 2+1.
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .reportes-chart-container {
+        &.chart-barras,
+        &.chart-proveedor {
+            height: 300px;
+        }
+
+        &.chart-doughnut {
+            height: 300px;
+        }
+    }
+}

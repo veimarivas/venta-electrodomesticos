@@ -1,0 +1,397 @@
+// -----------------------------------------------------------------------------
+// Módulo de personas
+// -----------------------------------------------------------------------------
+
+.personas-modulo {
+
+    // Banda superior del módulo. El degradado usa las variables del tema,
+    // así que sigue al color primario si se cambia desde el personalizador.
+    .personas-hero {
+        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+
+        // Textura decorativa: dos destellos suaves que dan profundidad sin
+        // competir con el contenido.
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        &::before {
+            width: 22rem;
+            height: 22rem;
+            top: -9rem;
+            right: -5rem;
+            background: radial-gradient(circle, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 68%);
+        }
+
+        &::after {
+            width: 16rem;
+            height: 16rem;
+            bottom: -8rem;
+            left: 30%;
+            border: 1.6rem solid rgba(255, 255, 255, .07);
+        }
+
+        h4 { font-weight: 650; letter-spacing: -.02em; }
+        .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .2); }
+    }
+
+    // Etiqueta superior del encabezado. El fondo translúcido se declara aquí
+    // porque bg-opacity-15 de Bootstrap no existe y dejaba el texto blanco
+    // sobre fondo blanco.
+    .personas-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: .34rem .75rem;
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #fff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 2rem;
+        backdrop-filter: blur(6px);
+    }
+
+    // Acción principal del encabezado.
+    .personas-nueva-hero {
+        border-radius: .65rem;
+        font-weight: 600;
+        padding-inline: 1.1rem;
+        box-shadow: 0 .6rem 1.6rem rgba(8, 20, 52, .28);
+
+        &:hover { transform: translateY(-1px); }
+    }
+
+    .personas-encabezado { border-radius: 1rem; }
+
+    // Indicadores: misma línea visual que el resto de tarjetas del panel.
+    .personas-kpis {
+        .card {
+            border-radius: 1rem;
+            border-color: var(--vz-border-color);
+        }
+    }
+
+    .personas-listado {
+        overflow: hidden;
+        border-radius: 1rem;
+        box-shadow: 0 .75rem 2.25rem rgba(33, 45, 64, .08) !important;
+    }
+
+    .personas-toolbar {
+        padding-inline: 1.5rem;
+        border-bottom: 1px solid var(--vz-border-color);
+
+        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+    }
+
+    .personas-busqueda {
+        min-height: 2.65rem;
+        border-color: transparent;
+        border-radius: .6rem;
+        background: var(--vz-light);
+
+        &:focus {
+            border-color: rgba(var(--vz-primary-rgb), .28);
+            background: #fff;
+            box-shadow: 0 0 0 .2rem rgba(var(--vz-primary-rgb), .10);
+        }
+    }
+
+    .tabla-personas {
+        // La transición hace que el atenuado durante la carga se sienta
+        // deliberado y no como un parpadeo.
+        transition: opacity 0.15s ease-in-out;
+
+        thead th {
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            background-color: var(--vz-light);
+            border-bottom: 0;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+        }
+
+        // Franja de color al pasar el cursor: refuerza qué fila se va a editar.
+        tbody tr {
+            transition: background-color .16s ease-out, box-shadow .16s ease-out;
+
+            &:hover {
+                box-shadow: inset 2px 0 0 var(--vz-primary);
+                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+            }
+        }
+
+        a {
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    .persona-accion-editar,
+    .persona-accion-eliminar {
+        width: 2.2rem;
+        height: 2.2rem;
+        transition: background-color .16s ease-out, color .16s ease-out, transform .16s ease-out;
+
+        &:hover { transform: translateY(-1px); }
+    }
+
+    .persona-accion-editar:hover { background: var(--vz-warning-bg-subtle); color: var(--vz-warning-text-emphasis); }
+
+    // Punto sobre el avatar: la persona tiene cuenta de acceso al sistema.
+    .persona-cuenta-dot {
+        position: absolute;
+        right: -1px;
+        bottom: -1px;
+        width: .68rem;
+        height: .68rem;
+        border-radius: 50%;
+        background: #22c55e;
+        border: 2px solid #fff;
+        box-shadow: 0 .1rem .35rem rgba(34, 197, 94, .45);
+    }
+
+    // Icono del estado vacío: aro suave con el color del tema.
+    .personas-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 5.5rem;
+        height: 5.5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--vz-primary-bg-subtle), var(--vz-info-bg-subtle));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vz-primary) 12%, transparent);
+
+        .avatar-title {
+            color: var(--vz-primary);
+            background: transparent;
+        }
+    }
+
+    // Paginación al pie: más discreta que la de por defecto.
+    .paginacion-compacta {
+
+        // La vista de paginación de Livewire incluye su propio
+        // "Mostrando X a Y de Z resultados". Aquí sobra: el pie ya lo muestra
+        // a la izquierda con mejor formato, y salían los dos a la vez.
+        p.small {
+            display: none;
+        }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+
+        .page-link {
+            border: 0;
+            border-radius: var(--vz-border-radius);
+            margin: 0 0.125rem;
+            color: var(--vz-body-color);
+        }
+
+        .page-item.active .page-link {
+            background-color: var(--vz-primary);
+            color: #fff;
+        }
+
+        .page-item.disabled .page-link {
+            opacity: 0.45;
+        }
+    }
+
+    // El buscador deja sitio al botón de limpiar.
+    .search-box .form-control {
+        padding-right: 2.25rem;
+    }
+
+    // Modales: una superficie clara y deliberada, separada de la tarjeta
+    // de listado. Las mismas reglas cubren tanto alta como edición.
+    .modal-persona-content,
+    .modal-eliminar-content {
+        overflow: hidden;
+        border-radius: 1rem;
+        box-shadow: 0 1.25rem 3.5rem rgba(33, 45, 64, 0.18);
+    }
+
+    // Bootstrap espera que .modal-body sea hijo directo de .modal-content.
+    // Aquí el formulario lo envuelve para conservar el submit de Livewire, así
+    // que se recompone explícitamente el flujo flexible: el encabezado y las
+    // acciones no se mueven; el área central sí puede recorrer todo el formulario.
+    .modal-persona-content {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100dvh - 2rem);
+
+        > form {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+    }
+
+    .modal-persona-header {
+        color: #fff;
+        border: 0;
+        background: linear-gradient(120deg, var(--vz-primary), color-mix(in srgb, var(--vz-primary) 68%, #172b4d));
+
+        .modal-title { color: #fff; font-weight: 600; }
+        small { color: rgba(255, 255, 255, 0.72) !important; }
+    }
+
+    .modal-persona-icon {
+        color: var(--vz-primary);
+        background: #fff;
+        box-shadow: 0 .4rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    // El color de la acción es información: amarillo para cambios, verde para altas.
+    .modal-editar-persona {
+        .modal-persona-header {
+            color: #4a3500;
+            background: linear-gradient(120deg, #f7b84b, #ffcc6b);
+
+            .modal-title, small { color: #4a3500 !important; }
+        }
+
+        .modal-persona-icon { color: #6b4a00; background: #fff8df; }
+        .modal-persona-close { filter: none; opacity: .68; }
+        .modal-section-title i { color: #785400; background: #fff2cc; }
+        .input-group-text { color: #8a6100; }
+        .form-control:focus {
+            border-color: #e6aa3f;
+            box-shadow: 0 0 0 .2rem rgba(247, 184, 75, .22);
+        }
+        .modal-guardar {
+            color: #3f2d00;
+            border-color: #f7b84b;
+            background: #f7b84b;
+
+            &:hover, &:focus { color: #3f2d00; border-color: #e6aa3f; background: #e6aa3f; }
+        }
+    }
+
+    .modal-persona-close {
+        filter: brightness(0) invert(1);
+        opacity: .78;
+
+        &:hover { opacity: 1; }
+    }
+
+    .modal-persona-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: #fbfcfe;
+        scrollbar-color: rgba(var(--vz-primary-rgb), .38) transparent;
+        scrollbar-width: thin;
+
+        &::-webkit-scrollbar { width: .45rem; }
+        &::-webkit-scrollbar-thumb {
+            border: 2px solid #fbfcfe;
+            border-radius: 1rem;
+            background: rgba(var(--vz-primary-rgb), .38);
+        }
+    }
+
+    .modal-section-title {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        color: var(--vz-body-color);
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+
+        i {
+            display: grid;
+            place-items: center;
+            width: 1.55rem;
+            height: 1.55rem;
+            border-radius: .42rem;
+            color: var(--vz-primary);
+            background: var(--vz-primary-bg-subtle);
+            font-size: .95rem;
+            letter-spacing: 0;
+        }
+    }
+
+    .modal-persona-content {
+        .form-label { color: #4b5565; font-size: .82rem; font-weight: 600; }
+        .form-control, .input-group-text {
+            min-height: 2.8rem;
+            border-color: #e2e8f0;
+            background: #fff;
+        }
+        .form-control:focus {
+            border-color: color-mix(in srgb, var(--vz-primary) 65%, white);
+            box-shadow: 0 0 0 .2rem rgba(var(--vz-primary-rgb), .10);
+        }
+        textarea.form-control { min-height: auto; }
+        .input-group-text { color: var(--vz-primary); }
+    }
+
+    .modal-persona-footer {
+        flex: 0 0 auto;
+        border: 0;
+        background: #fff;
+        box-shadow: 0 -1px 0 #edf0f4;
+    }
+
+    .modal-cancelar { border-color: #e2e8f0; }
+    .modal-guardar, .modal-eliminar-btn { min-width: 9.5rem; }
+
+    .modal-eliminar-dialog { max-width: 25rem; }
+    .modal-eliminar-body { padding: 2rem !important; }
+    .modal-eliminar-icon {
+        display: grid;
+        place-items: center;
+        width: 5rem;
+        height: 5rem;
+        border-radius: 50%;
+        color: var(--vz-danger);
+        background: var(--vz-danger-bg-subtle);
+        box-shadow: 0 .75rem 1.5rem rgba(var(--vz-danger-rgb), .12);
+
+        .avatar-title { color: inherit; background: transparent; }
+    }
+    .modal-eliminar-content {
+        h5 { color: var(--vz-heading-color); font-weight: 650; }
+    }
+    .modal-eliminar-nombre { color: var(--vz-danger-text-emphasis); font-weight: 650; }
+    .modal-eliminar-btn {
+        font-weight: 600;
+        box-shadow: 0 .5rem 1rem rgba(var(--vz-danger-rgb), .16);
+    }
+    @media (max-width: 575.98px) {
+        .modal-persona-dialog {
+            height: calc(100dvh - 1rem);
+            margin: .5rem;
+        }
+        .modal-persona-content { max-height: 100%; }
+        .modal-persona-header, .modal-persona-body, .modal-persona-footer { padding: 1.25rem !important; }
+        .modal-persona-footer > div { align-items: stretch !important; flex-direction: column; }
+        .modal-persona-footer .d-flex.gap-2 { width: 100%; }
+        .modal-persona-footer .btn { flex: 1; }
+    }
+}

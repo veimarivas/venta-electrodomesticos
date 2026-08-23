@@ -1,0 +1,66 @@
+// -----------------------------------------------------------------------------
+// Estilos propios del proyecto
+// -----------------------------------------------------------------------------
+// Se cargan DESPUÉS de app.min.css de Velzon, así que aquí van únicamente los
+// ajustes específicos del sistema. No dupliques utilidades de Bootstrap:
+// la plantilla ya expone variables CSS (--vz-*) que se pueden reutilizar.
+// -----------------------------------------------------------------------------
+
+@use 'components/badges';
+@use 'components/tables';
+@use 'components/personas-v2';
+@use 'components/trabajadores-v2';
+@use 'components/categorias';
+@use 'components/cargos-v2';
+@use 'components/roles-v2';
+@use 'components/crud';
+@use 'components/compras';
+@use 'components/accesos';
+@use 'components/stock';
+@use 'components/viz';
+@use 'components/usuarios-v2';
+@use 'components/sidebar';
+@use 'components/dashboard';
+@use 'components/profile';
+@use 'components/clientes';
+@use 'components/qrs-cobro';
+@use 'components/kardex';
+@use 'components/ventas';
+@use 'components/reportes';
+
+// Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
+@use 'flatpickr/dist/flatpickr.min.css';
+
+:root {
+    // Alto mínimo del área de contenido para que el footer no suba
+    // cuando una pantalla tiene poco contenido.
+    --app-content-min-height: calc(100vh - 190px);
+
+    // ---------------------------------------------------------------------
+    // La copia de la plantilla no incluye los archivos de la fuente
+    // HK Grotesk (public/assets/fonts/hkgrotesk-*.woff no existen), solo la
+    // declaración @font-face en app.min.css. Eso provoca un 404 por página.
+    // Se apunta la fuente secundaria a Poppins, que sí carga.
+    //
+    // Si en algún momento copias los .woff/.woff2 de HK Grotesk desde el
+    // paquete original de Velzon, borra esta línea y volverá sola.
+    // ---------------------------------------------------------------------
+    --vz-font-family-secondary: 'Poppins', sans-serif;
+}
+
+.page-content {
+    min-height: var(--app-content-min-height);
+}
+
+// Los hijos de un contenedor flex traen min-width:auto, así que un texto largo
+// los ensancha y desborda la página en móvil. Esta utilidad les permite
+// encogerse para que el texto se ajuste o se recorte.
+.min-w-0 {
+    min-width: 0;
+}
+
+// El buscador de seriales del topbar necesita fuente monoespaciada:
+// los códigos internos se leen mejor alineados.
+#search-options {
+    font-variant-numeric: tabular-nums;
+}

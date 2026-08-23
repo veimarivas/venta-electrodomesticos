@@ -1,0 +1,34 @@
+// Colores de estado de las unidades físicas (items) y de las ventas.
+// Centralizados aquí para que un mismo estado se vea igual en todo el sistema.
+
+.badge-estado {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+
+    &--in_stock {
+        background-color: var(--vz-success-bg-subtle);
+        color: var(--vz-success);
+    }
+
+    &--reserved {
+        background-color: var(--vz-warning-bg-subtle);
+        color: var(--vz-warning);
+    }
+
+    &--sold {
+        background-color: var(--vz-secondary-bg-subtle);
+        color: var(--vz-secondary);
+    }
+
+    &--returned,
+    &--warranty {
+        background-color: var(--vz-info-bg-subtle);
+        color: var(--vz-info);
+    }
+
+    &--damaged,
+    &--lost {
+        background-color: var(--vz-danger-bg-subtle);
+        color: var(--vz-danger);
+    }
+}

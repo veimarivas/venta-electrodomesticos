@@ -1,0 +1,205 @@
+// -----------------------------------------------------------------------------
+// Módulo de trabajadores
+// -----------------------------------------------------------------------------
+// Solo lo específico de esta pantalla: el resto lo aporta _personas.scss, que
+// contiene los estilos compartidos por los módulos de este tipo.
+// -----------------------------------------------------------------------------
+
+.trabajadores-modulo {
+
+    // Indicador de progreso del alta (buscar → ficha laboral).
+    .trabajador-pasos {
+        .paso-punto {
+            display: grid;
+            place-items: center;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            background: var(--vz-light);
+            color: var(--vz-secondary-color);
+            font-size: .75rem;
+            font-weight: 700;
+            transition: background-color .18s ease-out, color .18s ease-out;
+
+            &.activo {
+                background: var(--vz-primary);
+                color: #fff;
+            }
+
+            &.completado {
+                background: var(--vz-success-bg-subtle);
+                color: var(--vz-success);
+            }
+        }
+
+        .paso-linea {
+            width: 2.5rem;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--vz-border-color);
+
+            &.completado { background: var(--vz-success); }
+        }
+    }
+
+    // Lista de coincidencias del buscador de personas.
+    .trabajador-resultados {
+        border-radius: .75rem;
+
+        .list-group-item {
+            border-color: var(--vz-border-color);
+            transition: background-color .16s ease-out;
+
+            &:hover { background: color-mix(in srgb, var(--vz-primary) 4%, white); }
+        }
+    }
+
+    // Aviso de "esta persona no existe": invita a registrarla.
+    .trabajador-sin-resultados {
+        border: 1px dashed var(--vz-border-color);
+        border-radius: .85rem;
+        background: color-mix(in srgb, var(--vz-primary) 3%, white);
+    }
+
+    // Resumen de la persona ya elegida, en el paso 2.
+    .trabajador-persona-elegida {
+        border: 1px solid var(--vz-primary-bg-subtle);
+        border-radius: .85rem;
+        background: color-mix(in srgb, var(--vz-primary) 4%, white);
+    }
+
+    // Fila de alguien que ya no trabaja aquí: se atenúa sin ocultarla, porque
+    // su historial sigue siendo consultable.
+    .fila-dado-de-baja {
+        background-color: color-mix(in srgb, var(--vz-secondary) 3%, transparent);
+
+        h6 { color: var(--vz-secondary-color); }
+    }
+
+    // El icono del modal de baja no es rojo de "borrar": no se elimina nada.
+    .modal-baja-icon {
+        color: var(--vz-warning);
+        background: var(--vz-warning-bg-subtle);
+        box-shadow: 0 .75rem 1.5rem rgba(var(--vz-warning-rgb), .14);
+    }
+
+    // Previsualización del código correlativo.
+    .trabajador-codigo {
+        border: 1px dashed color-mix(in srgb, var(--vz-primary) 35%, transparent);
+        border-radius: .85rem;
+        background: var(--vz-primary-bg-subtle);
+
+        h5 { color: var(--vz-primary); letter-spacing: .04em; }
+    }
+
+    // -------------------------------------------------------------------------
+    // Reparto de la tabla
+    // -------------------------------------------------------------------------
+    // Con siete columnas la tabla no cabía y `.table-responsive` sacaba scroll
+    // horizontal. Ahora son cinco y cada una tiene un ancho declarado: el
+    // sobrante se lo lleva el nombre del trabajador, y el resto se acota para
+    // que ninguna crezca de más. `table-layout: fixed` es lo que hace que los
+    // porcentajes manden y que `text-truncate` tenga contra qué recortar.
+    .tabla-personas {
+        table-layout: fixed;
+        width: 100%;
+
+        .col-trabajador { width: 28%; }
+        .col-cargo { width: 22%; }
+        .col-cuenta { width: 18%; }
+        .col-estado { width: 16%; }
+        // Las acciones son tres botones circulares de ancho conocido.
+        th:last-child, td:last-child { width: 16%; }
+
+        // Sin esto una palabra larga (un cargo, un motivo de baja) desbordaría
+        // su celda en vez de recortarse.
+        td { overflow: hidden; }
+
+        .col-codigo { flex-shrink: 0; }
+    }
+
+    // El botón de reincorporar lleva texto y es el más ancho de la fila.
+    .fila-dado-de-baja .btn-soft-success { white-space: nowrap; }
+
+    @media (max-width: 991.98px) {
+        // Por debajo de tablet no hay ancho para cinco columnas cómodas: se
+        // deja que la tabla vuelva a su reparto natural y, si hace falta,
+        // `.table-responsive` haga su trabajo.
+        .tabla-personas {
+            table-layout: auto;
+
+            .col-trabajador, .col-cargo, .col-cuenta, .col-estado,
+            th:last-child, td:last-child { width: auto; }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Cuenta de acceso
+    // -------------------------------------------------------------------------
+    .trabajador-cuenta-usuario {
+        color: var(--vz-heading-color);
+        font-size: .84rem;
+        font-weight: 600;
+    }
+
+    .trabajador-cuenta code,
+    .trabajador-cuenta { font-family: inherit; }
+
+    .modal-cuenta-dialog { max-width: 27rem; }
+
+    .modal-cuenta-icon {
+        display: grid;
+        place-items: center;
+        width: 4.5rem;
+        height: 4.5rem;
+        border-radius: 50%;
+        color: var(--vz-success);
+        background: var(--vz-success-bg-subtle);
+        box-shadow: 0 .75rem 1.5rem rgba(var(--vz-success-rgb), .14);
+
+        .avatar-title { color: inherit; background: transparent; }
+    }
+
+    .modal-cuenta-icon-aviso {
+        color: var(--vz-warning);
+        background: var(--vz-warning-bg-subtle);
+        box-shadow: 0 .75rem 1.5rem rgba(var(--vz-warning-rgb), .14);
+    }
+
+    // Credenciales que se van a entregar: se muestran en monoespaciada y con
+    // fondo propio para que se copien sin equivocarse de carácter.
+    .cuenta-credenciales {
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+        padding: .85rem;
+        border: 1px dashed #e2e8f0;
+        border-radius: .75rem;
+        background: var(--vz-light);
+    }
+
+    .cuenta-credencial {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+
+        .cuenta-credencial-etiqueta {
+            color: var(--vz-secondary-color);
+            font-size: .78rem;
+            white-space: nowrap;
+        }
+
+        code {
+            color: var(--vz-heading-color);
+            background: #fff;
+            border: 1px solid #e9edf2;
+            border-radius: .35rem;
+            padding: .15rem .45rem;
+            font-size: .82rem;
+            font-weight: 600;
+            overflow-wrap: anywhere;
+            text-align: right;
+        }
+    }
+}

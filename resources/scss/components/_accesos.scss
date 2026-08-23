@@ -1,0 +1,111 @@
+// -----------------------------------------------------------------------------
+// Módulos de usuarios, roles y permisos
+// -----------------------------------------------------------------------------
+// Solo lo específico: el resto lo aporta _personas.scss, con los estilos
+// compartidos por los módulos de este tipo.
+// -----------------------------------------------------------------------------
+
+.usuarios-modulo {
+
+    // Cuenta desactivada: se atenúa pero sigue visible y consultable.
+    .fila-inactiva {
+        background-color: color-mix(in srgb, var(--vz-secondary) 3%, transparent);
+
+        h6 { color: var(--vz-secondary-color); }
+    }
+}
+
+// Selección de roles dentro del formulario de usuario.
+.tarjeta-rol {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    width: 100%;
+    margin: 0;
+    padding: .85rem 1rem;
+    border: 1px solid var(--vz-border-color);
+    border-radius: .75rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .16s ease-out, background-color .16s ease-out, box-shadow .16s ease-out;
+
+    &:hover { border-color: color-mix(in srgb, var(--vz-primary) 40%, var(--vz-border-color)); }
+
+    &.seleccionado {
+        border-color: var(--vz-primary);
+        background: var(--vz-primary-bg-subtle);
+        box-shadow: 0 0 0 .15rem rgba(var(--vz-primary-rgb), .1);
+    }
+
+    .form-check-input { flex-shrink: 0; }
+}
+
+.roles-modulo {
+
+    .tarjeta-rol-permisos {
+        border-radius: 1rem;
+        transition: transform .16s ease-out, box-shadow .16s ease-out;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .75rem 2rem rgba(33, 45, 64, .1) !important;
+        }
+
+        // El rol de administrador se distingue: no es editable.
+        &.rol-protegido {
+            border: 1px solid var(--vz-danger-bg-subtle) !important;
+        }
+    }
+
+    .barra-permisos {
+        height: .4rem;
+        border-radius: 1rem;
+        background: var(--vz-light);
+    }
+
+    // Cada bloque de la matriz agrupa los permisos de un módulo.
+    .modulo-permisos {
+        padding: 1rem;
+        border: 1px solid var(--vz-border-color);
+        border-radius: .85rem;
+        background: #fff;
+        transition: border-color .16s ease-out, background-color .16s ease-out;
+
+        &.con-permisos {
+            border-color: color-mix(in srgb, var(--vz-primary) 30%, var(--vz-border-color));
+            background: color-mix(in srgb, var(--vz-primary) 2%, white);
+        }
+    }
+
+    // Cada permiso individual, como etiqueta marcable.
+    .chip-permiso {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        margin: 0;
+        padding: .4rem .7rem;
+        border: 1px solid var(--vz-border-color);
+        border-radius: 2rem;
+        background: var(--vz-light);
+        color: var(--vz-body-color);
+        font-size: .8125rem;
+        cursor: pointer;
+        transition: border-color .14s ease-out, background-color .14s ease-out, color .14s ease-out;
+
+        &:hover { border-color: var(--vz-primary); }
+
+        &.activo {
+            border-color: var(--vz-primary);
+            background: var(--vz-primary-bg-subtle);
+            color: var(--vz-primary);
+            font-weight: 600;
+        }
+
+        .form-check-input {
+            width: .95rem;
+            height: .95rem;
+            margin: 0;
+            flex-shrink: 0;
+        }
+    }
+}

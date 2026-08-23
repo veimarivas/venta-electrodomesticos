@@ -1,0 +1,341 @@
+// -----------------------------------------------------------------------------
+// Sistema de visualización de datos
+// -----------------------------------------------------------------------------
+// Paleta y anatomía de las gráficas del sistema. Los colores NO se eligieron a
+// ojo: son la paleta de referencia validada con el script de la skill de
+// dataviz, que comprueba banda de luminosidad, piso de croma, separación bajo
+// daltonismo y contraste contra la superficie.
+//
+//   node scripts/validate_palette.js "#2a78d6,#eb6834,#1baf7a,#eda100" --mode light
+//   node scripts/validate_palette.js "#3987e5,#d95926,#199e70,#c98500" --mode dark
+//
+// Ambos modos pasan todas las comprobaciones. En claro, tres tonos quedan por
+// debajo de 3:1 contra el fondo, lo que obliga a la "regla de relieve":
+// etiquetas visibles o vista de tabla — por eso cada segmento de la barra
+// apilada lleva su valor escrito, no solo su color.
+//
+// Los tonos oscuros no son un aclarado automático de los claros: son pasos
+// distintos de las mismas rampas, elegidos para el fondo oscuro.
+// -----------------------------------------------------------------------------
+
+.viz {
+    // Superficie sobre la que se dibuja. El "hueco" que separa marcas se pinta
+    // de este color, no con bordes.
+    --viz-surface: #fff;
+    --viz-grid: #e9edf2;
+
+    --viz-texto: var(--vz-heading-color, #1c2128);
+    --viz-texto-suave: var(--vz-secondary-color, #6c757d);
+
+    // Serie única / magnitud: un solo tono (slot 1). Nunca una rampa sobre
+    // categorías sin orden natural: duplicaría el largo de la barra en color.
+    --viz-1: #2a78d6;
+    --viz-2: #eb6834;
+    --viz-3: #1baf7a;
+    --viz-4: #eda100;
+
+    // Estados. Reservados: no se reutilizan como "serie 5".
+    --viz-bien: #1baf7a;
+    --viz-mal: #e34948;
+}
+
+// El toggle de la plantilla marca <html data-bs-theme="dark">.
+[data-bs-theme='dark'] .viz {
+    --viz-surface: #1a1a19;
+    --viz-grid: #33383e;
+
+    --viz-1: #3987e5;
+    --viz-2: #d95926;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+
+    --viz-bien: #199e70;
+    --viz-mal: #e66767;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-bs-theme='light']) .viz {
+        --viz-surface: #1a1a19;
+        --viz-grid: #33383e;
+
+        --viz-1: #3987e5;
+        --viz-2: #d95926;
+        --viz-3: #199e70;
+        --viz-4: #c98500;
+
+        --viz-bien: #199e70;
+        --viz-mal: #e66767;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Anatomía común
+// -----------------------------------------------------------------------------
+.viz {
+    position: relative;
+
+    svg { display: block; width: 100%; overflow: visible; }
+
+    // Rejilla y ejes: recesivos, línea de un pelo y SÓLIDA (nunca punteada:
+    // el punteado compite con los datos).
+    .viz-grid-linea { stroke: var(--viz-grid); stroke-width: 1; }
+
+    .viz-eje-texto {
+        fill: var(--viz-texto-suave);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // El texto NUNCA lleva el color de la serie: la marca de al lado carga la
+    // identidad, el texto se queda en tinta neutra.
+    .viz-valor {
+        fill: var(--viz-texto);
+        font-size: 11px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Línea de 2px con uniones redondeadas; relleno del área al 10%.
+    .viz-linea {
+        fill: none;
+        stroke: var(--viz-1);
+        stroke-width: 2;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .viz-area { fill: var(--viz-1); opacity: .10; }
+
+    // Los puntos llevan un anillo del color de la superficie para seguir
+    // legibles donde se cruzan con la línea.
+    .viz-punto {
+        fill: var(--viz-1);
+        stroke: var(--viz-surface);
+        stroke-width: 2;
+    }
+
+    .viz-cruz {
+        stroke: var(--viz-texto-suave);
+        stroke-width: 1;
+        opacity: .45;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Barras horizontales (comparar magnitud)
+// -----------------------------------------------------------------------------
+.viz-barras {
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+}
+
+.viz-barra-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .15rem .75rem;
+    align-items: baseline;
+}
+
+.viz-barra-nombre {
+    color: var(--viz-texto);
+    font-size: .84rem;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.viz-barra-valor {
+    color: var(--viz-texto);
+    font-size: .84rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.viz-barra-pista {
+    grid-column: 1 / -1;
+    height: 10px;
+    border-radius: 0 5px 5px 0;
+    background: color-mix(in srgb, var(--viz-grid) 65%, transparent);
+    overflow: hidden;
+}
+
+// Extremo redondeado de 4px, recto en la línea base.
+.viz-barra-marca {
+    height: 100%;
+    min-width: 3px;
+    border-radius: 0 5px 5px 0;
+    background: var(--viz-1);
+    transition: filter .15s ease-out;
+}
+
+.viz-barra-fila:hover .viz-barra-marca { filter: brightness(1.12); }
+
+.viz-barra-meta {
+    grid-column: 1 / -1;
+    color: var(--viz-texto-suave);
+    font-size: .72rem;
+}
+
+// -----------------------------------------------------------------------------
+// Barra apilada (parte-de-un-todo)
+// -----------------------------------------------------------------------------
+.viz-apilada {
+    display: flex;
+    width: 100%;
+    height: 1.5rem;
+    border-radius: .35rem;
+    overflow: hidden;
+    // El hueco de 2px entre segmentos lo pinta la superficie, no un borde.
+    background: var(--viz-surface);
+    gap: 2px;
+}
+
+.viz-apilada-segmento {
+    min-width: 2px;
+    transition: filter .15s ease-out;
+
+    &:hover { filter: brightness(1.12); }
+}
+
+.viz-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 1rem;
+    margin-top: .75rem;
+}
+
+.viz-leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    color: var(--viz-texto-suave);
+    font-size: .78rem;
+}
+
+// La leyenda espeja la marca: rectángulo para barras y áreas.
+.viz-leyenda-marca {
+    width: .7rem;
+    height: .7rem;
+    border-radius: .2rem;
+    flex-shrink: 0;
+}
+
+.viz-leyenda-valor {
+    color: var(--viz-texto);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+// -----------------------------------------------------------------------------
+// Medidor (una razón contra un límite)
+// -----------------------------------------------------------------------------
+.viz-medidor {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.viz-medidor-pista {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--viz-grid) 65%, transparent);
+    overflow: hidden;
+}
+
+.viz-medidor-marca {
+    height: 100%;
+    border-radius: 0 4px 4px 0;
+    background: var(--viz-1);
+}
+
+.viz-medidor-marca.esta-completo { background: var(--viz-bien); }
+
+.viz-medidor-valor {
+    color: var(--viz-texto);
+    font-size: .78rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Cifra protagonista
+// -----------------------------------------------------------------------------
+.viz-cifra {
+    color: var(--viz-texto);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.viz-cifra-etiqueta {
+    color: var(--viz-texto-suave);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+// -----------------------------------------------------------------------------
+// Tooltip compartido
+// -----------------------------------------------------------------------------
+.viz-tooltip {
+    position: fixed;
+    z-index: 1080;
+    min-width: 9rem;
+    padding: .55rem .7rem;
+    border-radius: .5rem;
+    border: 1px solid var(--viz-grid);
+    background: var(--viz-surface);
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .14);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .12s ease-out;
+
+    &.esta-visible { opacity: 1; }
+}
+
+.viz-tooltip-titulo {
+    color: var(--viz-texto-suave);
+    font-size: .72rem;
+    margin-bottom: .25rem;
+}
+
+.viz-tooltip-fila {
+    display: flex;
+    align-items: baseline;
+    gap: .45rem;
+}
+
+// En el tooltip manda el valor; el nombre de la serie es secundario.
+.viz-tooltip-valor {
+    color: var(--viz-texto);
+    font-size: .95rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.viz-tooltip-serie { color: var(--viz-texto-suave); font-size: .75rem; }
+
+// Trazo corto de color, no un cuadro: a esta densidad un bloque relleno es
+// tinta de peso de dato haciendo el trabajo de una etiqueta.
+.viz-tooltip-clave {
+    width: .85rem;
+    height: 2px;
+    border-radius: 1px;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .viz-barra-marca,
+    .viz-apilada-segmento,
+    .viz-tooltip { transition: none; }
+}

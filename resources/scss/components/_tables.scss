@@ -1,0 +1,17 @@
+// Ajustes para las tablas de listados (productos, items, ventas).
+
+.table {
+    // Los importes deben alinearse a la derecha y con cifras de ancho fijo,
+    // para poder compararlos de un vistazo columna abajo.
+    .col-importe {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    // Serial / código interno: monoespaciado para distinguir 0 de O.
+    .col-codigo {
+        font-family: var(--vz-font-monospace, monospace);
+        font-size: 0.8125rem;
+    }
+}

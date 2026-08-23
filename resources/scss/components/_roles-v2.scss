@@ -1,0 +1,102 @@
+﻿// Roles v2: alineado con dashboard y categorías
+// Los estilos base los hereda de _personas-v2.scss (clase .personas-modulo)
+
+.roles-modulo {
+
+    // Tarjeta de rol con permisos.
+    .tarjeta-rol-permisos {
+        border: 1px solid #e9edf2;
+        border-radius: .85rem;
+        transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .75rem 1.75rem rgba(20, 36, 61, .09) !important;
+            border-color: transparent;
+        }
+
+        &.rol-protegido {
+            border-color: rgba(227, 73, 72, .15);
+            &:hover { border-color: rgba(227, 73, 72, .25); }
+        }
+
+        .card-footer {
+            border-top: 1px dashed #e9edf2;
+        }
+    }
+
+    // Barra de progreso de permisos.
+    .barra-permisos {
+        height: .45rem;
+        border-radius: 1rem;
+        background: #f1f4f8;
+
+        .progress-bar {
+            border-radius: 1rem;
+            background: linear-gradient(90deg, #0f766e, #14b8a6);
+        }
+    }
+
+    // ========================================================================
+    // MODAL MATRIZ DE PERMISOS
+    // ========================================================================
+    .modulo-permisos {
+        padding: 1rem;
+        border: 1px solid #e9edf2;
+        border-radius: .75rem;
+        background: #fff;
+        transition: border-color .16s, box-shadow .16s;
+
+        &.con-permisos {
+            border-color: rgba(15, 118, 110, .2);
+            box-shadow: inset 3px 0 0 #0f766e;
+        }
+
+        h6 { color: #14243d; font-weight: 650; }
+    }
+
+    // Chip de permiso individual.
+    .chip-permiso {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .3rem .7rem;
+        font-size: .75rem;
+        font-weight: 500;
+        color: #6b778a;
+        background: #f8f9fb;
+        border: 1px solid #e2e8f0;
+        border-radius: 2rem;
+        cursor: pointer;
+        transition: all .16s ease-out;
+        white-space: nowrap;
+
+        &:hover {
+            border-color: #0f766e;
+            color: #0f766e;
+            background: rgba(15, 118, 110, .04);
+        }
+
+        &.activo {
+            border-color: #0f766e;
+            color: #fff;
+            background: #0f766e;
+            box-shadow: 0 .15rem .4rem rgba(15, 118, 110, .2);
+
+            .form-check-input:checked { border-color: #fff; }
+        }
+
+        .form-check-input { width: 1rem; height: 1rem; }
+    }
+}
+
+
+// DARK MODE
+body.dark {
+    .roles-modulo {
+        .tarjeta-rol-permisos { background: #1a2d3d; border-color: #253a4e; &:hover { border-color: transparent; } &.rol-protegido { border-color: rgba(227, 73, 72, .2); } .card-footer { border-top-color: #253a4e; } }
+        .barra-permisos { background: #253a4e; .progress-bar { background: linear-gradient(90deg, #0f766e, #2dd4bf); } }
+        .modulo-permisos { background: #1a2d3d; border-color: #253a4e; &.con-permisos { border-color: rgba(45, 212, 191, .25); box-shadow: inset 3px 0 0 #0f766e; } h6 { color: #d5dde8; } }
+        .chip-permiso { background: #162636; border-color: #2a3f55; color: #8494a7; &:hover { border-color: #0f766e; color: #2dd4bf; background: rgba(15, 118, 110, .08); } &.activo { background: #0f766e; border-color: #0f766e; color: #fff; } }
+    }
+}

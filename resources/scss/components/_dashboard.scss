@@ -1,0 +1,773 @@
+// -----------------------------------------------------------------------------
+// Dashboard: alineado con la paleta y el estilo del login
+// -----------------------------------------------------------------------------
+// Paleta heredada del login:
+//   ink:    #14243d  (azul oscuro profundo)
+//   accent: #f59e0b  (ámbar/dorado)
+//   teal:   #0f766e  (turquesa)
+//   muted:  #6b778a
+//   line:   #dfe6ee
+// -----------------------------------------------------------------------------
+
+.dash-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 1.6rem 1.75rem 1.4rem;
+    border-radius: .85rem;
+    color: #fff;
+    background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f);
+
+    // Rejilla sutil de puntos (eco del glow de categorías/marcas).
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, .07) 1px, transparent 1.5px);
+        background-size: 1.15rem 1.15rem;
+        mask-image: radial-gradient(70% 100% at 85% 0%, black 0%, transparent 100%);
+        -webkit-mask-image: radial-gradient(70% 100% at 85% 0%, black 0%, transparent 100%);
+        opacity: .55;
+    }
+
+    // Anillo decorativo sutil (eco del showcase del login).
+    &::after {
+        content: '';
+        position: absolute;
+        width: 22rem;
+        height: 22rem;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, .08);
+        top: -10rem;
+        right: -6rem;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    > * { position: relative; z-index: 1; }
+}
+
+.dash-hero-saludo {
+    margin: 0;
+    font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+    color: #fff !important;
+}
+
+.dash-hero-fecha {
+    margin: .3rem 0 0;
+    color: rgba(255, 255, 255, .7) !important;
+    font-size: .88rem;
+}
+
+.dash-hero-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .6rem;
+}
+
+.dash-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .4rem .75rem;
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 99px;
+    color: #c9d9ea;
+    font-size: .75rem;
+    font-weight: 650;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, .06);
+
+    i { color: #f59e0b; font-size: .85rem; }
+}
+
+.dash-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .55rem 1.1rem;
+    border: 0;
+    border-radius: .6rem;
+    background: #f59e0b;
+    color: #14243d;
+    font-size: .85rem;
+    font-weight: 650;
+    text-decoration: none;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
+    transition: background .2s, box-shadow .2s, transform .15s;
+
+    &:hover {
+        background: #e8930a;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, .24);
+        transform: translateY(-1px);
+        color: #14243d;
+    }
+
+    &:active { transform: translateY(0); }
+}
+
+// -----------------------------------------------------------------------------
+// KPI Cards
+// -----------------------------------------------------------------------------
+.dash-kpi {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--auth-line, #dfe6ee);
+    border-radius: .75rem;
+    background: #fff;
+    transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .75rem 1.75rem rgba(20, 36, 61, .09);
+        border-color: transparent;
+    }
+
+    .card-body {
+        padding: 1.15rem 1.25rem;
+    }
+}
+
+.dash-kpi-icono {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: .7rem;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.dash-kpi-icono--ingreso {
+    color: #0f766e;
+    background: rgba(15, 118, 110, .1);
+}
+
+.dash-kpi-icono--ventas {
+    color: #2a78d6;
+    background: rgba(42, 120, 214, .1);
+}
+
+.dash-kpi-icono--unidades {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .1);
+}
+
+.dash-kpi-icono--ganancia {
+    color: #1baf7a;
+    background: rgba(27, 175, 122, .1);
+}
+
+.dash-kpi-label {
+    display: block;
+    color: #6b778a;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: .3rem;
+}
+
+.dash-kpi-valor {
+    display: block;
+    color: #14243d;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.dash-kpi-nota {
+    display: block;
+    color: #6b778a;
+    font-size: .78rem;
+    margin-top: .25rem;
+}
+
+// -----------------------------------------------------------------------------
+// Cards del dashboard
+// -----------------------------------------------------------------------------
+.dash-card {
+    border: 1px solid #e9edf2;
+    border-radius: .8rem;
+    background: #fff;
+    transition: box-shadow .18s ease-out;
+
+    &:hover {
+        box-shadow: 0 .6rem 1.5rem rgba(20, 36, 61, .06);
+    }
+
+    .card-header {
+        border-bottom: 1px solid #f1f4f8;
+        background: transparent;
+        padding: 1rem 1.25rem;
+    }
+
+    .card-title {
+        color: #14243d;
+        font-weight: 650;
+        letter-spacing: -.01em;
+    }
+}
+
+.dash-card-header-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: .5rem;
+    font-size: .95rem;
+    margin-right: .4rem;
+    vertical-align: middle;
+}
+
+.dash-card-header-icono--almacen {
+    color: #2a78d6;
+    background: rgba(42, 120, 214, .1);
+}
+
+.dash-card-header-icono--ventas {
+    color: #0f766e;
+    background: rgba(15, 118, 110, .1);
+}
+
+.dash-card-header-icono--top {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, .1);
+}
+
+// Botón "Ver todas" del header.
+.dash-ver-todas {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .35rem .75rem;
+    border: 1px solid #dfe6ee;
+    border-radius: .5rem;
+    background: #fff;
+    color: #6b778a;
+    font-size: .78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color .15s, color .15s, background .15s;
+
+    &:hover {
+        border-color: #0f766e;
+        color: #0f766e;
+        background: rgba(15, 118, 110, .04);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Saldo del almacén
+// -----------------------------------------------------------------------------
+.dash-saldo {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+    padding: 0;
+    border: 0;
+    list-style: none;
+}
+
+.dash-saldo-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+
+    span {
+        color: #6b778a;
+        font-size: .82rem;
+    }
+
+    strong {
+        color: #14243d;
+        font-size: .92rem;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Alertas de bajo mínimo
+// -----------------------------------------------------------------------------
+.dash-alerta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .5rem 0;
+    border-bottom: 1px solid #f1f4f8;
+
+    &:last-child { border-bottom: 0; }
+}
+
+.dash-alerta-nombre {
+    color: #14243d;
+    font-size: .84rem;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dash-alerta-marca {
+    color: #6b778a;
+    font-size: .75rem;
+}
+
+.dash-alerta-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .55rem;
+    border-radius: 2rem;
+    font-size: .72rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dash-alerta-badge--peligro {
+    color: #e34948;
+    background: rgba(227, 73, 72, .1);
+    border: 1px solid rgba(227, 73, 72, .2);
+}
+
+.dash-alerta-badge--alerta {
+    color: #c98500;
+    background: rgba(201, 133, 0, .1);
+    border: 1px solid rgba(201, 133, 0, .2);
+}
+
+.dash-alerta-ok {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    color: #1baf7a;
+    font-size: .82rem;
+    font-weight: 500;
+}
+
+// -----------------------------------------------------------------------------
+// Lista de últimas ventas
+// -----------------------------------------------------------------------------
+.dash-ventas-lista {
+    .dash-venta {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        padding: .75rem 1.25rem;
+        border-bottom: 1px solid #f1f4f8;
+        transition: background-color .16s ease-out;
+
+        &:last-child { border-bottom: 0; }
+        &:hover { background: rgba(15, 118, 110, .025); }
+    }
+
+    .dash-venta.esta-nueva {
+        background: rgba(27, 175, 122, .06);
+        box-shadow: inset 3px 0 0 #1baf7a;
+    }
+}
+
+.dash-venta-icono {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    font-size: .9rem;
+}
+
+.dash-venta-icono--vivo {
+    color: #1baf7a;
+    background: rgba(27, 175, 122, .12);
+}
+
+.dash-venta-icono--normal {
+    color: #2a78d6;
+    background: rgba(42, 120, 214, .1);
+}
+
+.dash-venta-codigo {
+    color: #14243d;
+    font-size: .84rem;
+    font-weight: 650;
+    font-family: var(--vz-font-family-monospace, 'SFMono-Regular', monospace);
+    letter-spacing: .01em;
+}
+
+.dash-venta-meta {
+    color: #6b778a;
+    font-size: .76rem;
+    line-height: 1.3;
+}
+
+.dash-venta-monto {
+    color: #0f766e;
+    font-size: .9rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+// -----------------------------------------------------------------------------
+// Punto que late (conexión en vivo)
+// -----------------------------------------------------------------------------
+.dash-latido {
+    display: inline-block;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background: #1baf7a;
+    box-shadow: 0 0 0 0 rgba(27, 175, 122, .7);
+    animation: dash-latido 1.8s infinite;
+}
+
+@keyframes dash-latido {
+    0%   { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+    70%  { box-shadow: 0 0 0 .5rem transparent; opacity: .85; }
+    100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash-latido { animation: none; }
+}
+
+// -----------------------------------------------------------------------------
+// Resumen secundario (debajo de la cifra principal)
+// -----------------------------------------------------------------------------
+.dash-resumen {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding-top: .85rem;
+    margin-top: .85rem;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+}
+
+.dash-resumen-dato {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+
+    span {
+        color: rgba(255, 255, 255, .65);
+        font-size: .82rem;
+    }
+
+    strong {
+        color: #fff;
+        font-size: .95rem;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// Versión en card blanca (para cuando no está en el hero).
+.dash-resumen--card {
+    border-top-color: #e9edf2;
+
+    span { color: #6b778a; }
+    strong { color: #14243d; }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive
+// -----------------------------------------------------------------------------
+@media (max-width: 767.98px) {
+    .dash-hero {
+        padding: 1.25rem 1.15rem 1.1rem;
+    }
+
+    .dash-hero-acciones {
+        width: 100%;
+    }
+
+    .dash-hero-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .dash-kpi {
+        .card-body { padding: .95rem 1rem; }
+    }
+
+    .dash-kpi-valor { font-size: 1.15rem; }
+}
+
+// Dark mode
+[data-bs-theme='dark'] {
+    .dash-kpi {
+        border-color: rgba(255, 255, 255, .08);
+        background: #1e2330;
+
+        &:hover { border-color: transparent; }
+    }
+
+    .dash-kpi-label { color: rgba(255, 255, 255, .55); }
+    .dash-kpi-valor { color: #e8ecf1; }
+    .dash-kpi-nota { color: rgba(255, 255, 255, .45); }
+
+    .dash-card {
+        border-color: rgba(255, 255, 255, .08);
+        background: #1e2330;
+
+        .card-header { border-bottom-color: rgba(255, 255, 255, .06); }
+        .card-title { color: #e8ecf1; }
+    }
+
+    .dash-ver-todas {
+        border-color: rgba(255, 255, 255, .12);
+        background: transparent;
+        color: rgba(255, 255, 255, .6);
+
+        &:hover {
+            border-color: #1baf7a;
+            color: #1baf7a;
+        }
+    }
+
+    .dash-saldo-item {
+        span { color: rgba(255, 255, 255, .5); }
+        strong { color: #e8ecf1; }
+    }
+
+    .dash-alerta { border-bottom-color: rgba(255, 255, 255, .06); }
+    .dash-alerta-nombre { color: #e8ecf1; }
+    .dash-alerta-marca { color: rgba(255, 255, 255, .4); }
+
+    .dash-ventas-lista .dash-venta {
+        border-bottom-color: rgba(255, 255, 255, .06);
+
+        &:hover { background: rgba(15, 118, 110, .06); }
+    }
+
+    .dash-ventas-lista .dash-venta.esta-nueva {
+        background: rgba(27, 175, 122, .1);
+    }
+
+    .dash-venta-codigo { color: #e8ecf1; }
+    .dash-venta-meta { color: rgba(255, 255, 255, .45); }
+    .dash-venta-monto { color: #1baf7a; }
+
+    .dash-resumen--card { border-top-color: rgba(255, 255, 255, .08); }
+}
+
+// =============================================================================
+// Topbar / Nav: alineada con la paleta del login
+// =============================================================================
+#page-topbar {
+    border-bottom: 1px solid #e9edf2;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(20, 36, 61, .04);
+}
+
+// Buscador global: bordes redondeados y focus turquesa (eco del login).
+.app-search {
+    .form-control {
+        border: 1px solid #dfe6ee;
+        border-radius: .65rem;
+        background: #f8f9fb;
+        font-size: .88rem;
+        padding: .55rem 1rem .55rem 2.5rem;
+        transition: border-color .2s, box-shadow .2s, background .2s;
+
+        &::placeholder {
+            color: #a7b1bf;
+        }
+
+        &:focus {
+            border-color: #0f766e;
+            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+            background: #fff;
+        }
+    }
+
+    .search-widget-icon {
+        color: #a7b1bf;
+        font-size: 1.1rem;
+
+        &.mdi-magnify {
+            position: absolute;
+            left: .85rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    }
+}
+
+// Botones del topbar: bordes redondeados y hover sutil.
+.header-item {
+    .btn-topbar {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: .6rem;
+        color: #6b778a;
+        background: transparent;
+        border: 1px solid transparent;
+        transition: background .15s, color .15s, border-color .15s;
+
+        &:hover {
+            color: #14243d;
+            background: #f1f4f8;
+            border-color: #e2e7ee;
+        }
+
+        &:focus {
+            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .1);
+        }
+    }
+}
+
+// Badge de notificaciones.
+.topbar-badge {
+    font-size: .65rem;
+    font-weight: 650;
+    padding: .2rem .4rem;
+    border-radius: 2rem;
+    min-width: 1rem;
+    text-align: center;
+}
+
+// Dropdown de usuario: eco del estilo del login.
+.topbar-user {
+    .btn {
+        padding: .3rem .6rem;
+        border-radius: .65rem;
+        transition: background .15s;
+
+        &:hover {
+            background: #f1f4f8;
+        }
+    }
+
+    .header-profile-user {
+        width: 2.1rem;
+        height: 2.1rem;
+        border: 2px solid #e9edf2;
+        object-fit: cover;
+    }
+
+    .user-name-text {
+        color: #14243d;
+        font-weight: 600;
+        font-size: .88rem;
+    }
+
+    .user-name-sub-text {
+        color: #6b778a;
+    }
+}
+
+// Dropdown de notificaciones.
+.dropdown-menu-lg {
+    border: 1px solid #e9edf2;
+    border-radius: .75rem;
+    box-shadow: 0 .75rem 2rem rgba(20, 36, 61, .12);
+    overflow: hidden;
+}
+
+// Header del dropdown de notificaciones.
+.dropdown-head {
+    background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f) !important;
+    border-radius: .75rem .75rem 0 0 !important;
+}
+
+// Items de notificación.
+.notification-item {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid #f1f4f8;
+    border-radius: 0;
+    transition: background .12s;
+
+    &:hover {
+        background: rgba(15, 118, 110, .03);
+    }
+
+    &:last-child { border-bottom: 0; }
+}
+
+// Avatar del dropdown de usuario.
+.dropdown-header {
+    color: #14243d;
+    font-weight: 650;
+    font-size: .88rem;
+    border-bottom: 1px solid #e9edf2;
+    padding: .75rem 1rem;
+}
+
+.dropdown-item {
+    font-size: .88rem;
+    padding: .5rem 1rem;
+    transition: background .12s;
+
+    &:hover {
+        background: rgba(15, 118, 110, .04);
+    }
+}
+
+// Dark mode topbar
+[data-bs-theme='dark'] {
+    #page-topbar {
+        border-bottom-color: rgba(255, 255, 255, .06);
+        background: #1a1b20;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    }
+
+    .app-search .form-control {
+        border-color: rgba(255, 255, 255, .08);
+        background: rgba(255, 255, 255, .04);
+        color: #e8ecf1;
+
+        &:focus {
+            border-color: #0f766e;
+            background: rgba(255, 255, 255, .06);
+        }
+    }
+
+    .header-item .btn-topbar {
+        color: rgba(255, 255, 255, .55);
+
+        &:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .08);
+        }
+    }
+
+    .topbar-user .header-profile-user {
+        border-color: rgba(255, 255, 255, .12);
+    }
+
+    .topbar-user .user-name-text { color: #e8ecf1; }
+
+    .dropdown-menu-lg {
+        border-color: rgba(255, 255, 255, .08);
+        background: #1e2330;
+    }
+
+    .notification-item {
+        border-bottom-color: rgba(255, 255, 255, .06);
+
+        &:hover { background: rgba(255, 255, 255, .04); }
+    }
+
+    .dropdown-header {
+        color: #e8ecf1;
+        border-bottom-color: rgba(255, 255, 255, .06);
+    }
+}

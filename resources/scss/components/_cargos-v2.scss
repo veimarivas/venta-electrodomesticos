@@ -1,0 +1,33 @@
+﻿// Cargos v2: alineado con dashboard y categorías
+// Los estilos base los hereda de _personas-v2.scss (clase .personas-modulo)
+// Este archivo es solo lo específico de cargos.
+
+.cargos-modulo {
+
+    // Paleta cromática para el badge del avatar por cargo.
+    $cargos-paleta: (
+        'primary': #405189,
+        'teal': #0f766e,
+        'info': #1b77a5,
+        'amber': #9a6700,
+        'purple': #5b4bb7,
+        'pink': #b03e72,
+    );
+
+    // Badge de color del cargo en la tabla.
+    .cargo-color-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: .5rem;
+        font-size: .85rem;
+        font-weight: 600;
+    }
+
+    // Fila con referencia: si el cargo tiene trabajadores, un borde sutil.
+    tr:has(.badge.bg-success-subtle) td:first-child {
+        box-shadow: inset 3px 0 0 #0f766e;
+    }
+}

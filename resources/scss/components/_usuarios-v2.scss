@@ -1,0 +1,72 @@
+﻿// Usuarios v2: alineado con dashboard y categorías
+// Los estilos base los hereda de _personas-v2.scss (clase .personas-modulo)
+
+.usuarios-modulo {
+
+    // Tarjeta de rol seleccionable en el modal.
+    .tarjeta-rol {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .85rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: .75rem;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color .16s, box-shadow .16s, background .16s;
+
+        &:hover {
+            border-color: #0f766e;
+            background: rgba(15, 118, 110, .02);
+        }
+
+        &.seleccionado {
+            border-color: #0f766e;
+            background: rgba(15, 118, 110, .04);
+            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+        }
+
+        .form-check-input:checked {
+            background-color: #0f766e;
+            border-color: #0f766e;
+        }
+    }
+
+    // Fila de usuario inactivo.
+    .fila-inactiva {
+        background-color: rgba(107, 119, 138, .04);
+        h6 { color: #6b778a; }
+    }
+
+    // Badge de rol admin.
+    .badge.bg-danger-subtle {
+        background: rgba(227, 73, 72, .08) !important;
+    }
+
+    // Select de filtro con estilo consistente.
+    .form-select {
+        font-size: .84rem;
+        border-color: #dfe6ee;
+        transition: border-color .2s, box-shadow .2s;
+
+        &:focus {
+            border-color: #0f766e;
+            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+        }
+    }
+}
+
+
+// DARK MODE
+body.dark {
+    .usuarios-modulo {
+        .tarjeta-rol {
+            background: #1a2d3d; border-color: #2a3f55;
+            &:hover { border-color: #0f766e; background: rgba(15, 118, 110, .06); }
+            &.seleccionado { border-color: #0f766e; background: rgba(15, 118, 110, .08); box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .12); }
+            .form-check-input:checked { background-color: #0f766e; border-color: #0f766e; }
+        }
+        .fila-inactiva { background-color: rgba(132, 148, 167, .06); h6 { color: #8494a7; } }
+        .form-select { background: #1a2d3d; border-color: #2a3f55; color: #d5dde8; &:focus { border-color: #0f766e; box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .12); } }
+    }
+}

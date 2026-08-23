@@ -1,0 +1,137 @@
+// -----------------------------------------------------------------------------
+// Sidebar: alineado con la paleta del login
+// -----------------------------------------------------------------------------
+// Paleta del login:
+//   ink:    #14243d  (azul oscuro profundo)
+//   accent: #f59e0b  (ámbar/dorado)
+//   teal:   #0f766e  (turquesa)
+//   muted:  #6b778a
+//   line:   #dfe6ee
+//
+// El sidebar usa el mismo gradiente oscuro del showcase del login, creando
+// una experiencia visual coherente al navegar entre auth y el panel.
+// -----------------------------------------------------------------------------
+
+.app-menu.navbar-menu {
+
+    // Mismo gradiente oscuro del login, adaptado a vertical.
+    background: linear-gradient(180deg, #0f2540 0%, #112a46 45%, #12314f 100%);
+    border-right-color: rgba(255, 255, 255, .06);
+
+    // ---- Marca / Logo ----
+    .navbar-brand-box {
+        padding: 1.15rem 1.3rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+
+        .logo {
+            justify-content: center;
+        }
+    }
+
+    // ---- Títulos de sección ----
+    .menu-title {
+        padding: 1.15rem 0 .3rem;
+        font-size: .68rem;
+        letter-spacing: .13em;
+        color: rgba(255, 255, 255, .42);
+
+        span {
+            padding: 0 1.45rem;
+            position: relative;
+
+            // Punto de color ámbar que guía la mirada entre secciones.
+            &::before {
+                content: '';
+                width: 4px;
+                height: 4px;
+                border-radius: 50%;
+                background: #f59e0b;
+                opacity: .85;
+                position: absolute;
+                left: .55rem;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+    }
+
+    // ---- Ítems de nivel superior ----
+    .navbar-nav > .nav-item > .nav-link.menu-link {
+        position: relative;
+        width: calc(100% - 1.5rem);
+        margin: .14rem .75rem;
+        padding: .6rem .85rem;
+        border-radius: .6rem;
+        font-size: .9rem;
+        color: rgba(255, 255, 255, .78);
+        transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+
+        i {
+            font-size: 1.06rem;
+            min-width: 1.55rem;
+        }
+
+        &:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, .08);
+        }
+
+        // Activo: píldora translúcida con borde izquierdo ámbar.
+        &.active,
+        &[aria-expanded='true'] {
+            color: #fff;
+            background: rgba(255, 255, 255, .12);
+            box-shadow: 0 .4rem 1rem rgba(8, 20, 52, .24), inset 3px 0 0 #f59e0b;
+        }
+
+        // Chevron de colapso.
+        &[data-bs-toggle='collapse']::after {
+            right: .85rem;
+            font-size: .98rem;
+            opacity: .9;
+        }
+    }
+
+    // ---- Sub-ítems ----
+    .navbar-nav .nav-sm .nav-link {
+        margin: .06rem .6rem;
+        padding: .5rem .7rem .5rem .55rem !important;
+        border-radius: .5rem;
+        font-size: .84rem;
+        color: rgba(255, 255, 255, .7);
+        transition: background-color .18s ease, color .18s ease;
+
+        &::before {
+            left: -.15rem;
+            top: 15.5px;
+            width: 5px;
+            height: 1.5px;
+        }
+
+        &:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, .06);
+
+            &::before {
+                background-color: #fff;
+                opacity: 1;
+            }
+        }
+
+        &.active {
+            color: #fff;
+            background: rgba(255, 255, 255, .1);
+
+            &::before {
+                background-color: #f59e0b;
+                opacity: 1;
+            }
+        }
+    }
+
+    // ---- Scrollbar (SimpleBar) ----
+    .simplebar-scrollbar::before {
+        background: rgba(255, 255, 255, .2);
+        border-radius: .25rem;
+    }
+}
