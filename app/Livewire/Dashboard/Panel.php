@@ -130,6 +130,10 @@ class Panel extends Component
     public function render(): View
     {
         return view('livewire.dashboard.panel', [
+            // Los importes del panel van tras el mismo permiso que su
+            // equivalente en la API (GET /api/v1/dashboard/*). Sin esto, un
+            // vendedor veía la caja del día aquí aunque la app se la negase.
+            'puedeVerReportes' => auth()->user()?->can('reportes.ver') ?? false,
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeVerVentas' => auth()->user()?->can('ventas.ver') ?? false,
             'unidadesEnStock' => Unidad::disponibles()->count(),

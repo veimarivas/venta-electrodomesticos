@@ -568,6 +568,33 @@ Tres cosas que conviene saber antes de eliminar:
   papelera: las ventas que ya lo incluyen se conservan y se puede recuperar desde
   el panel. Deja de ofrecerse en el punto de venta.
 
+### Avisos de stock bajo
+
+Cuando una venta deja un producto **en su mínimo o por debajo**, llega un aviso
+—al teléfono si tienes la app, y al historial de avisos en cualquier caso—.
+
+| Título | Qué pasó |
+|---|---|
+| **Stock bajo** | Quedan pocas unidades. Toca reponer |
+| **Sin stock** | Se acabó. No hay nada que vender de ese producto |
+
+Tocar el aviso abre la ficha del producto.
+
+- **No se repite.** Avisa cuando el producto *cruza* el mínimo, no en cada venta
+  posterior. Si no, a la tercera nadie los miraría.
+- **Quedarse a cero avisa aparte**, aunque ya hubiera avisado del mínimo: es más
+  grave y merece que te enteres.
+- **Un producto con mínimo 0 no avisa nunca.** Es la forma de decir «este no lo
+  controlo» — útil para accesorios.
+- Lo reciben quienes pueden **ver el stock**. El aviso no lleva importes, solo
+  cuántas unidades quedan.
+
+> El listado de bajo mínimo sigue estando en el panel y en el resumen de la app.
+> El aviso no lo sustituye: el listado responde «¿qué está bajo?» y el aviso
+> «acaba de pasar esto».
+
+---
+
 ### La sesión se cierra sola
 
 Si el teléfono pasa **15 minutos sin que nadie lo toque**, la app cierra la

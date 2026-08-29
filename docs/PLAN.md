@@ -766,6 +766,93 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### El stock bajo avisa, y el dashboard dice cuánto deja cada venta (2026-08-29)
+
+#### El stock bajo pasa de listado a aviso
+
+El panel y la app ya listaban los productos bajo mínimo, pero había que **ir a
+mirarlo**, y un listado solo sirve a quien se acuerda de abrirlo. Ahora, además
+del listado, sale un aviso —al historial de notificaciones y, si Firebase está
+configurado, como push al teléfono—.
+
+Se engancha a `VentaRegistrada` porque la venta es lo que consume el almacén:
+es el momento en que la información sirve para algo, cuando todavía se puede
+reponer antes de quedarse sin nada que vender.
+
+> **Avisa al CRUZAR el umbral, no cuando está bajo.** La condición no es «está
+> bajo mínimo» sino «lo está ahora y no lo estaba antes de esta venta». Sin esa
+> guarda, cada venta de un producto ya agotado volvería a avisar y a la tercera
+> nadie mira los avisos. El estado anterior se reconstruye sumando lo que salió
+> en esta venta a lo que queda.
+
+> **Hay dos umbrales, no uno: el mínimo y el cero.** Salió al escribir las
+> pruebas: con un solo umbral, quedarse sin stock **no avisaba nunca**, porque
+> para cuando llega a cero ya cruzó el mínimo antes y la guarda de «no repetir»
+> se lo tragaba. Y quedarse sin nada que vender es más grave que rozar el
+> mínimo, así que merece su propio aviso —y su propio título: «Sin stock» frente
+> a «Stock bajo»—.
+
+> **Un mínimo de 0 significa «no lo controlo».** Avisar de eso sería ruido en
+> cada venta de cualquier accesorio.
+
+> **El aviso va a quien tiene `stock.ver`, no `reportes.ver`.** Quien repone es
+> quien mira el almacén, no quien mira los importes. Y el aviso no lleva dinero:
+> solo cuántas unidades quedan.
+
+**En la app**, el historial de avisos distingue los dos tipos: el de venta es
+una buena noticia, el de stock una tarea pendiente. Cada uno con su color y su
+destino —la venta abre su detalle, el stock la ficha del producto—.
+
+> **El enlace lo resuelve el servidor, no la app.** `alAbrirVenta(int)` pasó a
+> ser `alAbrirAviso(String ruta)`: antes el destino estaba escrito dentro del
+> servicio de notificaciones, y en cuanto apareció un segundo tipo de aviso ese
+> acoplamiento dejó de servir. El servidor manda `enlace: app://…` y la app solo
+> le quita el esquema.
+
+> **El tipo lo decide el campo `tipo`, no qué campos vengan.** Deducirlo de si
+> hay `venta_id` o `producto_id` funciona con dos tipos y se rompe con el
+> tercero.
+
+#### Ticket promedio y margen en el dashboard web
+
+`Reportes::resumen()` ya los calculaba y la app ya los pintaba; el panel no. Se
+añaden en **su propia fila**, no entre los KPI de arriba: aquellos son
+acumulados —cuánto entró— y estos ratios —cómo de bien entró—. Mezclarlos haría
+leer «Bs 45.000» y «Bs 1.250» como cifras del mismo tipo.
+
+El margen va tras `reportes.ver_costos`, igual que la ganancia: es el mismo dato
+en porcentaje.
+
+#### Auditoría de permisos
+
+Se repasaron las 83 rutas de la API y las 60 del panel. Las 9 rutas de la API
+sin permiso son correctas —`auth/*`, `dispositivos`, `notificaciones`: recursos
+**propios** de cada usuario, que todo el mundo necesita sea cual sea su rol—, y
+en el panel lo que queda sin permiso es infraestructura de Livewire y Fortify o
+la cuenta propia.
+
+**Pero apareció un hueco real, y de los que importan:** el dashboard del panel
+enseñaba la caja del día, de la semana y del mes **sin exigir `reportes.ver`**,
+mientras que su equivalente en la API (`GET /api/v1/dashboard/*`) sí lo exigía.
+Un vendedor —que no tiene ese permiso— veía los ingresos de la tienda en el
+navegador aunque la app se los negara: la misma cuenta enseñaba cosas distintas
+según por dónde entrase.
+
+Ahora los importes van tras `reportes.ver` y la lista de últimas ventas tras
+`ventas.ver` —antes solo estaba condicionado el enlace «Ver todas», así que
+quien no podía entrar al listado veía igualmente los totales—.
+
+> **No se corta el dashboard entero.** Es la pantalla de aterrizaje: quien no
+> puede ver reportes sigue viendo el almacén y el stock bajo, que sí es
+> información suya. Cortarlo dejaría a un vendedor sin ninguna pantalla al
+> entrar.
+
+> **Cuidado con envolver Blade en un `@if`.** El primer intento dejó un `<div>`
+> abriéndose dentro del `@if` y cerrándose fuera: sin el permiso, la apertura
+> desaparecía y el cierre no, y Livewire —que exige una sola raíz— reventaba con
+> «Multiple root elements». Lo detectó la prueba, no la vista: renderizando como
+> admin nunca se habría visto.
+
 ### La sesión del teléfono se cierra sola (2026-08-29)
 
 El teléfono del mostrador **no es de nadie en concreto**: se queda sobre la caja

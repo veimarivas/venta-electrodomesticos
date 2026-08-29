@@ -27,6 +27,19 @@
         $mes = $this->mes;
     @endphp
 
+    {{--
+        Todo lo que sigue son importes, y van tras `reportes.ver` igual que su
+        equivalente en la API (GET /api/v1/dashboard/*). Sin esa comprobación,
+        un vendedor -que NO tiene ese permiso- veía la caja del día en el panel
+        aunque la app se la negara: la misma cuenta enseñaba cosas distintas
+        según por dónde entrase.
+
+        No se corta el acceso al dashboard entero, que es la pantalla de
+        aterrizaje: quien no puede ver reportes sigue viendo el almacén y el
+        stock bajo, que sí es información suya.
+    --}}
+    @if ($puedeVerReportes)
+
     {{-- ===================== KPIs ===================== --}}
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
@@ -89,8 +102,80 @@
         @endif
     </div>
 
+    {{-- ===================== Ticket promedio y margen ===================== --}}
+    {{--
+        Van en su propia fila y no entre los KPI de arriba: aquellos son
+        ACUMULADOS —cuánto entró— y estos dos son RATIOS —cómo de bien entró—.
+        Mezclarlos haría leer «Bs 45.000» y «Bs 1.250» como cifras del mismo
+        tipo, cuando una es la caja del mes y la otra lo que deja una venta.
+    --}}
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card dash-kpi h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="min-w-0">
+                            <span class="dash-kpi-label">Ticket promedio · mes</span>
+                            <span class="dash-kpi-valor">Bs {{ number_format($mes['ticket'], 2, ',', '.') }}</span>
+                            <span class="dash-kpi-nota">
+                                {{-- Sin ventas no hay promedio que dar: enseñar «Bs 0,00»
+                                     sin decir esto se lee como «se vende a cero». --}}
+                                @if ($mes['ventas'] === 0)
+                                    Sin ventas todavía este mes
+                                @else
+                                    Hoy: Bs {{ number_format($hoy['ticket'], 2, ',', '.') }}
+                                @endif
+                            </span>
+                        </div>
+                        <span class="dash-kpi-icono dash-kpi-icono--unidades"><i class="ri-receipt-line"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if ($puedeVerCostos)
+            <div class="col-sm-6 col-xl-3">
+                <div class="card dash-kpi h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="min-w-0">
+                                <span class="dash-kpi-label">Margen · mes</span>
+                                <span class="dash-kpi-valor">{{ number_format($mes['margen'], 1, ',', '.') }} %</span>
+                                <span class="dash-kpi-nota">
+                                    De cada Bs 100 vendidos, quedan
+                                    Bs {{ number_format($mes['margen'], 1, ',', '.') }}
+                                </span>
+                            </div>
+                            <span class="dash-kpi-icono dash-kpi-icono--ganancia"><i class="ri-percent-line"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="card dash-kpi h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="min-w-0">
+                            <span class="dash-kpi-label">Aparatos vendidos · mes</span>
+                            <span class="dash-kpi-valor">{{ number_format($mes['unidades'], 0, ',', '.') }}</span>
+                            <span class="dash-kpi-nota">
+                                {{ $mes['ventas'] }} {{ $mes['ventas'] === 1 ? 'venta' : 'ventas' }}
+                            </span>
+                        </div>
+                        <span class="dash-kpi-icono dash-kpi-icono--unidades"><i class="ri-archive-2-line"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ===================== Cifra del día + evolución ===================== --}}
+    @endif
+
     <div class="row g-4 mb-4">
+        @if ($puedeVerReportes)
         <div class="col-xl-8">
             <div class="card dash-card h-100">
                 <div class="card-body">
@@ -137,8 +222,12 @@
             </div>
         </div>
 
+        @endif
+
         {{-- ===================== Estado del almacén ===================== --}}
-        <div class="col-xl-4">
+        {{-- Ocupa la fila entera cuando no hay indicadores al lado: media fila
+             vacía se lee como que algo no cargó. --}}
+        <div class="{{ $puedeVerReportes ? 'col-xl-4' : 'col-12' }}">
             <div class="card dash-card h-100">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
@@ -194,8 +283,24 @@
     </div>
 
     {{-- ===================== Últimas ventas + Más vendidos ===================== --}}
+    {{--
+        Las dos tarjetas llevan importes y cada una va tras SU permiso: la lista
+        de ventas tras `ventas.ver`, el ranking tras `reportes.ver`. Antes solo
+        estaba condicionado el enlace «Ver todas», así que quien no podía entrar
+        al listado veía igualmente los totales de las últimas ventas en el
+        panel.
+
+        Cuando una de las dos se oculta, la otra ocupa el ancho entero en vez de
+        dejar media fila vacía.
+    --}}
+    @php
+        $columnasDeVentas = $puedeVerVentas && $puedeVerReportes ? 'col-xl-7' : 'col-12';
+        $columnasDeTop = $puedeVerVentas && $puedeVerReportes ? 'col-xl-5' : 'col-12';
+    @endphp
+
     <div class="row g-4">
-        <div class="col-xl-7">
+        @if ($puedeVerVentas)
+        <div class="{{ $columnasDeVentas }}">
             <div class="card dash-card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <div>
@@ -252,8 +357,11 @@
             </div>
         </div>
 
+        @endif
+
         {{-- ===================== Más vendidos del mes ===================== --}}
-        <div class="col-xl-5">
+        @if ($puedeVerReportes)
+        <div class="{{ $columnasDeTop }}">
             <div class="card dash-card h-100">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
@@ -271,5 +379,6 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
