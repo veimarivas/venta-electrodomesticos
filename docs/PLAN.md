@@ -766,6 +766,43 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### La última sección del menú se quedaba bajo el pliegue (2026-08-29)
+
+«Sistema» —la última sección del menú lateral— quedaba fuera de la pantalla y
+había que buscarla desplazando. Medido en una pantalla de 1366×768, que es la
+que hay en la tienda:
+
+| | Antes | Ahora |
+|---|---|---|
+| Caja de marca | 102 px | 80 px |
+| Alto del menú | 879 px | 768 px |
+| «Sistema» empieza en | y = 790 (fuera) | y = 678 |
+
+La causa fue mía: al meter el logo en el menú le di **84 px de alto**, y con
+seis secciones y once entradas el menú ya rozaba el alto de una pantalla de
+portátil. La marca no puede costar la última sección del menú.
+
+Se recuperó espacio en cuatro sitios, ninguno drástico por sí solo:
+
+- El logo baja a **54 px**. Sigue leyéndose; lo que se pierde es aire.
+- La caja de marca pasa de `1rem/.9rem` a `.7rem/.55rem` de relleno.
+- Los títulos de sección, de `1.15rem/.3rem` a `.68rem/.2rem`. Con **seis
+  títulos**, cada cuarto de rem aquí son 25 px de menú.
+- Los ítems, de `.6rem` a `.5rem` de relleno y de `.14rem` a `.1rem` de margen.
+
+> **16 px se iban en el hueco de la línea base.** La imagen del logo estaba
+> `display: inline`, así que se asentaba sobre la línea base y arrastraba el
+> espacio del descendente: caja de 96 px para un logo de 54. Con `display:
+> block` desaparece —y el centrado pasa a `margin-inline: auto`, porque
+> `text-align` ya no puede con un bloque—. Es el tipo de píxel que no se ve
+> pero se paga abajo.
+
+> **En 720 px de alto sigue sobrando 33 px.** El menú tiene un suelo: seis
+> secciones y once entradas ocupan lo que ocupan. Ahí lo resuelve el
+> desplazamiento —Velzon monta SimpleBar sobre `#navbar-nav`—, que es lo
+> razonable; lo que no era razonable es que hiciera falta en una pantalla de
+> 768.
+
 ### El stock bajo avisa, y el dashboard dice cuánto deja cada venta (2026-08-29)
 
 #### El stock bajo pasa de listado a aviso

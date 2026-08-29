@@ -14,7 +14,7 @@
                             <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="34">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="84">
+                            <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="54">
                         </span>
                     </a>
                     <a href="{{ route('dashboard') }}" class="logo logo-light">
@@ -22,7 +22,7 @@
                             <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="34">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="84">
+                            <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}" height="54">
                         </span>
                     </a>
                 </div>

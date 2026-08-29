@@ -20,12 +20,16 @@
 
     // ---- Marca / Logo ----
     //
-    // El logotipo es más alto que ancho (1,7:1), así que no cabe en los 17 px
-    // que la plantilla reserva para una marca en línea: la caja se hace más
-    // alta y el logo respira. A cambio el menú empieza unos milímetros más
-    // abajo, que es un precio barato por que la marca se lea.
+    // El logotipo es más alto que ancho, así que no cabe en los 17 px que la
+    // plantilla reserva para una marca en línea: a esa altura es una raya. La
+    // caja se hace algo más alta, pero **con medida**.
+    //
+    // El primer intento le dio 84 px y eso empujó el menú 30 px hacia abajo.
+    // Con seis secciones y once entradas, el menú ya rozaba el alto de una
+    // pantalla de portátil: la última sección —Sistema— se quedaba fuera del
+    // pliegue y había que buscarla desplazando. La marca no puede costar eso.
     .navbar-brand-box {
-        padding: 1rem 1.3rem .9rem;
+        padding: .7rem 1.3rem .55rem;
         border-bottom: 1px solid rgba(255, 255, 255, .07);
 
         // Centrado con `text-align`, NUNCA con `display: flex` sobre `.logo`.
@@ -39,15 +43,25 @@
         // `height` va en el atributo del <img> para que el navegador reserve
         // el hueco antes de descargarlo; aquí solo se asegura que el ancho
         // acompañe y que no se pase de la caja al plegar el menú.
+        //
+        // `display: block` no es cosmético: una imagen en línea se asienta
+        // sobre la línea base y arrastra el hueco del descendente, que aquí
+        // eran **16 px de caja** que nadie veía y que el menú pagaba abajo.
+        // Con block desaparece, y el centrado pasa a `margin: auto` porque
+        // `text-align` ya no puede con un bloque.
         img {
+            display: block;
             width: auto;
             max-width: 100%;
+            margin-inline: auto;
         }
     }
 
     // ---- Títulos de sección ----
+    // El aire entre secciones se mide contra el total: con seis títulos, cada
+    // cuarto de rem de más aquí son 25 px menos de menú visible.
     .menu-title {
-        padding: 1.15rem 0 .3rem;
+        padding: .68rem 0 .2rem;
         font-size: .68rem;
         letter-spacing: .13em;
         color: rgba(255, 255, 255, .42);
@@ -76,8 +90,8 @@
     .navbar-nav > .nav-item > .nav-link.menu-link {
         position: relative;
         width: calc(100% - 1.5rem);
-        margin: .14rem .75rem;
-        padding: .6rem .85rem;
+        margin: .1rem .75rem;
+        padding: .5rem .85rem;
         border-radius: .6rem;
         font-size: .9rem;
         color: rgba(255, 255, 255, .78);
@@ -111,8 +125,8 @@
 
     // ---- Sub-ítems ----
     .navbar-nav .nav-sm .nav-link {
-        margin: .06rem .6rem;
-        padding: .5rem .7rem .5rem .55rem !important;
+        margin: .04rem .6rem;
+        padding: .42rem .7rem .42rem .55rem !important;
         border-radius: .5rem;
         font-size: .84rem;
         color: rgba(255, 255, 255, .7);
