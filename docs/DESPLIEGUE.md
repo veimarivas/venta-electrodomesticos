@@ -156,6 +156,45 @@ pruebas y vaciar la de la tienda.
 > de `model_has_roles`, un usuario nuevo que reusara ese id heredaría permisos
 > ajenos.
 
+### Cuando alguien no puede entrar
+
+«No puedo entrar» tiene cinco causas que desde el formulario se ven iguales: la
+cuenta no existe, está desactivada, la contraseña no es la que se cree, el
+intento está bloqueado por reintentos, o la caché de permisos quedó vieja.
+
+```bash
+php artisan usuario:acceso admin@ejemplo.com
+```
+
+Dice cuál de las cinco es. Si la cuenta no existe, **lista las que sí**, con su
+rol y si están activas — que es lo que hace falta cuando uno no recuerda con
+qué correo se creó.
+
+Busca **igual que el formulario**: por correo o por nombre, pasando lo escrito a
+minúsculas. Si buscara de otra forma diría que la cuenta existe mientras el
+login la sigue rechazando, que es peor que no tener diagnóstico.
+
+Para devolver el acceso:
+
+```bash
+php artisan usuario:acceso admin@ejemplo.com --reset
+```
+
+```bash
+php artisan usuario:acceso admin@ejemplo.com --activar
+```
+
+> **La contraseña se teclea, no se pasa como argumento.** Escrita en la orden
+> quedaría en el historial del intérprete y en la lista de procesos, donde la ve
+> cualquiera con acceso al servidor. El comando la pide oculta y la confirma.
+
+> **`--reset` también reactiva la cuenta.** Cambiar la clave de una cuenta
+> desactivada dejaría a la persona igual de fuera, y ese viaje de ida y vuelta
+> es justo lo que no hace falta cuando alguien está esperando para trabajar.
+
+> **Si el aviso habla de esperar, es el límite de reintentos**, no la
+> contraseña. El contador vive en la caché: `php artisan cache:clear`.
+
 ---
 
 ### Datos de demostración (opcional)
