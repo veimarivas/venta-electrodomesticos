@@ -400,15 +400,19 @@
             .auth-body { --auth-logo: clamp(12rem, 20vw, 19rem); }
 
             .auth-showcase {
-                justify-content: space-between;
-                align-items: flex-start;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
                 gap: clamp(1.5rem, 3vh, 3rem);
             }
 
-            .auth-logo { margin: 0; }
+            .auth-logo { margin: 0 auto; }
 
             .auth-showcase-content,
             .auth-showcase-footer { display: block; }
+            .auth-showcase-content { max-width: 28rem; }
+            .auth-showcase-content .auth-points li { justify-content: center; }
+            .auth-showcase-footer { margin-top: auto; }
         }
 
         /* Con poca altura no hay sitio para la lista de ventajas aunque el

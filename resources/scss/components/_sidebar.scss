@@ -166,3 +166,25 @@
         border-radius: .25rem;
     }
 }
+
+// ---- Sidebar comprimido (sm / sm-hover) ----
+//
+// Cuando el sidebar se pliega a vista de iconos, Velzon pinta el
+// `.navbar-brand-box` con `background-color: var(--vz-vertical-menu-bg)`,
+// que es un color sólido. Eso rompe el gradiente del menú: la zona del
+// logo queda de un tono y el resto del sidebar de otro.
+//
+// La solución es que la marca herede el mismo gradiente del sidebar para
+// que la transición entre zona de logo y menú sea transparente.
+:is([data-layout=vertical], [data-layout=semibox]):is([data-sidebar-size=sm], [data-sidebar-size=sm-hover]) {
+    .app-menu .navbar-brand-box {
+        background: linear-gradient(180deg, #0a182b 0%, #10233c 45%, #1b3757 100%) !important;
+        border-bottom-color: rgba(255, 255, 255, .07);
+    }
+}
+
+// En sm-hover, al expandir el sidebar por hover, el logo crece y el texto
+// se muestra: el fondo debe seguir siendo el gradiente.
+:is([data-layout=vertical], [data-layout=semibox])[data-sidebar-size=sm-hover] .navbar-menu:hover .navbar-brand-box {
+    background: linear-gradient(180deg, #0a182b 0%, #10233c 45%, #1b3757 100%) !important;
+}
