@@ -568,6 +568,26 @@ Tres cosas que conviene saber antes de eliminar:
   papelera: las ventas que ya lo incluyen se conservan y se puede recuperar desde
   el panel. Deja de ofrecerse en el punto de venta.
 
+### La sesión se cierra sola
+
+Si el teléfono pasa **15 minutos sin que nadie lo toque**, la app cierra la
+sesión. Al volver pide usuario y contraseña otra vez, y avisa de por qué:
+*«Se cerró la sesión porque el teléfono estuvo un rato sin usarse»*.
+
+No es un fallo. El teléfono del mostrador no es de nadie en concreto: se queda
+sobre la caja, y sin esto cualquiera que lo cogiera podría cobrar, cambiar
+precios o mirar el inventario **con la cuenta de otra persona**.
+
+- El contador se reinicia con cualquier toque: escribir, desplazar o pulsar.
+- Cerrar la app y volver a abrirla **no** lo reinicia. El plazo se cuenta igual.
+- Durante una venta normal no llega a saltar: buscar el aparato, acordar el
+  precio y cobrar lleva mucho menos de quince minutos.
+
+> Si te salta a menudo, no es que el plazo sea corto: es que el teléfono se
+> queda solo. Cerrar sesión al dejarlo es más rápido que volver a entrar.
+
+---
+
 ### Inventario desde el teléfono
 
 Es la pantalla del almacén: se usa **de pie, con el aparato en la mano**. Se

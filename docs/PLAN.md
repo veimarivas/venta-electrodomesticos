@@ -766,6 +766,71 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### La sesión del teléfono se cierra sola (2026-08-29)
+
+El teléfono del mostrador **no es de nadie en concreto**: se queda sobre la caja
+y quien lo coja entra con la sesión de quien lo dejó —y puede cobrar, tocar
+precios o mirar el inventario en su nombre—. El token de la API no caduca por su
+cuenta, así que una sesión abierta lo seguía estando semanas después.
+
+Ahora la app cierra la sesión tras **15 minutos sin que nadie la toque**.
+
+| | |
+|---|---|
+| Plazo | 15 min (`Constantes.tiempoDeInactividad`) |
+| Comprobación | cada 30 s mientras la app está abierta |
+| Dónde vive la marca | almacenamiento **seguro**, no memoria |
+
+> **Quince minutos, ni más ni menos.** Es el punto donde una venta normal
+> —buscar el aparato, negociar el precio, cobrar— nunca llega a agotarse, y un
+> teléfono olvidado sí. Con menos, el cajero teclearía la contraseña varias
+> veces al día y acabaría poniendo una fácil, que es peor que no tener plazo.
+
+`VigilanteDeInactividad` envuelve toda la app y vigila por **tres caminos,
+porque ninguno basta solo**:
+
+1. **Los toques de pantalla** reinician el contador. Se escuchan con un
+   `Listener` translúcido, así que cuentan aunque el widget de debajo se quede
+   el evento: escribir en un campo o desplazar un listado es actividad igual
+   que pulsar un botón.
+2. **Un temporizador** comprueba el plazo cada medio minuto. Sin él, un teléfono
+   olvidado con la app abierta y la pantalla encendida no se cerraría nunca:
+   nadie la toca, así que ningún evento lo dispararía.
+3. **El ciclo de vida.** Al pasar a segundo plano se guarda la marca; al volver
+   se comprueba de inmediato, sin esperar al temporizador —que además está
+   parado mientras la app no se ve—.
+
+> **La marca va en disco, no en memoria.** Guardarla solo en RAM haría que matar
+> la app y volver a abrirla reiniciara el contador, que es exactamente lo que
+> haría inútil la medida. Por eso `_restaurar()` la comprueba **antes** de pedir
+> el perfil al servidor: si venció mientras la app estaba cerrada, no tiene
+> sentido gastar una petición con un token que se va a tirar, y así el cierre
+> también funciona sin red.
+
+> **Se escribe una vez cada 30 segundos, no en cada toque.** El almacenamiento
+> seguro pasa por el Keystore de Android y escribir ahí en cada toque se nota al
+> desplazarse por un listado. Perder hasta medio minuto de precisión no cambia
+> nada en un plazo de quince minutos.
+
+> **La comparación es en UTC.** La marca se guarda así a propósito: con el reloj
+> del teléfono cambiado de zona, una resta en hora local daría horas de más o de
+> menos y la sesión no vencería nunca —o vencería siempre—.
+
+> **Sin marca previa no se cierra: se empieza a contar.** Es el caso de quien ya
+> tenía sesión antes de que esto existiera. Echarlo al actualizar la app sería
+> un susto sin motivo.
+
+> **No se avisa al servidor de la salida.** El teléfono puede llevar horas en un
+> cajón sin red, y esperar a una petición que va a fallar solo retrasaría el
+> cierre. El token sigue vivo en el servidor hasta que alguien lo revoque desde
+> el panel, pero ya no está en el teléfono, que es de lo que protege esto.
+
+> **El login lo explica, y en azul, no en rojo.** `SesionCerrada` lleva ahora un
+> `porInactividad`. Encontrarse la pantalla de entrada sin explicación se lee
+> como «la app se ha roto» y acaba en una llamada; con el aviso se entiende que
+> es una medida de seguridad. En rojo parecería un error, y aquí no ha fallado
+> nada.
+
 ### El sistema toma los colores del logo (2026-08-29)
 
 Hasta ahora el sistema era una plantilla con un nombre encima: turquesa de
