@@ -118,6 +118,46 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST https://ventas.posgradosinnovac
 > APK nuevo: al revés, los teléfonos ven errores hasta que el servidor se pone
 > al día.
 
+### Vaciar los datos para empezar a probar
+
+Deja la base como recién instalada **sin perder los accesos**: conserva roles,
+permisos y **una sola cuenta**, la del administrador, con su rol. Borra todo lo
+demás —catálogo, inventario, compras, ventas, personas, avisos y las sesiones
+abiertas—.
+
+```bash
+php artisan backup:run
+```
+
+```bash
+php artisan datos:limpiar
+```
+
+Antes de tocar nada enseña qué conserva y qué borra, con el recuento por tabla,
+y pide **escribir el nombre de la base** para confirmar. No vale un sí: obliga a
+mirar sobre cuál se está ejecutando, que es la diferencia entre vaciar la de
+pruebas y vaciar la de la tienda.
+
+| Opción | Para qué |
+|---|---|
+| `--admin=correo@ejemplo.com` | Conservar otra cuenta en vez de la del rol `admin` |
+| `--force` | Saltarse la confirmación (guiones desatendidos) |
+
+> **Es destructivo y no tiene vuelta atrás.** El comando recuerda hacer copia,
+> pero no la hace solo a propósito: una copia automática antes de cada borrado
+> da una falsa sensación de red, porque nadie comprueba que se pueda restaurar.
+> Hazla tú y verifícala con `php artisan backup:list`.
+
+> **Si no encuentra a quién conservar, no borra nada.** Sin ninguna cuenta con
+> rol `admin` y sin `--admin`, se planta en vez de vaciar la base a ciegas y
+> dejar el sistema sin forma de entrar.
+
+> **Las cuentas borradas se llevan sus roles asignados.** Si quedaran las filas
+> de `model_has_roles`, un usuario nuevo que reusara ese id heredaría permisos
+> ajenos.
+
+---
+
 ### Datos de demostración (opcional)
 
 Para enseñar el sistema o revisar los reportes con historia real:
