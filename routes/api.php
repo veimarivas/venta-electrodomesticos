@@ -105,11 +105,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('catalogo.producto');
         });
 
-        // El serial del fabricante, que se lee con la cámara en el almacén. Va
-        // con su propio permiso porque cambia un dato del inventario.
+        // ---- Inventario ----------------------------------------------------
+        // El módulo que más se consulta de pie: con el aparato en la mano y sin
+        // un ordenador cerca. Escanear la etiqueta abre su ficha con el kardex.
+        Route::middleware('permission:unidades.ver')->group(function () {
+            Route::get('/unidades', [UnidadController::class, 'index'])->name('unidades.index');
+            Route::get('/unidades/{unidad}', [UnidadController::class, 'show'])->name('unidades.show');
+        });
+
+        // El serial del fabricante, que se lee con la cámara en el almacén, y
+        // el ajuste de estado/ubicación. Van con su propio permiso porque
+        // cambian datos del inventario.
         Route::middleware('permission:unidades.editar')->group(function () {
             Route::post('/unidades/{unidad}/serial', [UnidadController::class, 'registrarSerial'])
                 ->name('unidades.serial');
+            Route::post('/unidades/{unidad}', [UnidadController::class, 'actualizar'])
+                ->name('unidades.actualizar');
         });
 
         // ---- Escritura del catálogo ---------------------------------------

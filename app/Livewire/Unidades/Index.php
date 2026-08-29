@@ -4,8 +4,10 @@ namespace App\Livewire\Unidades;
 
 use App\Models\Unidad;
 use App\Models\Producto;
+use App\Support\AjusteDeUnidad;
 use App\Support\GeneradorCodigoUnidad;
 use App\Support\Kardex;
+use RuntimeException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -340,31 +342,41 @@ class Index extends Component
         $validados = $this->validate();
 
         if ($this->itemId !== null) {
-            $mensaje = DB::transaction(function () use ($validados): string {
-                $unidad = Unidad::findOrFail($this->itemId);
-                $payload = [
-                    'serial' => $validados['serial'] === '' ? null : $validados['serial'],
-                    'ubicacion' => $validados['ubicacion'] === '' ? null : $validados['ubicacion'],
-                    'notas' => $validados['notas'] === '' ? null : $validados['notas'],
-                ];
-                // Compatibilidad con tests y con edición directa vía Livewire:
-                // se permiten ajustes de costo/precio/estado/fecha si vienen validados.
-                if (array_key_exists('costo', $validados) && $validados['costo'] !== '' && $validados['costo'] !== null) {
-                    $payload['costo_unitario'] = (float) $validados['costo'];
-                }
-                if (array_key_exists('precio', $validados) && $validados['precio'] !== '' && $validados['precio'] !== null) {
-                    $payload['precio_venta'] = (float) $validados['precio'];
-                }
-                if (array_key_exists('estado', $validados) && $validados['estado'] !== '' && $validados['estado'] !== null) {
-                    $payload['estado'] = $validados['estado'];
-                }
-                if (array_key_exists('fechaIngreso', $validados) && $validados['fechaIngreso'] !== '' && $validados['fechaIngreso'] !== null) {
-                    $payload['ingresado_en'] = $validados['fechaIngreso'].' 00:00:00';
-                }
-                $unidad->update($payload);
+            $unidad = Unidad::findOrFail($this->itemId);
 
-                return 'Unidad actualizada correctamente.';
-            });
+            $payload = [
+                'serial' => $validados['serial'] === '' ? null : $validados['serial'],
+                'ubicacion' => $validados['ubicacion'] === '' ? null : $validados['ubicacion'],
+                'notas' => $validados['notas'] === '' ? null : $validados['notas'],
+            ];
+            // Compatibilidad con tests y con edición directa vía Livewire:
+            // se permiten ajustes de costo/precio/estado/fecha si vienen validados.
+            if (array_key_exists('costo', $validados) && $validados['costo'] !== '' && $validados['costo'] !== null) {
+                $payload['costo_unitario'] = (float) $validados['costo'];
+            }
+            if (array_key_exists('precio', $validados) && $validados['precio'] !== '' && $validados['precio'] !== null) {
+                $payload['precio_venta'] = (float) $validados['precio'];
+            }
+            if (array_key_exists('estado', $validados) && $validados['estado'] !== '' && $validados['estado'] !== null) {
+                $payload['estado'] = $validados['estado'];
+            }
+            if (array_key_exists('fechaIngreso', $validados) && $validados['fechaIngreso'] !== '' && $validados['fechaIngreso'] !== null) {
+                $payload['ingresado_en'] = $validados['fechaIngreso'].' 00:00:00';
+            }
+
+            // Por `AjusteDeUnidad` y no con un `update()` suelto: es lo que
+            // deja el cambio de estado escrito en el kardex. Esta pantalla lo
+            // hacía a mano y se le olvidaba, así que marcar un aparato como
+            // dañado lo sacaba del stock sin dejar rastro de cuándo ni por qué.
+            try {
+                app(AjusteDeUnidad::class)->aplicar($unidad, $payload);
+            } catch (RuntimeException $e) {
+                $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+                return;
+            }
+
+            $mensaje = 'Unidad actualizada correctamente.';
         } else {
             $datos = [
                 'producto_id' => $this->productoId,
