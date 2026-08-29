@@ -364,6 +364,141 @@ class RegistroDeVenta
         });
     }
 
+    /**
+     * Devuelve UN aparato de una venta, sin tocar el resto.
+     *
+     * Hasta ahora solo se podía deshacer la venta entera. Para devolver un
+     * aparato de una venta de tres había que anularlo todo y volver a cobrar,
+     * lo que ensucia los reportes y descuadra las comisiones del vendedor.
+     *
+     * La venta **no se anula**: sigue siendo la misma venta, con un aparato
+     * menos. Solo si se devuelven todos pasa a anulada, porque una venta sin
+     * ningún aparato no es una venta.
+     */
+    public function devolver(VentaDetalle $detalle, string $motivo): void
+    {
+        $motivo = trim($motivo);
+
+        if ($motivo === '') {
+            throw new RuntimeException('Hay que decir por qué se devuelve el aparato.');
+        }
+
+        // Se cargan aquí y no se dan por cargadas: el proyecto corre con
+        // `Model::shouldBeStrict()`, así que una relación que el llamante no
+        // trajo revienta en vez de consultarse sola. El servicio no puede
+        // depender de cómo se buscó la línea.
+        $detalle->loadMissing(['venta', 'unidad']);
+
+        $venta = $detalle->venta;
+
+        if ($venta === null) {
+            throw new RuntimeException('Esa línea no pertenece a ninguna venta.');
+        }
+
+        if ($venta->esta_anulada) {
+            throw new RuntimeException(
+                'La venta está anulada: sus aparatos ya volvieron al stock.'
+            );
+        }
+
+        if ($detalle->estaDevuelto()) {
+            throw new RuntimeException('Ese aparato ya se había devuelto.');
+        }
+
+        DB::transaction(function () use ($detalle, $venta, $motivo): void {
+            $unidad = $detalle->unidad;
+
+            if ($unidad !== null) {
+                $estadoAnterior = $unidad->estado;
+
+                // Los dos movimientos del kardex, igual que en la anulación:
+                // primero sale de vendido y luego vuelve al stock. El kardex
+                // cuenta lo que pasó, no solo dónde acabó.
+                $unidad->update(['estado' => 'devuelto', 'vendido_en' => null]);
+
+                $this->kardex->cambioDeEstado(
+                    $unidad->refresh(),
+                    $estadoAnterior,
+                    $venta,
+                    "Devolución de la venta {$venta->codigo}: {$motivo}"
+                );
+
+                $unidad->update(['estado' => 'en_stock']);
+
+                $this->kardex->cambioDeEstado(
+                    $unidad->refresh(),
+                    'devuelto',
+                    $venta,
+                    'Vuelve al stock tras la devolución'
+                );
+            }
+
+            $detalle->update([
+                'devuelto_en' => now(),
+                'motivo_devolucion' => $motivo,
+                // Se suelta la guardia de la doble venta SOLO de esta línea:
+                // el aparato vuelve a poder venderse, los demás siguen atados.
+                'unidad_vendida_id' => null,
+            ]);
+
+            $this->recalcular($venta->refresh(), $motivo);
+        });
+    }
+
+    /**
+     * Rehace los importes de la venta contando solo lo que sigue vendido.
+     *
+     * `total` pasa a ser el **neto**, no lo que se cobró en su día. Es
+     * deliberado: los reportes suman `total` y `ganancia` de las ventas
+     * completadas, así que dejándolos netos siguen cuadrando sin tocar ni una
+     * consulta. Lo cobrado originalmente no se pierde —se reconstruye con
+     * `total + total_devuelto`— y por eso ese acumulado se guarda.
+     */
+    private function recalcular(Venta $venta, string $motivo): void
+    {
+        $lineas = $venta->detalles()->get();
+
+        $vigentes = $lineas->whereNull('devuelto_en');
+        $devueltas = $lineas->whereNotNull('devuelto_en');
+
+        $subtotal = 0;
+        $descuento = 0;
+        $costo = 0;
+
+        foreach ($vigentes as $linea) {
+            $subtotal += ProrrateoDeGastos::aCentavos($linea->precio_unitario);
+            $descuento += ProrrateoDeGastos::aCentavos($linea->descuento);
+            $costo += ProrrateoDeGastos::aCentavos($linea->costo_unitario);
+        }
+
+        $total = $subtotal - $descuento;
+
+        $devuelto = $devueltas->reduce(
+            fn (int $suma, VentaDetalle $l): int => $suma + $l->netoEnCentavos(),
+            0
+        );
+
+        $venta->update([
+            'subtotal' => ProrrateoDeGastos::aDecimal($subtotal),
+            'descuento' => ProrrateoDeGastos::aDecimal($descuento),
+            'total' => ProrrateoDeGastos::aDecimal($total),
+            'total_devuelto' => ProrrateoDeGastos::aDecimal($devuelto),
+            'costo_total' => ProrrateoDeGastos::aDecimal($costo),
+            'ganancia' => ProrrateoDeGastos::aDecimal($total - $costo),
+            'primera_devolucion_en' => $venta->primera_devolucion_en ?? now(),
+        ]);
+
+        // Devueltos todos, no queda venta. Se marca anulada para que no siga
+        // contando como una venta viva de importe cero en los listados.
+        if ($vigentes->isEmpty()) {
+            $venta->update([
+                'estado' => 'anulada',
+                'anulada_en' => now(),
+                'motivo_anulacion' => "Se devolvieron todos los aparatos: {$motivo}",
+            ]);
+        }
+    }
+
     private function esUnidadDuplicada(Throwable $e): bool
     {
         return str_contains($e->getMessage(), 'venta_detalles_unidad_vendida_id_unique')

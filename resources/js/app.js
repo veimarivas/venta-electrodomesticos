@@ -359,6 +359,7 @@ document.addEventListener('livewire:init', () => {
         'modal-qr': 'modalQr',
         'modal-eliminar-qr': 'modalEliminarQr',
         'modal-anular-venta': 'modalAnularVenta',
+        'modal-devolucion': 'modalDevolucion',
         'modal-recibo': 'modalRecibo',
         'modal-cliente': 'modalCliente',
         'modal-archivar-cliente': 'modalArchivarCliente',

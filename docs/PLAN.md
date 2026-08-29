@@ -766,6 +766,87 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### Devolver un aparato sin anular la venta (2026-08-29)
+
+Hasta ahora solo se podía deshacer una venta **entera**. Para devolver un aparato
+de una venta de tres había que anularlo todo y volver a cobrar, lo que ensucia
+los reportes y descuadra las comisiones del vendedor.
+
+Va antes que la venta a crédito a propósito: los dos tocan la tabla de ventas, y
+hacerlos a la vez obliga a rehacer uno de los dos. Este es el más chico.
+
+#### `total` pasa a ser el neto
+
+Es la decisión que sostiene todo lo demás. Al devolver, los importes de la venta
+se **recalculan contando solo lo que sigue vendido**.
+
+| | Antes | Tras devolver 1 de 3 |
+|---|---|---|
+| `total` | 3000.00 | **2000.00** |
+| `total_devuelto` | 0.00 | **1000.00** |
+| `ganancia` | 1200.00 | 800.00 |
+
+> **Por qué el neto y no un descuento aparte.** Los reportes suman `total` y
+> `ganancia` de las ventas completadas. Dejándolos netos, **siguen cuadrando sin
+> tocar ni una consulta**: hay una prueba que lo comprueba llamando a
+> `Reportes::resumen()` después de una devolución. La alternativa —guardar el
+> importe original y restar en cada consulta— habría obligado a cambiar seis
+> sitios y a acordarse del séptimo.
+
+> **Lo cobrado en su día no se pierde.** Se reconstruye con
+> `total + total_devuelto`, que es lo que expone el accesor `total_original`. Sin
+> guardar el acumulado, una devolución borraría el rastro de por cuánto se
+> vendió.
+
+#### La verdad vive en la línea
+
+`venta_detalles.devuelto_en` es la única marca que decide si un aparato cuenta.
+La cabecera solo guarda el acumulado, para no tener que sumar las líneas cada
+vez que se pinta una venta.
+
+> **La guardia de la doble venta se suelta solo en esa línea.**
+> `unidad_vendida_id` pasa a NULL únicamente en el aparato devuelto: vuelve a
+> poder venderse mientras los otros dos siguen atados a su venta.
+
+> **Dos movimientos en el kardex, igual que en la anulación**: primero sale de
+> vendido, después vuelve al stock. El kardex cuenta lo que pasó, no solo dónde
+> acabó.
+
+> **Devolver todos anula la venta.** Una venta sin ningún aparato no es una
+> venta: seguiría contando como viva, de importe cero, en todos los listados.
+
+> **El motivo es obligatorio.** Sin él, dentro de un mes nadie sabrá si el
+> aparato volvió fallado o si el cliente cambió de idea, que son dos cosas muy
+> distintas cuando hay que reclamarle al proveedor.
+
+#### Va con el permiso de anular, no con uno nuevo
+
+Devolver una línea es una acción **más pequeña** que anular la venta entera, así
+que quien puede lo más puede lo menos. Un permiso nuevo habría obligado a
+repartirlo a mano en cada rol antes de que nadie pudiera usar la función.
+
+#### Dos cosas que se rompieron por el camino
+
+> **`loadMissing` en el servicio, no confianza en el llamante.** El proyecto
+> corre con `Model::shouldBeStrict()`: una relación que el llamante no trajo
+> revienta en vez de consultarse sola. El servicio no puede depender de cómo se
+> buscó la línea.
+
+> **Livewire rehidrata el modelo pelado en cada petición.** Las relaciones que
+> `mount()` cargaba no sobrevivían al primer clic, y con el modo estricto eso es
+> una excepción en mitad de la vista, no una consulta de más. Se cargan en
+> `render()`. El componente no tenía acciones hasta ahora, y por eso nunca se
+> había notado.
+
+#### Y una prueba que llevaba tiempo siendo una moneda al aire
+
+`ApiV1Test` cuenta avisos después de vender, y `ProductoFactory` pone
+`stock_minimo` **al azar entre 0 y 10**. Con un mínimo mayor que cero, vender la
+única unidad dispara también el aviso de stock bajo que se añadió el 2026-08-29:
+dos avisos donde la prueba esperaba uno. Pasaba o fallaba según el número que
+saliera. Ahora el ayudante fija `stock_minimo => 0`, que es lo que esa prueba
+quiere decir.
+
 ### El modo oscuro dejaba medio panel en claro (2026-08-29)
 
 Al encender el modo oscuro, varios apartados seguían pintándose como si nada:

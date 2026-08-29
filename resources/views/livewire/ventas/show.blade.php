@@ -83,8 +83,14 @@
                 </div>
                 <div class="ventas-show-kpi-body">
                     <small class="ventas-show-kpi-label">Aparatos</small>
-                    <h3 class="ventas-show-kpi-value">{{ $venta->detalles->count() }}</h3>
-                    <small class="ventas-show-kpi-caption">Unidades vendidas</small>
+                    <h3 class="ventas-show-kpi-value">{{ $vendidos }}</h3>
+                    <small class="ventas-show-kpi-caption">
+                        @if ($devueltos > 0)
+                            {{ $devueltos }} {{ $devueltos === 1 ? 'devuelto' : 'devueltos' }}
+                        @else
+                            Unidades vendidas
+                        @endif
+                    </small>
                 </div>
             </div>
         </div>
@@ -195,6 +201,19 @@
                         <span class="ventas-show-fila-label fw-bold">Total</span>
                         <span class="ventas-show-fila-valor ventas-show-total-grande">Bs {{ number_format((float) $venta->total, 2, ',', '.') }}</span>
                     </div>
+
+                    {{-- Va DEBAJO del total y no como una resta más arriba: el
+                         subtotal ya está neto, así que una fila «− devuelto»
+                         entre subtotal y total se lee como si se restara dos
+                         veces. Aquí explica por qué el total es menor de lo que
+                         se cobró, que es la pregunta real. --}}
+                    @if ($venta->tiene_devoluciones)
+                        <div class="alert alert-warning alert-borderless mt-3 mb-0 py-2 fs-13">
+                            <i class="ri-arrow-go-back-line align-bottom me-1"></i>
+                            Se cobraron <strong>Bs {{ number_format((float) $venta->total_original, 2, ',', '.') }}</strong>
+                            y se devolvieron <strong>Bs {{ number_format((float) $venta->total_devuelto, 2, ',', '.') }}</strong>.
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -208,7 +227,13 @@
                     <i class="ri-shopping-bag-3-line"></i>
                 </div>
                 <h5 class="mb-0">Aparatos vendidos</h5>
-                <span class="ventas-show-seccion-badge">{{ $venta->detalles->count() }}</span>
+                <span class="ventas-show-seccion-badge">{{ $vendidos }}</span>
+                @if ($devueltos > 0)
+                    <span class="badge bg-warning-subtle text-warning">
+                        <i class="ri-arrow-go-back-line align-bottom me-1"></i>
+                        {{ $devueltos }} {{ $devueltos === 1 ? 'devuelto' : 'devueltos' }}
+                    </span>
+                @endif
             </div>
         </div>
         <div class="ventas-show-seccion-body">
@@ -223,12 +248,19 @@
                                 <th class="text-end">Costo</th>
                                 <th class="text-end">Ganancia</th>
                             @endif
-                            <th class="text-end pe-4">Importe</th>
+                            <th class="text-end">Importe</th>
+                            <th class="text-end pe-4" style="width: 1%;">
+                                <span class="visually-hidden">Acciones</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($venta->detalles as $detalle)
-                            <tr>
+                            {{-- Una linea devuelta se atenua y se tacha: sigue
+                                 en la venta como histórico, pero ya no cuenta
+                                 en el importe. --}}
+                            <tr wire:key="linea-{{ $detalle->id }}"
+                                class="{{ $detalle->estaDevuelto() ? 'ventas-show-linea-devuelta' : '' }}">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="ventas-show-producto-img flex-shrink-0">
@@ -247,6 +279,17 @@
                                                 @if ($detalle->unidad?->serial) · {{ $detalle->unidad->serial }} @endif
                                                 @if ($detalle->producto?->marca) · {{ $detalle->producto->marca->nombre }} @endif
                                             </small>
+                                            @if ($detalle->estaDevuelto())
+                                                <div class="mt-1">
+                                                    <span class="badge bg-warning-subtle text-warning">
+                                                        <i class="ri-arrow-go-back-line align-bottom me-1"></i>
+                                                        Devuelto {{ $detalle->devuelto_en?->translatedFormat('d M') }}
+                                                    </span>
+                                                    <small class="d-block text-muted fs-11 mt-1">
+                                                        {{ $detalle->motivo_devolucion }}
+                                                    </small>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -262,8 +305,18 @@
                                     <td class="text-end ventas-show-col-num text-muted">{{ number_format((float) $detalle->costo_unitario, 2, ',', '.') }}</td>
                                     <td class="text-end ventas-show-col-num text-success fw-semibold">{{ number_format((float) $detalle->ganancia, 2, ',', '.') }}</td>
                                 @endif
-                                <td class="text-end ventas-show-col-num fw-semibold pe-4">
+                                <td class="text-end ventas-show-col-num fw-semibold">
                                     Bs {{ number_format((float) $detalle->precio_unitario - (float) $detalle->descuento, 2, ',', '.') }}
+                                </td>
+                                <td class="text-end pe-4">
+                                    @if ($puedeDevolver && ! $detalle->estaDevuelto())
+                                        <button type="button" class="btn btn-sm btn-soft-warning"
+                                            wire:click="confirmarDevolucion({{ $detalle->id }})"
+                                            wire:loading.attr="disabled"
+                                            title="Devolver este aparato al stock">
+                                            <i class="ri-arrow-go-back-line align-bottom"></i>
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -380,5 +433,64 @@
             </div>
         </div>
     @endif
+
+    {{-- ===================== Devolver un aparato ===================== --}}
+    <div class="modal fade" id="modalDevolucion" tabindex="-1" aria-hidden="true"
+         wire:ignore.self data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title rounded-circle fs-4 bg-warning-subtle text-warning">
+                                <i class="ri-arrow-go-back-line"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0">Devolver el aparato</h5>
+                            <small class="text-muted">Vuelve al stock y deja de contar en esta venta</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="motivo-devolucion" class="form-label">¿Por qué se devuelve?</label>
+                        <textarea id="motivo-devolucion" rows="3"
+                                  class="form-control @error('motivoDevolucion') is-invalid @enderror"
+                                  wire:model="motivoDevolucion"
+                                  placeholder="Vino fallado, el cliente se arrepintió, no era el modelo pedido..."></textarea>
+                        @error('motivoDevolucion')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        {{-- El motivo no es burocracia: es lo que el proveedor
+                             pide cuando hay que reclamarle una falla, y lo que
+                             distingue un aparato roto de un cliente indeciso. --}}
+                        <small class="text-muted d-block mt-2">
+                            Queda guardado en la venta y en el historial del aparato.
+                        </small>
+                    </div>
+
+                    <div class="alert alert-warning alert-borderless mb-0 fs-13">
+                        <i class="ri-information-line align-bottom me-1"></i>
+                        La venta <strong>no se anula</strong>: sigue siendo la misma, con un aparato
+                        menos. Si devuelves todos, entonces sí queda anulada.
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" wire:click="devolver"
+                            wire:loading.attr="disabled" wire:target="devolver">
+                        <span wire:loading.remove wire:target="devolver">
+                            <i class="ri-arrow-go-back-line align-bottom me-1"></i> Devolver al stock
+                        </span>
+                        <span wire:loading wire:target="devolver">Devolviendo...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>

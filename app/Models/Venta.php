@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Storage;
     'subtotal',
     'descuento',
     'total',
+    'total_devuelto',
     'costo_total',
     'ganancia',
     'metodo_pago',
@@ -35,6 +36,7 @@ use Illuminate\Support\Facades\Storage;
     'comprobante_qr',
     'estado',
     'anulada_en',
+    'primera_devolucion_en',
     'motivo_anulacion',
     'notas',
 ])]
@@ -78,10 +80,12 @@ class Venta extends Model
             'user_id' => 'integer',
             'vendida_en' => 'datetime',
             'anulada_en' => 'datetime',
+            'primera_devolucion_en' => 'datetime',
             // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
             'subtotal' => 'decimal:2',
             'descuento' => 'decimal:2',
             'total' => 'decimal:2',
+            'total_devuelto' => 'decimal:2',
             'costo_total' => 'decimal:2',
             'ganancia' => 'decimal:2',
             'monto_efectivo' => 'decimal:2',
@@ -129,6 +133,28 @@ class Venta extends Model
     protected function estaCompletada(): Attribute
     {
         return Attribute::get(fn (): bool => $this->estado === 'completada');
+    }
+
+    /** ¿Se devolvió algún aparato de esta venta? */
+    protected function tieneDevoluciones(): Attribute
+    {
+        return Attribute::get(fn (): bool => (float) $this->total_devuelto > 0);
+    }
+
+    /**
+     * Lo que se cobró en su día, antes de cualquier devolución.
+     *
+     * `total` guarda el NETO para que los reportes sumen sin tocar ninguna
+     * consulta; el importe original se reconstruye aquí.
+     */
+    protected function totalOriginal(): Attribute
+    {
+        return Attribute::get(
+            fn (): string => number_format(
+                (float) $this->total + (float) $this->total_devuelto,
+                2, '.', ''
+            )
+        );
     }
 
     /** Solo las ventas que cuentan para los reportes. */

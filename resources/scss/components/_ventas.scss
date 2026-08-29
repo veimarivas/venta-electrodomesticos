@@ -829,3 +829,34 @@
         &:active { transform: translateY(0); }
     }
 }
+
+
+// ---- Línea devuelta -------------------------------------------------------
+//
+// La línea sigue en la tabla porque es histórico —esa venta incluyó ese
+// aparato—, pero ya no cuenta en el importe. Se atenúa y se tacha el precio
+// para que se lea de un vistazo cuál de las tres se devolvió, sin tener que
+// sumar a mano para descubrir por qué el total no cuadra con las líneas.
+.ventas-show-linea-devuelta {
+    background: var(--marca-suave);
+
+    // El nombre y los códigos se apagan, pero no desaparecen: hay que poder
+    // leer qué aparato era.
+    > td {
+        opacity: .72;
+    }
+
+    // El importe tachado es la señal de que esa cifra ya no suma.
+    .ventas-show-col-num {
+        text-decoration: line-through;
+        text-decoration-thickness: 1px;
+    }
+
+    // La acción de devolver ya no está, y el aviso de «devuelto» tiene que
+    // leerse entero: ninguno de los dos se atenúa.
+    .badge,
+    td:last-child {
+        opacity: 1;
+        text-decoration: none;
+    }
+}

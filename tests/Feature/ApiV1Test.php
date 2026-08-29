@@ -39,8 +39,15 @@ class ApiV1Test extends TestCase
 
     private function vender(float $precio = 1500, float $costo = 1000, ?User $vendedor = null)
     {
+        // `stock_minimo => 0` a propósito: la factoría lo pone al azar entre 0
+        // y 10, y con un mínimo mayor que cero vender la única unidad dispara
+        // TAMBIÉN el aviso de stock bajo. Estas pruebas cuentan avisos, así que
+        // ese extra las hacía fallar una de cada dos veces sin tocar nada.
         $unidad = Unidad::factory()->create([
-            'producto_id' => Producto::factory()->create(['precio_venta' => $precio])->id,
+            'producto_id' => Producto::factory()->create([
+                'precio_venta' => $precio,
+                'stock_minimo' => 0,
+            ])->id,
             'estado' => 'en_stock',
             'costo_unitario' => $costo,
             'precio_venta' => $precio,

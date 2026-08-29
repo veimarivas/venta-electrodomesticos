@@ -128,6 +128,36 @@ QR.
 botón está en *Ventas → Historial*, dentro del detalle de cada venta. Las ventas
 anuladas también se pueden reimprimir, pero el recibo lo dice bien grande arriba.
 
+### Devolver un aparato
+
+Si el cliente trae de vuelta **uno** de los aparatos de una venta, no hace falta
+anularla entera. En la ficha de la venta, cada aparato tiene un botón ↩ a la
+derecha.
+
+Se pide el motivo —es obligatorio— y al confirmar:
+
+- El aparato **vuelve al stock** y se puede volver a vender enseguida.
+- La venta **sigue siendo la misma**, con un aparato menos. El total baja solo.
+- La línea se queda en la lista, tachada y marcada como devuelta: la venta sí
+  incluyó ese aparato, y el histórico tiene que decirlo.
+- El resumen explica lo ocurrido: «Se cobraron Bs 9.600 y se devolvieron
+  Bs 3.200».
+
+> **Escribe el motivo de verdad.** «Vino con la pantalla rayada» y «el cliente se
+> arrepintió» son dos cosas muy distintas cuando hay que reclamarle al
+> proveedor. Queda guardado en la venta y en el historial del aparato.
+
+> **Si devuelves todos los aparatos, la venta queda anulada.** Una venta sin
+> nada dentro no es una venta.
+
+> **Para un cambio**, hoy son dos pasos: devolver el aparato y registrar una
+> venta nueva con el que se lleva.
+
+Hace falta el permiso de **anular ventas**: devolver es una acción más pequeña
+que anular, así que quien puede lo uno puede lo otro.
+
+---
+
 ### Anular una venta
 
 Desde el detalle de la venta, con un **motivo**.

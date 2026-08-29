@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\ProrrateoDeGastos;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'costo_unitario',
     'descuento',
     'ganancia',
+    'devuelto_en',
+    'motivo_devolucion',
 ])]
 class VentaDetalle extends Model
 {
@@ -46,6 +50,7 @@ class VentaDetalle extends Model
             'costo_unitario' => 'decimal:2',
             'descuento' => 'decimal:2',
             'ganancia' => 'decimal:2',
+            'devuelto_en' => 'datetime',
         ];
     }
 
@@ -62,5 +67,34 @@ class VentaDetalle extends Model
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);
+    }
+
+    /** ¿Este aparato se devolvió? */
+    public function estaDevuelto(): bool
+    {
+        return $this->devuelto_en !== null;
+    }
+
+    /**
+     * Lo que se cobró por este aparato: el precio pactado menos su rebaja.
+     *
+     * Es el importe que se descuenta de la venta al devolverlo, y el que se
+     * suma a `ventas.total_devuelto`.
+     */
+    public function netoEnCentavos(): int
+    {
+        return ProrrateoDeGastos::aCentavos($this->precio_unitario)
+            - ProrrateoDeGastos::aCentavos($this->descuento);
+    }
+
+    /** Solo las líneas que siguen vendidas. */
+    public function scopeVigentes(Builder $query): Builder
+    {
+        return $query->whereNull('devuelto_en');
+    }
+
+    public function scopeDevueltos(Builder $query): Builder
+    {
+        return $query->whereNotNull('devuelto_en');
     }
 }
