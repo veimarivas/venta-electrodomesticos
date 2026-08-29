@@ -50,9 +50,27 @@ class PosController extends Controller
         $termino = trim($datos['termino']);
         $escaneado = (bool) ($datos['escaneado'] ?? false);
 
+        // La coincidencia exacta se busca APARTE, con su propia consulta, y no
+        // filtrando la lista de abajo. Antes se hacía sobre lo ya filtrado, y
+        // eso tenía un agujero: la lista se corta en 12 resultados ordenados
+        // por código interno, así que un serial de fabricante que además fuese
+        // parte del nombre de un producto popular podía quedarse fuera del
+        // corte y el aparato correcto no se agregaba al carrito. Escanear tiene
+        // que dar siempre el mismo resultado, dependa o no de cuántos aparatos
+        // parecidos haya en stock.
+        $exacta = Unidad::query()
+            ->with('producto.marca')
+            ->disponibles()
+            ->where(fn ($q) => $q->whereRaw('LOWER(serial) = ?', [mb_strtolower($termino)])
+                ->orWhereRaw('LOWER(codigo_interno) = ?', [mb_strtolower($termino)]))
+            ->first();
+
         $unidades = Unidad::query()
             ->with('producto.marca')
             ->disponibles()
+            // La exacta se antepone a mano más abajo: sacarla de la lista evita
+            // que salga dos veces.
+            ->when($exacta !== null, fn ($q) => $q->whereKeyNot($exacta->id))
             ->where(function ($q) use ($termino) {
                 $q->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
@@ -63,12 +81,10 @@ class PosController extends Controller
             ->limit(12)
             ->get();
 
-        // La coincidencia exacta se busca sobre lo YA filtrado: si el escáner
-        // leyó una etiqueta, ese aparato está en la lista.
-        $exacta = $unidades->first(
-            fn (Unidad $u): bool => strcasecmp((string) $u->serial, $termino) === 0
-                || strcasecmp((string) $u->codigo_interno, $termino) === 0
-        );
+        // El aparato leído encabeza la lista: es el que se está vendiendo.
+        if ($exacta !== null) {
+            $unidades = $unidades->prepend($exacta);
+        }
 
         return response()->json([
             'data' => $unidades->map(fn (Unidad $u): array => $this->aparato($u))->values(),

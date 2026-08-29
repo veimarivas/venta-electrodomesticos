@@ -69,6 +69,64 @@ class PosApiTest extends TestCase
         $this->assertSame($unidad->id, $respuesta->json('data.0.unidad_id'));
     }
 
+    public function test_el_escaner_marca_la_coincidencia_exacta_del_codigo_interno(): void
+    {
+        // En el mostrador se escanea lo que haya delante: la etiqueta que
+        // imprime el panel (código interno) o el código del fabricante
+        // (serial). Las dos tienen que agregar el aparato al carrito igual.
+        $unidad = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $respuesta = $this->getJson(
+            '/api/v1/pos/buscar?escaneado=1&termino='.urlencode($unidad->codigo_interno)
+        )->assertOk();
+
+        $this->assertSame($unidad->id, $respuesta->json('meta.exacto'));
+        $this->assertSame($unidad->id, $respuesta->json('data.0.unidad_id'));
+        $this->assertNull($respuesta->json('meta.diagnostico'));
+    }
+
+    public function test_la_coincidencia_exacta_no_depende_del_corte_de_la_lista(): void
+    {
+        // La lista se corta en 12 resultados ordenados por código interno. Si
+        // la coincidencia exacta se buscara dentro de ese corte, escanear un
+        // aparato cuyo código empieza por una letra alta lo dejaría fuera y la
+        // venta no lo reconocería: el resultado del escáner dependería de
+        // cuántos aparatos parecidos hubiese en stock ese día.
+        for ($i = 1; $i <= 14; $i++) {
+            $this->unidadEnStock(serial: 'SN-100'.str_pad((string) $i, 2, '0', STR_PAD_LEFT));
+        }
+
+        $unidad = $this->unidadEnStock(serial: 'SN-100');
+        // Con este código interno queda el último del orden alfabético.
+        $unidad->update(['codigo_interno' => 'ZZZ-ULTIMO']);
+
+        Sanctum::actingAs($this->vendedor());
+
+        $respuesta = $this->getJson('/api/v1/pos/buscar?escaneado=1&termino=SN-100')->assertOk();
+
+        $this->assertSame($unidad->id, $respuesta->json('meta.exacto'));
+        // Y encabeza la lista: es el aparato que se está vendiendo.
+        $this->assertSame($unidad->id, $respuesta->json('data.0.unidad_id'));
+        $this->assertNull($respuesta->json('meta.diagnostico'));
+    }
+
+    public function test_el_aparato_escaneado_no_sale_repetido_en_la_lista(): void
+    {
+        $unidad = $this->unidadEnStock(serial: 'SN-ABC-12345');
+
+        Sanctum::actingAs($this->vendedor());
+
+        $respuesta = $this->getJson('/api/v1/pos/buscar?termino=SN-ABC-12345')->assertOk();
+
+        $this->assertSame(1, $respuesta->json('meta.total'));
+        $this->assertSame(
+            [$unidad->id],
+            array_column($respuesta->json('data'), 'unidad_id')
+        );
+    }
+
     public function test_un_codigo_escaneado_de_un_aparato_vendido_dice_en_que_venta_salio(): void
     {
         $unidad = $this->unidadEnStock(serial: 'SN-VENDIDO-1');

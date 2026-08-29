@@ -75,17 +75,27 @@
             color: #6b778a;
         }
 
+        /*
+            El alto del código se fija en milímetros, no se deja al flujo: un
+            Code128 bajo se lee mal de pie y con el aparato en la mano, porque
+            el lector necesita cruzar todas las barras en una sola pasada.
+
+            El ancho es el 100% de la etiqueta a propósito. El SVG lleva
+            viewBox (ver GeneradorEtiquetas), así que ESCALA: cuanto más ancho,
+            más gruesa la barra fina y más fácil la lectura. Las zonas mudas
+            que exige la norma ya van dentro del viewBox, así que el código
+            nunca queda pegado al borde aunque ocupe todo el ancho.
+        */
         .etiqueta-codigo-svg {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex: 1 1 auto;
-            min-height: 0;
+            display: block;
+            flex: 0 0 auto;
+            height: {{ ['pequena' => '7mm', 'mediana' => '11mm', 'grande' => '16mm'][$tamano] }};
         }
 
         .etiqueta-codigo-svg svg {
-            max-width: 100%;
-            height: auto;
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         .etiqueta-codigo-texto {

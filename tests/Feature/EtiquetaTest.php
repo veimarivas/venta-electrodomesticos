@@ -53,6 +53,49 @@ class EtiquetaTest extends TestCase
         $this->assertStringContainsString('<rect', $svg);
     }
 
+    public function test_el_codigo_de_barras_escala_en_vez_de_recortarse(): void
+    {
+        // Esta es la regresión que hacía ilegibles las etiquetas impresas: la
+        // librería devuelve el SVG con medidas en píxeles y sin viewBox, y un
+        // SVG sin viewBox no tiene proporción intrínseca, así que el
+        // `width: 100%` de la hoja no lo escalaba: le RECORTABA el lienzo. El
+        // código salía sin su última parte —dígito de control y patrón de
+        // parada— y ningún lector podía leerlo.
+        $svg = app(GeneradorEtiquetas::class)->codigoDeBarras('TVSAM55-2608-0042', 'pequena');
+
+        $this->assertMatchesRegularExpression('/<svg[^>]*viewBox="/', $svg);
+        $this->assertDoesNotMatchRegularExpression('/<svg[^>]*\swidth="\d/', $svg);
+        $this->assertDoesNotMatchRegularExpression('/<svg[^>]*\sheight="\d/', $svg);
+    }
+
+    public function test_el_codigo_de_barras_reserva_sus_zonas_mudas(): void
+    {
+        // Code128 exige 10 módulos en blanco a cada lado. La librería dibuja
+        // el patrón pegado al borde, así que el viewBox tiene que empezar
+        // ANTES del 0 y acabar más allá del último trazo.
+        $svg = app(GeneradorEtiquetas::class)->codigoDeBarras('TVSAM55-2608-0042', 'pequena');
+
+        preg_match('/viewBox="(-?[\d.]+) 0 ([\d.]+) /', $svg, $caja);
+
+        $this->assertNotEmpty($caja, 'El SVG debe traer un viewBox medible.');
+
+        $inicio = (float) $caja[1];
+        $ancho = (float) $caja[2];
+
+        // Con módulo de 1 px en la etiqueta pequeña: 10 px a cada lado.
+        $this->assertSame(-10.0, $inicio);
+
+        // Último trazo dibujado + su zona muda.
+        preg_match_all('/<rect x="([\d.]+)"[^>]*width="([\d.]+)"/', $svg, $barras);
+        $finDelPatron = max(array_map(
+            fn ($x, $w) => (float) $x + (float) $w,
+            $barras[1],
+            $barras[2]
+        ));
+
+        $this->assertSame($finDelPatron + 10.0, $ancho + $inicio);
+    }
+
     public function test_cada_tamano_produce_un_codigo_distinto(): void
     {
         $generador = app(GeneradorEtiquetas::class);
