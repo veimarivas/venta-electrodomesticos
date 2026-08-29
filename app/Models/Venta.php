@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 #[Fillable([
     'cliente_id',
     'user_id',
+    'caja_id',
     'codigo',
     'vendida_en',
     'subtotal',
@@ -79,6 +80,7 @@ class Venta extends Model
             'cliente_id' => 'integer',
             'user_id' => 'integer',
             'vendida_en' => 'datetime',
+            'caja_id' => 'integer',
             'anulada_en' => 'datetime',
             'primera_devolucion_en' => 'datetime',
             // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).

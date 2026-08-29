@@ -62,7 +62,7 @@ negocio que hoy viven fuera, en cuadernos y en la memoria de quien atiende.
 | | Qué | Esfuerzo |
 |---|---|---|
 | ✅ | **Devolución y cambio** | 4–5 días |
-| ⬜ | **Cierre de caja** | 1 semana |
+| ✅ | **Cierre de caja** | 1 semana |
 | ⬜ | **Venta a crédito y cuotas** | 2–3 semanas |
 | ⬜ | **Entrega e instalación** | 1–2 semanas |
 | ⬜ | **Garantía y servicio técnico** | 2 semanas |
@@ -80,14 +80,18 @@ El detalle de por qué está así, en [PLAN.md](PLAN.md).
 cambio directo —devolver y llevarse otro— que hoy son dos pasos: devolver y
 vender de nuevo.
 
-### Cierre de caja
+### Cierre de caja ✅
 
-**Hoy:** el propio código lo reconoce — `RegistroDeVenta.php:226` habla de «un
-arqueo que este sistema no lleva».
+Hecho el 2026-08-29. *Ventas → Caja*: se abre el turno con su fondo, las ventas
+se atan solas y al cerrar se cuenta el cajón. El sistema dice si cuadra, sobra o
+falta, y guarda el cierre como una foto que no se mueve aunque después se anule
+una venta.
 
-El punto de venta cobra en efectivo y por QR, pero nadie cuadra al cerrar. Sin
-arqueo, un faltante aparece semanas después mezclado con todo lo demás y ya no
-se puede atribuir a un día ni a un turno.
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda de esta pieza:** movimientos de caja durante el turno —retirar
+para pagar un flete, meter un ingreso— que hoy solo se pueden anotar en las
+notas del cierre.
 
 ### Venta a crédito y cuotas
 

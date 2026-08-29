@@ -30,6 +30,7 @@
 @use 'components/qrs-cobro';
 @use 'components/kardex';
 @use 'components/ventas';
+@use 'components/caja';
 @use 'components/reportes';
 
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.

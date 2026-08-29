@@ -163,6 +163,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Sistema' => null, 'Usuarios' => null],
     ])->middleware('permission:usuarios.ver')->name('usuarios.index');
 
+    Route::view('/caja', 'backend.caja.index', [
+        'title' => 'Caja',
+        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Caja' => null],
+    ])->middleware('permission:caja.ver|caja.gestionar')->name('caja.index');
+
     Route::view('/roles', 'backend.roles.index', [
         'title' => 'Roles y permisos',
         'breadcrumbs' => ['Inicio' => null, 'Sistema' => null, 'Roles y permisos' => null],

@@ -1,0 +1,89 @@
+// -----------------------------------------------------------------------------
+// Caja: el turno abierto y el histórico de cierres
+// -----------------------------------------------------------------------------
+// La pantalla se mira de pie y de reojo: lo primero que hay que ver es si la
+// caja está abierta o cerrada, y eso se resuelve con la forma de la tarjeta
+// antes que con el texto.
+// -----------------------------------------------------------------------------
+
+.caja-modulo {
+
+    // ---- Tarjeta del turno ----
+    .caja-turno {
+        border: 1px solid var(--marca-linea);
+        border-left: 3px solid var(--marca-azul);
+    }
+
+    // Sin caja abierta la tarjeta se apaga: no es un error, es un estado.
+    .caja-turno--cerrada {
+        border-left-color: var(--marca-linea);
+        background: var(--marca-suave);
+    }
+
+    .caja-turno-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        color: var(--marca-azul-texto);
+    }
+
+    // Punto que late: la caja está abierta AHORA, no es un dato histórico.
+    .caja-latido {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #1baf7a;
+        box-shadow: 0 0 0 0 rgba(27, 175, 122, .5);
+        animation: caja-latido 2s infinite;
+    }
+
+    .caja-turno-titulo {
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--marca-tinta);
+    }
+
+    // ---- Datos del turno ----
+    .caja-dato {
+        padding: .75rem .9rem;
+        border-radius: .5rem;
+        background: var(--marca-suave);
+    }
+
+    .caja-dato-label {
+        display: block;
+        font-size: .7rem;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--marca-apagado);
+    }
+
+    .caja-dato-valor {
+        display: block;
+        margin-top: .15rem;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Los importes se leen en columna: sin cifras de ancho fijo hay que
+    // detenerse en cada fila para comparar.
+    .caja-num {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@keyframes caja-latido {
+    0% { box-shadow: 0 0 0 0 rgba(27, 175, 122, .5); }
+    70% { box-shadow: 0 0 0 .5rem rgba(27, 175, 122, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(27, 175, 122, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .caja-modulo .caja-latido { animation: none; }
+}

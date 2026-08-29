@@ -25,6 +25,9 @@ class RolePermissionSeeder extends Seeder
         'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar'],
         'inventario' => ['ver', 'ajustar'],
         'stock' => ['ver'],
+        // El arqueo lo abre y lo cierra quien está en el mostrador; verlo
+        // -el histórico de cierres y sus diferencias- es de quien supervisa.
+        'caja' => ['ver', 'gestionar'],
         'ventas' => ['ver', 'crear', 'anular'],
         // Los QR de cobro son dinero de la tienda: quien vende necesita verlos
         // para mostrarlos, pero registrarlos o cambiarles la fecha no.
@@ -52,6 +55,7 @@ class RolePermissionSeeder extends Seeder
             'compras.ver', 'compras.crear', 'compras.editar', 'compras.recepcionar',
             'inventario.ver', 'inventario.ajustar',
             'stock.ver',
+            'caja.ver', 'caja.gestionar',
             'ventas.ver', 'ventas.crear', 'ventas.anular',
             'qrs_cobro.ver', 'qrs_cobro.crear', 'qrs_cobro.editar',
             'clientes.ver', 'clientes.crear', 'clientes.editar',
@@ -65,6 +69,9 @@ class RolePermissionSeeder extends Seeder
             'unidades.ver',
             'inventario.ver',
             'stock.ver',
+            // Abre y cierra su turno; el histórico de cierres de todos es de
+            // quien supervisa, no suyo.
+            'caja.gestionar',
             'ventas.ver', 'ventas.crear',
             // Ver, no administrar: el vendedor muestra el QR en el mostrador.
             'qrs_cobro.ver',

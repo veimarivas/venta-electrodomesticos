@@ -68,6 +68,9 @@ return [
             ['label' => 'Historial de ventas', 'route' => 'ventas.index', 'active' => 'ventas', 'permission' => 'ventas.ver'],
             ['label' => 'Clientes', 'route' => 'clientes.index', 'active' => 'clientes*', 'permission' => 'clientes.ver'],
             ['label' => 'QR de cobro', 'route' => 'ventas.qrs-cobro.index', 'active' => 'ventas/qr-cobro*', 'permission' => 'qrs_cobro.ver'],
+            // Con `caja.gestionar` basta: el cajero abre y cierra su turno
+            // aunque no pueda repasar el histórico de todos.
+            ['label' => 'Caja', 'route' => 'caja.index', 'active' => 'caja*', 'permission' => 'caja.gestionar'],
         ],
     ],
 

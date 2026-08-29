@@ -766,6 +766,70 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### Cierre de caja (2026-08-29)
+
+El punto de venta cobraba en efectivo desde el primer dia y **nadie cuadraba al
+cerrar** — el propio codigo lo reconocia en un comentario. Sin arqueo, un
+faltante aparece semanas despues mezclado con todo lo demas y ya no se puede
+atribuir a un dia ni a un turno.
+
+Un turno es una fila en `cajas`: se abre con su fondo, las ventas se atan a ella
+y al cerrar se cuenta el cajon.
+
+#### Lo delicado: que cuenta como efectivo
+
+**No se usa `monto_efectivo` a secas**, y ahi estaba la trampa. `tarjeta` y
+`transferencia` —retiradas del mostrador pero vivas en el historico— guardan el
+**total** en esa columna, porque `repartoDelPago()` solo separa el dinero cuando
+hay QR de por medio. Sumarlas daria un esperado mas alto que lo que hay en el
+cajon y **un faltante inventado en cada cierre**.
+
+| Metodo | Cuenta en caja |
+|---|---|
+| `efectivo` | el total |
+| `mixto` | solo su parte en efectivo |
+| `qr`, `tarjeta`, `transferencia` | nada: se cobro fuera de caja |
+
+#### Dos numeros por caminos distintos
+
+La gracia del arqueo es comparar lo contado a mano contra lo que dicen las
+ventas. Por eso:
+
+> **El importe contado se pide en blanco y NO se propone lo esperado.** Si el
+> sistema lo rellenara, cerrar seria darle a aceptar y el arqueo compararia un
+> numero consigo mismo.
+
+> **Al cajero no se le enseña lo esperado.** Va tras `caja.ver`, que el no
+> tiene: se le pide contar, no comparar. Ver la cifra antes de contar la
+> convierte en la respuesta.
+
+#### El arqueo es una foto, no un calculo vivo
+
+`monto_esperado` y `diferencia` se **guardan calculados** al cerrar. Si mañana
+se anula una venta del turno, el arqueo sigue diciendo lo que se vio esa noche
+—que es justo lo que lo hace util para detectar faltantes—. Hay una prueba que
+anula una venta despues de cerrar y comprueba que el cierre no se mueve.
+
+#### Vender no exige caja abierta
+
+`ventas.caja_id` es nulable a proposito: hay ventas anteriores al arqueo, y el
+mostrador debe seguir cobrando aunque nadie haya abierto. **El arqueo es una
+ayuda, no un peaje.**
+
+> **Las ventas sueltas se avisan, no se suman.** Si hay cobros en efectivo del
+> horario del turno sin atar a el, el cierre lo dice y deja que alguien lo mire.
+> Un arqueo que se inventa de donde salio el dinero deja de detectar faltantes.
+
+#### Dos permisos, dos trabajos
+
+`caja.gestionar` abre y cierra el turno —lo tiene el vendedor—; `caja.ver`
+repasa el historico de cierres de todos y sus diferencias, y es de quien
+supervisa. Los descuadres de los compañeros no son asunto del cajero.
+
+> **Abrir bloquea la fila.** La comprobacion de «ya hay una caja abierta» va
+> dentro de la transaccion y con `lockForUpdate`: dos pestañas abriendo a la vez
+> dejarian dos cajas abiertas y, a partir de ahi, ninguna cuadraria.
+
 ### Devolver un aparato sin anular la venta (2026-08-29)
 
 Hasta ahora solo se podía deshacer una venta **entera**. Para devolver un aparato

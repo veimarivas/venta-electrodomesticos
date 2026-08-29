@@ -174,6 +174,44 @@ Primero **busca a la persona** por carnet, nombre o apellido. Si ya está en el
 sistema —por ejemplo porque trabaja aquí— se registra con un clic y sus datos
 no se duplican. Si no está, se dan de alta persona y ficha a la vez.
 
+### Cerrar la caja
+
+*Ventas → Caja.*
+
+**Al empezar el turno**, pulsa *Abrir caja* y escribe con cuánto empieza el
+cajón —el cambio que dejas para atender—. Si no dejas nada, pon 0.
+
+A partir de ahí, cada venta que cobres queda atada a ese turno.
+
+**Al terminar**, pulsa *Cerrar y cuadrar*. Te pide **cuánto contaste**:
+
+1. Cuenta los billetes y las monedas.
+2. Escribe el total.
+3. Confirma.
+
+El sistema te dice al momento si **cuadra**, si **sobra** o si **falta**, y con
+cuánto.
+
+> **Cuenta antes de mirar el sistema.** El campo aparece vacío a propósito y no
+> te propone la cifra esperada: si te la enseñara, cerrar sería darle a aceptar
+> y no estarías cuadrando nada.
+
+> **Vender no exige tener la caja abierta.** El mostrador cobra igual. Pero esas
+> ventas no entran en ningún cuadre, y si las hay el cierre te avisa para que
+> las revises.
+
+> **El cierre no se mueve.** Si mañana se anula una venta de ese turno, el
+> arqueo sigue diciendo lo que se vio esa noche. Es lo que hace que sirva para
+> encontrar un faltante.
+
+> **Pagaste algo con dinero de la caja.** Anótalo en las notas del cierre; así
+> la diferencia queda explicada.
+
+Quien atiende puede **abrir y cerrar** su turno. El **histórico de cierres** de
+todos, con sus diferencias, es de quien supervisa.
+
+---
+
 ### Los QR de cobro
 
 *Ventas → QR de cobro.*
