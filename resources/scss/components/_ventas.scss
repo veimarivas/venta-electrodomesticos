@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------------
 // Módulo de ventas — Vista de detalle (/ventas/{venta})
-// Paleta: ink #14243d, accent #f59e0b, teal #0f766e, muted #6b778a, line #dfe6ee
+// Paleta: ink #0a182b, accent #c5a162, teal #254970, muted #6b778a, line #dfe6ee
 // Patrón visual idéntico a compras-show-modulo.
 // -----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@
         font-size: 1.35rem;
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
-        box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+        box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
     }
 
     // -------------------------------------------------------------------------
@@ -46,13 +46,13 @@
         border-radius: .85rem;
         background: #fff;
         border: 1px solid #e9edf2;
-        box-shadow: 0 .15rem .5rem rgba(33, 45, 64, .04);
+        box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .04);
         transition: transform .18s ease-out, box-shadow .18s ease-out;
         height: 100%;
 
         &:hover {
             transform: translateY(-3px);
-            box-shadow: 0 .5rem 1.25rem rgba(33, 45, 64, .08);
+            box-shadow: 0 .5rem 1.25rem rgba(10, 24, 43, .08);
         }
     }
 
@@ -66,10 +66,10 @@
         flex-shrink: 0;
     }
 
-    .ventas-show-kpi-icon-primary { color: #0f766e; background: rgba(15, 118, 110, .1); }
+    .ventas-show-kpi-icon-primary { color: #254970; background: rgba(37, 73, 112, .1); }
     .ventas-show-kpi-icon-info    { color: #0369a1; background: rgba(3, 105, 161, .1); }
     .ventas-show-kpi-icon-success { color: #16a34a; background: rgba(22, 163, 74, .1); }
-    .ventas-show-kpi-icon-warning { color: #d97706; background: rgba(217, 119, 6, .1); }
+    .ventas-show-kpi-icon-warning { color: #a8834a; background: rgba(168, 131, 74, .1); }
     .ventas-show-kpi-icon-danger  { color: #dc2626; background: rgba(220, 38, 38, .1); }
 
     .ventas-show-kpi-body { min-width: 0; }
@@ -85,7 +85,7 @@
         margin: .15rem 0;
         font-size: 1.35rem;
         font-weight: 700;
-        color: #14243d;
+        color: #0a182b;
         letter-spacing: -.02em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -121,7 +121,7 @@
             margin: 0;
             font-size: .82rem;
             font-weight: 600;
-            color: #14243d;
+            color: #0a182b;
         }
     }
 
@@ -129,8 +129,8 @@
         width: 1.75rem;
         height: 1.75rem;
         border-radius: .45rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         display: grid;
         place-items: center;
         font-size: .9rem;
@@ -161,14 +161,14 @@
         width: 2.75rem;
         height: 2.75rem;
         border-radius: .65rem;
-        background: linear-gradient(135deg, #0f766e, #095c56);
+        background: linear-gradient(135deg, #254970, #1b3757);
         color: #fff;
         display: grid;
         place-items: center;
         font-size: .85rem;
         font-weight: 700;
         letter-spacing: .02em;
-        box-shadow: 0 .25rem .65rem rgba(15, 118, 110, .28);
+        box-shadow: 0 .25rem .65rem rgba(37, 73, 112, .28);
     }
 
     // Resumen financiero
@@ -187,7 +187,7 @@
     .ventas-show-fila-valor {
         font-weight: 600;
         font-size: .85rem;
-        color: #14243d;
+        color: #0a182b;
         font-variant-numeric: tabular-nums;
     }
 
@@ -203,7 +203,7 @@
     .ventas-show-total-grande {
         font-size: 1.15rem;
         font-weight: 700;
-        color: #0f766e;
+        color: #254970;
     }
 
     // -------------------------------------------------------------------------
@@ -228,7 +228,7 @@
             margin: 0;
             font-size: .95rem;
             font-weight: 600;
-            color: #14243d;
+            color: #0a182b;
         }
     }
 
@@ -236,8 +236,8 @@
         width: 1.85rem;
         height: 1.85rem;
         border-radius: .5rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         display: grid;
         place-items: center;
         font-size: .95rem;
@@ -251,8 +251,8 @@
         height: 1.4rem;
         padding: 0 .4rem;
         border-radius: 2rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         font-size: .72rem;
         font-weight: 700;
     }
@@ -277,7 +277,7 @@
         tbody td {
             padding-top: 0.9rem;
             padding-bottom: 0.9rem;
-            color: #14243d;
+            color: #0a182b;
             border-bottom-color: #f1f4f8;
             vertical-align: middle;
         }
@@ -290,8 +290,8 @@
             }
 
             &:hover {
-                box-shadow: inset 3px 0 0 #0f766e;
-                background-color: rgba(15, 118, 110, .035);
+                box-shadow: inset 3px 0 0 #254970;
+                background-color: rgba(37, 73, 112, .035);
             }
         }
     }
@@ -327,7 +327,7 @@
     .ventas-show-col-num {
         font-size: .85rem;
         font-variant-numeric: tabular-nums;
-        color: #14243d;
+        color: #0a182b;
     }
 
     .ventas-show-empty {
@@ -388,9 +388,9 @@
         border-radius: .5rem;
         font-size: .78rem;
         font-weight: 600;
-        color: #0f766e;
-        background: rgba(15, 118, 110, .08);
-        border: 1px solid rgba(15, 118, 110, .15);
+        color: #254970;
+        background: rgba(37, 73, 112, .08);
+        border: 1px solid rgba(37, 73, 112, .15);
     }
 
     .ventas-show-qr-badge {
@@ -463,8 +463,8 @@
         transition: border-color .16s ease-out, box-shadow .16s ease-out;
 
         &:hover {
-            border-color: rgba(15, 118, 110, .25);
-            box-shadow: 0 .25rem .75rem rgba(33, 45, 64, .05);
+            border-color: rgba(37, 73, 112, .25);
+            box-shadow: 0 .25rem .75rem rgba(10, 24, 43, .05);
         }
     }
 
@@ -478,7 +478,7 @@
         flex-shrink: 0;
     }
 
-    .ventas-show-beneficio-icon-primary { color: #0f766e; background: rgba(15, 118, 110, .1); }
+    .ventas-show-beneficio-icon-primary { color: #254970; background: rgba(37, 73, 112, .1); }
     .ventas-show-beneficio-icon-success { color: #16a34a; background: rgba(22, 163, 74, .1); }
 
     .ventas-show-beneficio-body { min-width: 0; }
@@ -494,7 +494,7 @@
         margin: .1rem 0;
         font-size: 1.2rem;
         font-weight: 700;
-        color: #14243d;
+        color: #0a182b;
         letter-spacing: -.01em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -561,7 +561,7 @@
         font-variant-numeric: tabular-nums;
         background: #f1f4f8;
         border: 1px solid #e9edf2;
-        color: #14243d;
+        color: #0a182b;
     }
 }
 
@@ -578,14 +578,14 @@
     .modal-recibo-content {
         overflow: hidden;
         border-radius: 1rem;
-        box-shadow: 0 1.25rem 3.5rem rgba(33, 45, 64, 0.18);
+        box-shadow: 0 1.25rem 3.5rem rgba(10, 24, 43, 0.18);
     }
 
     .modal-recibo-header {
         display: flex;
         align-items: center;
         padding: 1rem 1.25rem;
-        background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f);
+        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
         color: #fff;
     }
 
@@ -641,10 +641,10 @@
         background: #fff;
         border-radius: .75rem;
         border: 1px solid #e9edf2;
-        box-shadow: 0 .25rem .75rem rgba(33, 45, 64, .06);
+        box-shadow: 0 .25rem .75rem rgba(10, 24, 43, .06);
         font-family: 'DejaVu Sans', 'Segoe UI', sans-serif;
         font-size: .82rem;
-        color: #14243d;
+        color: #0a182b;
     }
 
     // -------------------------------------------------------------------------
@@ -656,7 +656,7 @@
         font-size: 1.1rem;
         font-weight: 700;
         letter-spacing: .03em;
-        color: #14243d;
+        color: #0a182b;
     }
 
     .recibo-titulo {
@@ -670,7 +670,7 @@
     .recibo-codigo {
         font-size: .95rem;
         font-weight: 700;
-        color: #0f766e;
+        color: #254970;
         margin-top: .5rem;
         font-family: var(--vz-font-family-monospace, monospace);
     }
@@ -731,7 +731,7 @@
     }
 
     .recibo-total-final {
-        border-top: 1px solid #14243d;
+        border-top: 1px solid #0a182b;
         padding-top: .4rem !important;
 
         td {
@@ -803,7 +803,7 @@
 
         &:hover {
             background: #f1f4f8;
-            color: #14243d;
+            color: #0a182b;
             border-color: #d0d8e2;
         }
     }
@@ -811,17 +811,17 @@
     .modal-recibo-descargar {
         border: 0;
         border-radius: .55rem;
-        background: linear-gradient(135deg, #0f766e, #095c56);
+        background: linear-gradient(135deg, #254970, #1b3757);
         color: #fff;
         font-weight: 600;
         padding: .5rem 1.15rem;
-        box-shadow: 0 .4rem 1rem rgba(15, 118, 110, .25);
+        box-shadow: 0 .4rem 1rem rgba(37, 73, 112, .25);
         transition: all .25s ease;
         text-decoration: none;
 
         &:hover {
-            background: linear-gradient(135deg, #095c56, #074742);
-            box-shadow: 0 .6rem 1.4rem rgba(15, 118, 110, .3);
+            background: linear-gradient(135deg, #1b3757, #074742);
+            box-shadow: 0 .6rem 1.4rem rgba(37, 73, 112, .3);
             transform: translateY(-1px);
             color: #fff;
         }

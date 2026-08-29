@@ -2,9 +2,9 @@
 // Stock Actual: alineado con la paleta del login
 // -----------------------------------------------------------------------------
 // Paleta del login:
-//   ink:    #14243d  (azul oscuro profundo)
-//   accent: #f59e0b  (ámbar/dorado)
-//   teal:   #0f766e  (turquesa)
+//   ink:    #0a182b  (azul oscuro profundo)
+//   accent: #c5a162  (ámbar/dorado)
+//   teal:   #254970  (turquesa)
 //   muted:  #6b778a
 //   line:   #dfe6ee
 // -----------------------------------------------------------------------------
@@ -21,7 +21,7 @@
         padding: 1.6rem 1.75rem 1.4rem;
         border-radius: .85rem;
         color: #fff;
-        background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f);
+        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
 
         &::before {
             content: '';
@@ -81,7 +81,7 @@
         text-transform: uppercase;
         background: rgba(255, 255, 255, .06);
 
-        i { color: #f59e0b; font-size: .85rem; }
+        i { color: #c5a162; font-size: .85rem; }
     }
 
     // ---- KPI Cards ----
@@ -95,7 +95,7 @@
 
         &:hover {
             transform: translateY(-3px);
-            box-shadow: 0 .75rem 1.75rem rgba(20, 36, 61, .09);
+            box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09);
             border-color: transparent;
         }
 
@@ -115,13 +115,13 @@
     }
 
     .stock-kpi-icono--stock {
-        color: #0f766e;
-        background: rgba(15, 118, 110, .1);
+        color: #254970;
+        background: rgba(37, 73, 112, .1);
     }
 
     .stock-kpi-icono--valor {
-        color: #2a78d6;
-        background: rgba(42, 120, 214, .1);
+        color: #5792bf;
+        background: rgba(87, 146, 191, .1);
     }
 
     .stock-kpi-icono--agotados {
@@ -130,8 +130,8 @@
     }
 
     .stock-kpi-icono--alerta {
-        color: #f59e0b;
-        background: rgba(245, 158, 11, .1);
+        color: #c5a162;
+        background: rgba(197, 161, 98, .1);
     }
 
     .stock-kpi-label {
@@ -146,7 +146,7 @@
 
     .stock-kpi-valor {
         display: block;
-        color: #14243d;
+        color: #0a182b;
         font-size: 1.35rem;
         font-weight: 700;
         letter-spacing: -.02em;
@@ -179,7 +179,7 @@
 
         .filter-accordion .accordion-button {
             font-weight: 600;
-            color: #14243d;
+            color: #0a182b;
             font-size: .82rem;
 
             &:not(.collapsed) {
@@ -202,17 +202,17 @@
             border-radius: .5rem;
             font-size: .85rem;
             padding-block: .38rem;
-            color: #14243d;
+            color: #0a182b;
             transition: background-color .15s ease, color .15s ease;
 
             &:hover {
-                background: rgba(15, 118, 110, .06);
-                color: #0f766e;
+                background: rgba(37, 73, 112, .06);
+                color: #254970;
             }
 
             .ri-folder-2-fill,
             &.text-primary i {
-                color: #0f766e;
+                color: #254970;
             }
         }
 
@@ -227,8 +227,8 @@
             font-size: .84rem;
 
             &:focus {
-                border-color: #0f766e;
-                box-shadow: 0 0 0 .15rem rgba(15, 118, 110, .08);
+                border-color: #254970;
+                box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .08);
                 background: #fff;
             }
         }
@@ -250,9 +250,9 @@
         transition: border-color .15s, color .15s, background .15s;
 
         &:hover {
-            border-color: #0f766e;
-            color: #0f766e;
-            background: rgba(15, 118, 110, .04);
+            border-color: #254970;
+            color: #254970;
+            background: rgba(37, 73, 112, .04);
         }
     }
 
@@ -269,7 +269,7 @@
     }
 
     .stock-contenido-titulo {
-        color: #14243d;
+        color: #0a182b;
         font-weight: 650;
         letter-spacing: -.01em;
     }
@@ -285,8 +285,8 @@
             transition: border-color .2s, box-shadow .2s, background .2s;
 
             &:focus {
-                border-color: #0f766e;
-                box-shadow: 0 0 0 .15rem rgba(15, 118, 110, .08);
+                border-color: #254970;
+                box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .08);
                 background: #fff;
             }
         }
@@ -309,13 +309,13 @@
             transition: color .15s, border-color .15s;
 
             &:hover {
-                color: #14243d;
+                color: #0a182b;
                 border-bottom-color: #dfe6ee;
             }
 
             &.active {
-                color: #0f766e;
-                border-bottom-color: #0f766e;
+                color: #254970;
+                border-bottom-color: #254970;
                 background: transparent;
             }
         }
@@ -352,7 +352,7 @@
         h6 {
             font-weight: 650;
             letter-spacing: -.01em;
-            color: #14243d;
+            color: #0a182b;
         }
     }
 
@@ -364,8 +364,8 @@
         height: 2.1rem;
         flex-shrink: 0;
         border-radius: .6rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         font-size: 1.05rem;
     }
 
@@ -378,8 +378,8 @@
         }
 
         &:hover {
-            background: rgba(15, 118, 110, .08);
-            color: #0f766e;
+            background: rgba(37, 73, 112, .08);
+            color: #254970;
         }
     }
 
@@ -400,15 +400,15 @@
         i { font-size: .9rem; }
 
         &.stock-chip-unidades {
-            color: #0f766e;
-            background: rgba(15, 118, 110, .06);
-            border-color: rgba(15, 118, 110, .2);
+            color: #254970;
+            background: rgba(37, 73, 112, .06);
+            border-color: rgba(37, 73, 112, .2);
         }
 
         &.stock-chip-valor {
-            color: #2a78d6;
-            background: rgba(42, 120, 214, .06);
-            border-color: rgba(42, 120, 214, .2);
+            color: #5792bf;
+            background: rgba(87, 146, 191, .06);
+            border-color: rgba(87, 146, 191, .2);
         }
     }
 
@@ -451,12 +451,12 @@
 
         tbody td {
             font-size: .85rem;
-            color: #14243d;
+            color: #0a182b;
             border-bottom-color: #f1f4f8;
         }
 
         tbody tr:hover {
-            background: rgba(15, 118, 110, .02);
+            background: rgba(37, 73, 112, .02);
         }
     }
 
@@ -490,7 +490,7 @@
         margin: 0;
         border: 0;
         background: transparent;
-        color: #14243d;
+        color: #0a182b;
         text-align: left;
 
         span {
@@ -509,17 +509,17 @@
         }
 
         &:hover {
-            color: #0f766e;
+            color: #254970;
 
             .stock-producto-nombre-icono {
                 opacity: 1;
                 transform: translateX(0);
-                color: #0f766e;
+                color: #254970;
             }
         }
 
         &:focus-visible {
-            outline: 2px solid rgba(15, 118, 110, .4);
+            outline: 2px solid rgba(37, 73, 112, .4);
             outline-offset: 2px;
             border-radius: .25rem;
         }
@@ -531,8 +531,8 @@
         background: #fff;
 
         .avatar-title {
-            background: rgba(15, 118, 110, .08);
-            color: #0f766e;
+            background: rgba(37, 73, 112, .08);
+            color: #254970;
             font-size: 1rem;
         }
     }
@@ -542,7 +542,7 @@
         color: #6b778a;
 
         i {
-            color: #0f766e;
+            color: #254970;
             font-size: .95rem;
         }
     }
@@ -560,13 +560,13 @@
     }
 
     .stock-estado--ok {
-        color: #0f766e;
-        background: rgba(15, 118, 110, .08);
+        color: #254970;
+        background: rgba(37, 73, 112, .08);
     }
 
     .stock-estado--alerta {
-        color: #c98500;
-        background: rgba(245, 158, 11, .1);
+        color: #8a6b34;
+        background: rgba(197, 161, 98, .1);
     }
 
     .stock-estado--peligro {
@@ -580,7 +580,7 @@
     .stock-modulo {
         .stock-kpi {
             border-color: rgba(255, 255, 255, .08);
-            background: #1e2330;
+            background: #0a182b;
 
             &:hover { border-color: transparent; }
         }
@@ -591,7 +591,7 @@
 
         .stock-filtros {
             border-color: rgba(255, 255, 255, .08);
-            background: #1e2330;
+            background: #0a182b;
 
             .card-header { border-bottom-color: rgba(255, 255, 255, .06); }
             .stock-filtro-item { color: rgba(255, 255, 255, .8); }
@@ -599,7 +599,7 @@
 
         .stock-contenido {
             border-color: rgba(255, 255, 255, .08);
-            background: #1e2330;
+            background: #0a182b;
         }
 
         .stock-contenido-header { border-bottom-color: rgba(255, 255, 255, .06); }
@@ -644,7 +644,7 @@
                 border-bottom-color: rgba(255, 255, 255, .06);
             }
 
-            tbody tr:hover { background: rgba(15, 118, 110, .06); }
+            tbody tr:hover { background: rgba(37, 73, 112, .06); }
         }
 
         .stock-miniatura {

@@ -6,8 +6,8 @@
 // dataviz, que comprueba banda de luminosidad, piso de croma, separación bajo
 // daltonismo y contraste contra la superficie.
 //
-//   node scripts/validate_palette.js "#2a78d6,#eb6834,#1baf7a,#eda100" --mode light
-//   node scripts/validate_palette.js "#3987e5,#d95926,#199e70,#c98500" --mode dark
+//   node scripts/validate_palette.js "#5792bf,#eb6834,#1baf7a,#eda100" --mode light
+//   node scripts/validate_palette.js "#3987e5,#d95926,#199e70,#8a6b34" --mode dark
 //
 // Ambos modos pasan todas las comprobaciones. En claro, tres tonos quedan por
 // debajo de 3:1 contra el fondo, lo que obliga a la "regla de relieve":
@@ -29,7 +29,7 @@
 
     // Serie única / magnitud: un solo tono (slot 1). Nunca una rampa sobre
     // categorías sin orden natural: duplicaría el largo de la barra en color.
-    --viz-1: #2a78d6;
+    --viz-1: #5792bf;
     --viz-2: #eb6834;
     --viz-3: #1baf7a;
     --viz-4: #eda100;
@@ -47,7 +47,7 @@
     --viz-1: #3987e5;
     --viz-2: #d95926;
     --viz-3: #199e70;
-    --viz-4: #c98500;
+    --viz-4: #8a6b34;
 
     --viz-bien: #199e70;
     --viz-mal: #e66767;
@@ -61,7 +61,7 @@
         --viz-1: #3987e5;
         --viz-2: #d95926;
         --viz-3: #199e70;
-        --viz-4: #c98500;
+        --viz-4: #8a6b34;
 
         --viz-bien: #199e70;
         --viz-mal: #e66767;

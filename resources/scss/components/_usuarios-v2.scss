@@ -16,19 +16,19 @@
         transition: border-color .16s, box-shadow .16s, background .16s;
 
         &:hover {
-            border-color: #0f766e;
-            background: rgba(15, 118, 110, .02);
+            border-color: #254970;
+            background: rgba(37, 73, 112, .02);
         }
 
         &.seleccionado {
-            border-color: #0f766e;
-            background: rgba(15, 118, 110, .04);
-            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+            border-color: #254970;
+            background: rgba(37, 73, 112, .04);
+            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
         }
 
         .form-check-input:checked {
-            background-color: #0f766e;
-            border-color: #0f766e;
+            background-color: #254970;
+            border-color: #254970;
         }
     }
 
@@ -50,8 +50,8 @@
         transition: border-color .2s, box-shadow .2s;
 
         &:focus {
-            border-color: #0f766e;
-            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+            border-color: #254970;
+            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
         }
     }
 }
@@ -61,12 +61,12 @@
 body.dark {
     .usuarios-modulo {
         .tarjeta-rol {
-            background: #1a2d3d; border-color: #2a3f55;
-            &:hover { border-color: #0f766e; background: rgba(15, 118, 110, .06); }
-            &.seleccionado { border-color: #0f766e; background: rgba(15, 118, 110, .08); box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .12); }
-            .form-check-input:checked { background-color: #0f766e; border-color: #0f766e; }
+            background: #0e1f36; border-color: #254970;
+            &:hover { border-color: #254970; background: rgba(37, 73, 112, .06); }
+            &.seleccionado { border-color: #254970; background: rgba(37, 73, 112, .08); box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); }
+            .form-check-input:checked { background-color: #254970; border-color: #254970; }
         }
         .fila-inactiva { background-color: rgba(132, 148, 167, .06); h6 { color: #8494a7; } }
-        .form-select { background: #1a2d3d; border-color: #2a3f55; color: #d5dde8; &:focus { border-color: #0f766e; box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .12); } }
+        .form-select { background: #0e1f36; border-color: #254970; color: #d5dde8; &:focus { border-color: #254970; box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); } }
     }
 }

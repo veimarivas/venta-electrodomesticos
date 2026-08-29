@@ -231,6 +231,10 @@ Tres tamaños (50×25, 70×35 y 100×50 mm) y hasta 5 copias. Las medidas son
 milímetros reales: la etiqueta sale del tamaño del adhesivo. Al imprimir
 desaparecen los controles y el borde de guía.
 
+> **Para escanear con el teléfono, usa la mediana.** En la pequeña las barras
+> quedan al mínimo que admite la norma: se lee, pero cuesta. En la mediana las
+> barras son el doble de anchas y la lectura es inmediata.
+
 > Una compra registrada **no se puede editar**: sus unidades ya están en el
 > almacén, o vendidas, con un costo que dejaría de coincidir con lo pagado.
 
@@ -563,6 +567,57 @@ Tres cosas que conviene saber antes de eliminar:
 - Un **producto sí se puede eliminar aunque tenga aparatos en stock**. Va a la
   papelera: las ventas que ya lo incluyen se conservan y se puede recuperar desde
   el panel. Deja de ofrecerse en el punto de venta.
+
+### Inventario desde el teléfono
+
+Es la pantalla del almacén: se usa **de pie, con el aparato en la mano**. Se
+entra por el icono de escáner de la barra de **Catálogo**.
+
+**Buscar un aparato.** El botón **Escanear** abre la cámara. Apunta a la etiqueta
+de la tienda o al código de fábrica: si el código es de un aparato concreto, se
+abre su ficha directamente. Si no lo es, el código se queda escrito en el
+buscador para que veas qué se leyó. También se puede teclear el código, el
+serial o el nombre del producto.
+
+**Los chips de estado llevan su número** (En stock 42, Dañado 3, En garantía 1).
+No es adorno: enseñan de un vistazo si hay algo pendiente de atender sin tener
+que entrar a mirarlo. Arranca filtrado por *En stock*, que es lo que se busca casi
+siempre.
+
+**La ficha del aparato** responde a las tres preguntas que se hacen de pie:
+
+| | |
+|---|---|
+| **Qué es** | Producto, SKU, marca, categoría, serial de fábrica, precio |
+| **Dónde y cómo está** | Estado y ubicación; de qué compra vino y, si salió, en qué venta —ambas se abren tocándolas |
+| **Qué le ha pasado** | El **historial**, de lo más reciente a lo más antiguo: cada movimiento con su fecha, quién lo hizo y el documento detrás |
+
+**Corregir con el aparato delante** (hace falta el permiso de *editar unidades*):
+
+- **Cambiar estado** — elige el estado nuevo y **escribe el motivo**, que es
+  obligatorio. Queda en el historial: sin motivo, dentro de un mes nadie sabrá
+  por qué ese aparato salió del stock.
+- **Ubicar** — dónde está («Pasillo 3, estante B»). Dejarlo en blanco lo borra.
+- **Leer serial** — el código del fabricante, con la cámara.
+
+> **«Vendido» no está en la lista de estados.** Un aparato se marca vendido
+> registrando su venta, no editándolo. Y para devolver al stock uno vendido hay
+> que **anular su venta** desde el panel: si se pudiera hacer a mano, la venta
+> seguiría en pie con un aparato que vuelve a figurar disponible, y ese mismo
+> aparato se vendería dos veces.
+
+> **El costo no se ve sin el permiso de ver costos.** Quien consulta el
+> inventario desde el mostrador ve qué hay y dónde está, no cuánto margen deja.
+
+> **Si un aparato figura vendido pero su venta está anulada**, la ficha lo
+> señala en rojo. Es una incoherencia: debería haber vuelto al stock, y hay que
+> corregirlo en el panel.
+
+**Lo que sigue estando solo en el panel:** dar de alta o de baja unidades (un
+aparato nace al recepcionar su compra, contando cajas) y cambiar precios y
+costos (se revisan con la factura delante, no en un pasillo).
+
+---
 
 ### Registrar el serial con la cámara
 

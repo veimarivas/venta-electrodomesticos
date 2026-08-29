@@ -2,9 +2,9 @@
 // Dashboard: alineado con la paleta y el estilo del login
 // -----------------------------------------------------------------------------
 // Paleta heredada del login:
-//   ink:    #14243d  (azul oscuro profundo)
-//   accent: #f59e0b  (ámbar/dorado)
-//   teal:   #0f766e  (turquesa)
+//   ink:    #0a182b  (azul oscuro profundo)
+//   accent: #c5a162  (ámbar/dorado)
+//   teal:   #254970  (turquesa)
 //   muted:  #6b778a
 //   line:   #dfe6ee
 // -----------------------------------------------------------------------------
@@ -16,7 +16,7 @@
     padding: 1.6rem 1.75rem 1.4rem;
     border-radius: .85rem;
     color: #fff;
-    background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f);
+    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
 
     // Rejilla sutil de puntos (eco del glow de categorías/marcas).
     &::before {
@@ -85,7 +85,7 @@
     text-transform: uppercase;
     background: rgba(255, 255, 255, .06);
 
-    i { color: #f59e0b; font-size: .85rem; }
+    i { color: #c5a162; font-size: .85rem; }
 }
 
 .dash-hero-btn {
@@ -95,8 +95,8 @@
     padding: .55rem 1.1rem;
     border: 0;
     border-radius: .6rem;
-    background: #f59e0b;
-    color: #14243d;
+    background: #c5a162;
+    color: #0a182b;
     font-size: .85rem;
     font-weight: 650;
     text-decoration: none;
@@ -104,10 +104,10 @@
     transition: background .2s, box-shadow .2s, transform .15s;
 
     &:hover {
-        background: #e8930a;
+        background: #b8935a;
         box-shadow: 0 10px 22px rgba(0, 0, 0, .24);
         transform: translateY(-1px);
-        color: #14243d;
+        color: #0a182b;
     }
 
     &:active { transform: translateY(0); }
@@ -126,7 +126,7 @@
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 0 .75rem 1.75rem rgba(20, 36, 61, .09);
+        box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09);
         border-color: transparent;
     }
 
@@ -146,18 +146,18 @@
 }
 
 .dash-kpi-icono--ingreso {
-    color: #0f766e;
-    background: rgba(15, 118, 110, .1);
+    color: #254970;
+    background: rgba(37, 73, 112, .1);
 }
 
 .dash-kpi-icono--ventas {
-    color: #2a78d6;
-    background: rgba(42, 120, 214, .1);
+    color: #5792bf;
+    background: rgba(87, 146, 191, .1);
 }
 
 .dash-kpi-icono--unidades {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, .1);
+    color: #c5a162;
+    background: rgba(197, 161, 98, .1);
 }
 
 .dash-kpi-icono--ganancia {
@@ -177,7 +177,7 @@
 
 .dash-kpi-valor {
     display: block;
-    color: #14243d;
+    color: #0a182b;
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: -.02em;
@@ -202,7 +202,7 @@
     transition: box-shadow .18s ease-out;
 
     &:hover {
-        box-shadow: 0 .6rem 1.5rem rgba(20, 36, 61, .06);
+        box-shadow: 0 .6rem 1.5rem rgba(10, 24, 43, .06);
     }
 
     .card-header {
@@ -212,7 +212,7 @@
     }
 
     .card-title {
-        color: #14243d;
+        color: #0a182b;
         font-weight: 650;
         letter-spacing: -.01em;
     }
@@ -231,18 +231,18 @@
 }
 
 .dash-card-header-icono--almacen {
-    color: #2a78d6;
-    background: rgba(42, 120, 214, .1);
+    color: #5792bf;
+    background: rgba(87, 146, 191, .1);
 }
 
 .dash-card-header-icono--ventas {
-    color: #0f766e;
-    background: rgba(15, 118, 110, .1);
+    color: #254970;
+    background: rgba(37, 73, 112, .1);
 }
 
 .dash-card-header-icono--top {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, .1);
+    color: #c5a162;
+    background: rgba(197, 161, 98, .1);
 }
 
 // Botón "Ver todas" del header.
@@ -261,9 +261,9 @@
     transition: border-color .15s, color .15s, background .15s;
 
     &:hover {
-        border-color: #0f766e;
-        color: #0f766e;
-        background: rgba(15, 118, 110, .04);
+        border-color: #254970;
+        color: #254970;
+        background: rgba(37, 73, 112, .04);
     }
 }
 
@@ -291,7 +291,7 @@
     }
 
     strong {
-        color: #14243d;
+        color: #0a182b;
         font-size: .92rem;
         font-variant-numeric: tabular-nums;
     }
@@ -312,7 +312,7 @@
 }
 
 .dash-alerta-nombre {
-    color: #14243d;
+    color: #0a182b;
     font-size: .84rem;
     font-weight: 600;
     min-width: 0;
@@ -345,9 +345,9 @@
 }
 
 .dash-alerta-badge--alerta {
-    color: #c98500;
-    background: rgba(201, 133, 0, .1);
-    border: 1px solid rgba(201, 133, 0, .2);
+    color: #8a6b34;
+    background: rgba(138, 107, 52, .1);
+    border: 1px solid rgba(138, 107, 52, .2);
 }
 
 .dash-alerta-ok {
@@ -372,7 +372,7 @@
         transition: background-color .16s ease-out;
 
         &:last-child { border-bottom: 0; }
-        &:hover { background: rgba(15, 118, 110, .025); }
+        &:hover { background: rgba(37, 73, 112, .025); }
     }
 
     .dash-venta.esta-nueva {
@@ -397,12 +397,12 @@
 }
 
 .dash-venta-icono--normal {
-    color: #2a78d6;
-    background: rgba(42, 120, 214, .1);
+    color: #5792bf;
+    background: rgba(87, 146, 191, .1);
 }
 
 .dash-venta-codigo {
-    color: #14243d;
+    color: #0a182b;
     font-size: .84rem;
     font-weight: 650;
     font-family: var(--vz-font-family-monospace, 'SFMono-Regular', monospace);
@@ -416,7 +416,7 @@
 }
 
 .dash-venta-monto {
-    color: #0f766e;
+    color: #254970;
     font-size: .9rem;
     font-weight: 650;
     font-variant-numeric: tabular-nums;
@@ -482,7 +482,7 @@
     border-top-color: #e9edf2;
 
     span { color: #6b778a; }
-    strong { color: #14243d; }
+    strong { color: #0a182b; }
 }
 
 // -----------------------------------------------------------------------------
@@ -513,7 +513,7 @@
 [data-bs-theme='dark'] {
     .dash-kpi {
         border-color: rgba(255, 255, 255, .08);
-        background: #1e2330;
+        background: #0a182b;
 
         &:hover { border-color: transparent; }
     }
@@ -524,7 +524,7 @@
 
     .dash-card {
         border-color: rgba(255, 255, 255, .08);
-        background: #1e2330;
+        background: #0a182b;
 
         .card-header { border-bottom-color: rgba(255, 255, 255, .06); }
         .card-title { color: #e8ecf1; }
@@ -553,7 +553,7 @@
     .dash-ventas-lista .dash-venta {
         border-bottom-color: rgba(255, 255, 255, .06);
 
-        &:hover { background: rgba(15, 118, 110, .06); }
+        &:hover { background: rgba(37, 73, 112, .06); }
     }
 
     .dash-ventas-lista .dash-venta.esta-nueva {
@@ -573,7 +573,7 @@
 #page-topbar {
     border-bottom: 1px solid #e9edf2;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(20, 36, 61, .04);
+    box-shadow: 0 1px 3px rgba(10, 24, 43, .04);
 }
 
 // Buscador global: bordes redondeados y focus turquesa (eco del login).
@@ -591,8 +591,8 @@
         }
 
         &:focus {
-            border-color: #0f766e;
-            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .08);
+            border-color: #254970;
+            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
             background: #fff;
         }
     }
@@ -622,13 +622,13 @@
         transition: background .15s, color .15s, border-color .15s;
 
         &:hover {
-            color: #14243d;
+            color: #0a182b;
             background: #f1f4f8;
             border-color: #e2e7ee;
         }
 
         &:focus {
-            box-shadow: 0 0 0 .2rem rgba(15, 118, 110, .1);
+            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .1);
         }
     }
 }
@@ -663,7 +663,7 @@
     }
 
     .user-name-text {
-        color: #14243d;
+        color: #0a182b;
         font-weight: 600;
         font-size: .88rem;
     }
@@ -677,13 +677,13 @@
 .dropdown-menu-lg {
     border: 1px solid #e9edf2;
     border-radius: .75rem;
-    box-shadow: 0 .75rem 2rem rgba(20, 36, 61, .12);
+    box-shadow: 0 .75rem 2rem rgba(10, 24, 43, .12);
     overflow: hidden;
 }
 
 // Header del dropdown de notificaciones.
 .dropdown-head {
-    background: linear-gradient(160deg, #0f2540, #112a46 55%, #12314f) !important;
+    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757) !important;
     border-radius: .75rem .75rem 0 0 !important;
 }
 
@@ -695,7 +695,7 @@
     transition: background .12s;
 
     &:hover {
-        background: rgba(15, 118, 110, .03);
+        background: rgba(37, 73, 112, .03);
     }
 
     &:last-child { border-bottom: 0; }
@@ -703,7 +703,7 @@
 
 // Avatar del dropdown de usuario.
 .dropdown-header {
-    color: #14243d;
+    color: #0a182b;
     font-weight: 650;
     font-size: .88rem;
     border-bottom: 1px solid #e9edf2;
@@ -716,7 +716,7 @@
     transition: background .12s;
 
     &:hover {
-        background: rgba(15, 118, 110, .04);
+        background: rgba(37, 73, 112, .04);
     }
 }
 
@@ -734,7 +734,7 @@
         color: #e8ecf1;
 
         &:focus {
-            border-color: #0f766e;
+            border-color: #254970;
             background: rgba(255, 255, 255, .06);
         }
     }
@@ -757,7 +757,7 @@
 
     .dropdown-menu-lg {
         border-color: rgba(255, 255, 255, .08);
-        background: #1e2330;
+        background: #0a182b;
     }
 
     .notification-item {

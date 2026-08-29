@@ -7,7 +7,7 @@
     // Paleta cromática para el badge del avatar por cargo.
     $cargos-paleta: (
         'primary': #405189,
-        'teal': #0f766e,
+        'teal': #254970,
         'info': #1b77a5,
         'amber': #9a6700,
         'purple': #5b4bb7,
@@ -28,6 +28,6 @@
 
     // Fila con referencia: si el cargo tiene trabajadores, un borde sutil.
     tr:has(.badge.bg-success-subtle) td:first-child {
-        box-shadow: inset 3px 0 0 #0f766e;
+        box-shadow: inset 3px 0 0 #254970;
     }
 }

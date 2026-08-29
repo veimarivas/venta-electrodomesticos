@@ -23,14 +23,14 @@
             transition: background-color .18s ease-out, color .18s ease-out;
 
             &.activo {
-                background: #0f766e;
+                background: #254970;
                 color: #fff;
-                box-shadow: 0 .2rem .6rem rgba(15, 118, 110, .28);
+                box-shadow: 0 .2rem .6rem rgba(37, 73, 112, .28);
             }
 
             &.completado {
-                background: rgba(15, 118, 110, .1);
-                color: #0f766e;
+                background: rgba(37, 73, 112, .1);
+                color: #254970;
             }
         }
 
@@ -41,7 +41,7 @@
             background: #e2e8f0;
             transition: background .18s ease-out;
 
-            &.completado { background: #0f766e; }
+            &.completado { background: #254970; }
         }
     }
 
@@ -55,8 +55,8 @@
             transition: background-color .16s ease-out, box-shadow .16s ease-out;
 
             &:hover {
-                background: rgba(15, 118, 110, .025);
-                box-shadow: inset 3px 0 0 #0f766e;
+                background: rgba(37, 73, 112, .025);
+                box-shadow: inset 3px 0 0 #254970;
             }
         }
     }
@@ -65,14 +65,14 @@
     .trabajador-sin-resultados {
         border: 1px dashed #dfe6ee;
         border-radius: .85rem;
-        background: rgba(15, 118, 110, .03);
+        background: rgba(37, 73, 112, .03);
     }
 
     // Resumen de la persona ya elegida, en el paso 2.
     .trabajador-persona-elegida {
-        border: 1px solid rgba(15, 118, 110, .15);
+        border: 1px solid rgba(37, 73, 112, .15);
         border-radius: .85rem;
-        background: rgba(15, 118, 110, .04);
+        background: rgba(37, 73, 112, .04);
     }
 
     // Fila de alguien que ya no trabaja aquí.
@@ -89,19 +89,19 @@
         width: 5.25rem;
         height: 5.25rem;
         border-radius: 50%;
-        color: #d97706;
-        background: linear-gradient(135deg, rgba(217, 119, 6, .1), #fff);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, #d97706 22%, transparent), 0 .75rem 1.5rem rgba(217, 119, 6, .14);
+        color: #a8834a;
+        background: linear-gradient(135deg, rgba(168, 131, 74, .1), #fff);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, #a8834a 22%, transparent), 0 .75rem 1.5rem rgba(168, 131, 74, .14);
         .avatar-title { color: inherit; background: transparent; }
     }
 
     // Previsualización del código correlativo.
     .trabajador-codigo {
-        border: 1px dashed color-mix(in srgb, #0f766e 35%, transparent);
+        border: 1px dashed color-mix(in srgb, #254970 35%, transparent);
         border-radius: .85rem;
-        background: rgba(15, 118, 110, .05);
+        background: rgba(37, 73, 112, .05);
 
-        h5 { color: #0f766e; letter-spacing: .04em; font-weight: 700; }
+        h5 { color: #254970; letter-spacing: .04em; font-weight: 700; }
     }
 
     // Reparto de la tabla
@@ -130,7 +130,7 @@
 
     // Cuenta de acceso
     .trabajador-cuenta-usuario {
-        color: #14243d;
+        color: #0a182b;
         font-size: .84rem;
         font-weight: 600;
     }
@@ -143,7 +143,7 @@
     .modal-cuenta-content {
         border-radius: .85rem;
         overflow: hidden;
-        box-shadow: 0 1.25rem 3.5rem rgba(20, 36, 61, 0.18);
+        box-shadow: 0 1.25rem 3.5rem rgba(10, 24, 43, 0.18);
         background: #fff;
     }
 
@@ -153,16 +153,16 @@
         width: 5rem;
         height: 5rem;
         border-radius: 50%;
-        color: #0f766e;
-        background: linear-gradient(135deg, rgba(15, 118, 110, .1), #fff);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, #0f766e 20%, transparent), 0 .75rem 1.5rem rgba(15, 118, 110, .14);
+        color: #254970;
+        background: linear-gradient(135deg, rgba(37, 73, 112, .1), #fff);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, #254970 20%, transparent), 0 .75rem 1.5rem rgba(37, 73, 112, .14);
         .avatar-title { color: inherit; background: transparent; }
     }
 
     .modal-cuenta-icon-aviso {
-        color: #d97706;
-        background: linear-gradient(135deg, rgba(217, 119, 6, .1), #fff);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, #d97706 22%, transparent), 0 .75rem 1.5rem rgba(217, 119, 6, .14);
+        color: #a8834a;
+        background: linear-gradient(135deg, rgba(168, 131, 74, .1), #fff);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, #a8834a 22%, transparent), 0 .75rem 1.5rem rgba(168, 131, 74, .14);
     }
 
     .cuenta-credenciales {
@@ -188,7 +188,7 @@
         }
 
         code {
-            color: #14243d;
+            color: #0a182b;
             background: #fff;
             border: 1px solid #e9edf2;
             border-radius: .35rem;
@@ -209,8 +209,8 @@
             transition: background .16s, color .16s;
 
             &.btn-primary {
-                background: #0f766e;
-                border-color: #0f766e;
+                background: #254970;
+                border-color: #254970;
                 color: #fff;
             }
 
@@ -221,7 +221,7 @@
 
                 &:hover {
                     background: #f1f4f8;
-                    color: #14243d;
+                    color: #0a182b;
                 }
             }
         }
@@ -233,20 +233,20 @@
 body.dark {
     .trabajadores-modulo {
         .trabajador-pasos {
-            border-bottom-color: #253a4e;
-            .paso-punto { background: #253a4e; color: #8494a7; &.activo { background: #0f766e; color: #fff; } &.completado { background: rgba(45, 212, 191, .12); color: #2dd4bf; } }
-            .paso-linea { background: #2a3f55; &.completado { background: #2dd4bf; } }
+            border-bottom-color: #1b3757;
+            .paso-punto { background: #1b3757; color: #8494a7; &.activo { background: #254970; color: #fff; } &.completado { background: rgba(87, 146, 191, .12); color: #5792bf; } }
+            .paso-linea { background: #254970; &.completado { background: #5792bf; } }
         }
-        .trabajador-resultados { border-color: #253a4e; .list-group-item { border-color: #253a4e; &:hover { background: rgba(15, 118, 110, .06); box-shadow: inset 3px 0 0 #0f766e; } } }
-        .trabajador-sin-resultados { border-color: #2a3f55; background: rgba(15, 118, 110, .05); }
-        .trabajador-persona-elegida { border-color: rgba(45, 212, 191, .2); background: rgba(15, 118, 110, .06); }
+        .trabajador-resultados { border-color: #1b3757; .list-group-item { border-color: #1b3757; &:hover { background: rgba(37, 73, 112, .06); box-shadow: inset 3px 0 0 #254970; } } }
+        .trabajador-sin-resultados { border-color: #254970; background: rgba(37, 73, 112, .05); }
+        .trabajador-persona-elegida { border-color: rgba(87, 146, 191, .2); background: rgba(37, 73, 112, .06); }
         .fila-dado-de-baja { background-color: rgba(132, 148, 167, .06); h6 { color: #8494a7; } }
-        .modal-baja-icon { background: linear-gradient(135deg, rgba(217, 119, 6, .08), #192a38); box-shadow: inset 0 0 0 1px rgba(217, 119, 6, .2), 0 .75rem 1.5rem rgba(217, 119, 6, .12); }
-        .trabajador-codigo { background: rgba(15, 118, 110, .06); border-color: rgba(45, 212, 191, .2); h5 { color: #2dd4bf; } }
+        .modal-baja-icon { background: linear-gradient(135deg, rgba(168, 131, 74, .08), #192a38); box-shadow: inset 0 0 0 1px rgba(168, 131, 74, .2), 0 .75rem 1.5rem rgba(168, 131, 74, .12); }
+        .trabajador-codigo { background: rgba(37, 73, 112, .06); border-color: rgba(87, 146, 191, .2); h5 { color: #5792bf; } }
         .trabajador-cuenta-usuario { color: #d5dde8; }
-        .cuenta-credenciales { border-color: #2a3f55; background: #1a2d3d; }
-        .cuenta-credencial { .cuenta-credencial-etiqueta { color: #8494a7; } code { background: #162636; border-color: #2a3f55; color: #d5dde8; } }
+        .cuenta-credenciales { border-color: #254970; background: #0e1f36; }
+        .cuenta-credencial { .cuenta-credencial-etiqueta { color: #8494a7; } code { background: #162636; border-color: #254970; color: #d5dde8; } }
         .modal-cuenta-content { background: #192a38; }
-        .filtro-estado { .btn { &.btn-soft-secondary { border-color: #2a3f55; color: #8494a7; &:hover { background: #253a4e; color: #d5dde8; } } } }
+        .filtro-estado { .btn { &.btn-soft-secondary { border-color: #254970; color: #8494a7; &:hover { background: #1b3757; color: #d5dde8; } } } }
     }
 }

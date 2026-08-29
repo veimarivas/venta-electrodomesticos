@@ -1,0 +1,98 @@
+// -----------------------------------------------------------------------------
+// Paleta de marca — Electro Hogar
+// -----------------------------------------------------------------------------
+// Los colores salen del logo (public/assets/images/logo.jpg): dorado sobre azul
+// noche. Este archivo es la ÚNICA fuente de verdad de la marca; todo lo demás
+// —el panel, la app del teléfono— se alinea con estos valores.
+//
+// El azul noche `#0a182b` es el color principal. Es el fondo del logo, la banda
+// del login y la tinta de todo el texto: el sistema entero se lee como una sola
+// pieza en vez de como una plantilla con un logo pegado encima.
+//
+// **El principal no es el color de acción.** Un botón del mismo tono que el
+// título no se distingue de él, y un enlace en `#0a182b` sobre blanco se lee
+// como texto negro. Por eso la acción es `#254970`, el mismo azul dos peldaños
+// más claro: pertenece a la familia y aun así grita «esto se toca».
+//
+// El dorado es la IDENTIDAD, no una acción. Sale en el logo, en la marca activa
+// del menú y en los brillos de la banda oscura. Un botón dorado competiría con
+// el azul de acción y las dos señales se anularían.
+// -----------------------------------------------------------------------------
+
+:root {
+    // ---- Azules: la columna vertebral -------------------------------------
+    /// Principal. Fondo del logo, banda del login, tinta del texto.
+    --marca-noche: #0a182b;
+
+    /// Un peldaño por encima del principal, para degradados y superficies
+    /// oscuras que necesitan separarse del fondo sin cambiar de familia.
+    --marca-noche-alta: #10233c;
+
+    /// Azul medio. Acción: botones, enlaces, foco, estado activo.
+    --marca-azul: #254970;
+
+    /// El azul de acción presionado o en hover.
+    --marca-azul-hondo: #1b3757;
+
+    /// Azul claro. Es el «2026» de neón del logo. Sirve para texto y detalles
+    /// SOBRE fondo oscuro, donde el azul de acción no tendría contraste.
+    --marca-azul-claro: #5792bf;
+
+    // ---- Dorado: la identidad ----------------------------------------------
+    /// El oro del logotipo.
+    --marca-oro: #c5a162;
+
+    /// Oro aclarado, para texto dorado sobre el azul noche: el oro puro sobre
+    /// fondo oscuro queda por debajo del contraste legible.
+    --marca-oro-claro: #d8bb85;
+
+    /// Marrón del oro en sombra. Texto dorado sobre fondo claro.
+    --marca-oro-hondo: #62492d;
+
+    /// El más oscuro de la gama cálida. Bordes y sombras del dorado.
+    --marca-tierra: #382919;
+
+    /// Crema del logo. Fondos suaves y texto cálido sobre el azul noche.
+    --marca-crema: #e7e2c2;
+
+    // ---- Neutros derivados --------------------------------------------------
+    --marca-apagado: #6b778a;
+    --marca-linea: #dfe6ee;
+    --marca-fondo: #f5f7fa;
+
+    // ---- Componentes de Velzon ---------------------------------------------
+    // La plantilla pinta a partir de estas variables. Redefinirlas aquí tiñe
+    // botones, enlaces, badges y menú de una vez, sin tocar su CSS compilado.
+    --vz-primary: #254970;
+    --vz-primary-rgb: 37, 73, 112;
+    --vz-primary-bg-subtle: rgba(37, 73, 112, .12);
+    --vz-primary-border-subtle: rgba(37, 73, 112, .3);
+    --vz-primary-text-emphasis: #1b3757;
+
+    --vz-link-color: #254970;
+    --vz-link-color-rgb: 37, 73, 112;
+    --vz-link-hover-color: #1b3757;
+    --vz-link-hover-color-rgb: 27, 55, 87;
+}
+
+// El menú lateral oscuro toma el azul noche del logo en vez del gris azulado de
+// la plantilla: es la superficie más grande del panel y la que más define el
+// color de todo el producto.
+[data-sidebar="dark"] {
+    --vz-vertical-menu-bg: #0a182b;
+    --vz-vertical-menu-item-color: #97a8bd;
+    --vz-vertical-menu-item-hover-color: #ffffff;
+    --vz-vertical-menu-item-active-color: #ffffff;
+    // El activo se marca en dorado: es la única señal de identidad que se ve
+    // en todas las pantallas del panel.
+    --vz-vertical-menu-item-active-bg: rgba(197, 161, 98, .14);
+    --vz-vertical-menu-sub-item-color: #8496ab;
+    --vz-vertical-menu-sub-item-hover-color: #d8bb85;
+    --vz-vertical-menu-sub-item-active-color: #d8bb85;
+    --vz-vertical-menu-title-color: #64798f;
+}
+
+// Selección de texto en el azul de la marca.
+::selection {
+    background: rgba(37, 73, 112, .2);
+}

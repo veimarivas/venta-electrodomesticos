@@ -40,7 +40,7 @@
     .crud-tile {
         background: rgba(255, 255, 255, .16);
         border: 1px solid rgba(255, 255, 255, .28);
-        box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+        box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
     }
@@ -120,10 +120,10 @@
         height: 2.15rem;
         border: 1px solid var(--vz-border-color);
         background: #fff;
-        box-shadow: 0 .15rem .5rem rgba(33, 45, 64, .05);
+        box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .05);
         transition: background-color .16s ease-out, color .16s ease-out, transform .16s ease-out, box-shadow .16s ease-out;
 
-        &:hover { transform: translateY(-1px); box-shadow: 0 .35rem .9rem rgba(33, 45, 64, .10); }
+        &:hover { transform: translateY(-1px); box-shadow: 0 .35rem .9rem rgba(10, 24, 43, .10); }
     }
 
     .crud-accion-editar:hover { background: var(--vz-warning-bg-subtle); color: var(--vz-warning-text-emphasis); }
@@ -238,8 +238,8 @@
         }
 
         .modal-crud-icon {
-            color: #6b4a00;
-            background: #fff8df;
+            color: #62492d;
+            background: #f7f3e3;
             border-color: rgba(255, 255, 255, .85);
         }
     }
@@ -308,7 +308,7 @@
     .crud-tile {
         background: rgba(255, 255, 255, .16);
         border: 1px solid rgba(255, 255, 255, .28);
-        box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+        box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
     }
@@ -400,10 +400,10 @@
         height: 2.15rem;
         border: 1px solid var(--vz-border-color);
         background: #fff;
-        box-shadow: 0 .15rem .5rem rgba(33, 45, 64, .05);
+        box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .05);
         transition: background-color .16s ease-out, color .16s ease-out, transform .16s ease-out, box-shadow .16s ease-out;
 
-        &:hover { transform: translateY(-1px); box-shadow: 0 .35rem .9rem rgba(33, 45, 64, .10); }
+        &:hover { transform: translateY(-1px); box-shadow: 0 .35rem .9rem rgba(10, 24, 43, .10); }
     }
 
     .crud-accion-ver:hover { background: var(--vz-info-bg-subtle); color: var(--vz-info-text-emphasis); }
@@ -415,7 +415,7 @@
     .compra-detalle {
         border-radius: 1rem;
         border: 1px solid var(--vz-border-color);
-        box-shadow: 0 .5rem 1.25rem rgba(33, 45, 64, .06);
+        box-shadow: 0 .5rem 1.25rem rgba(10, 24, 43, .06);
     }
 
     .compra-detalle-cabecera {
@@ -661,7 +661,7 @@
         border-radius: .85rem;
         border: 1px solid color-mix(in srgb, var(--vz-info) 28%, var(--vz-border-color));
         background: linear-gradient(135deg, var(--vz-info-bg-subtle) 0%, #fff 100%);
-        box-shadow: 0 .25rem .75rem rgba(33, 45, 64, .04);
+        box-shadow: 0 .25rem .75rem rgba(10, 24, 43, .04);
     }
 
     .compras-proveedor-avatar {
@@ -702,7 +702,7 @@
 
 // -----------------------------------------------------------------------------
 // Vista de detalle de compra (/compras/{id})
-// Paleta: ink #14243d, accent #f59e0b, teal #0f766e, muted #6b778a, line #dfe6ee
+// Paleta: ink #0a182b, accent #c5a162, teal #254970, muted #6b778a, line #dfe6ee
 // -----------------------------------------------------------------------------
 .compras-show-modulo {
 
@@ -732,7 +732,7 @@
         font-size: 1.35rem;
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
-        box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+        box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
     }
 
     // KPI cards
@@ -744,13 +744,13 @@
         border-radius: .85rem;
         background: #fff;
         border: 1px solid #e9edf2;
-        box-shadow: 0 .15rem .5rem rgba(33, 45, 64, .04);
+        box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .04);
         transition: transform .18s ease-out, box-shadow .18s ease-out;
         height: 100%;
 
         &:hover {
             transform: translateY(-3px);
-            box-shadow: 0 .5rem 1.25rem rgba(33, 45, 64, .08);
+            box-shadow: 0 .5rem 1.25rem rgba(10, 24, 43, .08);
         }
     }
 
@@ -764,11 +764,11 @@
         flex-shrink: 0;
     }
 
-    .compras-show-kpi-icon-primary { color: #0f766e; background: rgba(15, 118, 110, .1); }
+    .compras-show-kpi-icon-primary { color: #254970; background: rgba(37, 73, 112, .1); }
     .compras-show-kpi-icon-info    { color: #0369a1; background: rgba(3, 105, 161, .1); }
     .compras-show-kpi-icon-success { color: #16a34a; background: rgba(22, 163, 74, .1); }
-    .compras-show-kpi-icon-warning { color: #d97706; background: rgba(217, 119, 6, .1); }
-    .compras-show-kpi-icon-accent  { color: #b45309; background: rgba(180, 83, 9, .1); }
+    .compras-show-kpi-icon-warning { color: #a8834a; background: rgba(168, 131, 74, .1); }
+    .compras-show-kpi-icon-accent  { color: #b45309; background: rgba(98, 73, 45, .1); }
 
     .compras-show-kpi-body { min-width: 0; }
 
@@ -783,7 +783,7 @@
         margin: .15rem 0;
         font-size: 1.35rem;
         font-weight: 700;
-        color: #14243d;
+        color: #0a182b;
         letter-spacing: -.02em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -817,7 +817,7 @@
             margin: 0;
             font-size: .82rem;
             font-weight: 600;
-            color: #14243d;
+            color: #0a182b;
         }
     }
 
@@ -825,8 +825,8 @@
         width: 1.75rem;
         height: 1.75rem;
         border-radius: .45rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         display: grid;
         place-items: center;
         font-size: .9rem;
@@ -867,7 +867,7 @@
     .compras-show-fila-valor {
         font-weight: 600;
         font-size: .85rem;
-        color: #14243d;
+        color: #0a182b;
         font-variant-numeric: tabular-nums;
     }
 
@@ -883,7 +883,7 @@
     .compras-show-total-grande {
         font-size: 1.15rem;
         font-weight: 700;
-        color: #0f766e;
+        color: #254970;
     }
 
     // Secciones
@@ -906,7 +906,7 @@
             margin: 0;
             font-size: .95rem;
             font-weight: 600;
-            color: #14243d;
+            color: #0a182b;
         }
     }
 
@@ -914,8 +914,8 @@
         width: 1.85rem;
         height: 1.85rem;
         border-radius: .5rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         display: grid;
         place-items: center;
         font-size: .95rem;
@@ -929,8 +929,8 @@
         height: 1.4rem;
         padding: 0 .4rem;
         border-radius: 2rem;
-        background: rgba(15, 118, 110, .1);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .1);
+        color: #254970;
         font-size: .72rem;
         font-weight: 700;
     }
@@ -973,8 +973,8 @@
         min-width: 2rem;
         padding: .28rem .5rem;
         border-radius: 2rem;
-        background: rgba(15, 118, 110, .08);
-        color: #0f766e;
+        background: rgba(37, 73, 112, .08);
+        color: #254970;
         font-size: .76rem;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
@@ -983,7 +983,7 @@
     .compras-show-col-num {
         font-size: .85rem;
         font-variant-numeric: tabular-nums;
-        color: #14243d;
+        color: #0a182b;
     }
 
     .compras-show-costo-real {
@@ -1050,8 +1050,8 @@
     }
 
     .compras-show-status-warning {
-        color: #d97706;
-        background: rgba(217, 119, 6, .1);
+        color: #a8834a;
+        background: rgba(168, 131, 74, .1);
     }
 
     .compras-show-status-danger {
@@ -1097,9 +1097,9 @@
     }
 
     .compras-show-unidad-reservado {
-        color: #d97706;
-        background: rgba(217, 119, 6, .06);
-        border-color: rgba(217, 119, 6, .2);
+        color: #a8834a;
+        background: rgba(168, 131, 74, .06);
+        border-color: rgba(168, 131, 74, .2);
     }
 
     .compras-show-unidad-danado,
@@ -1129,8 +1129,8 @@
         transition: border-color .16s ease-out, box-shadow .16s ease-out;
 
         &:hover {
-            border-color: rgba(15, 118, 110, .25);
-            box-shadow: 0 .25rem .75rem rgba(33, 45, 64, .05);
+            border-color: rgba(37, 73, 112, .25);
+            box-shadow: 0 .25rem .75rem rgba(10, 24, 43, .05);
         }
     }
 
@@ -1144,10 +1144,10 @@
         flex-shrink: 0;
     }
 
-    .compras-show-renta-icon-primary { color: #0f766e; background: rgba(15, 118, 110, .1); }
+    .compras-show-renta-icon-primary { color: #254970; background: rgba(37, 73, 112, .1); }
     .compras-show-renta-icon-info    { color: #0369a1; background: rgba(3, 105, 161, .1); }
     .compras-show-renta-icon-success { color: #16a34a; background: rgba(22, 163, 74, .1); }
-    .compras-show-renta-icon-warning { color: #d97706; background: rgba(217, 119, 6, .1); }
+    .compras-show-renta-icon-warning { color: #a8834a; background: rgba(168, 131, 74, .1); }
 
     .compras-show-renta-body { min-width: 0; }
 
@@ -1162,7 +1162,7 @@
         margin: .1rem 0;
         font-size: 1.2rem;
         font-weight: 700;
-        color: #14243d;
+        color: #0a182b;
         letter-spacing: -.01em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -1170,7 +1170,7 @@
 
     .compras-show-renta-info    { color: #0369a1; }
     .compras-show-renta-success { color: #16a34a; }
-    .compras-show-renta-warning { color: #d97706; }
+    .compras-show-renta-warning { color: #a8834a; }
 
     .compras-show-renta-sub {
         color: #9ca3af;
@@ -1188,7 +1188,7 @@
     .compras-show-progreso-label {
         font-size: .78rem;
         font-weight: 600;
-        color: #14243d;
+        color: #0a182b;
     }
 
     .compras-show-progreso-porcentaje {

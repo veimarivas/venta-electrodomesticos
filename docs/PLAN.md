@@ -766,13 +766,389 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### El sistema toma los colores del logo (2026-08-29)
+
+Hasta ahora el sistema era una plantilla con un nombre encima: turquesa de
+acción, ámbar de acento y un login con la inicial «E» en un cuadrado. El logo de
+la marca —dorado sobre azul noche— no aparecía en ninguna parte.
+
+La paleta sale ahora del logo (`public/assets/images/logo_hogar.png`) y vive en un
+solo sitio, **`resources/scss/components/_marca.scss`**, del que se alimentan el
+panel y el tema de la app.
+
+| Papel | Color | Dónde |
+|---|---|---|
+| **Principal** | `#0a182b` azul noche | Fondo del logo, banda del login, tinta de los títulos, menú lateral |
+| Acción | `#254970` | Botones, enlaces, foco, estado activo |
+| Acción pulsada | `#1b3757` | Hover |
+| Sobre fondo oscuro | `#5792bf` | Detalles en la banda; también la serie 1 de las gráficas |
+| **Marca** | `#c5a162` oro | Identidad: filete del logo, marca del menú activo, brillos |
+| Oro sobre oscuro | `#d8bb85` | Texto dorado en la banda |
+| Oro en sombra | `#62492d`, `#382919` | Texto dorado sobre fondo claro, bordes |
+| Crema | `#e7e2c2` | Texto cálido sobre el azul noche |
+
+> **El principal no es el color de acción, y es deliberado.** Un botón del mismo
+> tono que el título no se distingue de él, y un enlace en `#0a182b` sobre
+> blanco se lee como texto negro. Por eso la acción es `#254970`: la misma
+> familia dos peldaños más claro, así que pertenece al conjunto y aun así se ve
+> que se puede tocar.
+
+> **El dorado es identidad, no acción.** Sale en el filete del logo, en la marca
+> del menú activo y en el hilo superior del botón de entrar. Un botón dorado
+> competiría con el azul y las dos señales se anularían. Es la misma regla que
+> ya tenía el ámbar; solo cambia el tono.
+
+> **Las gráficas siguen aparte.** Solo se movió la serie 1 (`#2a78d6` →
+> `#5792bf`, que está en el logo). Las demás son colores **categóricos**: tienen
+> que distinguirse entre sí, no parecerse a la marca. Y los estados
+> —verde/rojo/ámbar— no se tocan: significan algo.
+
+**La migración fue mecánica y está acotada.** Los literales viejos se
+sustituyeron en los 19 parciales SCSS con una tabla de correspondencias fija
+(teal → azul de acción, tinta → azul noche, ámbar → oro), incluidas sus formas
+`rgba()`. El CSS compilado ya no contiene ninguno de los cuatro colores
+anteriores. Lo nuevo —el login— se escribe contra las variables, no contra
+literales.
+
+#### El login, rediseñado
+
+**El logo es ahora la cabecera**, en los dos proyectos, y va **sin marco**: el
+archivo tiene el fondo recortado, así que el dorado cae directo sobre la banda,
+que arranca del mismo azul del que se diseñó el logotipo. Solo lleva una sombra
+proyectada, para darle el mismo relieve que tiene el oro del propio logo y que
+no se vea plano sobre el degradado.
+
+- El botón es un degradado del azul noche al azul de acción con un **hilo
+  dorado** arriba: el único oro del formulario, justo donde está la acción.
+- Los iconos de los campos **se encienden con el foco**, que confirma dónde se
+  escribe sin añadir más texto a la pantalla.
+- Una nota de confianza cierra el formulario: quien entra maneja el dinero y el
+  inventario del negocio.
+- El distintivo de la banda dice «Panel de gestión» y no «Tecnología para tu
+  vida»: ese eslogan ya va **dentro** del logotipo, y repetirlo dos centímetros
+  más abajo lo gasta.
+
+##### Cómo se adapta al dispositivo
+
+La regla es una sola: **el tamaño se interpola, no salta**. Todo lo que crece
+—el logo, los títulos, los márgenes— usa `clamp()` contra el ancho de la
+ventana, así que entre un móvil de 320 px y un monitor de 2560 no hay ningún
+punto donde el diseño se rompa y vuelva a montarse. Los `@media` solo cambian la
+**estructura** (una columna o dos), nunca las medidas.
+
+| | |
+|---|---|
+| Una columna | Hasta 62rem (992 px) |
+| Dos columnas | Desde 62rem |
+| Logo | `clamp()`: 144 px en el caso más apretado, 304 px en el más holgado |
+
+> **El corte está en 62rem, no en 768 px.** En una tablet en vertical, dos
+> columnas dejan el formulario en unos 300 px: más estrecho que en un móvil. Y
+> va en `rem` para que siga la letra del usuario — quien la agranda necesita el
+> cambio antes, no en el mismo píxel.
+
+> **La altura también manda, no solo el ancho.** Un móvil tumbado tiene ancho de
+> tablet y alto de nada: sin mirar la altura, la banda se come la pantalla y el
+> formulario queda fuera. Hay dos consultas de `max-height` que encogen el logo
+> y los espacios, **atadas a `orientation: landscape`**: sin esa condición, un
+> móvil pequeño en vertical —que también mide menos de 700 px de alto— se
+> llevaba el logo encogido sin motivo, cuando allí lo que sobra es ancho.
+
+> **Solo el formulario se desplaza.** En dos columnas cada panel tiene su alto
+> fijo, y el de la banda se queda en `overflow: hidden`: sus adornos son
+> `position: absolute` y asoman 12 rem por debajo del borde, así que con
+> `overflow-y: auto` dejaban de recortarse y le salía una barra de
+> desplazamiento a un panel que no tiene nada que desplazar.
+
+> **Los campos van a 16 px exactos.** Por debajo de ese tamaño, iOS Safari hace
+> zoom al enfocar un `input` y descuadra la pantalla entera.
+
+Comprobado con medidas —no a ojo— en 320×568, 360×640, 360×800, 414×896,
+640×360, 740×360, 768×1024, 992×700, 1024×640, 1280×800, 1366×768, 1440×900,
+1920×1080 y 2560×1440: en ninguno hay desbordamiento horizontal, y la proporción
+del logo nunca se deforma.
+- Los anillos decorativos pasaron de blancos a dorados. En blanco eran «un fondo
+  con formas»; en oro atan la pantalla al logo que tiene encima.
+
+> **El archivo bueno es `logo_hogar.png`, no `logo.jpg`.** Los dos llevan el
+> mismo logotipo, pero el PNG tiene **el fondo recortado** y el JPG lo trae
+> pintado de azul. Con el JPG había que meter la imagen en un recuadro con
+> filete para que el borde de su fondo no se viera como una mancha sobre la
+> banda; con el PNG el dorado cae directo sobre el degradado y la pieza es la
+> pantalla entera. Es una diferencia de un archivo que cambia el diseño
+> completo.
+
+> **Se sirven dos recortes, y el logo va COMPLETO.** `logo_hogar.png` mide
+> 644×387 y lo único que se le quita es el margen vacío. En una primera versión
+> se recortó también la **tira de categorías** —nevera, lavadora, cocina…— por
+> legibilidad a tamaño pequeño; fue un error: esa tira es parte del logotipo y
+> quitarla lo deja incompleto. El recuadro del contenido se midió por el canal
+> alfa, píxel a píxel: ocupa **x 87..553, y 35..380**.
+>
+> | Archivo | Tamaño | Dónde |
+> |---|---|---|
+> | `marca-login.png` | 478×357, 138 KB | El login del panel |
+> | `marca-sidebar.png` | 260×194, 55 KB | Menú lateral y barra superior |
+>
+> `public/assets/` está fuera del repositorio, así que estos recortes **no
+> viajan con el código**: se regeneran del original con GD (ver
+> `docs/DESPLIEGUE.md`).
+>
+> ```bash
+> php -r '$s=imagecreatefrompng("public/assets/images/logo_hogar.png"); foreach([["marca-login.png",478],["marca-sidebar.png",260]] as [$n,$a]){ $al=(int)round(357*$a/478); $d=imagecreatetruecolor($a,$al); imagealphablending($d,false); imagesavealpha($d,true); imagefill($d,0,0,imagecolorallocatealpha($d,0,0,0,127)); imagecopyresampled($d,$s,0,0,81,29,$a,$al,478,357); imagepng($d,"public/assets/images/$n",9); }'
+> ```
+>
+> **`imagealphablending(false)` + `imagesavealpha(true)` no son opcionales.** Sin
+> las dos, GD tira el canal alfa y el recorte sale con fondo negro, que sobre la
+> banda azul se ve como un rectángulo.
+
+#### El logo en el menú lateral
+
+El logotipo no cabe en los 17 px que la plantilla reserva para una marca en
+línea: a esa altura es una raya. La caja de marca se hizo más alta y el logo va
+a **84 px desplegado y 34 px plegado**. El menú empieza unos milímetros más
+abajo, que es barato a cambio de que la marca se lea con su tira de categorías.
+
+> **El menú salía con el logotipo DOS veces.** En el marcado hay dos anclas
+> —`.logo-dark` y `.logo-light`— y Velzon enseña la que toca ocultando la otra
+> con `display: none`. Para centrar el logo se había puesto
+> `.navbar-brand-box .logo { display: flex }`, que gana en especificidad y
+> **destapa las dos**. Se centra con `text-align: center`, que no toca el
+> `display`. La regla general: en esta plantilla, no se le pone `display` a nada
+> cuya visibilidad gobierne ella.
+
+> **No hay monograma para el menú plegado.** Se intentó recortar uno y no existe:
+> la «H» manuscrita está entrelazada con «ELECTRO», así que todo recorte pequeño
+> sale con fragmentos de letra. En plegado va el logotipo completo a 34 px:
+> pequeño, pero se reconoce como la pieza dorada, que es lo que se le pide a una
+> marca en ese estado.
+
+> **En la app, el login fuerza el tema claro.** La tarjeta es blanca por diseño,
+> igual que el panel del login web, pero su contenido tomaba los colores del
+> tema del sistema: con el modo oscuro encendido, los campos salían en gris
+> carbón y el título en blanco sobre blanco. **Ilegible, y estaba así desde
+> antes.** Es la única pantalla que fuerza el esquema; el resto respeta el modo
+> del teléfono, porque las usa quien ya entró y durante toda la jornada.
+
+> **La nota de confianza llevaba un `Row` rígido** que desbordaba por la derecha
+> en pantallas estrechas o con el tamaño de letra del sistema subido. El texto
+> va en un `Flexible`.
+
+### Inventario y kardex en el teléfono (2026-08-28)
+
+El inventario es el módulo que más se consulta **de pie**: con el aparato en la
+mano, en el almacén, sin un ordenador cerca. Hasta ahora la app solo sabía
+registrar el serial de una unidad; para saber qué era un aparato, en qué estado
+estaba o por dónde había pasado había que ir al panel.
+
+Ahora se escanea la etiqueta y se abre su ficha. Es la continuación natural de
+haber arreglado la etiqueta: sin código legible, nada de esto sirve.
+
+| Endpoint | Permiso | Qué hace |
+|---|---|---|
+| `GET /api/v1/unidades` | `unidades.ver` | Listado paginado con los mismos filtros del panel (código, serial, producto, SKU, estado) y el **recuento por estado** en `meta.resumen` |
+| `GET /api/v1/unidades/{unidad}` | `unidades.ver` | Ficha completa: producto, compra de origen, venta de salida y **kardex** |
+| `POST /api/v1/unidades/{unidad}` | `unidades.editar` | Ajusta estado, ubicación y notas |
+| `POST /api/v1/unidades/{unidad}/serial` | `unidades.editar` | El serial leído con la cámara (ya existía) |
+
+**Lo que NO se abre desde el teléfono**, y por qué:
+
+- **El alta y la baja de unidades.** Un aparato se da de alta al recepcionar su
+  compra, contando cajas. Crear unidades sueltas desde el teléfono es inventar
+  stock.
+- **Los importes** (precio y costo). Se revisan con calma y con la factura
+  delante, no en un pasillo.
+- **Marcar «vendido»**. Ver abajo.
+
+> **El kardex viaja DENTRO de la ficha**, al revés que las unidades de una
+> compra, que van en su propia ruta. La diferencia es el tamaño: la historia de
+> una unidad son unas pocas filas, y pedirla aparte obligaría a una segunda
+> vuelta al servidor justo cuando el almacenero ya está mirando la pantalla. Una
+> compra de cien unidades sí justifica su ruta.
+
+> **El costo es el único dato con permiso propio** (`reportes.ver_costos`).
+> Quien mira el inventario desde el mostrador ve qué hay y dónde está, no cuánto
+> margen deja. La app distingue «no me lo dijeron» de «cuesta cero»: oculta la
+> fila entera en vez de enseñar Bs 0,00.
+
+> **El recuento incluye los estados a cero.** Una pestaña que aparece y
+> desaparece según el stock del día desconcierta más de lo que ahorra. Se
+> calcula con una sola consulta agrupada, no con siete `count()`.
+
+#### El panel movía el inventario sin dejar rastro
+
+Al ir a escribir el ajuste de la API apareció un fallo del panel que llevaba
+tiempo ahí, con su test ya escrito y en rojo: **editar una unidad y cambiarle el
+estado no escribía nada en el kardex**. Marcar un aparato como dañado lo sacaba
+del stock sin dejar constancia de cuándo, por qué ni quién. `Kardex` tenía el
+método `cambioDeEstado()`; `Unidades\Index::guardar()` simplemente no lo
+llamaba.
+
+La corrección no fue añadir la llamada donde faltaba, sino crear
+**`App\Support\AjusteDeUnidad`**: el punto único por el que se ajusta una unidad
+existente. Añadir la línea suelta habría dejado la misma regla escrita dos
+veces —una en el panel y otra en el controlador de la API—, y dos copias de una
+regla es la forma más segura de que una de las dos se quede atrás. Es el mismo
+patrón que ya siguen `RegistroDeVenta` y el propio `Kardex`.
+
+> **`vendido` no se pone ni se quita a mano.** Lo pone la venta y lo quita su
+> anulación. Marcarlo a mano dejaría un aparato fuera del stock sin venta que lo
+> respalde; quitarlo dejaría una línea de venta apuntando a un aparato que
+> vuelve a figurar disponible, y **el mismo aparato se vendería dos veces**. El
+> servidor lo rechaza con un 422, y el menú del teléfono ni siquiera ofrece la
+> opción: un botón que siempre da error es una trampa.
+
+> **El motivo del cambio es obligatorio en la app** y va al kardex, no a la
+> unidad: es el porqué de ESE movimiento, no una nota permanente del aparato. El
+> kardex existe para poder reconstruir qué pasó, y «alguien lo marcó como
+> dañado» sin más no reconstruye nada.
+
+> **Los flujos que mueven la unidad por su cuenta no pasan por aquí.** La venta y
+> su anulación tienen `RegistroDeVenta`, que escribe el kardex con la venta como
+> origen: más información de la que un ajuste puede dar.
+
+#### En la app
+
+- **`/inventario`** — listado con buscador, chips de estado con su recuento,
+  scroll infinito y el escáner en un botón flotante. Se entra desde el icono de
+  la barra del Catálogo: son la misma pregunta a dos niveles —qué vendemos y qué
+  aparatos tenemos de eso— y la barra inferior ya está llena.
+- **`/inventario/:id`** — ficha, trazabilidad (compra de origen y venta de
+  salida, ambas navegables) y el historial como línea de tiempo.
+
+> **Escanear entra directo a la ficha.** Si el código leído identifica a UNA
+> unidad, enseñar una lista de un elemento para que alguien la toque es un paso
+> de más. La comprobación es de coincidencia **exacta** contra el código interno
+> o el serial: la búsqueda del servidor es parcial —«SN-100» también trae
+> «SN-1004»— y entrar con una coincidencia parcial sería entrar al aparato
+> equivocado.
+
+> **Una venta anulada sobre un aparato vendido se señala en rojo.** Es una
+> incoherencia, no un dato más: el aparato debería haber vuelto al stock. Quien
+> lo vea tiene que saber que hay algo que corregir en el panel.
+
+### La etiqueta impresa se imprimía cortada (2026-08-28)
+
+Segundo informe desde el mostrador: **el código que genera el sistema al
+registrar una unidad no se reconoce al vender**. Esta vez el fallo no estaba ni
+en la cámara ni en la búsqueda: estaba en la **hoja de etiquetas**.
+
+`milon/barcode` devuelve el SVG con `width`/`height` en píxeles y **sin
+`viewBox`**. Un SVG sin `viewBox` no tiene proporción intrínseca, así que el
+`max-width: 100%` de la hoja **no lo escalaba: le recortaba el lienzo**. El
+código de una unidad mide ~222 px y en la etiqueta pequeña caben ~174 px, de
+modo que se imprimía con el **último quinto cortado**, dígito de control y
+patrón de parada incluidos. Un Code128 truncado no lo lee ningún lector, y desde
+el mostrador eso se ve exactamente igual que un escáner roto.
+
+| | Antes | Ahora |
+|---|---|---|
+| Cabecera del SVG | `width="222" height="22"`, sin `viewBox` | `viewBox="-10 0 242 22"`, sin medidas en px |
+| Efecto del CSS | recorte | escalado |
+| Zona muda | ninguna | 10 módulos a cada lado (lo que exige la norma) |
+| Alto del código | el que sobrara del flujo | fijo en mm: 7 / 11 / 16 según el tamaño |
+
+> **Las zonas mudas no son margen decorativo.** Code128 necesita 10 módulos en
+> blanco antes de la primera barra y después de la última para que el lector
+> sepa dónde empieza el patrón. La librería entrega el dibujo pegado al borde,
+> así que van dentro del `viewBox`: así se conservan aunque el código ocupe todo
+> el ancho de la etiqueta.
+
+> **`preserveAspectRatio="none"` es deliberado.** Un código de barras solo
+> codifica **anchos**; estirarlo en vertical no pierde información y permite
+> fijar el alto en milímetros, que es lo que hace falta para leerlo de pie y con
+> el aparato en la mano. Lo que no puede es recortarse.
+
+> **En la etiqueta de 50 mm el módulo queda en ~0,19 mm**, justo el mínimo de la
+> norma. Se lee, pero para escanear con teléfono conviene la **mediana**: ahí el
+> módulo dobla su ancho.
+
+#### La coincidencia exacta ya no depende del corte de la lista
+
+`PosController::buscar` calculaba la coincidencia exacta **sobre la lista ya
+filtrada**, que se corta en 12 resultados ordenados por código interno. Un
+aparato cuyo código quedara fuera de ese corte no se marcaba como exacto y no
+entraba solo al carrito: el resultado de escanear dependía de cuántos aparatos
+parecidos hubiese en stock ese día. Ahora la exacta se busca con **su propia
+consulta** —por `serial` o por `codigo_interno`, sin distinguir mayúsculas— y se
+antepone a la lista. Escanear la etiqueta de la tienda y escanear el código del
+fabricante dan el mismo resultado, que es lo que se pidió: *«al vender puede ser
+que se lea el código o el serial»*.
+
+#### La lectura se limpia antes de buscarse
+
+El servidor compara texto exacto, así que un carácter invisible de más significa
+«no existe». `PantallaEscaner` normaliza ahora lo que devuelve la cámara —y lo
+que se teclea— quitando caracteres de control (saltos de línea de los lectores
+de mano, separadores GS de los códigos GS1) y los asteriscos de inicio y fin que
+algunos lectores de Code 39 transmiten como si fueran dato. No se toca nada más:
+ni mayúsculas ni espacios interiores, porque un serial de fabricante puede
+llevarlos de verdad.
+
 ### El escáner explica lo que lee, y registra seriales (2026-08-23)
 
 Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### El 404 de /ventas/qr-cobro, y la administración en el teléfono (2026-08-23)
+#### La app adopta el sistema de diseño del panel (2026-08-23)
+
+La app se veía bien pero **no se veía como el panel**: quien administra usa los
+dos el mismo día y parecían dos productos. El problema no era la estructura
+—banda con degradado, tarjetas, todo eso ya estaba— sino los **tokens**.
+
+Se toman del layout de autenticación (`layouts/auth.blade.php`), que es la
+referencia del sistema; el propio `_dashboard.scss` dice «alineado con la paleta
+y el estilo del login».
+
+| | Antes (app) | Ahora (= panel) |
+|---|---|---|
+| Acción | azul `#2A78D6` | turquesa `#0F766E` |
+| Marca | — | ámbar `#F59E0B` |
+| Tinta | derivada de Material | `#14243D` |
+| Línea | derivada | `#DFE6EE` |
+| Fondo | `#F5F6F8` | `#F5F7FA` |
+| Banda | primary → tertiary | `160deg, #0F2540, #112A46 55%, #12314F` |
+| Radios | 20 / 12 px | 14 / 10 px (`.85rem` / `.65rem`) |
+| Tipografía | Roboto | **Inter** |
+
+> **El azul venía de las gráficas.** El esquema se sembraba de `serie1`, el
+> primer tono de la paleta de datos, así que un color que en la web solo aparece
+> **dentro** de los gráficos teñía toda la interfaz del teléfono. Ahora se
+> siembra del turquesa de acción y las dos paletas quedan separadas, que es como
+> están en el panel: una dice «esto se toca», la otra «esto es un dato».
+
+> **Turquesa y ámbar tienen papeles distintos.** El turquesa es acción; el ámbar
+> es marca y solo sale en el brillo decorativo de la banda, igual que el
+> `::after` del showcase. Usarlos indistintamente rompería la señal de qué se
+> puede tocar.
+
+**Inter va empaquetada** (variable, ejes `opsz`/`wght`, 876 KB con su OFL) y no
+descargada en caliente: la app se usa en el mostrador y una tienda con mala
+señal no puede quedarse esperando la fuente.
+
+#### Tres bugs reales que aparecieron al mirar el diseño
+
+Los **tres tests de login** que llevaban semanas dados por «preexistentes» eran
+correctos; lo que fallaba era otra cosa cada vez:
+
+1. **La marca estaba mal escrita**: «Electronica del Hogar», sin tilde, en la
+   pantalla más visible de la app. El test la buscaba bien escrita.
+2. **El nombre salía dos veces** en el login —título grande y pie—. En el panel
+   el pie lleva la línea de copyright («© 2026 … · Gestión que conecta»), no la
+   marca repetida. Ahora es la misma.
+3. **El test tapaba un botón fuera del viewport.** El botón «Entrar» cae en
+   y=598–652 con un viewport de prueba de 600 px: el toque aterrizaba fuera y no
+   llegaba a nadie, así que no se validaba nada y parecía un fallo de la app.
+   Aquí el código estaba bien y **el test estaba mal**: le faltaba un
+   `ensureVisible`. Se corrigió el test.
+
+De paso salieron más tildes perdidas en el login («Contrasena», «Panel de
+administracion», «Algo salio mal. Intentalo»).
+
+**La suite de Flutter queda en verde por primera vez: 64/64.**
+
+### El 404 de /ventas/qr-cobro, y la administración en el teléfono (2026-08-23)
 
 #### La ruta se comía a la otra
 

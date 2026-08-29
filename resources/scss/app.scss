@@ -6,6 +6,10 @@
 // la plantilla ya expone variables CSS (--vz-*) que se pueden reutilizar.
 // -----------------------------------------------------------------------------
 
+// La paleta de marca va primero: define las variables que el resto usa y las
+// sobrescrituras de Velzon, que deben quedar por encima de su CSS compilado.
+@use 'components/marca';
+
 @use 'components/badges';
 @use 'components/tables';
 @use 'components/personas-v2';

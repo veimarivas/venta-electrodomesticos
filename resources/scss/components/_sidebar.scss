@@ -2,9 +2,9 @@
 // Sidebar: alineado con la paleta del login
 // -----------------------------------------------------------------------------
 // Paleta del login:
-//   ink:    #14243d  (azul oscuro profundo)
-//   accent: #f59e0b  (ámbar/dorado)
-//   teal:   #0f766e  (turquesa)
+//   ink:    #0a182b  (azul oscuro profundo)
+//   accent: #c5a162  (ámbar/dorado)
+//   teal:   #254970  (turquesa)
 //   muted:  #6b778a
 //   line:   #dfe6ee
 //
@@ -15,16 +15,33 @@
 .app-menu.navbar-menu {
 
     // Mismo gradiente oscuro del login, adaptado a vertical.
-    background: linear-gradient(180deg, #0f2540 0%, #112a46 45%, #12314f 100%);
+    background: linear-gradient(180deg, #0a182b 0%, #10233c 45%, #1b3757 100%);
     border-right-color: rgba(255, 255, 255, .06);
 
     // ---- Marca / Logo ----
+    //
+    // El logotipo es más alto que ancho (1,7:1), así que no cabe en los 17 px
+    // que la plantilla reserva para una marca en línea: la caja se hace más
+    // alta y el logo respira. A cambio el menú empieza unos milímetros más
+    // abajo, que es un precio barato por que la marca se lea.
     .navbar-brand-box {
-        padding: 1.15rem 1.3rem 1rem;
+        padding: 1rem 1.3rem .9rem;
         border-bottom: 1px solid rgba(255, 255, 255, .07);
 
-        .logo {
-            justify-content: center;
+        // Centrado con `text-align`, NUNCA con `display: flex` sobre `.logo`.
+        //
+        // En el marcado hay dos anclas —`.logo-dark` y `.logo-light`— y Velzon
+        // enseña la que toca ocultando la otra con `display: none`. Poner
+        // `display: flex` aquí gana en especificidad y **destapa las dos**: el
+        // menú salía con el logotipo repetido.
+        text-align: center;
+
+        // `height` va en el atributo del <img> para que el navegador reserve
+        // el hueco antes de descargarlo; aquí solo se asegura que el ancho
+        // acompañe y que no se pase de la caja al plegar el menú.
+        img {
+            width: auto;
+            max-width: 100%;
         }
     }
 
@@ -45,7 +62,7 @@
                 width: 4px;
                 height: 4px;
                 border-radius: 50%;
-                background: #f59e0b;
+                background: #c5a162;
                 opacity: .85;
                 position: absolute;
                 left: .55rem;
@@ -81,7 +98,7 @@
         &[aria-expanded='true'] {
             color: #fff;
             background: rgba(255, 255, 255, .12);
-            box-shadow: 0 .4rem 1rem rgba(8, 20, 52, .24), inset 3px 0 0 #f59e0b;
+            box-shadow: 0 .4rem 1rem rgba(10, 24, 43, .24), inset 3px 0 0 #c5a162;
         }
 
         // Chevron de colapso.
@@ -123,7 +140,7 @@
             background: rgba(255, 255, 255, .1);
 
             &::before {
-                background-color: #f59e0b;
+                background-color: #c5a162;
                 opacity: 1;
             }
         }

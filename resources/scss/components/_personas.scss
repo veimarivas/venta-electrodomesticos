@@ -40,7 +40,7 @@
         }
 
         h4 { font-weight: 650; letter-spacing: -.02em; }
-        .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(8, 20, 52, .2); }
+        .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .2); }
     }
 
     // Etiqueta superior del encabezado. El fondo translúcido se declara aquí
@@ -66,7 +66,7 @@
         border-radius: .65rem;
         font-weight: 600;
         padding-inline: 1.1rem;
-        box-shadow: 0 .6rem 1.6rem rgba(8, 20, 52, .28);
+        box-shadow: 0 .6rem 1.6rem rgba(10, 24, 43, .28);
 
         &:hover { transform: translateY(-1px); }
     }
@@ -84,7 +84,7 @@
     .personas-listado {
         overflow: hidden;
         border-radius: 1rem;
-        box-shadow: 0 .75rem 2.25rem rgba(33, 45, 64, .08) !important;
+        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
     }
 
     .personas-toolbar {
@@ -226,7 +226,7 @@
     .modal-eliminar-content {
         overflow: hidden;
         border-radius: 1rem;
-        box-shadow: 0 1.25rem 3.5rem rgba(33, 45, 64, 0.18);
+        box-shadow: 0 1.25rem 3.5rem rgba(10, 24, 43, 0.18);
     }
 
     // Bootstrap espera que .modal-body sea hijo directo de .modal-content.
@@ -265,26 +265,26 @@
     // El color de la acción es información: amarillo para cambios, verde para altas.
     .modal-editar-persona {
         .modal-persona-header {
-            color: #4a3500;
-            background: linear-gradient(120deg, #f7b84b, #ffcc6b);
+            color: #4a3722;
+            background: linear-gradient(120deg, #d8bb85, #ffcc6b);
 
-            .modal-title, small { color: #4a3500 !important; }
+            .modal-title, small { color: #4a3722 !important; }
         }
 
-        .modal-persona-icon { color: #6b4a00; background: #fff8df; }
+        .modal-persona-icon { color: #62492d; background: #f7f3e3; }
         .modal-persona-close { filter: none; opacity: .68; }
         .modal-section-title i { color: #785400; background: #fff2cc; }
         .input-group-text { color: #8a6100; }
         .form-control:focus {
-            border-color: #e6aa3f;
-            box-shadow: 0 0 0 .2rem rgba(247, 184, 75, .22);
+            border-color: #cfae74;
+            box-shadow: 0 0 0 .2rem rgba(216, 187, 133, .22);
         }
         .modal-guardar {
-            color: #3f2d00;
-            border-color: #f7b84b;
-            background: #f7b84b;
+            color: #382919;
+            border-color: #d8bb85;
+            background: #d8bb85;
 
-            &:hover, &:focus { color: #3f2d00; border-color: #e6aa3f; background: #e6aa3f; }
+            &:hover, &:focus { color: #382919; border-color: #cfae74; background: #cfae74; }
         }
     }
 

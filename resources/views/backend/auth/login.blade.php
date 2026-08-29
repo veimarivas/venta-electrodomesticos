@@ -22,8 +22,8 @@
 
             <div class="mb-3">
                 <label for="email" class="form-label">Usuario o correo</label>
-                <div class="position-relative">
-                    <i class="ri-user-line position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                <div class="position-relative auth-campo">
+                    <i class="ri-user-line position-absolute top-50 translate-middle-y ms-3"></i>
                     {{-- type="text", no "email": el navegador rechazaría un nombre
                          de usuario como "jperezlopez" antes de enviar el formulario. --}}
                     <input type="text" name="email" id="email" value="{{ old('email') }}" required autofocus autocomplete="username"
@@ -36,8 +36,8 @@
                     <label class="form-label" for="password-input">Contraseña</label>
                     <a href="{{ route('password.request') }}" class="small mb-2">¿La olvidaste?</a>
                 </div>
-                <div class="position-relative auth-pass-inputgroup">
-                    <i class="ri-lock-2-line position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                <div class="position-relative auth-pass-inputgroup auth-campo">
+                    <i class="ri-lock-2-line position-absolute top-50 translate-middle-y ms-3"></i>
                     <input type="password" name="password" id="password-input" required autocomplete="current-password"
                         class="form-control ps-5 pe-5 password-input @error('password') is-invalid @enderror" placeholder="Ingresa tu contraseña">
                     <button class="btn btn-link position-absolute end-0 top-0 text-decoration-none password-addon material-shadow-none"
@@ -59,5 +59,10 @@
                 </button>
             </div>
         </form>
+
+        {{-- Quien entra aquí maneja el dinero y el inventario del negocio:
+             recordarle que la sesión es suya y personal vale más que un
+             adorno. --}}
+        <p class="auth-nota"><i class="ri-shield-check-line"></i> Acceso personal y protegido</p>
     </div>
 @endsection
