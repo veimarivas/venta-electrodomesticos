@@ -967,6 +967,58 @@ del logo nunca se deforma.
 > las dos, GD tira el canal alfa y el recorte sale con fondo negro, que sobre la
 > banda azul se ve como un rectángulo.
 
+#### Las imágenes de la marca ahora sí van en el repositorio
+
+El logo no se veía en el servidor, y la causa era el `.gitignore`: excluía
+`/public/assets` entero —con razón, ahí vive la plantilla Velzon comprada—, así
+que los recortes de la marca **no viajaban con el `git pull`** y había que
+copiarlos a mano en cada despliegue. Ese es justo el paso que se olvida.
+
+Ahora los tres archivos de marca están versionados y el resto de la plantilla
+sigue fuera:
+
+```gitignore
+/public/assets/*
+!/public/assets/images/
+/public/assets/images/*
+!/public/assets/images/logo_hogar.png
+!/public/assets/images/marca-login.png
+!/public/assets/images/marca-sidebar.png
+```
+
+> **El `/*` no es cosmético.** Git **no entra en un directorio excluido**, así
+> que con `/public/assets` a secas ningún `!` posterior podría volver a incluir
+> nada de dentro: hay que ir destapando nivel por nivel. Es la regla que hace
+> que la mitad de los intentos de «ignorar todo menos esto» no funcionen.
+
+#### El icono de la app
+
+Era el de Flutter por defecto. Ahora sale del logo, con dos juegos:
+
+| | Lienzo | Logo | Para |
+|---|---|---|---|
+| `ic_launcher.png` | 48…192 px | 86 % del ancho | Android 7 y anteriores |
+| `ic_launcher_foreground.png` | 108…432 px | 53 % del ancho | Android 8+, sobre `#0a182b` |
+
+> **El icono lleva el logotipo SIN la tira de categorías**, al revés que el
+> login y el menú. Un icono se ve a 48 dp: ahí los rótulos de esa tira miden
+> menos de un píxel y solo emborronan la pieza. Simplificar la marca para el
+> icono es lo normal; meterla entera lo dejaría ilegible.
+
+> **El 53 % del adaptativo sale de una cuenta, no del ojo.** El lienzo mide
+> 108 dp pero el lanzador lo recorta con la forma que use el teléfono —círculo,
+> cuadrado redondeado, gota— y solo garantiza los 66 dp centrales. Para un
+> logotipo de 1,71:1 inscrito en ese círculo: w² + (w/1,71)² ≤ 66² → w ≈ 0,53
+> del lienzo. Con más, algún lanzador le comería las esquinas.
+
+> **El fondo del adaptativo es un color, no una imagen.** Así el sistema puede
+> animar las dos capas por separado, que es para lo que existen los iconos
+> adaptativos.
+
+Se regeneran con `android/generar_iconos.php`, que lee `logo_hogar.png` del
+panel. Comprobado dentro del APK: `color/ic_launcher_background` = `#ff0a182b`
+y las dos capas presentes en las cinco densidades.
+
 #### El logo en el menú lateral
 
 El logotipo no cabe en los 17 px que la plantilla reserva para una marca en

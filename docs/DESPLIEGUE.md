@@ -54,19 +54,23 @@ El `db:seed` crea roles, permisos, cargos, el árbol de categorías, marcas,
 productos de ejemplo y **dos cuentas de prueba**. Ver §6: hay que cambiarlas
 antes de abrir la tienda.
 
-> **`public/assets/` no está en el repositorio** (lo excluye `.gitignore`:
-> lleva la plantilla Velzon entera). Hay que copiarlo a mano en cada
-> instalación nueva, y dentro van también los archivos de la marca:
+> **`public/assets/` casi no está en el repositorio.** Lo excluye `.gitignore`
+> porque lleva la plantilla Velzon entera —cientos de megas comprados—, así que
+> hay que copiarla a mano en cada instalación nueva.
+>
+> **Las imágenes de la marca sí van versionadas**, y llegan con el `git pull`:
 >
 > | Archivo | Para qué |
 > |---|---|
-> | `images/logo_hogar.png` | El original con el fondo recortado. No se sirve; es la fuente de los otros dos |
+> | `images/logo_hogar.png` | El original con el fondo recortado. No se sirve; es la fuente de los otros dos y del icono de la app |
 > | `images/marca-login.png` | 478×357 — el logo del login |
 > | `images/marca-sidebar.png` | 260×194 — el menú lateral y la barra superior |
 >
-> Si faltan, el login y el menú salen sin logo. Los dos recortes se regeneran
-> del original con GD; el comando está en `docs/PLAN.md`, en la entrada del
-> 2026-08-29.
+> Se sacaron de la exclusión a propósito: sin ellas el login y el menú salen sin
+> logo en cada despliegue, y copiarlas a mano cada vez es justo el paso que se
+> olvida. La regla en `.gitignore` usa `/public/assets/*` y no el directorio a
+> secas porque **git no entra en un directorio excluido**: sin ese `/*`, ningún
+> `!` posterior podría volver a incluir nada de dentro.
 
 ### Actualizar una instalación que ya está en marcha
 

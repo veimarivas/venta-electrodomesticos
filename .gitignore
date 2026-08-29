@@ -17,7 +17,18 @@
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
-/public/assets
+# La plantilla Velzon entera queda fuera: son cientos de megas comprados que no
+# tienen por que vivir en el repositorio. Pero las imagenes de la MARCA si, o el
+# login y el menu salen sin logo en cada instalacion nueva.
+#
+# Se excluye con /* y no como directorio a secas: git no entra en un directorio
+# excluido, asi que sin esto ningun "!" de abajo podria volver a incluir nada.
+/public/assets/*
+!/public/assets/images/
+/public/assets/images/*
+!/public/assets/images/logo_hogar.png
+!/public/assets/images/marca-login.png
+!/public/assets/images/marca-sidebar.png
 /public/storage
 /storage/*.key
 /storage/framework/cache
