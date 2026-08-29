@@ -12,11 +12,11 @@
     $trendUp = $trend !== null && $trend >= 0;
 
     $iconColorMap = [
-        'primary' => ['color' => '#0f766e', 'bg' => 'rgba(15, 118, 110, .1)'],
+        'primary' => ['color' => 'var(--marca-azul)', 'bg' => 'rgba(37, 73, 112, .12)'],
         'success' => ['color' => '#1baf7a', 'bg' => 'rgba(27, 175, 122, .1)'],
         'danger'  => ['color' => '#e34948', 'bg' => 'rgba(227, 73, 72, .1)'],
         'info'    => ['color' => '#2a78d6', 'bg' => 'rgba(42, 120, 214, .1)'],
-        'warning' => ['color' => '#f59e0b', 'bg' => 'rgba(245, 158, 11, .1)'],
+        'warning' => ['color' => 'var(--marca-oro)', 'bg' => 'rgba(197, 161, 98, .16)'],
     ];
     $iconStyle = $iconColorMap[$color] ?? $iconColorMap['primary'];
 @endphp

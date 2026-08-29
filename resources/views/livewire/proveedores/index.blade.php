@@ -165,7 +165,7 @@
 
                                 <td class="text-center">
                                     <span class="proveedor-compras {{ $proveedor->compras_count > 0 ? 'proveedor-compras-contenido' : '' }}">
-                                        <i class="ri-receipt-line align-middle me-1"></i>{{ $proveedor->compras_count }}
+                                        <i class="ri-bill-line align-middle me-1"></i>{{ $proveedor->compras_count }}
                                     </span>
                                 </td>
 

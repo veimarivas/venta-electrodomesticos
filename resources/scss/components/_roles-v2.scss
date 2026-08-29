@@ -5,7 +5,7 @@
 
     // Tarjeta de rol con permisos.
     .tarjeta-rol-permisos {
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
         border-radius: .85rem;
         transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
 
@@ -21,7 +21,7 @@
         }
 
         .card-footer {
-            border-top: 1px dashed #e9edf2;
+            border-top: 1px dashed var(--marca-linea);
         }
     }
 
@@ -29,7 +29,7 @@
     .barra-permisos {
         height: .45rem;
         border-radius: 1rem;
-        background: #f1f4f8;
+        background: var(--marca-suave);
 
         .progress-bar {
             border-radius: 1rem;
@@ -42,9 +42,9 @@
     // ========================================================================
     .modulo-permisos {
         padding: 1rem;
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
         border-radius: .75rem;
-        background: #fff;
+        background: var(--marca-superficie);
         transition: border-color .16s, box-shadow .16s;
 
         &.con-permisos {
@@ -52,7 +52,7 @@
             box-shadow: inset 3px 0 0 #254970;
         }
 
-        h6 { color: #0a182b; font-weight: 650; }
+        h6 { color: var(--marca-tinta); font-weight: 650; }
     }
 
     // Chip de permiso individual.
@@ -63,9 +63,9 @@
         padding: .3rem .7rem;
         font-size: .75rem;
         font-weight: 500;
-        color: #6b778a;
-        background: #f8f9fb;
-        border: 1px solid #e2e8f0;
+        color: var(--marca-apagado);
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
         border-radius: 2rem;
         cursor: pointer;
         transition: all .16s ease-out;
@@ -97,6 +97,6 @@ body.dark {
         .tarjeta-rol-permisos { background: #0e1f36; border-color: #1b3757; &:hover { border-color: transparent; } &.rol-protegido { border-color: rgba(227, 73, 72, .2); } .card-footer { border-top-color: #1b3757; } }
         .barra-permisos { background: #1b3757; .progress-bar { background: linear-gradient(90deg, #254970, #5792bf); } }
         .modulo-permisos { background: #0e1f36; border-color: #1b3757; &.con-permisos { border-color: rgba(87, 146, 191, .25); box-shadow: inset 3px 0 0 #254970; } h6 { color: #d5dde8; } }
-        .chip-permiso { background: #162636; border-color: #254970; color: #8494a7; &:hover { border-color: #254970; color: #5792bf; background: rgba(37, 73, 112, .08); } &.activo { background: #254970; border-color: #254970; color: #fff; } }
+        .chip-permiso { background: #162636; border-color: #254970; color: var(--marca-apagado); &:hover { border-color: #254970; color: #5792bf; background: rgba(37, 73, 112, .08); } &.activo { background: #254970; border-color: #254970; color: #fff; } }
     }
 }

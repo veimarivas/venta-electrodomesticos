@@ -44,8 +44,8 @@
         gap: 1rem;
         padding: 1.25rem;
         border-radius: .85rem;
-        background: #fff;
-        border: 1px solid #e9edf2;
+        background: var(--marca-superficie);
+        border: 1px solid var(--marca-linea);
         box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .04);
         transition: transform .18s ease-out, box-shadow .18s ease-out;
         height: 100%;
@@ -76,7 +76,7 @@
 
     .ventas-show-kpi-label {
         display: block;
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .78rem;
         font-weight: 500;
     }
@@ -85,7 +85,7 @@
         margin: .15rem 0;
         font-size: 1.35rem;
         font-weight: 700;
-        color: #0a182b;
+        color: var(--marca-tinta);
         letter-spacing: -.02em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -103,8 +103,8 @@
     // -------------------------------------------------------------------------
     .ventas-show-info-card {
         border-radius: .85rem;
-        border: 1px solid #e9edf2;
-        background: #fff;
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
         overflow: hidden;
         height: 100%;
     }
@@ -114,14 +114,14 @@
         align-items: center;
         gap: .65rem;
         padding: .85rem 1.25rem;
-        background: #f8fafc;
-        border-bottom: 1px solid #e9edf2;
+        background: var(--marca-suave);
+        border-bottom: 1px solid var(--marca-linea);
 
         h6 {
             margin: 0;
             font-size: .82rem;
             font-weight: 600;
-            color: #0a182b;
+            color: var(--marca-tinta);
         }
     }
 
@@ -143,7 +143,7 @@
         flex-direction: column;
         gap: .5rem;
         padding-top: .75rem;
-        border-top: 1px solid #e9edf2;
+        border-top: 1px solid var(--marca-linea);
     }
 
     .ventas-show-info-dato {
@@ -151,7 +151,7 @@
         align-items: center;
         gap: .5rem;
         font-size: .82rem;
-        color: #6b778a;
+        color: var(--marca-apagado);
 
         i { font-size: .9rem; color: #9ca3af; }
     }
@@ -180,14 +180,14 @@
     }
 
     .ventas-show-fila-label {
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .82rem;
     }
 
     .ventas-show-fila-valor {
         font-weight: 600;
         font-size: .85rem;
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-variant-numeric: tabular-nums;
     }
 
@@ -197,7 +197,7 @@
         align-items: center;
         padding: .65rem 0 0;
         margin-top: .35rem;
-        border-top: 2px solid #e9edf2;
+        border-top: 2px solid var(--marca-linea);
     }
 
     .ventas-show-total-grande {
@@ -211,8 +211,8 @@
     // -------------------------------------------------------------------------
     .ventas-show-seccion {
         border-radius: .85rem;
-        border: 1px solid #e9edf2;
-        background: #fff;
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
         overflow: hidden;
     }
 
@@ -221,14 +221,14 @@
         align-items: center;
         gap: .65rem;
         padding: 1rem 1.25rem;
-        background: #f8fafc;
-        border-bottom: 1px solid #e9edf2;
+        background: var(--marca-suave);
+        border-bottom: 1px solid var(--marca-linea);
 
         h5 {
             margin: 0;
             font-size: .95rem;
             font-weight: 600;
-            color: #0a182b;
+            color: var(--marca-tinta);
         }
     }
 
@@ -267,9 +267,9 @@
             letter-spacing: 0.04em;
             font-weight: 650;
             font-size: .7rem;
-            color: #6b778a;
-            background-color: #f8f9fb;
-            border-bottom: 1px solid #e9edf2;
+            color: var(--marca-apagado);
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
             white-space: nowrap;
             text-transform: uppercase;
         }
@@ -277,8 +277,8 @@
         tbody td {
             padding-top: 0.9rem;
             padding-bottom: 0.9rem;
-            color: #0a182b;
-            border-bottom-color: #f1f4f8;
+            color: var(--marca-tinta);
+            border-bottom-color: var(--marca-linea);
             vertical-align: middle;
         }
 
@@ -286,7 +286,7 @@
             transition: background-color .18s ease-out, box-shadow .18s ease-out;
 
             &:not(:last-child) td {
-                border-bottom-color: #f1f4f8;
+                border-bottom-color: var(--marca-linea);
             }
 
             &:hover {
@@ -301,8 +301,8 @@
         height: 2.5rem;
         border-radius: .5rem;
         overflow: hidden;
-        background: #f1f4f8;
-        border: 1px solid #e9edf2;
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
         display: grid;
         place-items: center;
 
@@ -327,7 +327,7 @@
     .ventas-show-col-num {
         font-size: .85rem;
         font-variant-numeric: tabular-nums;
-        color: #0a182b;
+        color: var(--marca-tinta);
     }
 
     .ventas-show-empty {
@@ -426,7 +426,7 @@
     // Notas
     // -------------------------------------------------------------------------
     .ventas-show-notas-texto {
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .88rem;
         line-height: 1.6;
         padding: 1.25rem;
@@ -457,8 +457,8 @@
         gap: 1rem;
         padding: 1.15rem;
         border-radius: .85rem;
-        border: 1px solid #e9edf2;
-        background: #fff;
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
         height: 100%;
         transition: border-color .16s ease-out, box-shadow .16s ease-out;
 
@@ -485,7 +485,7 @@
 
     .ventas-show-beneficio-label {
         display: block;
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .75rem;
         font-weight: 500;
     }
@@ -494,7 +494,7 @@
         margin: .1rem 0;
         font-size: 1.2rem;
         font-weight: 700;
-        color: #0a182b;
+        color: var(--marca-tinta);
         letter-spacing: -.01em;
         font-variant-numeric: tabular-nums;
         line-height: 1.2;
@@ -559,9 +559,9 @@
         font-size: .78rem;
         font-weight: 600;
         font-variant-numeric: tabular-nums;
-        background: #f1f4f8;
-        border: 1px solid #e9edf2;
-        color: #0a182b;
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
+        color: var(--marca-tinta);
     }
 }
 
@@ -629,7 +629,7 @@
     // -------------------------------------------------------------------------
     .modal-recibo-body {
         padding: 1.5rem;
-        background: #f1f4f8;
+        background: var(--marca-suave);
         display: flex;
         justify-content: center;
     }
@@ -638,13 +638,13 @@
         width: 100%;
         max-width: 22rem;
         padding: 1.25rem;
-        background: #fff;
+        background: var(--marca-superficie);
         border-radius: .75rem;
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
         box-shadow: 0 .25rem .75rem rgba(10, 24, 43, .06);
         font-family: 'DejaVu Sans', 'Segoe UI', sans-serif;
         font-size: .82rem;
-        color: #0a182b;
+        color: var(--marca-tinta);
     }
 
     // -------------------------------------------------------------------------
@@ -656,14 +656,14 @@
         font-size: 1.1rem;
         font-weight: 700;
         letter-spacing: .03em;
-        color: #0a182b;
+        color: var(--marca-tinta);
     }
 
     .recibo-titulo {
         font-size: .72rem;
         letter-spacing: .12em;
         text-transform: uppercase;
-        color: #6b778a;
+        color: var(--marca-apagado);
         margin-top: .15rem;
     }
 
@@ -688,7 +688,7 @@
     }
 
     .recibo-etiqueta {
-        color: #6b778a;
+        color: var(--marca-apagado);
         width: 42%;
         font-size: .78rem;
     }
@@ -718,7 +718,7 @@
     }
 
     .recibo-detalle-linea {
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .72rem;
         line-height: 1.4;
     }
@@ -741,7 +741,7 @@
     }
 
     .recibo-notas {
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .78rem;
         line-height: 1.5;
     }
@@ -749,7 +749,7 @@
     .recibo-pie {
         text-align: center;
         font-size: .72rem;
-        color: #6b778a;
+        color: var(--marca-apagado);
         line-height: 1.5;
     }
 
@@ -775,7 +775,7 @@
             font-weight: 400;
             letter-spacing: 0;
             font-size: .72rem;
-            color: #6b778a;
+            color: var(--marca-apagado);
         }
     }
 
@@ -788,22 +788,22 @@
         justify-content: flex-end;
         gap: .75rem;
         padding: 1rem 1.25rem;
-        background: #fff;
-        border-top: 1px solid #e9edf2;
+        background: var(--marca-superficie);
+        border-top: 1px solid var(--marca-linea);
     }
 
     .modal-recibo-cancelar {
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--marca-linea);
         border-radius: .55rem;
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-weight: 500;
         padding: .5rem 1rem;
-        background: #fff;
+        background: var(--marca-superficie);
         transition: all .2s ease;
 
         &:hover {
-            background: #f1f4f8;
-            color: #0a182b;
+            background: var(--marca-suave);
+            color: var(--marca-tinta);
             border-color: #d0d8e2;
         }
     }

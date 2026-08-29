@@ -218,8 +218,8 @@
 
                             {{-- 2FA --}}
                             <div class="tab-pane" id="seguridad" role="tabpanel">
-                                <h5 class="fs-15 mb-1" style="color: #14243d; font-weight: 650;">
-                                    <i class="ri-shield-keyhole-line align-bottom me-1" style="color: #0f766e;"></i>
+                                <h5 class="fs-15 mb-1" style="color: var(--marca-tinta); font-weight: 650;">
+                                    <i class="ri-shield-keyhole-line align-bottom me-1" style="color: var(--marca-azul-texto);"></i>
                                     Verificación en dos pasos
                                 </h5>
                                 <p class="text-muted mb-3">
@@ -235,13 +235,13 @@
 
                                     @if (session('status') === 'two-factor-authentication-enabled')
                                         <div class="mb-4">
-                                            <p class="mb-2 fw-semibold" style="color: #14243d;">Escanea este código QR con tu aplicación de autenticación:</p>
+                                            <p class="mb-2 fw-semibold" style="color: var(--marca-tinta);">Escanea este código QR con tu aplicación de autenticación:</p>
                                             <div class="profile-2fa-qr">
                                                 {!! $user->twoFactorQrCodeSvg() !!}
                                             </div>
                                         </div>
                                         <div class="mb-4">
-                                            <p class="mb-2 fw-semibold" style="color: #14243d;">Guarda estos códigos de recuperación en un lugar seguro:</p>
+                                            <p class="mb-2 fw-semibold" style="color: var(--marca-tinta);">Guarda estos códigos de recuperación en un lugar seguro:</p>
                                             <div class="profile-2fa-codes">
                                                 @foreach (json_decode(decrypt($user->two_factor_recovery_codes), true) as $code)
                                                     <div>{{ $code }}</div>

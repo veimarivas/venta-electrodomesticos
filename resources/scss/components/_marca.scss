@@ -34,6 +34,13 @@
     /// El azul de acción presionado o en hover.
     --marca-azul-hondo: #1b3757;
 
+    /// El azul cuando hace de TEXTO, no de fondo.
+    ///
+    /// Es el mismo en claro, pero sobre fondo oscuro `#254970` se confunde con
+    /// el propio fondo: una insignia azul sobre gris carbón no se lee. Usa
+    /// este token siempre que el azul sea el color de la letra.
+    --marca-azul-texto: #254970;
+
     /// Azul claro. Es el «2026» de neón del logo. Sirve para texto y detalles
     /// SOBRE fondo oscuro, donde el azul de acción no tendría contraste.
     --marca-azul-claro: #5792bf;
@@ -56,9 +63,37 @@
     --marca-crema: #e7e2c2;
 
     // ---- Neutros derivados --------------------------------------------------
-    --marca-apagado: #6b778a;
-    --marca-linea: #dfe6ee;
     --marca-fondo: #f5f7fa;
+
+    // ---- Superficies y tinta: cambian con el tema -------------------------
+    //
+    // Estos cinco son los que hacen que el panel funcione en claro Y en
+    // oscuro. Todo lo que sea una superficie, una línea o un texto de los
+    // componentes propios tiene que salir de aquí y **nunca** de un literal:
+    // un `#fff` escrito a fuego se queda blanco cuando el usuario enciende el
+    // modo oscuro, y esa es exactamente la avería que hubo.
+    //
+    // Los tonos oscuros son los de Velzon, no unos propios: las tarjetas de la
+    // plantilla ya usan `--vz-secondary-bg`, y si aquí se inventara un azul de
+    // marca las dos superficies quedarían de distinto color en la misma
+    // pantalla.
+
+    /// Texto principal. En claro es el azul noche de la marca; en oscuro no
+    /// puede serlo —sería negro sobre negro—, así que pasa a un gris muy claro.
+    --marca-tinta: #0a182b;
+
+    /// Fondo de tarjetas y superficies elevadas.
+    --marca-superficie: #ffffff;
+
+    /// Fondos suaves: rieles, cabeceras de tabla, zonas apagadas.
+    --marca-suave: #f1f4f8;
+
+    /// Bordes y separadores.
+    --marca-linea: #e9edf2;
+
+    /// Texto secundario. Es el único que vale igual en los dos temas: un gris
+    /// medio se lee sobre blanco y sobre negro.
+    --marca-apagado: #6b778a;
 
     // ---- Componentes de Velzon ---------------------------------------------
     // La plantilla pinta a partir de estas variables. Redefinirlas aquí tiñe
@@ -73,6 +108,28 @@
     --vz-link-color-rgb: 37, 73, 112;
     --vz-link-hover-color: #1b3757;
     --vz-link-hover-color-rgb: 27, 55, 87;
+}
+
+// ---- Modo oscuro ------------------------------------------------------------
+//
+// Solo se redefinen los cinco tokens de superficie. El azul, el oro y el resto
+// de la identidad NO cambian: una marca que cambia de color con el tema deja
+// de ser una marca.
+[data-bs-theme="dark"] {
+    --marca-tinta: #e6ebf1;
+    --marca-azul-texto: #6ea3d8;
+    --marca-superficie: #212529;
+    --marca-suave: #2a2d31;
+    --marca-linea: #32383e;
+    --marca-apagado: #949dab;
+
+    // El azul de acción sube un peldaño: sobre fondo oscuro, #254970 se
+    // confunde con el propio fondo y un botón dejaría de verse.
+    --vz-primary: #4b7fb8;
+    --vz-primary-rgb: 75, 127, 184;
+    --vz-link-color: #6ea3d8;
+    --vz-link-color-rgb: 110, 163, 216;
+    --vz-link-hover-color: #8fbbe6;
 }
 
 // El menú lateral oscuro toma el azul noche del logo en vez del gris azulado de

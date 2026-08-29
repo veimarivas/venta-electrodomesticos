@@ -84,7 +84,7 @@
         </div>
         <div class="col-xl-3 col-md-6">
             <x-stat-card label="Valor de catálogo" value="Bs {{ number_format($valorCatalogo, 2, ',', '.') }}"
-                icon="bx-wallet2" color="info" caption="Suma de precios de lista" />
+                icon="bx-wallet" color="info" caption="Suma de precios de lista" />
         </div>
     </div>
 

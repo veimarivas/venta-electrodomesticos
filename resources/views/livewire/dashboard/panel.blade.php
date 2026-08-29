@@ -127,7 +127,7 @@
                                 @endif
                             </span>
                         </div>
-                        <span class="dash-kpi-icono dash-kpi-icono--unidades"><i class="ri-receipt-line"></i></span>
+                        <span class="dash-kpi-icono dash-kpi-icono--unidades"><i class="ri-bill-line"></i></span>
                     </div>
                 </div>
             </div>
@@ -207,7 +207,7 @@
 
                         <div class="col-md-7">
                             <div class="d-flex align-items-baseline justify-content-between mb-2">
-                                <h6 class="mb-0" style="color: #14243d; font-weight: 650;">Últimos 14 días</h6>
+                                <h6 class="mb-0" style="color: var(--marca-tinta); font-weight: 650;">Últimos 14 días</h6>
                                 <small class="text-muted fs-12">Ingresos por día</small>
                             </div>
 
@@ -332,7 +332,7 @@
 
                     @forelse ($this->ultimasVentas as $venta)
                         <div class="dash-venta" wire:key="venta-{{ $venta->id }}">
-                            <span class="dash-venta-icono dash-venta-icono--normal"><i class="ri-receipt-line"></i></span>
+                            <span class="dash-venta-icono dash-venta-icono--normal"><i class="ri-bill-line"></i></span>
                             <div class="min-w-0 flex-grow-1">
                                 <div class="dash-venta-codigo">{{ $venta->codigo }}</div>
                                 <small class="dash-venta-meta">
@@ -348,7 +348,7 @@
                     @empty
                         @if ($enVivo === [])
                             <div class="text-center text-muted py-5">
-                                <i class="ri-receipt-line fs-1 d-block mb-2 opacity-50"></i>
+                                <i class="ri-bill-line fs-1 d-block mb-2 opacity-50"></i>
                                 Todavía no hay ventas registradas.
                             </div>
                         @endif

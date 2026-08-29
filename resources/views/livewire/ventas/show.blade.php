@@ -92,7 +92,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="ventas-show-kpi-card">
                     <div class="ventas-show-kpi-icon ventas-show-kpi-icon-success">
-                        <i class="ri-trending-up-line"></i>
+                        <i class="ri-line-chart-line"></i>
                     </div>
                     <div class="ventas-show-kpi-body">
                         <small class="ventas-show-kpi-label">Ganancia</small>
@@ -142,7 +142,7 @@
                         </div>
                     @else
                         <div class="d-flex align-items-center gap-3">
-                            <div class="ventas-show-cliente-avatar flex-shrink-0" style="background: linear-gradient(135deg, #6b778a, #4b5563);">
+                            <div class="ventas-show-cliente-avatar flex-shrink-0" style="background: linear-gradient(135deg, var(--marca-apagado), var(--marca-apagado));">
                                 <i class="ri-user-3-line"></i>
                             </div>
                             <div class="min-w-0">
@@ -300,7 +300,7 @@
             <div class="col-md-6">
                 <div class="ventas-show-beneficio">
                     <div class="ventas-show-beneficio-icon ventas-show-beneficio-icon-success">
-                        <i class="ri-trending-up-line"></i>
+                        <i class="ri-line-chart-line"></i>
                     </div>
                     <div class="ventas-show-beneficio-body">
                         <small class="ventas-show-beneficio-label">Ganancia neta</small>
@@ -333,7 +333,7 @@
                     @if ($venta->metodo_pago === 'mixto')
                         <div class="ventas-show-pago-mixto">
                             <span class="ventas-show-pago-mixto-item">
-                                <i class="ri-banknote-line"></i>
+                                <i class="ri-money-dollar-box-line"></i>
                                 Efectivo Bs {{ number_format((float) $venta->monto_efectivo, 2, ',', '.') }}
                             </span>
                             <span class="ventas-show-pago-mixto-item">

@@ -63,7 +63,7 @@
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="min-w-0">
                             <span class="stock-kpi-label">Bajo stock mínimo</span>
-                            <span class="stock-kpi-valor" style="color: #f59e0b;">{{ $resumen['bajoMinimo'] }}</span>
+                            <span class="stock-kpi-valor" style="color: var(--marca-oro);">{{ $resumen['bajoMinimo'] }}</span>
                             <span class="stock-kpi-nota">Requieren reposición</span>
                         </div>
                         <span class="stock-kpi-icono stock-kpi-icono--alerta"><i class="ri-alert-line"></i></span>
@@ -81,8 +81,8 @@
                 <div class="card-header">
                     <div class="d-flex mb-3">
                         <div class="flex-grow-1">
-                            <h5 class="fs-16 mb-0" style="color: #14243d; font-weight: 650;">
-                                <i class="ri-filter-3-line align-bottom me-1" style="color: #0f766e;"></i> Filtros
+                            <h5 class="fs-16 mb-0 stock-text-ink" style="font-weight: 650;">
+                                <i class="ri-filter-3-line align-bottom me-1 stock-text-accent"></i> Filtros
                             </h5>
                         </div>
                         <div class="flex-shrink-0">
@@ -99,18 +99,18 @@
 
                     {{-- Categorías --}}
                     <div class="card-body border-bottom">
-                        <p class="text-uppercase fs-12 fw-medium mb-2" style="color: #6b778a;">Categorías</p>
+                        <p class="text-uppercase fs-12 fw-medium mb-2 stock-text-muted">Categorías</p>
                         <ul class="list-unstyled mb-0 filter-list stock-filtro-lista">
                             @forelse ($categoriasFiltro as $opcion)
                                 <li>
                                     <button type="button"
-                                        class="d-flex py-1 align-items-center w-100 bg-transparent border-0 stock-filtro-item {{ $opcion['activa'] ? 'text-primary' : '' }}"
-                                        style="padding-left: {{ 8 + $opcion['nivel'] * 14 }}px; color: {{ $opcion['activa'] ? '#0f766e' : '#14243d' }};"
+                                        class="d-flex py-1 align-items-center w-100 bg-transparent border-0 stock-filtro-item {{ $opcion['activa'] ? 'stock-text-accent' : 'stock-text-ink' }}"
+                                        style="padding-left: {{ 8 + $opcion['nivel'] * 14 }}px;"
                                         wire:click="cambiarCategoria({{ $opcion['id'] }})"
                                         title="Ver stock de {{ $opcion['nombre'] }}">
                                         <i class="ri-folder-{{ $opcion['activa'] ? 'open-fill' : 'line' }} align-middle me-1 fs-14"></i>
                                         <span class="flex-grow-1 text-start text-truncate">{{ $opcion['nombre'] }}</span>
-                                        <span class="badge rounded-pill ms-2 flex-shrink-0" style="background: {{ $opcion['activa'] ? 'rgba(15,118,110,.1)' : '#f1f4f8' }}; color: {{ $opcion['activa'] ? '#0f766e' : '#6b778a' }};">{{ $opcion['total'] }}</span>
+                                        <span class="badge rounded-pill ms-2 flex-shrink-0 {{ $opcion['activa'] ? 'stock-text-accent' : 'stock-bg-inactive' }}">{{ $opcion['total'] }}</span>
                                     </button>
                                 </li>
                             @empty
@@ -125,9 +125,9 @@
                             <button class="accordion-button bg-transparent shadow-none" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#flush-collapseMarcas"
                                 aria-expanded="true" aria-controls="flush-collapseMarcas">
-                                <span class="text-uppercase fs-12 fw-medium" style="color: #6b778a;">Marcas</span>
+                                <span class="text-uppercase fs-12 fw-medium stock-text-muted">Marcas</span>
                                 @if (count($marcasFiltro) > 0)
-                                    <span class="badge rounded-pill align-middle ms-1" style="background: rgba(15,118,110,.1); color: #0f766e;">{{ count($marcasFiltro) }}</span>
+                                    <span class="badge rounded-pill align-middle ms-1 stock-text-accent">{{ count($marcasFiltro) }}</span>
                                 @endif
                             </button>
                         </h2>
@@ -149,7 +149,7 @@
                                             <label class="form-check-label d-flex w-100 justify-content-between"
                                                 for="marca-filtro-{{ $marca['id'] }}">
                                                 <span class="text-truncate">{{ $marca['nombre'] }}</span>
-                                                <span class="badge rounded-pill ms-2" style="background: #f1f4f8; color: #6b778a;">{{ $marca['total'] }}</span>
+                                                <span class="badge rounded-pill ms-2" style="background: var(--marca-suave); color: var(--marca-apagado);">{{ $marca['total'] }}</span>
                                             </label>
                                         </div>
                                     @empty
@@ -167,7 +167,7 @@
                                 type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEstado"
                                 aria-expanded="{{ $filtroEstado === 'todos' ? 'false' : 'true' }}"
                                 aria-controls="flush-collapseEstado">
-                                <span class="text-uppercase fs-12 fw-medium" style="color: #6b778a;">Estado del stock</span>
+                                <span class="text-uppercase fs-12 fw-medium" style="color: var(--marca-apagado);">Estado del stock</span>
                             </button>
                         </h2>
                         <div id="flush-collapseEstado" class="accordion-collapse collapse {{ $filtroEstado === 'todos' ? '' : 'show' }}"
@@ -203,12 +203,12 @@
                                 <h5 class="mb-0 stock-contenido-titulo">
                                     Stock por {{ $vista === 'categorias' ? 'categoría' : 'marca' }}
                                     <span class="spinner-border spinner-border-sm align-middle"
-                                        style="color: #0f766e;"
+                                        style="color: var(--marca-azul-texto);"
                                         role="status" wire:loading.delay>
                                         <span class="visually-hidden">Cargando...</span>
                                     </span>
                                 </h5>
-                                <small class="fs-13" style="color: #6b778a;">
+                                <small class="fs-13" style="color: var(--marca-apagado);">
                                     {{ $resumen['conStock'] }} {{ $resumen['conStock'] === 1 ? 'producto con existencias' : 'productos con existencias' }}
                                     de {{ $resumen['productos'] }} {{ $resumen['productos'] === 1 ? 'activo' : 'activos' }}
                                     @if ($buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [])
@@ -237,7 +237,7 @@
                     </div>
                 </div>
 
-                <div class="card-header" style="border-bottom: 1px solid #f1f4f8;">
+                <div class="card-header" style="border-bottom: 1px solid var(--marca-suave);">
                     <div class="row align-items-center">
                         <div class="col">
                             <ul class="nav nav-tabs-custom card-header-tabs border-bottom-0 stock-tabs" role="tablist">
@@ -246,7 +246,7 @@
                                         class="nav-link {{ $vista === 'categorias' ? 'active' : '' }} fw-semibold"
                                         wire:click="cambiarVista('categorias')" role="tab">
                                         <i class="ri-folder-2-line align-middle me-1"></i>Por categorías
-                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(15,118,110,.1); color: #0f766e;">{{ count($categorias) }}</span>
+                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">{{ count($categorias) }}</span>
                                     </button>
                                 </li>
                                 <li class="nav-item">
@@ -254,7 +254,7 @@
                                         class="nav-link {{ $vista === 'marcas' ? 'active' : '' }} fw-semibold"
                                         wire:click="cambiarVista('marcas')" role="tab">
                                         <i class="ri-trademark-line align-middle me-1"></i>Por marcas
-                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(15,118,110,.1); color: #0f766e;">{{ count($marcas) }}</span>
+                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">{{ count($marcas) }}</span>
                                     </button>
                                 </li>
                             </ul>
@@ -268,18 +268,18 @@
                     @if ($resumen['productos'] === 0)
                         <div class="text-center py-5">
                             <div class="avatar-lg mx-auto mb-4">
-                                <span class="avatar-title rounded-circle fs-1 shadow-sm" style="background: rgba(15,118,110,.1); color: #0f766e;">
+                                <span class="avatar-title rounded-circle fs-1 shadow-sm" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">
                                     <i class="{{ $buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [] ? 'ri-search-eye-line' : 'ri-stack-line' }}"></i>
                                 </span>
                             </div>
                             @if ($buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [])
-                                <h5 class="mb-1" style="color: #14243d;">Sin resultados con los filtros actuales</h5>
+                                <h5 class="mb-1" style="color: var(--marca-tinta);">Sin resultados con los filtros actuales</h5>
                                 <p class="text-muted mb-3">Prueba con otros términos o limpia los filtros.</p>
-                                <button type="button" class="btn btn-sm" style="background: #f1f4f8; color: #14243d; border: 1px solid #dfe6ee;" wire:click="limpiarFiltros">
+                                <button type="button" class="btn btn-sm" style="background: var(--marca-suave); color: var(--marca-tinta); border: 1px solid var(--marca-linea);" wire:click="limpiarFiltros">
                                     <i class="ri-close-line align-bottom me-1"></i> Quitar filtros
                                 </button>
                             @else
-                                <h5 class="mb-1 fw-semibold" style="color: #0f766e;">Todavía no hay productos activos</h5>
+                                <h5 class="mb-1 fw-semibold" style="color: var(--marca-azul-texto);">Todavía no hay productos activos</h5>
                                 <p class="text-muted mb-0">
                                     Registra productos y recepciona compras para ver aquí su stock disponible.
                                 </p>

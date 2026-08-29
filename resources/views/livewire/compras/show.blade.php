@@ -94,7 +94,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="compras-show-kpi-card">
                     <div class="compras-show-kpi-icon compras-show-kpi-icon-accent">
-                        <i class="ri-trending-up-line"></i>
+                        <i class="ri-line-chart-line"></i>
                     </div>
                     <div class="compras-show-kpi-body">
                         <small class="compras-show-kpi-label">Ganancia realizada</small>
@@ -387,7 +387,7 @@
                     <div class="col-xl-3 col-md-6">
                         <div class="compras-show-renta-card">
                             <div class="compras-show-renta-icon compras-show-renta-icon-success">
-                                <i class="ri-trending-up-line"></i>
+                                <i class="ri-line-chart-line"></i>
                             </div>
                             <div class="compras-show-renta-body">
                                 <small class="compras-show-renta-label">Ganancia realizada</small>

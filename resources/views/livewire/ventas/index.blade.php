@@ -274,7 +274,7 @@
                                     <div class="text-center py-5">
                                         <div class="crud-empty-icon mx-auto mb-4">
                                             <span class="avatar-title rounded-circle fs-1">
-                                                <i class="{{ $buscar !== '' || $desde !== '' || $hasta !== '' ? 'ri-search-eye-line' : 'ri-receipt-line' }}"></i>
+                                                <i class="{{ $buscar !== '' || $desde !== '' || $hasta !== '' ? 'ri-search-eye-line' : 'ri-bill-line' }}"></i>
                                             </span>
                                         </div>
                                         @if ($buscar !== '' || $desde !== '' || $hasta !== '' || $filtroEstado !== 'todas')

@@ -102,7 +102,7 @@
 
         &:focus {
             border-color: rgba(var(--vz-primary-rgb), .28);
-            background: #fff;
+            background: var(--marca-superficie);
             box-shadow: 0 0 0 .2rem rgba(var(--vz-primary-rgb), .10);
         }
     }
@@ -164,7 +164,7 @@
         height: .68rem;
         border-radius: 50%;
         background: #22c55e;
-        border: 2px solid #fff;
+        border: 2px solid var(--marca-superficie);
         box-shadow: 0 .1rem .35rem rgba(34, 197, 94, .45);
     }
 
@@ -258,7 +258,7 @@
 
     .modal-persona-icon {
         color: var(--vz-primary);
-        background: #fff;
+        background: var(--marca-superficie);
         box-shadow: 0 .4rem 1rem rgba(0, 0, 0, 0.15);
     }
 
@@ -301,13 +301,13 @@
         overflow-x: hidden;
         overflow-y: auto;
         overscroll-behavior: contain;
-        background: #fbfcfe;
+        background: var(--marca-superficie);
         scrollbar-color: rgba(var(--vz-primary-rgb), .38) transparent;
         scrollbar-width: thin;
 
         &::-webkit-scrollbar { width: .45rem; }
         &::-webkit-scrollbar-thumb {
-            border: 2px solid #fbfcfe;
+            border: 2px solid var(--marca-linea);
             border-radius: 1rem;
             background: rgba(var(--vz-primary-rgb), .38);
         }
@@ -340,8 +340,8 @@
         .form-label { color: #4b5565; font-size: .82rem; font-weight: 600; }
         .form-control, .input-group-text {
             min-height: 2.8rem;
-            border-color: #e2e8f0;
-            background: #fff;
+            border-color: var(--marca-linea);
+            background: var(--marca-superficie);
         }
         .form-control:focus {
             border-color: color-mix(in srgb, var(--vz-primary) 65%, white);
@@ -354,11 +354,11 @@
     .modal-persona-footer {
         flex: 0 0 auto;
         border: 0;
-        background: #fff;
+        background: var(--marca-superficie);
         box-shadow: 0 -1px 0 #edf0f4;
     }
 
-    .modal-cancelar { border-color: #e2e8f0; }
+    .modal-cancelar { border-color: var(--marca-linea); }
     .modal-guardar, .modal-eliminar-btn { min-width: 9.5rem; }
 
     .modal-eliminar-dialog { max-width: 25rem; }

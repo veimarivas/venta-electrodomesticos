@@ -25,7 +25,7 @@
     padding: .85rem 1rem;
     border: 1px solid var(--vz-border-color);
     border-radius: .75rem;
-    background: #fff;
+    background: var(--marca-superficie);
     cursor: pointer;
     transition: border-color .16s ease-out, background-color .16s ease-out, box-shadow .16s ease-out;
 
@@ -68,7 +68,7 @@
         padding: 1rem;
         border: 1px solid var(--vz-border-color);
         border-radius: .85rem;
-        background: #fff;
+        background: var(--marca-superficie);
         transition: border-color .16s ease-out, background-color .16s ease-out;
 
         &.con-permisos {

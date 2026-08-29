@@ -88,9 +88,9 @@
     .stock-kpi {
         position: relative;
         overflow: hidden;
-        border: 1px solid #dfe6ee;
+        border: 1px solid var(--marca-linea);
         border-radius: .75rem;
-        background: #fff;
+        background: var(--marca-superficie);
         transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
 
         &:hover {
@@ -136,7 +136,7 @@
 
     .stock-kpi-label {
         display: block;
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .72rem;
         font-weight: 600;
         letter-spacing: .06em;
@@ -146,7 +146,7 @@
 
     .stock-kpi-valor {
         display: block;
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-size: 1.35rem;
         font-weight: 700;
         letter-spacing: -.02em;
@@ -156,7 +156,7 @@
 
     .stock-kpi-nota {
         display: block;
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .78rem;
         margin-top: .25rem;
     }
@@ -164,13 +164,13 @@
     // ---- Panel lateral de filtros ----
     .stock-filtros {
         border-radius: .85rem;
-        border: 1px solid #e9edf2;
-        background: #fff;
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
 
         .card-header {
             background: transparent;
             padding-block: 1.05rem 0;
-            border-bottom: 1px solid #f1f4f8;
+            border-bottom: 1px solid var(--marca-linea);
 
             .fs-13 {
                 font-size: .8rem;
@@ -179,7 +179,7 @@
 
         .filter-accordion .accordion-button {
             font-weight: 600;
-            color: #0a182b;
+            color: var(--marca-tinta);
             font-size: .82rem;
 
             &:not(.collapsed) {
@@ -202,7 +202,7 @@
             border-radius: .5rem;
             font-size: .85rem;
             padding-block: .38rem;
-            color: #0a182b;
+            color: var(--marca-tinta);
             transition: background-color .15s ease, color .15s ease;
 
             &:hover {
@@ -221,15 +221,15 @@
         }
 
         .search-box .form-control {
-            border: 1px solid #e9edf2;
+            border: 1px solid var(--marca-linea);
             border-radius: .55rem;
-            background: #f8f9fb;
+            background: var(--marca-suave);
             font-size: .84rem;
 
             &:focus {
                 border-color: #254970;
                 box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .08);
-                background: #fff;
+                background: var(--marca-superficie);
             }
         }
     }
@@ -240,10 +240,10 @@
         align-items: center;
         gap: .3rem;
         padding: .25rem .6rem;
-        border: 1px solid #dfe6ee;
+        border: 1px solid var(--marca-linea);
         border-radius: .45rem;
-        background: #fff;
-        color: #6b778a;
+        background: var(--marca-superficie);
+        color: var(--marca-apagado);
         font-size: .78rem;
         font-weight: 600;
         text-decoration: none;
@@ -258,18 +258,18 @@
 
     // ---- Contenido principal ----
     .stock-contenido {
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
         border-radius: .85rem;
-        background: #fff;
+        background: var(--marca-superficie);
     }
 
     .stock-contenido-header {
-        border-bottom: 1px solid #f1f4f8;
+        border-bottom: 1px solid var(--marca-linea);
         background: transparent;
     }
 
     .stock-contenido-titulo {
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-weight: 650;
         letter-spacing: -.01em;
     }
@@ -277,9 +277,9 @@
     // Buscador del contenido.
     .stock-buscador {
         .form-control {
-            border: 1px solid #dfe6ee;
+            border: 1px solid var(--marca-linea);
             border-radius: .6rem;
-            background: #f8f9fb;
+            background: var(--marca-suave);
             font-size: .88rem;
             padding: .5rem .85rem .5rem 2.3rem;
             transition: border-color .2s, box-shadow .2s, background .2s;
@@ -287,7 +287,7 @@
             &:focus {
                 border-color: #254970;
                 box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .08);
-                background: #fff;
+                background: var(--marca-superficie);
             }
         }
 
@@ -300,7 +300,7 @@
     // ---- Tabs personalizados ----
     .stock-tabs {
         .nav-link {
-            color: #6b778a;
+            color: var(--marca-apagado);
             font-weight: 600;
             font-size: .88rem;
             border: 0;
@@ -309,8 +309,8 @@
             transition: color .15s, border-color .15s;
 
             &:hover {
-                color: #0a182b;
-                border-bottom-color: #dfe6ee;
+                color: var(--marca-tinta);
+                border-bottom-color: var(--marca-linea);
             }
 
             &.active {
@@ -329,8 +329,8 @@
     // ---- Secciones de contenido ----
     .stock-grupo-categoria,
     .stock-grupo-marca {
-        background: #fff;
-        border: 1px solid #e9edf2;
+        background: var(--marca-superficie);
+        border: 1px solid var(--marca-linea);
         border-radius: .75rem;
         overflow: hidden;
 
@@ -346,13 +346,13 @@
 
     .stock-grupo-cabecera {
         padding: .7rem 1rem .6rem;
-        background: linear-gradient(180deg, #f8f9fb 0%, #fff 100%);
-        border-bottom: 1px solid #e9edf2;
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+        border-bottom: 1px solid var(--marca-linea);
 
         h6 {
             font-weight: 650;
             letter-spacing: -.01em;
-            color: #0a182b;
+            color: var(--marca-tinta);
         }
     }
 
@@ -371,7 +371,7 @@
 
     .stock-grupo-toggle {
         flex-shrink: 0;
-        color: #6b778a;
+        color: var(--marca-apagado);
 
         i {
             transition: transform .2s ease;
@@ -393,9 +393,9 @@
         line-height: 1;
         border-radius: 2rem;
         white-space: nowrap;
-        color: #6b778a;
-        background: #fff;
-        border: 1px solid #e9edf2;
+        color: var(--marca-apagado);
+        background: var(--marca-superficie);
+        border: 1px solid var(--marca-linea);
 
         i { font-size: .9rem; }
 
@@ -416,7 +416,7 @@
     .stock-salud {
         margin-top: .55rem;
         padding-top: .55rem;
-        border-top: 1px dashed #e9edf2;
+        border-top: 1px dashed var(--marca-linea);
 
         &-leyenda {
             font-size: .72rem;
@@ -428,7 +428,7 @@
             margin-top: .4rem;
             border-radius: 2rem;
             overflow: hidden;
-            background: #f1f4f8;
+            background: var(--marca-suave);
 
             > span {
                 height: 100%;
@@ -443,16 +443,16 @@
             letter-spacing: .04em;
             font-weight: 600;
             font-size: .72rem;
-            color: #6b778a;
-            background-color: #f8f9fb;
-            border-bottom: 1px solid #e9edf2;
+            color: var(--marca-apagado);
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
             white-space: nowrap;
         }
 
         tbody td {
             font-size: .85rem;
-            color: #0a182b;
-            border-bottom-color: #f1f4f8;
+            color: var(--marca-tinta);
+            border-bottom-color: var(--marca-linea);
         }
 
         tbody tr:hover {
@@ -469,10 +469,10 @@
         flex-shrink: 0;
         border-radius: .55rem;
         overflow: hidden;
-        background: #f8f9fb;
+        background: var(--marca-suave);
         color: #a7b1bf;
         font-size: .95rem;
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
 
         img {
             width: 100%;
@@ -490,7 +490,7 @@
         margin: 0;
         border: 0;
         background: transparent;
-        color: #0a182b;
+        color: var(--marca-tinta);
         text-align: left;
 
         span {
@@ -526,9 +526,9 @@
     }
 
     .stock-marca-logo {
-        border: 1px solid #e9edf2;
+        border: 1px solid var(--marca-linea);
         border-radius: .6rem;
-        background: #fff;
+        background: var(--marca-superficie);
 
         .avatar-title {
             background: rgba(37, 73, 112, .08);
@@ -539,7 +539,7 @@
 
     .stock-pista {
         font-size: .78rem;
-        color: #6b778a;
+        color: var(--marca-apagado);
 
         i {
             color: #254970;
@@ -574,6 +574,14 @@
         background: rgba(227, 73, 72, .1);
     }
 }
+
+// ---- Utilidades de color adaptables al tema ----
+// Reemplazan los style="" hardcoded en los blade para que el dark mode
+// funcione sin depender de !important sobre inline styles.
+.stock-text-ink    { color: #14243d; }
+.stock-text-muted  { color: var(--marca-apagado); }
+.stock-text-accent { color: #0f766e; }
+.stock-bg-inactive { background: var(--marca-suave); color: var(--marca-apagado); }
 
 // Dark mode
 [data-bs-theme='dark'] {
@@ -614,12 +622,13 @@
 
         .stock-grupo-categoria,
         .stock-grupo-marca {
+            background: #111d2e;
             border-color: rgba(255, 255, 255, .08);
         }
 
         .stock-grupo-cabecera {
             border-bottom-color: rgba(255, 255, 255, .06);
-            background: rgba(255, 255, 255, .02);
+            background: rgba(255, 255, 255, .03);
 
             h6 { color: #e8ecf1; }
         }
@@ -654,5 +663,118 @@
 
         .stock-producto-nombre { color: #e8ecf1; }
         .stock-marca-logo { border-color: rgba(255, 255, 255, .08); background: rgba(255, 255, 255, .04); }
+
+        // ---- Filtros / elementos con colores inline en blade ----
+        // Los blade usan style="" con colores claros; estas clases permiten
+        // que el dark mode los supere sin depender de quitar los inline.
+        .stock-filtro-item {
+            color: rgba(255, 255, 255, .78);
+
+            &:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+            &.text-primary,
+            &[style*="0f766e"] { color: #1baf7a !important; }
+        }
+
+        .stock-filtro-lista .badge {
+            background: rgba(255, 255, 255, .08) !important;
+            color: rgba(255, 255, 255, .55) !important;
+        }
+
+        .stock-filtro-lista .badge[style*="0f766e"],
+        .stock-filtro-lista .badge[style*="rgba(15,118,110"] {
+            background: rgba(27, 175, 122, .15) !important;
+            color: #1baf7a !important;
+        }
+
+        // Texto de secciones del filtro
+        .stock-filtros .text-uppercase.fs-12 {
+            color: rgba(255, 255, 255, .45) !important;
+        }
+
+        // Título del filtro
+        .stock-filtros h5,
+        .stock-filtros .card-header h5 {
+            color: #e8ecf1 !important;
+        }
+
+        .stock-limpiar {
+            color: rgba(255, 255, 255, .5);
+            border-color: rgba(255, 255, 255, .1);
+            background: rgba(255, 255, 255, .06);
+
+            &:hover {
+                color: #fff;
+                border-color: rgba(255, 255, 255, .2);
+                background: rgba(255, 255, 255, .1);
+            }
+        }
+
+        .search-box .form-control {
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .1);
+            color: #e8ecf1;
+
+            &::placeholder { color: rgba(255, 255, 255, .35); }
+
+            &:focus {
+                background: rgba(255, 255, 255, .08);
+                border-color: rgba(37, 73, 112, .5);
+                box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .15);
+            }
+        }
+
+        .stock-buscador .form-control {
+            background: rgba(255, 255, 255, .06);
+            border-color: rgba(255, 255, 255, .1);
+            color: #e8ecf1;
+
+            &::placeholder { color: rgba(255, 255, 255, .35); }
+
+            &:focus {
+                background: rgba(255, 255, 255, .08);
+                border-color: rgba(37, 73, 112, .5);
+                box-shadow: 0 0 0 .15rem rgba(37, 73, 112, .15);
+            }
+        }
+
+        .stock-buscador .search-icon {
+            color: rgba(255, 255, 255, .35);
+        }
     }
+
+    // ---- Botones claros globalmente ----
+    .btn-light {
+        background: rgba(255, 255, 255, .08);
+        border-color: rgba(255, 255, 255, .1);
+        color: rgba(255, 255, 255, .85);
+
+        &:hover {
+            background: rgba(255, 255, 255, .12);
+            border-color: rgba(255, 255, 255, .15);
+            color: #fff;
+        }
+
+        &:focus { box-shadow: 0 0 0 .2rem rgba(255, 255, 255, .1); }
+    }
+
+    // Inputs de búsqueda
+    .form-control {
+        background-color: rgba(255, 255, 255, .06);
+        border-color: rgba(255, 255, 255, .1);
+        color: #e8ecf1;
+
+        &::placeholder { color: rgba(255, 255, 255, .35); }
+
+        &:focus {
+            background-color: rgba(255, 255, 255, .08);
+            border-color: rgba(37, 73, 112, .5);
+            color: #fff;
+        }
+    }
+
+    // Utilidades de color — adaptar al dark mode
+    .stock-text-ink    { color: #e8ecf1; }
+    .stock-text-muted  { color: rgba(255, 255, 255, .45); }
+    .stock-text-accent { color: #1baf7a; }
+    .stock-bg-inactive { background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .55); }
 }

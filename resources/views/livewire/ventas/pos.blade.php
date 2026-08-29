@@ -54,8 +54,8 @@
             {{-- ---------- Buscador ---------- --}}
             <div class="card border-0 shadow-sm mb-4 pos-buscador">
                 <div class="card-body p-4">
-                    <label for="v-buscar" class="form-label fw-semibold" style="color: #14243d;">
-                        <i class="ri-barcode-line align-bottom me-1" style="color: #0f766e;"></i>
+                    <label for="v-buscar" class="form-label fw-semibold" style="color: var(--marca-tinta);">
+                        <i class="ri-barcode-line align-bottom me-1" style="color: var(--marca-azul-texto);"></i>
                         Buscar aparato por serial o código interno
                     </label>
                     <div class="search-box">
@@ -115,7 +115,7 @@
                                             </span>
                                         @endif
                                     </span>
-                                    <span class="flex-shrink-0" style="color: {{ $vendible ? '#0f766e' : '#b0b8c4' }};">
+                                    <span class="flex-shrink-0" style="color: {{ $vendible ? 'var(--marca-azul)' : 'var(--marca-apagado)' }};">
                                         <i class="{{ $vendible ? 'ri-add-circle-line' : 'ri-forbid-2-line' }} fs-18"></i>
                                     </span>
                                 </button>
@@ -195,7 +195,7 @@
                                                 <div class="d-flex align-items-start gap-2">
                                                     <span class="pos-carrito-item-num">{{ $indice + 1 }}</span>
                                                     <div class="min-w-0">
-                                                        <div class="fw-semibold" style="color: #14243d;">
+                                                        <div class="fw-semibold" style="color: var(--marca-tinta);">
                                                             {{ $u?->producto?->nombre ?? 'Producto' }}
                                                         </div>
 
@@ -323,7 +323,7 @@
 
                         <div class="pos-carrito-footer">
                             <i class="ri-information-line align-bottom me-1"></i>
-                            La <strong style="color: #14243d;">referencia</strong> es el precio de lista del aparato. Lo que se teclea es el
+                            La <strong style="color: var(--marca-tinta);">referencia</strong> es el precio de lista del aparato. Lo que se teclea es el
                             precio pactado con el cliente; la diferencia queda registrada como descuento.
                         </div>
                     @endif

@@ -9,9 +9,9 @@
         align-items: flex-start;
         gap: .75rem;
         padding: .85rem 1rem;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--marca-linea);
         border-radius: .75rem;
-        background: #fff;
+        background: var(--marca-superficie);
         cursor: pointer;
         transition: border-color .16s, box-shadow .16s, background .16s;
 
@@ -35,7 +35,7 @@
     // Fila de usuario inactivo.
     .fila-inactiva {
         background-color: rgba(107, 119, 138, .04);
-        h6 { color: #6b778a; }
+        h6 { color: var(--marca-apagado); }
     }
 
     // Badge de rol admin.
@@ -46,7 +46,7 @@
     // Select de filtro con estilo consistente.
     .form-select {
         font-size: .84rem;
-        border-color: #dfe6ee;
+        border-color: var(--marca-linea);
         transition: border-color .2s, box-shadow .2s;
 
         &:focus {
@@ -66,7 +66,7 @@ body.dark {
             &.seleccionado { border-color: #254970; background: rgba(37, 73, 112, .08); box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); }
             .form-check-input:checked { background-color: #254970; border-color: #254970; }
         }
-        .fila-inactiva { background-color: rgba(132, 148, 167, .06); h6 { color: #8494a7; } }
+        .fila-inactiva { background-color: rgba(132, 148, 167, .06); h6 { color: var(--marca-apagado); } }
         .form-select { background: #0e1f36; border-color: #254970; color: #d5dde8; &:focus { border-color: #254970; box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); } }
     }
 }

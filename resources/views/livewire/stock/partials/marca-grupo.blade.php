@@ -46,9 +46,9 @@
             @endphp
             <div class="stock-salud">
                 <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
-                    <small style="color: #6b778a;">Salud del stock</small>
+                    <small style="color: var(--marca-apagado);">Salud del stock</small>
                     <small class="stock-salud-leyenda">
-                        <span style="color: #0f766e;"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $sanos }} sanos</span>
+                        <span style="color: var(--marca-azul-texto);"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $sanos }} sanos</span>
                         <span class="ms-2" style="color: #c98500;"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $grupo['resumen']['bajoMinimo'] }} bajo mínimo</span>
                         <span class="ms-2" style="color: #e34948;"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $grupo['resumen']['agotados'] }} agotados</span>
                     </small>
@@ -118,8 +118,8 @@
                                         @else
                                             <span class="fw-medium text-truncate d-block">{{ $producto->nombre }}</span>
                                         @endcan
-                                        <small class="d-block" style="color: #6b778a;">
-                                            <code class="fs-12" style="background: #f1f4f8; border-radius: .3rem; padding: .1rem .35rem;">{{ $producto->sku }}</code>
+                                        <small class="d-block stock-text-muted">
+                                            <code class="fs-12 stock-bg-inactive" style="border-radius: .3rem; padding: .1rem .35rem;">{{ $producto->sku }}</code>
                                             @if ($producto->modelo)
                                                 · {{ $producto->modelo }}
                                             @endif
@@ -129,11 +129,11 @@
                             </td>
                             <td>
                                 @if ($producto->categoria)
-                                    <span style="color: #6b778a;">
+                                    <span class="stock-text-muted">
                                         <i class="ri-folder-line align-middle me-1"></i>{{ $producto->categoria->nombre }}
                                     </span>
                                 @else
-                                    <span style="color: #a7b1bf;">—</span>
+                                    <span class="stock-text-muted">—</span>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -141,9 +141,9 @@
                                     title="{{ $disponibles }} {{ $disponibles === 1 ? 'unidad en stock' : 'unidades en stock' }}@if ($producto->stock_minimo > 0) · mínimo {{ $producto->stock_minimo }}@endif">
                                     <i class="ri-archive-2-line align-middle me-1"></i>{{ $disponibles }}
                                 </span>
-                                <small class="d-block fs-11 fw-medium" style="color: {{ $tono === 'success' ? '#0f766e' : ($tono === 'warning' ? '#c98500' : '#e34948') }};">{{ $etiqueta }}</small>
+                                <small class="d-block fs-11 fw-medium" style="color: {{ $tono === 'success' ? 'var(--marca-azul)' : ($tono === 'warning' ? '#c98500' : '#e34948') }};">{{ $etiqueta }}</small>
                             </td>
-                            <td class="text-center" style="color: #6b778a;">{{ $producto->stock_minimo }}</td>
+                                <td class="text-center stock-text-muted">{{ $producto->stock_minimo }}</td>
                             <td class="text-end">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</td>
                             <td class="text-end pe-3 fw-medium">
                                 Bs {{ number_format((float) $producto->precio_venta * $disponibles, 2, ',', '.') }}

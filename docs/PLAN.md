@@ -766,6 +766,86 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### El modo oscuro dejaba medio panel en claro (2026-08-29)
+
+Al encender el modo oscuro, varios apartados seguían pintándose como si nada:
+tarjetas blancas, títulos casi negros sobre fondo casi negro, bordes claros.
+
+La causa: los componentes propios tenían **~860 colores escritos a fuego**.
+Velzon cambia de tema redefiniendo variables CSS bajo `[data-bs-theme=dark]`,
+pero un `#fff` literal se queda blanco pase lo que pase.
+
+**La solución no fue duplicar reglas para el tema oscuro**, sino dar a los
+componentes cinco tokens que cambian solos, declarados en `_marca.scss`:
+
+| Token | Claro | Oscuro | Para |
+|---|---|---|---|
+| `--marca-tinta` | `#0a182b` | `#e6ebf1` | Texto principal |
+| `--marca-superficie` | `#ffffff` | `#212529` | Tarjetas |
+| `--marca-suave` | `#f1f4f8` | `#2a2d31` | Rieles, cabeceras |
+| `--marca-linea` | `#e9edf2` | `#32383e` | Bordes |
+| `--marca-apagado` | `#6b778a` | `#949dab` | Texto secundario |
+
+> **Los tonos oscuros son los de Velzon, no unos propios.** Las tarjetas de la
+> plantilla ya usan `--vz-secondary-bg`; si aquí se hubiera inventado un azul de
+> marca, dos superficies vecinas habrían quedado de distinto color en la misma
+> pantalla.
+
+> **La identidad NO cambia con el tema.** El azul de acción, el oro y el resto
+> de la marca son los mismos en claro y en oscuro: una marca que cambia de color
+> según el tema deja de ser una marca. Lo único que se movió es
+> `--marca-azul-texto`, y solo porque el azul `#254970` **como letra** sobre
+> fondo oscuro se confunde con el propio fondo.
+
+#### La sustitución tuvo que ser consciente de la propiedad
+
+Un cambio a ciegas habría roto más de lo que arreglaba: **el mismo literal
+significa cosas distintas según dónde esté**.
+
+| Literal | En `background` | En `color` |
+|---|---|---|
+| `#fff` | superficie → token | texto sobre banda oscura → **se deja** |
+| `#0a182b` | banda de marca → **se deja** | tinta → token |
+
+De los 217 `#fff`, 133 eran superficies y 76 texto blanco sobre fondos oscuros.
+Cambiar los segundos habría dejado letras invisibles. El script mira la
+propiedad de la declaración, no solo el color.
+
+> **Primer intento fallido: el ancla `^[ 	]*`.** Exigía que la propiedad
+> abriera la línea, así que se dejó fuera todo lo escrito en una sola línea
+> —`h5 { color: #0a182b; }`—, que aquí es la mitad del archivo. Con el ancla
+> corregida a «principio de línea, `{` o `;`» salieron 165 sustituciones más.
+> El ancla no se puede quitar del todo: sin ella, `border-color` casaría dentro
+> de la regla de `color` y los bordes acabarían con el token de la tinta.
+
+#### Los estilos en línea de las plantillas se habían quedado atrás
+
+La migración de paleta del 2026-08-29 solo tocó `resources/scss/`. Las
+plantillas seguían con **el turquesa y el ámbar viejos** en 38 estilos en línea,
+además de no cambiar con el tema. Ahora usan los mismos tokens.
+
+#### Cinco iconos que no existían
+
+Se dibujaban como una caja vacía —es lo que se veía junto a «Ticket promedio» y
+«Valor de catálogo»—. `ri-receipt-line`, `ri-banknote-line`,
+`ri-trending-up-line`, `ri-sort-number-asc` y `bx-wallet2` no están en las
+versiones de Remix Icon y Boxicons que trae la plantilla. Se cambiaron por el
+equivalente que sí está, y se comprobó el catálogo entero contra la fuente: no
+queda ninguno más.
+
+#### Cómo se comprobó
+
+No a ojo: con un medidor de contraste que recorre el DOM, resuelve el fondo real
+de cada texto —subiendo por los ancestros hasta encontrar uno opaco— y marca lo
+que queda por debajo del umbral. Se pasó por cinco módulos (dashboard,
+productos, stock, kardex, clientes) en los dos temas.
+
+Resultado: **0 textos ilegibles en oscuro**, y el modo claro sin cambios.
+
+> **El medidor no ve degradados.** `backgroundColor` devuelve transparente en un
+> `linear-gradient`, así que los títulos blancos sobre la banda de marca salen
+> como falsos positivos en los dos temas. Se comprobaron a la vista.
+
 ### La última sección del menú se quedaba bajo el pliegue (2026-08-29)
 
 «Sistema» —la última sección del menú lateral— quedaba fuera de la pantalla y

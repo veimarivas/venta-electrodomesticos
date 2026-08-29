@@ -122,9 +122,9 @@
 
 // Sidebar del perfil
 .profile-sidebar .card {
-    border: 1px solid #e9edf2;
+    border: 1px solid var(--marca-linea);
     border-radius: .8rem;
-    background: #fff;
+    background: var(--marca-superficie);
     overflow: hidden;
     transition: box-shadow .18s ease-out;
 
@@ -139,11 +139,11 @@
 
 .profile-sidebar-header {
     padding: 1.25rem 1.25rem .75rem;
-    border-bottom: 1px solid #f1f4f8;
+    border-bottom: 1px solid var(--marca-linea);
 
     h6 {
         margin: 0;
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-size: .82rem;
         font-weight: 650;
         letter-spacing: .04em;
@@ -189,7 +189,7 @@
 
 .profile-info-label {
     display: block;
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .68rem;
     font-weight: 600;
     letter-spacing: .06em;
@@ -199,7 +199,7 @@
 
 .profile-info-value {
     display: block;
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .85rem;
     font-weight: 500;
     white-space: nowrap;
@@ -220,7 +220,7 @@
     border: 0;
     border-bottom: 2px solid transparent;
     border-radius: .5rem .5rem 0 0;
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .85rem;
     font-weight: 550;
     transition: all .2s;
@@ -228,8 +228,8 @@
     white-space: nowrap;
 
     &:hover {
-        color: #0a182b;
-        border-bottom-color: #dfe6ee;
+        color: var(--marca-tinta);
+        border-bottom-color: var(--marca-linea);
         background: rgba(37, 73, 112, .03);
     }
 
@@ -248,7 +248,7 @@
 
 // Formularios
 .profile-form .form-label {
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .8rem;
     font-weight: 600;
     letter-spacing: .01em;
@@ -256,12 +256,12 @@
 }
 
 .profile-form .form-control {
-    border: 1px solid #dfe6ee;
+    border: 1px solid var(--marca-linea);
     border-radius: .6rem;
     padding: .6rem .85rem;
     font-size: .88rem;
-    color: #0a182b;
-    background: #f8f9fb;
+    color: var(--marca-tinta);
+    background: var(--marca-suave);
     transition: border-color .2s, box-shadow .2s, background .2s;
 
     &::placeholder { color: #a7b1bf; }
@@ -269,7 +269,7 @@
     &:focus {
         border-color: #254970;
         box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
-        background: #fff;
+        background: var(--marca-superficie);
     }
 
     &.is-invalid {
@@ -289,7 +289,7 @@
     border: 0;
     border-radius: .6rem;
     background: #c5a162;
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .85rem;
     font-weight: 650;
     box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
@@ -299,7 +299,7 @@
         background: #b8935a;
         box-shadow: 0 10px 22px rgba(0, 0, 0, .24);
         transform: translateY(-1px);
-        color: #0a182b;
+        color: var(--marca-tinta);
     }
 
     &:active { transform: translateY(0); }
@@ -310,10 +310,10 @@
     align-items: center;
     gap: .4rem;
     padding: .6rem 1.25rem;
-    border: 1px solid #dfe6ee;
+    border: 1px solid var(--marca-linea);
     border-radius: .6rem;
-    background: #fff;
-    color: #6b778a;
+    background: var(--marca-superficie);
+    color: var(--marca-apagado);
     font-size: .85rem;
     font-weight: 600;
     transition: all .2s;
@@ -347,9 +347,9 @@
 
 // Contenido principal
 .profile-main .card {
-    border: 1px solid #e9edf2;
+    border: 1px solid var(--marca-linea);
     border-radius: .8rem;
-    background: #fff;
+    background: var(--marca-superficie);
     overflow: hidden;
     transition: box-shadow .18s ease-out;
 
@@ -361,16 +361,16 @@
 // QR / Recovery codes
 .profile-2fa-qr {
     padding: 1rem;
-    background: #f8f9fb;
-    border: 1px solid #e9edf2;
+    background: var(--marca-suave);
+    border: 1px solid var(--marca-linea);
     border-radius: .65rem;
     display: inline-block;
 }
 
 .profile-2fa-codes {
     font-family: 'SFMono-Regular', Consolas, monospace;
-    background: #f8f9fb;
-    border: 1px solid #e9edf2;
+    background: var(--marca-suave);
+    border: 1px solid var(--marca-linea);
     border-radius: .65rem;
     padding: 1rem;
     font-size: .85rem;
@@ -378,7 +378,7 @@
 
     div {
         padding: .2rem 0;
-        color: #0a182b;
+        color: var(--marca-tinta);
         letter-spacing: .02em;
     }
 }

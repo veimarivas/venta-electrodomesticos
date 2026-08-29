@@ -173,7 +173,7 @@
         flex-direction: column;
         gap: .35rem;
         padding: .85rem;
-        border: 1px dashed #e2e8f0;
+        border: 1px dashed var(--marca-linea);
         border-radius: .75rem;
         background: var(--vz-light);
     }
@@ -192,8 +192,8 @@
 
         code {
             color: var(--vz-heading-color);
-            background: #fff;
-            border: 1px solid #e9edf2;
+            background: var(--marca-superficie);
+            border: 1px solid var(--marca-linea);
             border-radius: .35rem;
             padding: .15rem .45rem;
             font-size: .82rem;

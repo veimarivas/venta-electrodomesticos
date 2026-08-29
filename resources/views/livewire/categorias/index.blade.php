@@ -410,7 +410,7 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i
-                                            class="ri-sort-number-asc"></i></span>
+                                            class="ri-sort-asc"></i></span>
                                     <input type="number" id="posicion" wire:model.live.debounce.400ms="posicion"
                                         class="form-control border-start-0 ps-0 @error('posicion') is-invalid @enderror"
                                         placeholder="0" min="0" max="999">

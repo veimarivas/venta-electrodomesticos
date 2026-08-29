@@ -96,7 +96,7 @@
     border: 0;
     border-radius: .6rem;
     background: #c5a162;
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .85rem;
     font-weight: 650;
     text-decoration: none;
@@ -107,7 +107,7 @@
         background: #b8935a;
         box-shadow: 0 10px 22px rgba(0, 0, 0, .24);
         transform: translateY(-1px);
-        color: #0a182b;
+        color: var(--marca-tinta);
     }
 
     &:active { transform: translateY(0); }
@@ -119,9 +119,9 @@
 .dash-kpi {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--auth-line, #dfe6ee);
+    border: 1px solid var(--auth-line, var(--marca-linea));
     border-radius: .75rem;
-    background: #fff;
+    background: var(--marca-superficie);
     transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
 
     &:hover {
@@ -167,7 +167,7 @@
 
 .dash-kpi-label {
     display: block;
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .72rem;
     font-weight: 600;
     letter-spacing: .06em;
@@ -177,7 +177,7 @@
 
 .dash-kpi-valor {
     display: block;
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: -.02em;
@@ -187,7 +187,7 @@
 
 .dash-kpi-nota {
     display: block;
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .78rem;
     margin-top: .25rem;
 }
@@ -196,9 +196,9 @@
 // Cards del dashboard
 // -----------------------------------------------------------------------------
 .dash-card {
-    border: 1px solid #e9edf2;
+    border: 1px solid var(--marca-linea);
     border-radius: .8rem;
-    background: #fff;
+    background: var(--marca-superficie);
     transition: box-shadow .18s ease-out;
 
     &:hover {
@@ -206,13 +206,13 @@
     }
 
     .card-header {
-        border-bottom: 1px solid #f1f4f8;
+        border-bottom: 1px solid var(--marca-linea);
         background: transparent;
         padding: 1rem 1.25rem;
     }
 
     .card-title {
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-weight: 650;
         letter-spacing: -.01em;
     }
@@ -251,10 +251,10 @@
     align-items: center;
     gap: .3rem;
     padding: .35rem .75rem;
-    border: 1px solid #dfe6ee;
+    border: 1px solid var(--marca-linea);
     border-radius: .5rem;
-    background: #fff;
-    color: #6b778a;
+    background: var(--marca-superficie);
+    color: var(--marca-apagado);
     font-size: .78rem;
     font-weight: 600;
     text-decoration: none;
@@ -286,12 +286,12 @@
     gap: .75rem;
 
     span {
-        color: #6b778a;
+        color: var(--marca-apagado);
         font-size: .82rem;
     }
 
     strong {
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-size: .92rem;
         font-variant-numeric: tabular-nums;
     }
@@ -306,13 +306,13 @@
     justify-content: space-between;
     gap: .75rem;
     padding: .5rem 0;
-    border-bottom: 1px solid #f1f4f8;
+    border-bottom: 1px solid var(--marca-linea);
 
     &:last-child { border-bottom: 0; }
 }
 
 .dash-alerta-nombre {
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .84rem;
     font-weight: 600;
     min-width: 0;
@@ -322,7 +322,7 @@
 }
 
 .dash-alerta-marca {
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .75rem;
 }
 
@@ -368,7 +368,7 @@
         align-items: center;
         gap: .85rem;
         padding: .75rem 1.25rem;
-        border-bottom: 1px solid #f1f4f8;
+        border-bottom: 1px solid var(--marca-linea);
         transition: background-color .16s ease-out;
 
         &:last-child { border-bottom: 0; }
@@ -402,7 +402,7 @@
 }
 
 .dash-venta-codigo {
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-size: .84rem;
     font-weight: 650;
     font-family: var(--vz-font-family-monospace, 'SFMono-Regular', monospace);
@@ -410,7 +410,7 @@
 }
 
 .dash-venta-meta {
-    color: #6b778a;
+    color: var(--marca-apagado);
     font-size: .76rem;
     line-height: 1.3;
 }
@@ -479,10 +479,10 @@
 
 // Versión en card blanca (para cuando no está en el hero).
 .dash-resumen--card {
-    border-top-color: #e9edf2;
+    border-top-color: var(--marca-linea);
 
-    span { color: #6b778a; }
-    strong { color: #0a182b; }
+    span { color: var(--marca-apagado); }
+    strong { color: var(--marca-tinta); }
 }
 
 // -----------------------------------------------------------------------------
@@ -571,17 +571,17 @@
 // Topbar / Nav: alineada con la paleta del login
 // =============================================================================
 #page-topbar {
-    border-bottom: 1px solid #e9edf2;
-    background: #fff;
+    border-bottom: 1px solid var(--marca-linea);
+    background: var(--marca-superficie);
     box-shadow: 0 1px 3px rgba(10, 24, 43, .04);
 }
 
 // Buscador global: bordes redondeados y focus turquesa (eco del login).
 .app-search {
     .form-control {
-        border: 1px solid #dfe6ee;
+        border: 1px solid var(--marca-linea);
         border-radius: .65rem;
-        background: #f8f9fb;
+        background: var(--marca-suave);
         font-size: .88rem;
         padding: .55rem 1rem .55rem 2.5rem;
         transition: border-color .2s, box-shadow .2s, background .2s;
@@ -593,7 +593,7 @@
         &:focus {
             border-color: #254970;
             box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
-            background: #fff;
+            background: var(--marca-superficie);
         }
     }
 
@@ -616,14 +616,14 @@
         width: 2.35rem;
         height: 2.35rem;
         border-radius: .6rem;
-        color: #6b778a;
+        color: var(--marca-apagado);
         background: transparent;
         border: 1px solid transparent;
         transition: background .15s, color .15s, border-color .15s;
 
         &:hover {
-            color: #0a182b;
-            background: #f1f4f8;
+            color: var(--marca-tinta);
+            background: var(--marca-suave);
             border-color: #e2e7ee;
         }
 
@@ -651,31 +651,31 @@
         transition: background .15s;
 
         &:hover {
-            background: #f1f4f8;
+            background: var(--marca-suave);
         }
     }
 
     .header-profile-user {
         width: 2.1rem;
         height: 2.1rem;
-        border: 2px solid #e9edf2;
+        border: 2px solid var(--marca-linea);
         object-fit: cover;
     }
 
     .user-name-text {
-        color: #0a182b;
+        color: var(--marca-tinta);
         font-weight: 600;
         font-size: .88rem;
     }
 
     .user-name-sub-text {
-        color: #6b778a;
+        color: var(--marca-apagado);
     }
 }
 
 // Dropdown de notificaciones.
 .dropdown-menu-lg {
-    border: 1px solid #e9edf2;
+    border: 1px solid var(--marca-linea);
     border-radius: .75rem;
     box-shadow: 0 .75rem 2rem rgba(10, 24, 43, .12);
     overflow: hidden;
@@ -690,7 +690,7 @@
 // Items de notificación.
 .notification-item {
     padding: .75rem 1rem;
-    border-bottom: 1px solid #f1f4f8;
+    border-bottom: 1px solid var(--marca-linea);
     border-radius: 0;
     transition: background .12s;
 
@@ -703,10 +703,10 @@
 
 // Avatar del dropdown de usuario.
 .dropdown-header {
-    color: #0a182b;
+    color: var(--marca-tinta);
     font-weight: 650;
     font-size: .88rem;
-    border-bottom: 1px solid #e9edf2;
+    border-bottom: 1px solid var(--marca-linea);
     padding: .75rem 1rem;
 }
 
