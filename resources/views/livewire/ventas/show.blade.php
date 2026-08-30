@@ -450,6 +450,90 @@
         </div>
     </div>
 
+    {{-- ===================== Entregas ===================== --}}
+    @if ($puedeVerEntregas && ($venta->entregas->isNotEmpty() || $puedeProgramarEntrega))
+        <div class="ventas-show-seccion mb-4">
+            <div class="ventas-show-seccion-header">
+                <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="ventas-show-seccion-icon">
+                            <i class="ri-truck-line"></i>
+                        </div>
+                        <h5 class="mb-0">Entregas</h5>
+                        @if ($venta->entregas->isNotEmpty())
+                            <span class="ventas-show-seccion-badge">{{ $venta->entregas->count() }}</span>
+                        @endif
+                    </div>
+
+                    @if ($puedeProgramarEntrega)
+                        <button type="button" class="btn btn-sm btn-primary" wire:click="abrirEntrega">
+                            <i class="ri-map-pin-line align-bottom me-1"></i> Programar entrega
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            <div class="ventas-show-seccion-body">
+                @forelse ($venta->entregas as $entrega)
+                    <div class="p-3 border-bottom" wire:key="entrega-{{ $entrega->id }}">
+                        <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+                            <div class="min-w-0">
+                                <span class="fw-semibold d-block">{{ $entrega->direccion }}</span>
+                                <small class="text-muted d-block">
+                                    @if ($entrega->referencia)
+                                        {{ $entrega->referencia }} ·
+                                    @endif
+                                    @if ($entrega->programada_para)
+                                        Para el {{ $entrega->programada_para->format('d/m/Y') }}
+                                    @else
+                                        Sin fecha acordada
+                                    @endif
+                                    @if ($entrega->repartidor)
+                                        · Lleva {{ $entrega->repartidor->name }}
+                                    @endif
+                                    @if ($entrega->con_instalacion)
+                                        · Con instalación
+                                    @endif
+                                </small>
+                                <small class="text-muted d-block">
+                                    {{ $entrega->detalles->count() }}
+                                    {{ $entrega->detalles->count() === 1 ? 'aparato' : 'aparatos' }}:
+                                    {{ $entrega->detalles->map(fn ($d) => $d->ventaDetalle?->producto?->nombre)->filter()->join(', ') }}
+                                </small>
+                                @if ($entrega->esta_entregada)
+                                    <small class="text-success d-block">
+                                        Recibió {{ $entrega->recibida_por }} ·
+                                        {{ $entrega->entregada_en?->format('d/m/Y H:i') }}
+                                    </small>
+                                @elseif ($entrega->motivo_fallo)
+                                    <small class="text-danger d-block">{{ $entrega->motivo_fallo }}</small>
+                                @endif
+                            </div>
+
+                            @if ($entrega->esta_entregada)
+                                <span class="badge bg-success-subtle text-success">Entregada</span>
+                            @elseif ($entrega->estado === 'cancelada')
+                                <span class="badge bg-secondary-subtle text-secondary">Cancelada</span>
+                            @elseif ($entrega->esta_atrasada)
+                                {{-- Lo atrasado se dice aquí y no solo en el tablero: es
+                                     donde mira quien atiende la llamada del cliente. --}}
+                                <span class="badge bg-danger-subtle text-danger">Atrasada</span>
+                            @else
+                                <span
+                                    class="badge bg-primary-subtle text-primary">{{ $estadosEntrega[$entrega->estado] ?? $entrega->estado }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-muted p-3 mb-0">
+                        Esta venta no tiene ninguna entrega programada. Si el cliente se llevó los
+                        aparatos, no hace falta ninguna.
+                    </p>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
     {{-- ===================== Notas ===================== --}}
     @if ($venta->notas)
         <div class="ventas-show-seccion mb-4">
@@ -521,6 +605,109 @@
                         </span>
                         <span wire:loading wire:target="devolver">Devolviendo...</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Programar entrega ===================== --}}
+    <div class="modal fade" id="modalProgramarEntrega" tabindex="-1" aria-hidden="true" wire:ignore.self
+        data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0">
+                <div class="modal-header">
+                    <h5 class="modal-title">Programar entrega</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">¿Qué aparatos se llevan?</label>
+                        <div class="list-group list-group-flush">
+                            @foreach ($entregables as $linea)
+                                <label class="list-group-item d-flex align-items-center gap-2 px-0"
+                                    wire:key="entregable-{{ $linea->id }}">
+                                    <input type="checkbox" class="form-check-input m-0"
+                                        value="{{ $linea->id }}" wire:model="lineasAEntregar">
+                                    <span class="min-w-0">
+                                        <span class="d-block">{{ $linea->producto?->nombre }}</span>
+                                        <small class="text-muted">
+                                            {{ $linea->unidad?->serial ?: $linea->unidad?->codigo_interno }}
+                                        </small>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('lineasAEntregar')
+                            <div class="text-danger fs-12 mt-1">{{ $message }}</div>
+                        @enderror
+                        {{-- Los ya programados no salen: el índice único los
+                             rechazaría igualmente, y ofrecerlos invita a un error
+                             que después hay que explicar. --}}
+                        <small class="text-muted d-block mt-1">
+                            Solo se listan los aparatos que no están ya en otra entrega.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="entrega-direccion" class="form-label">Dirección</label>
+                        <input type="text" id="entrega-direccion"
+                            class="form-control @error('direccion') is-invalid @enderror" wire:model="direccion"
+                            placeholder="Av. Siempre Viva 742, zona Sur">
+                        @error('direccion')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="entrega-referencia" class="form-label">
+                                Referencia <span class="text-muted">(opcional)</span>
+                            </label>
+                            <input type="text" id="entrega-referencia" class="form-control"
+                                wire:model="referencia" placeholder="Portón verde, frente a la cancha">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="entrega-telefono" class="form-label">
+                                Teléfono de contacto <span class="text-muted">(opcional)</span>
+                            </label>
+                            <input type="text" id="entrega-telefono" class="form-control"
+                                wire:model="telefonoContacto" placeholder="A quién llamar al llegar">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="entrega-fecha" class="form-label">
+                                ¿Qué día? <span class="text-muted">(opcional)</span>
+                            </label>
+                            <input type="date" id="entrega-fecha"
+                                class="form-control @error('programadaPara') is-invalid @enderror"
+                                wire:model="programadaPara">
+                            @error('programadaPara')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Sin fecha queda como «cuando se pueda».</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="entrega-instalacion"
+                                    wire:model="conInstalacion">
+                                <label class="form-check-label" for="entrega-instalacion">
+                                    Hay que instalarlo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="entrega-notas" class="form-label">
+                            Notas <span class="text-muted">(opcional)</span>
+                        </label>
+                        <textarea id="entrega-notas" rows="2" class="form-control" wire:model="notasEntrega"
+                            placeholder="Subir por el ascensor de servicio, avisar una hora antes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" wire:click="programarEntrega"
+                        wire:loading.attr="disabled" wire:target="programarEntrega">Programar</button>
                 </div>
             </div>
         </div>

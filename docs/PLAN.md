@@ -81,6 +81,10 @@ erDiagram
     VENTAS     ||--o| CREDITOS : "plan de cuotas"
     CLIENTES   ||--o{ CREDITOS : debe
     CREDITOS   ||--o{ CUOTAS : "vencimientos"
+    VENTAS     ||--o{ ENTREGAS : "envios"
+    ENTREGAS   ||--o{ ENTREGA_DETALLES : detalle
+    VENTA_DETALLES ||--o{ ENTREGA_DETALLES : "viaja en"
+    USERS      ||--o{ ENTREGAS : reparte
     CUOTAS     ||--o{ PAGOS_CREDITO : "se cobra en"
     CAJAS      ||--o{ PAGOS_CREDITO : "entran al turno"
     CAJAS      ||--o{ VENTAS : "turno"
@@ -298,6 +302,38 @@ ganancia (decimal 12,2), timestamps
 > Sigue siendo una garantía **a nivel de base de datos**, que es lo que importa: no basta con comprobarlo en PHP, porque dos cajeros escaneando el mismo aparato a la vez pasarían la comprobación y solo el índice único frena la segunda venta.
 >
 > `costo_unitario` se copia de `unidades.costo_unitario` en el momento de la venta: si mañana cambia el costo del producto, la ganancia histórica no debe moverse.
+
+**`entregas`** — orden de entrega a domicilio *(implementada 2026-08-29)*
+```
+id, venta_id (FK), cliente_id (FK nullable), direccion, referencia (nullable),
+telefono_contacto (nullable), programada_para (date nullable),
+estado (pendiente|en_ruta|entregada|fallida|cancelada),
+con_instalacion (bool), repartidor_id (FK users nullable),
+salio_en, entregada_en, instalada_en (nullables),
+recibida_por (nullable), motivo_fallo (nullable),
+creado_por (FK users), notas, timestamps
+
+ÍNDICES: index(estado, programada_para), index(repartidor_id)
+```
+> Modelo `Entrega`. **Sin código propio**: en el mostrador una entrega se nombra por su venta, y un correlativo más sería un número que nadie usa.
+>
+> Una venta puede tener varias —tres aparatos que no caben en un viaje— y hay ventas que no tienen ninguna, porque el cliente se llevó la licuadora en la mano. `cliente_id` es nullable porque la venta al público también puede necesitar que alguien lleve el aparato a algún sitio.
+>
+> `telefono_contacto` se copia y no se lee del cliente: quien recibe puede ser otro —la hija, el portero— y su número no tiene por qué acabar en la ficha del cliente.
+>
+> **No hay estado `por_entregar` en `unidades`**: un aparato vendido y aún en el almacén sigue estando `vendido`. Inventarlo obligaría a que todas las consultas de stock lo conocieran, y la pregunta que contestaría —dónde está físicamente— la responde esta tabla.
+
+**`entrega_detalles`** — qué aparatos van en una entrega *(implementada 2026-08-29)*
+```
+id, entrega_id (FK cascade), venta_detalle_id (FK),
+venta_detalle_activo_id (nullable, UNIQUE),  -- guardia del doble reparto
+timestamps
+
+ÍNDICES: unique(entrega_id, venta_detalle_id)
+```
+> Modelo `EntregaDetalle`. Guarda la **línea de venta**, no la unidad: así se sabe de qué venta salió el aparato sin una consulta más, y una unidad devuelta y revendida no confunde las dos entregas.
+>
+> `venta_detalle_activo_id` está calcado de `venta_detalles.unidad_vendida_id` y por la misma razón: copia mientras la entrega vive, `NULL` al cancelarla o al devolver el aparato. El índice único impide que un aparato esté en dos entregas **vivas** a la vez, pero deja volver a programarlo si la anterior se canceló.
 
 **`creditos`** — el plan de cuotas de una venta a plazos *(implementada 2026-08-29)*
 ```
@@ -815,6 +851,106 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+
+### Entrega a domicilio e instalación (2026-08-29)
+
+Un refrigerador no sale de la tienda en la mano del cliente. Entre cobrar y
+entregar hay días, una dirección, alguien que lo lleva y un cliente que llama
+preguntando — y todo eso vivía en la memoria de quien atiende. La venta
+terminaba al cobrar.
+
+#### No se toca el estado de la unidad
+
+Es la decisión que evita el efecto dominó. Un aparato vendido y todavía en el
+almacén sigue estando `vendido`: salió del stock vendible el día que se cobró, y
+eso no cambia porque siga en la trastienda.
+
+Inventar un estado `por_entregar` habría obligado a que **todas** las consultas
+de stock lo conocieran —el POS, el kardex, los reportes, el aviso de stock
+bajo—, y la pregunta que ese estado contestaría —¿dónde está físicamente?— la
+responde la tabla `entregas`, que es su sitio. Tampoco se escribe kardex: el
+kardex es del inventario, y aquí no se mueve inventario.
+
+#### La entrega se programa desde la ficha de la venta, no desde el POS
+
+En el mostrador lo que urge es cobrar. La dirección, la referencia y el día se
+acuerdan después, con el cliente ya tranquilo y el pago hecho. Y así se puede
+programar la entrega de una venta de la semana pasada, que en el punto de venta
+sería imposible.
+
+El precio de meterlo en el POS habría sido cinco campos más en la pantalla más
+densa del sistema, para un dato que en la mitad de las ventas no aplica.
+
+#### Una venta, varias entregas
+
+Tres aparatos que no caben en un viaje son dos entregas. `entrega_detalles` dice
+qué líneas de venta viajan en cada una.
+
+Guarda la **línea de venta**, no la unidad: así se sabe de qué venta salió el
+aparato sin una consulta más, y una unidad devuelta y revendida no confunde las
+dos entregas.
+
+> **`venta_detalle_activo_id` es la guardia del doble reparto**, calcada de
+> `venta_detalles.unidad_vendida_id` y por la misma razón. Copia de
+> `venta_detalle_id` mientras la entrega vive, `NULL` cuando se cancela o se
+> devuelve el aparato. En MySQL los `NULL` no chocan, así que el índice único
+> impide que un aparato esté en dos entregas **vivas** a la vez pero deja
+> volver a programarlo si la anterior se canceló. Reusar un patrón que ya
+> estaba probado salió más barato que inventar otro.
+
+#### La máquina de estados
+
+```
+pendiente ──despachar──▶ en_ruta ──confirmar──▶ entregada
+    ▲                       │
+    │                       └──fallar──▶ fallida ──reprogramar──┐
+    └──────────────────────────────────────────────────────────┘
+
+pendiente / en_ruta / fallida ──cancelar──▶ cancelada
+```
+
+`entregada` y `cancelada` son finales. Una entrega firmada no se edita: se
+programa otra. Misma regla que la venta y por lo mismo — el histórico tiene que
+seguir diciendo lo que pasó.
+
+Dos campos obligatorios que parecen burocracia y no lo son:
+
+- **`repartidor_id` al despachar.** Sin él no hay a quién preguntarle dónde está
+  el aparato, que es justo lo que el cliente llama a preguntar.
+- **`recibida_por` al confirmar.** «Entregada» sin el nombre de quien firmó no
+  sirve de nada el día que el cliente dice que nunca le llegó. Se teclea, no se
+  propone el del cliente: casi nunca recibe el titular, y un dato que solo hay
+  que aceptar deja de ser una constancia.
+
+Al fallar se limpia `salio_en`: el aparato está de vuelta en la tienda y dejar
+la salida anterior haría creer que sigue en la calle. La instalación solo se
+marca si se pactó —dar por instalado lo que nadie instaló cierra un trabajo
+pendiente sin hacerlo—.
+
+#### Lo que arrastra de la venta
+
+| Pasa esto | La entrega |
+|---|---|
+| Se devuelve **un** aparato | Sale de las entregas abiertas; si era el único, la entrega se cancela |
+| Se devuelven **todos** / se anula la venta | Se cancelan todas las entregas abiertas |
+| Se devuelve un aparato **ya entregado** | No se toca: se entregó y después volvió, y las dos cosas pasaron |
+
+Un camión saliendo con la caja vacía es peor que no salir, y una entrega viva de
+una venta anulada manda a alguien a llevar un aparato que el cliente nunca llegó
+a tener.
+
+#### Sin código propio
+
+En el mostrador una entrega se nombra por su venta («la entrega de la
+VTA-2026-000123»). Un correlativo más habría sido un número que nadie usa y un
+generador más que mantener.
+
+#### El orden del tablero
+
+Lo que tiene fecha manda y lo más antiguo primero: es el orden en que hay que
+resolverlas. Las de «cuando se pueda» van al final —`ORDER BY programada_para IS
+NULL`—, que es exactamente su prioridad. Sin fecha pactada **no hay atraso**:
+«cuando se pueda» no se incumple.
 
 ### Venta a crédito y cuotas (2026-08-29)
 

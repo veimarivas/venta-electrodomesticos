@@ -114,6 +114,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         ]);
     })->whereNumber('credito')->middleware('permission:creditos.ver')->name('creditos.show');
 
+    Route::view('/entregas', 'backend.entregas.index', [
+        'title' => 'Entregas',
+        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Entregas' => null],
+    ])->middleware('permission:entregas.ver')->name('entregas.index');
+
     Route::view('/clientes', 'backend.clientes.index', [
         'title' => 'Clientes',
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Clientes' => null],

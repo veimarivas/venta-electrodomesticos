@@ -188,6 +188,55 @@ QR.
 botón está en *Ventas → Historial*, dentro del detalle de cada venta. Las ventas
 anuladas también se pueden reimprimir, pero el recibo lo dice bien grande arriba.
 
+### Programar una entrega
+
+Un refrigerador no sale en la mano del cliente. La entrega se programa **desde
+la ficha de la venta**, no desde el punto de venta: en el mostrador lo que urge
+es cobrar, y la dirección se acuerda después, con el pago ya hecho. Así también
+puedes programar la entrega de una venta de la semana pasada.
+
+En *Ventas → Historial*, abre la venta y pulsa **Programar entrega**. Vienen ya
+marcados los aparatos que aún no están en ningún envío; desmarca los que el
+cliente se lleva ahora. Pon la dirección, la referencia («portón verde, frente
+a la cancha» — es lo que evita la llamada), a quién llamar al llegar y qué día.
+Si lo dejas sin fecha, queda como «cuando se pueda».
+
+**Una venta puede tener varias entregas.** Tres aparatos que no caben en un
+viaje son dos envíos, y cada uno va por su cuenta.
+
+### El tablero de entregas
+
+*Ventas → Entregas*. Arriba, lo que hay que resolver: cuántas salen hoy,
+cuántas están atrasadas, cuántas andan en la calle y cuántas siguen sin fecha.
+La lista arranca por lo que tiene fecha y más antiguo primero; las de «cuando se
+pueda» van al final, que es su prioridad.
+
+Cada entrega tiene cinco botones:
+
+| Botón | Qué hace |
+|---|---|
+| 🚚 **Despachar** | Sale el camión. Hay que decir **quién la lleva** — sin eso no hay a quién preguntarle dónde está el aparato |
+| ✔ **Confirmar** | Llegó. Hay que anotar **quién recibió**; casi nunca es el titular, y es la constancia del día que digan que nunca llegó |
+| ✕ **No se pudo** | No había nadie, la dirección estaba mal, no cabía por la puerta. Queda para reprogramar |
+| 📅 **Reprogramar** | Otro día |
+| 🗑 **Cancelar** | Se cae el envío. Los aparatos quedan libres para programarlos en otra entrega — la venta no se toca |
+
+Si la entrega se pactó **con instalación**, al confirmarla puedes marcar que
+quedó instalado. Si no se pactó, esa casilla no cuenta: dar por instalado lo que
+nadie instaló cierra un trabajo pendiente sin hacerlo.
+
+**Una entrega ya firmada no se edita.** Como una venta: si hay que volver, se
+programa otra.
+
+> **Un aparato no puede estar en dos entregas a la vez.** El sistema no te deja,
+> y en la ficha de la venta solo te ofrece los que quedan libres. Si cancelas
+> una entrega, sus aparatos vuelven a estar disponibles para programar.
+
+> **Si devuelves un aparato**, sale solo de las entregas que aún no se han
+> hecho. Si era el único que iba en ese envío, la entrega se cancela — un camión
+> saliendo con la caja vacía es peor que no salir. Y si anulas la venta, se caen
+> todas sus entregas pendientes.
+
 ### Devolver un aparato
 
 Si el cliente trae de vuelta **uno** de los aparatos de una venta, no hace falta

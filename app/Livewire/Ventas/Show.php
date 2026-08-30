@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Ventas;
 
+use App\Models\EntregaDetalle;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
+use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -17,6 +19,23 @@ class Show extends Component
     public ?int $detalleADevolver = null;
 
     public string $motivoDevolucion = '';
+
+    // ---- Programar entrega -------------------------------------------------
+
+    /** @var array<int, int|string> Líneas marcadas para el envío. */
+    public array $lineasAEntregar = [];
+
+    public string $direccion = '';
+
+    public string $referencia = '';
+
+    public string $telefonoContacto = '';
+
+    public string $programadaPara = '';
+
+    public bool $conInstalacion = false;
+
+    public string $notasEntrega = '';
 
     public function mount(Venta $venta): void
     {
@@ -104,6 +123,111 @@ class Show extends Component
         abort_unless(auth()->user()?->can('ventas.anular') ?? false, 403);
     }
 
+    // =======================================================================
+    // Programar entrega
+    // =======================================================================
+
+    /**
+     * La entrega se programa desde aquí y no desde el punto de venta.
+     *
+     * En el mostrador lo que urge es cobrar; la dirección, la referencia y el
+     * día se acuerdan después, con el cliente ya tranquilo. Además así se
+     * puede programar la entrega de una venta de la semana pasada, que en el
+     * POS sería imposible.
+     */
+    public function abrirEntrega(): void
+    {
+        $this->autorizarEntrega('entregas.crear');
+
+        // Vienen marcados los aparatos que aún no están en ninguna entrega
+        // viva: es lo que casi siempre se quiere llevar.
+        $this->lineasAEntregar = $this->lineasEntregables()->pluck('id')->all();
+
+        $this->direccion = '';
+        $this->referencia = '';
+        $this->telefonoContacto = $this->venta->cliente?->persona?->celular ?? '';
+        $this->programadaPara = '';
+        $this->conInstalacion = false;
+        $this->notasEntrega = '';
+        $this->resetValidation();
+
+        $this->dispatch('abrir-modal-programar-entrega');
+    }
+
+    public function programarEntrega(): void
+    {
+        $this->autorizarEntrega('entregas.crear');
+
+        $this->validate(
+            [
+                'direccion' => ['required', 'string', 'max:255'],
+                'referencia' => ['nullable', 'string', 'max:255'],
+                'telefonoContacto' => ['nullable', 'string', 'max:30'],
+                'programadaPara' => ['nullable', 'date', 'after_or_equal:today'],
+                'lineasAEntregar' => ['required', 'array', 'min:1'],
+            ],
+            [
+                'direccion.required' => 'Escribe la dirección de entrega.',
+                'programadaPara.after_or_equal' => 'La fecha de entrega no puede ser anterior a hoy.',
+                'lineasAEntregar.required' => 'Elige al menos un aparato para entregar.',
+                'lineasAEntregar.min' => 'Elige al menos un aparato para entregar.',
+            ]
+        );
+
+        try {
+            app(ProgramacionDeEntregas::class)->programar(
+                $this->venta,
+                array_map('intval', $this->lineasAEntregar),
+                [
+                    'direccion' => $this->direccion,
+                    'referencia' => $this->referencia,
+                    'telefono_contacto' => $this->telefonoContacto,
+                    'programada_para' => $this->programadaPara,
+                    'con_instalacion' => $this->conInstalacion,
+                    'notas' => $this->notasEntrega,
+                ],
+                auth()->id(),
+            );
+        } catch (RuntimeException $e) {
+            $this->dispatch('cerrar-modal-programar-entrega');
+            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+            return;
+        }
+
+        $this->recargar();
+
+        $this->dispatch('cerrar-modal-programar-entrega');
+        $this->dispatch('toast', tipo: 'success', mensaje: 'Entrega programada.');
+    }
+
+    /**
+     * Aparatos de esta venta que todavía no están en ninguna entrega viva.
+     *
+     * Uno ya programado no vuelve a ofrecerse: el índice único lo rechazaría
+     * igualmente, pero enseñarlo invitaría a un error que después hay que
+     * explicar.
+     *
+     * @return \Illuminate\Support\Collection<int, VentaDetalle>
+     */
+    public function lineasEntregables(): \Illuminate\Support\Collection
+    {
+        $yaProgramadas = EntregaDetalle::query()
+            ->whereNotNull('venta_detalle_activo_id')
+            ->pluck('venta_detalle_activo_id')
+            ->all();
+
+        return $this->venta->detalles
+            ->whereNull('devuelto_en')
+            ->whereNotIn('id', $yaProgramadas)
+            ->values();
+    }
+
+    private function autorizarEntrega(string $permiso): void
+    {
+        abort_unless(auth()->user()?->can($permiso) ?? false, 403);
+    }
+
     /**
      * Vuelve a leer la venta tras devolver: cambian los importes de la
      * cabecera, el estado de la línea y —si era el último aparato— el de la
@@ -127,6 +251,8 @@ class Show extends Component
             'user',
             'qrCobro',
             'credito.cuotas',
+            'entregas.repartidor',
+            'entregas.detalles.ventaDetalle.producto',
         ]);
 
         // Los aparatos devueltos siguen en la tabla como histórico, pero no
@@ -143,6 +269,14 @@ class Show extends Component
             'puedeDevolver' => (auth()->user()?->can('ventas.anular') ?? false)
                 && $this->venta->esta_completada,
             'puedeVerCredito' => auth()->user()?->can('creditos.ver') ?? false,
+            'puedeVerEntregas' => auth()->user()?->can('entregas.ver') ?? false,
+            // Programar exige que quede algo por llevar: el botón no se
+            // ofrece si todos los aparatos ya están en una entrega viva.
+            'puedeProgramarEntrega' => (auth()->user()?->can('entregas.crear') ?? false)
+                && $this->venta->esta_completada
+                && $this->lineasEntregables()->isNotEmpty(),
+            'entregables' => $this->lineasEntregables(),
+            'estadosEntrega' => \App\Models\Entrega::ESTADOS,
         ]);
     }
 }

@@ -69,7 +69,7 @@ negocio que hoy viven fuera, en cuadernos y en la memoria de quien atiende.
 | ✅ | **Devolución y cambio** | 4–5 días |
 | ✅ | **Cierre de caja** | 1 semana |
 | ✅ | **Venta a crédito y cuotas** | 2–3 semanas |
-| ⬜ | **Entrega e instalación** | 1–2 semanas |
+| ✅ | **Entrega e instalación** | 1–2 semanas |
 | ⬜ | **Garantía y servicio técnico** | 2 semanas |
 
 ### Devolución y cambio ✅
@@ -116,15 +116,22 @@ El detalle de por qué está así, en [PLAN.md](PLAN.md).
 cuenta impreso para dárselo al cliente, y un recordatorio al propio cliente por
 WhatsApp o SMS —hoy el aviso es solo para quien cobra—.
 
-### Entrega e instalación
+### Entrega e instalación ✅
 
-**Hoy:** ninguna tabla ni modelo menciona entrega, despacho ni dirección de
-envío. La venta termina al cobrar.
+Hecho el 2026-08-29. Desde la ficha de una venta se programa el envío —qué
+aparatos, a qué dirección, con qué referencia y qué día— y *Ventas → Entregas*
+es el tablero: qué sale hoy, qué está atrasado, qué anda en la calle. Cada
+entrega se despacha con su repartidor, se confirma con el nombre de quien
+recibió y, si se pactó, se marca la instalación.
 
-Un refrigerador no sale de la tienda en la mano del cliente. Entre cobrar y
-entregar hay días, una dirección, alguien que lo lleva y un cliente que llama
-preguntando. Con la app ya en el mostrador, quien reparte podría marcar la
-entrega desde el camión.
+Una venta puede partirse en varias entregas, y devolver un aparato o anular la
+venta se lleva por delante los envíos que aún no se hicieron.
+
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda de esta pieza:** marcar la entrega **desde el teléfono**, que era
+media razón para hacerla —quien reparte lleva el móvil, no el panel—; y avisar
+al cliente de que su aparato sale hoy.
 
 ### Garantía y servicio técnico
 
@@ -148,6 +155,7 @@ trabajar».
 
 | | Qué | Esfuerzo |
 |---|---|---|
+| ⬜ | Marcar entregas desde el teléfono | 4 días |
 | ⬜ | Cobrar cuotas desde el teléfono | 4 días |
 | ⬜ | Recepcionar compras desde el teléfono | 1 semana |
 | ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
@@ -182,13 +190,15 @@ Conviene confirmar en qué régimen está la tienda antes de estimar nada.
 1. **Esta semana** — dejar corriendo los tres procesos del servidor y comprobar
    que la copia del día siguiente existe de verdad. Es lo único que queda de la
    fase 0 y no es trabajo de código: sin eso, todo lo demás es opcional.
-2. ~~Devolución, cierre de caja y venta a crédito~~ — hechas. Con eso, la fase 1
-   se queda en lo que pasa **después** de cobrar.
-3. **A continuación** — entrega e instalación. Es la siguiente que la tienda hace
-   todos los días y el sistema no: entre cobrar un refrigerador y dejarlo en la
-   casa del cliente hay días, una dirección y alguien que llama preguntando.
+2. ~~Devolución, cierre de caja, venta a crédito y entregas~~ — hechas. De la
+   fase 1 solo queda **garantía y servicio técnico**, y es la más chica de todas
+   porque el kardex ya existe: una reparación es otro tipo de movimiento sobre
+   una unidad ya identificada por serial.
+3. **A continuación** — esa. Cierra el círculo: el sistema ya sabe decir si un
+   aparato está en garantía, pero no qué hacer después.
 4. **En paralelo** — las piezas de la fase 2. Son pequeñas, independientes y no
-   bloquean nada. Ahora hay una más: cobrar cuotas desde el teléfono.
+   bloquean nada. Ahora hay dos más, y las dos son la otra mitad de algo ya
+   hecho: marcar entregas y cobrar cuotas desde el teléfono.
 
 > **Sobre el orden.** La tentación era empezar por lo vistoso. Pero el crédito
 > toca la tabla de ventas y las devoluciones también; hacerlos a la vez obligaba

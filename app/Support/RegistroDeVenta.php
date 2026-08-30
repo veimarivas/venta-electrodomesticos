@@ -30,6 +30,7 @@ class RegistroDeVenta
         private readonly Kardex $kardex,
         private readonly ArqueoDeCaja $arqueo,
         private readonly PlanDeCuotas $planDeCuotas,
+        private readonly ProgramacionDeEntregas $entregas,
     ) {}
 
     /**
@@ -411,6 +412,11 @@ class RegistroDeVenta
                 $this->planDeCuotas->anular($credito);
             }
 
+            // Y si había algo por llevar, deja de haberlo. Una entrega viva de
+            // una venta anulada manda el camión a devolver un aparato que el
+            // cliente nunca llegó a tener.
+            $this->entregas->cancelarPorVenta($venta, $motivo);
+
             return $devueltas;
         });
     }
@@ -495,6 +501,10 @@ class RegistroDeVenta
             // La rebaja se calcula ANTES de recalcular la venta: después, esta
             // línea ya no cuenta en el total y su importe sería irrecuperable.
             $rebaja = $detalle->refresh()->netoEnCentavos();
+
+            // Un aparato devuelto no se lleva a ninguna parte: sale de las
+            // entregas que todavía no se hicieron.
+            $this->entregas->liberar($detalle);
 
             $this->recalcular($venta->refresh(), $motivo);
 

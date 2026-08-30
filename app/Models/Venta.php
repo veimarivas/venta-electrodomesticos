@@ -135,6 +135,15 @@ class Venta extends Model
         return $this->hasOne(Credito::class);
     }
 
+    /**
+     * Órdenes de entrega. Pueden ser varias: tres aparatos que no caben en un
+     * viaje, o uno que se reprogramó y otro que ya salió.
+     */
+    public function entregas(): HasMany
+    {
+        return $this->hasMany(Entrega::class)->latest('id');
+    }
+
     protected function esACredito(): Attribute
     {
         return Attribute::get(fn (): bool => $this->metodo_pago === 'credito');

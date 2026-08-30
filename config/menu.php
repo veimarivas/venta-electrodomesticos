@@ -59,7 +59,7 @@ return [
     [
         'label' => 'Ventas',
         'icon' => 'ri-shopping-cart-2-line',
-        'active' => ['ventas*', 'clientes*', 'creditos*'],
+        'active' => ['ventas*', 'clientes*', 'creditos*', 'entregas*'],
         // Sin permiso en el grupo: cada hijo declara el suyo y MenuBuilder
         // descarta el grupo si se queda sin ítems visibles. Con 'ventas.ver'
         // aquí, quien solo puede ver clientes no vería ni la sección.
@@ -67,6 +67,7 @@ return [
             ['label' => 'Punto de venta', 'route' => 'ventas.create', 'active' => 'ventas/nueva', 'permission' => 'ventas.crear'],
             ['label' => 'Historial de ventas', 'route' => 'ventas.index', 'active' => 'ventas', 'permission' => 'ventas.ver'],
             ['label' => 'Créditos y cuotas', 'route' => 'creditos.index', 'active' => 'creditos*', 'permission' => 'creditos.ver'],
+            ['label' => 'Entregas', 'route' => 'entregas.index', 'active' => 'entregas*', 'permission' => 'entregas.ver'],
             ['label' => 'Clientes', 'route' => 'clientes.index', 'active' => 'clientes*', 'permission' => 'clientes.ver'],
             ['label' => 'QR de cobro', 'route' => 'ventas.qrs-cobro.index', 'active' => 'ventas/qr-cobro*', 'permission' => 'qrs_cobro.ver'],
             // Con `caja.gestionar` basta: el cajero abre y cierra su turno
