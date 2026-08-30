@@ -80,22 +80,60 @@ nueva responde **404 aunque su archivo ya esté en el servidor**.
 
 El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 
+> **Lo lento va ANTES de bajar el sitio.** `composer install` y `npm ci` tardan
+> minutos y son justo lo que puede fallar —red, disco, una versión de Node—. Si
+> el sitio ya está en mantenimiento cuando revientan, la tienda se queda caída
+> hasta que alguien se dé cuenta. Preparado todo, el corte real son los
+> segundos que tardan la migración y las cachés.
+
+Primero, con el sitio **todavía en pie**:
+
 ```bash
-php artisan migrate --force
+php artisan backup:run
 ```
 
 ```bash
-php artisan optimize:clear
+git pull origin main && composer install --no-dev --optimize-autoloader && npm ci && npm run build
+```
+
+Y ahora el corte, corto:
+
+```bash
+php artisan down --render=errors::503
+```
+
+```bash
+php artisan migrate --force && php artisan optimize:clear
 ```
 
 ```bash
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
 
-Si además cambió algo de la interfaz web:
+```bash
+php artisan up
+```
+
+> **Si algo falla entre el `down` y el `up`, el sitio se queda caído.** No es un
+> fallo del servidor: es Laravel enseñando su página de mantenimiento, y se
+> reconoce porque el 503 trae una página con estilos y el título *Service
+> Unavailable* en vez del error escueto de nginx. Se sale con `php artisan up`.
+>
+> Y si `artisan` tampoco arranca —pasa cuando el `composer install` se cortó y
+> `vendor/` quedó a medias—, el modo mantenimiento son **dos archivos** y se
+> quitan a mano:
+>
+> ```bash
+> rm -f storage/framework/down storage/framework/maintenance.php
+> ```
+>
+> Es exactamente lo que hace `php artisan up`, sin necesitar que la aplicación
+> arranque. Después, reinstalar dependencias con calma.
+
+Para comprobar que volvió, **302** (redirige al login) y no 503:
 
 ```bash
-npm ci && npm run build
+curl -s -o /dev/null -w "%{http_code}\n" https://ventas.posgradosinnovaciencia.com/dashboard
 ```
 
 Para comprobar que una ruta nueva llegó de verdad, sin entrar a la aplicación:
@@ -155,6 +193,31 @@ pruebas y vaciar la de la tienda.
 > **Las cuentas borradas se llevan sus roles asignados.** Si quedaran las filas
 > de `model_has_roles`, un usuario nuevo que reusara ese id heredaría permisos
 > ajenos.
+
+### Cuando el sitio entero devuelve 503
+
+Hay dos 503 distintos y se distinguen a simple vista:
+
+| Lo que se ve | Qué es | Se arregla con |
+|---|---|---|
+| Página con estilos, título *Service Unavailable* | **Modo mantenimiento de Laravel.** Nginx y PHP están bien | `php artisan up` |
+| Página escueta de nginx, o *502 Bad Gateway* | PHP-FPM caído o sin responder | `sudo systemctl status php8.3-fpm` |
+
+El primero es, con diferencia, el más frecuente: un despliegue que se cortó
+entre el `php artisan down` y el `php artisan up`. Para verlo desde fuera sin
+entrar al servidor:
+
+```bash
+curl -s -i https://ventas.posgradosinnovaciencia.com/ | head -5
+```
+
+Si el `Server:` dice nginx pero el cuerpo es la página de Laravel, es
+mantenimiento. Antes de levantarlo conviene comprobar que el despliegue sí
+terminó —si no, se estaría sirviendo una aplicación a medias—:
+
+```bash
+git log -1 --oneline && php artisan migrate:status | tail -15 && php artisan about | head -20
+```
 
 ### Cuando alguien no puede entrar
 
