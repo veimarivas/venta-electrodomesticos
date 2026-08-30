@@ -30,7 +30,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Stock Actual' => null],
     ])->middleware('permission:stock.ver')->name('stock.index');
 
-    Route::get('/buscar', SearchController::class)->name('search');
+    Route::get('/buscar', [SearchController::class, 'index'])->name('search');
+
+    // Salto desde un resultado al inventario del producto. Es una redirección
+    // y no un enlace directo porque el filtro viaja por sesión, nunca en la
+    // URL — misma regla que al entrar desde categorías.
+    Route::get('/buscar/producto/{producto}', [SearchController::class, 'producto'])
+        ->whereNumber('producto')->name('search.producto');
 
     Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
 

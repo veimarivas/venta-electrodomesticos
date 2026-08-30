@@ -766,6 +766,55 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### El buscador del topbar busca de verdad (2026-08-29)
+
+`SearchController` devolvía `'results' => []`. Siempre. La caja de búsqueda está
+en la barra superior de todas las pantallas y la gente la usa: un buscador que
+nunca encuentra nada enseña a desconfiar del sistema entero, incluso de las
+partes que sí funcionan.
+
+Busca las tres cosas que su propio *placeholder* promete: **producto, serial y
+venta**. Nada más, a propósito: clientes o compras habrían añadido resultados
+que no llevan a ninguna pantalla útil.
+
+#### Un resultado nunca revela lo que no se puede ver
+
+Cada grupo se consulta **solo si el usuario tiene el permiso del módulo**
+(`productos.ver`, `unidades.ver`, `ventas.ver`), y un grupo sin resultados no se
+dibuja. Filtrar al pintar habría sido peor que no buscar: la fila «VTA-000123 ·
+Bs 4.500» ya cuenta que esa venta existe y por cuánto fue, aunque el enlace
+estuviera deshabilitado.
+
+#### El destino de cada resultado
+
+| Resultado | A dónde lleva | Por qué |
+|---|---|---|
+| Producto | Inventario filtrado por ese producto | La pregunta real del mostrador es «¿cuántos me quedan?» |
+| Aparato **vendido** | La ficha de su venta | Se busca el serial para saber a quién se le vendió y cuándo |
+| Aparato **en stock** | Inventario de su producto | Todavía no tiene venta que mostrar |
+| Venta | Su ficha | — |
+
+> **Por qué una redirección y no un enlace directo.** El listado de unidades se
+> filtra con `producto_activo` en **sesión**, nunca por query string — la misma
+> regla que al entrar desde categorías. Un enlace `GET` no puede escribir en la
+> sesión, así que el resultado apunta a `search.producto`, que la escribe y
+> redirige. Esa ruta revalida `unidades.ver`: es una URL adivinable.
+
+`scopeBuscar()` se añadió a `Producto` (nombre, SKU, modelo) y a `Unidad`
+(serial, código interno y, en cascada, su producto), junto a los que ya tenían
+`Venta`, `Cliente` y `Persona`. La búsqueda global no inventa criterios propios:
+usa los mismos que cada listado.
+
+### La prueba que llevaba tiempo en rojo (2026-08-29)
+
+`ProductoCrudTest::test_al_llegar_desde_categorias_...` comprobaba el texto
+«Mostrando productos de», que ya no existe en ninguna vista: el encabezado del
+listado se rediseñó y ahora dice «Explorando la categoría». **El filtrado nunca
+se rompió**; lo que se quedó atrás fue la prueba.
+
+Una suite con un fallo permanente deja de servir de alarma: cuando salga el
+segundo, nadie lo va a notar. La prueba ahora se ancla al texto vigente.
+
 ### Cierre de caja (2026-08-29)
 
 El punto de venta cobraba en efectivo desde el primer dia y **nadie cuadraba al

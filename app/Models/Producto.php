@@ -69,4 +69,23 @@ class Producto extends Model
     {
         return $query->where('activo', true);
     }
+
+    /**
+     * Búsqueda por lo que el mostrador tiene a mano: el nombre que dice el
+     * cliente, el SKU de la etiqueta o el modelo impreso en el aparato.
+     */
+    public function scopeBuscar(Builder $query, ?string $termino): Builder
+    {
+        $termino = trim((string) $termino);
+
+        if ($termino === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($termino) {
+            foreach (['nombre', 'sku', 'modelo'] as $campo) {
+                $q->orWhere($campo, 'like', "%{$termino}%");
+            }
+        });
+    }
 }

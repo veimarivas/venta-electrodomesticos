@@ -126,6 +126,25 @@ class Unidad extends Model
     }
 
     /**
+     * Búsqueda por el aparato concreto: su serial, su código interno o el
+     * producto al que pertenece.
+     */
+    public function scopeBuscar(Builder $query, ?string $termino): Builder
+    {
+        $termino = trim((string) $termino);
+
+        if ($termino === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($termino) {
+            $q->where('serial', 'like', "%{$termino}%")
+                ->orWhere('codigo_interno', 'like', "%{$termino}%")
+                ->orWhereHas('producto', fn (Builder $p) => $p->buscar($termino));
+        });
+    }
+
+    /**
      * ¿Esta unidad se puede vender ahora mismo?
      */
     public function esVendible(): bool

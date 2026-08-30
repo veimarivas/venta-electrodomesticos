@@ -22,8 +22,8 @@ desaparecer.
 | | Qué | Esfuerzo |
 |---|---|---|
 | ⬜ | **Los tres procesos del servidor no están corriendo** | 1 tarde |
-| ⬜ | **El buscador del panel no busca** | 1 día |
-| ⬜ | **Una prueba lleva tiempo en rojo** | 2 horas |
+| ✅ | **El buscador del panel no busca** | 1 día |
+| ✅ | **Una prueba lleva tiempo en rojo** | 2 horas |
 
 ### Los tres procesos del servidor
 
@@ -38,19 +38,24 @@ los de venta, y sin `reverb` el panel «en vivo» se queda esperando.
 
 > Es el único punto de esta ruta donde lo que está en juego no es comodidad.
 
-### El buscador del panel
+### El buscador del panel ✅
 
-`SearchController` devuelve `'results' => []`. Siempre. Está en la barra
-superior de todas las pantallas, la gente lo usa y nunca encuentra nada, lo que
-enseña a desconfiar del sistema entero. Conectarlo a productos, seriales y
-ventas es un día; quitarlo del topbar, diez minutos. Cualquiera de las dos es
-mejor que dejarlo mintiendo.
+Hecho el 2026-08-29. Busca lo que su propio recuadro promete —producto, serial y
+venta— y cada resultado lleva a algo: el producto a su inventario, el aparato
+vendido a su venta, la venta a su ficha. Solo aparece lo que el usuario tiene
+permiso de ver.
 
-### La prueba en rojo
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
 
-`ProductoCrudTest::test_al_llegar_desde_categorias_el_listado_se_abre_filtrado_sin_exponer_la_url`
-falla también en `main` limpio. Una suite con un fallo permanente deja de servir
-de alarma: cuando salga el segundo, nadie lo va a notar.
+**Lo que queda de esta pieza:** clientes y compras, que hoy no se buscan porque
+no tienen a dónde llevar; y sugerencias mientras se escribe, en vez de tener que
+enviar el formulario.
+
+### La prueba en rojo ✅
+
+Hecho el 2026-08-29. Comprobaba un texto del encabezado que el rediseño del
+listado había cambiado; el filtrado por categoría nunca se rompió. La suite
+vuelve a estar entera en verde, que es lo que la hace servir de alarma.
 
 ---
 
@@ -170,10 +175,10 @@ Conviene confirmar en qué régimen está la tienda antes de estimar nada.
 ## Por dónde empezar
 
 1. **Esta semana** — dejar corriendo los tres procesos del servidor y comprobar
-   que la copia del día siguiente existe de verdad. Sin eso, todo lo demás es
-   opcional.
-2. **A continuación** — devolución y cierre de caja. Son las dos más baratas de
-   la fase 1 y las que quitan fricción diaria desde el primer día.
+   que la copia del día siguiente existe de verdad. Es lo único que queda de la
+   fase 0 y no es trabajo de código: sin eso, todo lo demás es opcional.
+2. ~~Devolución y cierre de caja~~ — hechas. Eran las dos más baratas de la fase
+   1 y las que quitan fricción diaria desde el primer día.
 3. **El proyecto grande** — venta a crédito, cuando no haya otra cosa a medias.
 4. **En paralelo** — las piezas de la fase 2. Son pequeñas, independientes y no
    bloquean nada.

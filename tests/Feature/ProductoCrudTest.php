@@ -118,7 +118,7 @@ class ProductoCrudTest extends TestCase
 
         $respuesta
             ->assertOk()
-            ->assertSee('Mostrando productos de')
+            ->assertSee('Explorando la categoría', false)
             ->assertSee('Audio')
             ->assertSee('Parlante X')
             ->assertSee('Parlante Y')
