@@ -188,6 +188,12 @@ QR.
 botón está en *Ventas → Historial*, dentro del detalle de cada venta. Las ventas
 anuladas también se pueden reimprimir, pero el recibo lo dice bien grande arriba.
 
+> **La garantía cuenta desde el día de la venta**, no desde que el aparato entró
+> al almacén. Hasta el 2026-08-30 se contaba desde la entrada, así que un
+> aparato que había pasado meses en la bodega salía con la garantía recortada en
+> el recibo. Los recibos ya impresos no se pueden rehacer; desde ahora la fecha
+> es la correcta, y siempre a favor del cliente.
+
 ### Programar una entrega
 
 Un refrigerador no sale en la mano del cliente. La entrega se programa **desde
@@ -444,7 +450,66 @@ que existe el kardex.
 
 ---
 
-## 7. Reportes
+## 7. Servicio técnico
+
+Cuando el cliente vuelve con una lavadora que no enciende, el aparato entra al
+taller y se le da un papel con un número para volver.
+
+### Recibir un aparato
+
+*Servicio técnico → **Recibir aparato***. Escanea o teclea el **serial** —el
+taller trabaja sobre un aparato concreto, no sobre un modelo— y elígelo de la
+lista. En cuanto lo eliges, el sistema dice **si está en garantía y hasta
+cuándo**.
+
+Anota qué le pasa *según el cliente*, para cuándo se lo prometiste y, si no está
+en garantía, cuánto se le va a cobrar. Al guardar sale el número de orden
+(`REP-2026-000123`): ese es el que se le apunta al cliente.
+
+> **En garantía no se cobra**, y el campo del costo ni siquiera deja escribir un
+> importe. La cobertura **se congela** al abrir la orden: si mañana alguien
+> cambia los meses de garantía del producto, esta reparación sigue siendo de
+> garantía.
+
+> **Un aparato no entra dos veces.** Si ya tiene una orden abierta, el sistema
+> te lo dice en vez de partir su historial en dos. Cerrada la anterior, puede
+> volver las veces que haga falta.
+
+Mientras está en el taller, el aparato **sale de la venta**: aparece como *En
+taller* y no se puede vender. Todo queda en el kardex de esa unidad.
+
+### El trabajo del taller
+
+En la lista, cada orden abierta tiene sus botones:
+
+| Botón | Qué hace |
+|---|---|
+| 🩺 **Diagnóstico** | Lo que encontró el técnico, y el costo si cambia |
+| ⏱ **Esperando repuesto** | Falta una pieza. Queda anotado con la fecha |
+| ✔ **Ya está lista** | Hay que anotar qué se le hizo: es lo que se le explica al cliente |
+| ✕ **No tiene arreglo** | El costo se pone en cero — no se cobra mano de obra que no arregló nada |
+| 🗑 **Cancelar** | Se recibió por error. El aparato vuelve al estado en que entró |
+
+### Entregar el aparato
+
+Cuando el cliente viene a recogerlo, **Entregar**. Hay que anotar quién se lo
+lleva, por lo mismo que en las entregas a domicilio. El aparato vuelve solo al
+estado del que salió: si era vendido vuelve a vendido, y si era de stock vuelve
+al stock.
+
+**Lo que no tiene arreglo también se entrega**: el aparato sigue siendo del
+cliente y viene a recogerlo igual.
+
+> **Atrasada es lo prometido y no hecho.** Una orden que ya está *lista* y que el
+> cliente no viene a recoger **no cuenta como atrasada**: el taller cumplió.
+
+**Quién puede qué:** en el mostrador se *recibe* y se *entrega*; diagnosticar,
+dar por lista y declarar sin arreglo lo firma el técnico. De fábrica el vendedor
+tiene lo primero y no lo segundo.
+
+---
+
+## 8. Reportes
 
 *Reportes*, una sola pantalla con atajos de período (hoy / semana / mes / año) o
 rango propio:
@@ -468,7 +533,7 @@ es donde tiene contexto.
 
 ---
 
-## 8. Personal y accesos
+## 9. Personal y accesos
 
 **Personas** — los datos personales de todo el mundo. Es la base: un trabajador
 y un cliente pueden ser la misma persona, y su celular se corrige en un solo
@@ -492,7 +557,7 @@ puede quitar el propio rol de admin, ni eliminar al único que queda.
 
 ---
 
-## 9. Dashboard y app del teléfono
+## 10. Dashboard y app del teléfono
 
 El **dashboard** muestra los indicadores del día y las últimas ventas. El panel
 *Ventas en vivo* se actualiza solo, sin recargar, cuando alguien cobra. Si se
@@ -894,7 +959,7 @@ y escribe los dígitos que van impresos bajo las barras.
 
 ---
 
-## 10. Preguntas frecuentes
+## 11. Preguntas frecuentes
 
 **No encuentro un aparato al vender.**
 No está *en stock*. Búscalo en el Kardex por su serial: ahí verás en qué estado

@@ -97,6 +97,17 @@ return [
         ],
     ],
 
+    // Sección propia y no dentro de Ventas: el taller es su propio trabajo, con
+    // su tablero y su técnico, y por aquí pasan también aparatos que la tienda
+    // nunca vendió —los que llegaron fallados del proveedor—.
+    [
+        'label' => 'Servicio técnico',
+        'icon' => 'ri-tools-line',
+        'route' => 'reparaciones.index',
+        'active' => 'reparaciones*',
+        'permission' => 'reparaciones.ver',
+    ],
+
     ['type' => 'title', 'label' => 'Personal'],
 
     [

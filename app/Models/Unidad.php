@@ -47,7 +47,10 @@ class Unidad extends Model
         'vendido' => 'Vendido',
         'devuelto' => 'Devuelto',
         'danado' => 'Dañado',
-        'garantia' => 'En garantía',
+        // «En taller» y no «En garantía»: por aquí pasan también las
+        // reparaciones que el cliente paga, y llamarlas garantía haría creer
+        // que no se cobran.
+        'garantia' => 'En taller',
         'perdido' => 'Perdido',
     ];
 
@@ -69,15 +72,25 @@ class Unidad extends Model
     }
 
     /**
-     * Garantía calculada desde el producto: ingresado_en + meses_garantia.
+     * Hasta cuándo está cubierto este aparato.
+     *
+     * Los meses viven en el producto; la fecha desde la que se cuentan, aquí.
      * Se mantiene como accessor para que `$unidad->garantia_hasta` siga
-     * funcionando aunque la columna ya no exista en DB (garantía vive en producto).
+     * funcionando aunque la columna ya no exista en DB.
+     *
+     * **Cuenta desde la venta, no desde que entró al almacén.** Contarla desde
+     * `ingresado_en` le quitaba al cliente todo el tiempo que el aparato pasó
+     * en la bodega: un refrigerador con 12 meses que estuvo 8 en el depósito
+     * llegaba a su casa con 4, y esa fecha recortada es la que se imprimía en
+     * su recibo. Mientras el aparato no se ha vendido se cuenta desde que
+     * entró, que es la garantía que el proveedor le dio a la tienda.
      */
     protected function garantiaHasta(): Attribute
     {
         return Attribute::get(function (): ?\Carbon\CarbonInterface {
-            $ingresado = $this->ingresado_en;
-            if (! $ingresado) {
+            $desde = $this->vendido_en ?? $this->ingresado_en;
+
+            if (! $desde) {
                 return null;
             }
 
@@ -89,8 +102,17 @@ class Unidad extends Model
                 return null;
             }
 
-            return \Carbon\Carbon::parse($ingresado)->addMonths($meses);
+            // `addMonthsNoOverflow`: comprado un 31 de enero, la garantía de
+            // un mes vence el 28 de febrero y no el 3 de marzo.
+            return \Carbon\Carbon::parse($desde)->addMonthsNoOverflow($meses);
         });
+    }
+
+    /** ¿Sigue cubierto hoy? */
+    protected function enGarantia(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->garantia_hasta !== null
+            && $this->garantia_hasta->endOfDay()->isFuture());
     }
 
     public function producto(): BelongsTo
@@ -106,6 +128,12 @@ class Unidad extends Model
     public function ventaDetalle(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(\App\Models\VentaDetalle::class);
+    }
+
+    /** Sus pasos por el taller, del más reciente al más antiguo. */
+    public function reparaciones(): HasMany
+    {
+        return $this->hasMany(Reparacion::class)->latest('recibida_en')->latest('id');
     }
 
     /**

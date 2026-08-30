@@ -187,6 +187,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Inventario' => null, 'Unidades' => null],
     ])->middleware('permission:unidades.ver')->name('inventario.unidades.index');
 
+    Route::view('/reparaciones', 'backend.reparaciones.index', [
+        'title' => 'Servicio técnico',
+        'breadcrumbs' => ['Inicio' => null, 'Servicio técnico' => null],
+    ])->middleware('permission:reparaciones.ver')->name('reparaciones.index');
+
     Route::view('/inventario/kardex', 'backend.inventario.kardex', [
         'title' => 'Kardex',
         'breadcrumbs' => ['Inicio' => null, 'Inventario' => null, 'Kardex' => null],

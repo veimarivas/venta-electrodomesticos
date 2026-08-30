@@ -85,6 +85,9 @@ erDiagram
     ENTREGAS   ||--o{ ENTREGA_DETALLES : detalle
     VENTA_DETALLES ||--o{ ENTREGA_DETALLES : "viaja en"
     USERS      ||--o{ ENTREGAS : reparte
+    UNIDADES   ||--o{ REPARACIONES : "pasa por el taller"
+    VENTAS     ||--o{ REPARACIONES : "de la venta"
+    USERS      ||--o{ REPARACIONES : atiende
     CUOTAS     ||--o{ PAGOS_CREDITO : "se cobra en"
     CAJAS      ||--o{ PAGOS_CREDITO : "entran al turno"
     CAJAS      ||--o{ VENTAS : "turno"
@@ -302,6 +305,29 @@ ganancia (decimal 12,2), timestamps
 > Sigue siendo una garantía **a nivel de base de datos**, que es lo que importa: no basta con comprobarlo en PHP, porque dos cajeros escaneando el mismo aparato a la vez pasarían la comprobación y solo el índice único frena la segunda venta.
 >
 > `costo_unitario` se copia de `unidades.costo_unitario` en el momento de la venta: si mañana cambia el costo del producto, la ganancia histórica no debe moverse.
+
+**`reparaciones`** — orden de servicio técnico *(implementada 2026-08-30)*
+```
+id, codigo (unique, REP-2026-000123), unidad_id (FK),
+venta_id (FK nullable), cliente_id (FK nullable),
+en_garantia (bool), garantia_hasta (date nullable),
+falla_reportada, diagnostico (nullable), trabajo_realizado (nullable),
+estado (recibida|en_reparacion|esperando_repuesto|lista|entregada|irreparable|cancelada),
+costo (decimal 12,2), tecnico_id (FK users nullable), prometida_para (date nullable),
+recibida_en, lista_en (nullable), entregada_en (nullable), entregada_a (nullable),
+estado_unidad_origen, recibida_por (FK users), notas, timestamps
+
+ÍNDICES: index(estado, prometida_para), index(unidad_id, recibida_en)
+```
+> Modelo `Reparacion`. **Ninguna columna nueva en `unidades`**: el estado `garantia` del enum original ya estaba reservado para esto, y la etiqueta pasó de «En garantía» a «En taller» porque por ahí pasan también las reparaciones que el cliente paga.
+>
+> **`en_garantia` y `garantia_hasta` se congelan al recibir.** Deducirlos al leer los ataría a `productos.meses_garantia`, que alguien puede cambiar mañana: una orden aceptada como garantía aparecería después como cobrable. Mismo criterio que el costo congelado de la venta.
+>
+> **`estado_unidad_origen`** es de dónde volver al salir del taller. Un aparato vendido vuelve a `vendido`; uno de stock que llegó fallado del proveedor, a `en_stock`. Adivinarlo mal devuelve al catálogo un aparato que ya tiene dueño.
+>
+> `venta_id` y `cliente_id` son nullables: por el taller pasan también unidades que nunca se vendieron.
+>
+> **Con código propio**, al revés que las entregas: el cliente se va sin su aparato y con un papel en la mano, y ese papel necesita un número con el que volver.
 
 **`entregas`** — orden de entrega a domicilio *(implementada 2026-08-29)*
 ```
@@ -851,6 +877,106 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+
+### Garantía y servicio técnico (2026-08-30)
+
+El sistema sabía decir si un aparato estaba en garantía y ahí terminaba. Cuando
+el cliente volvía con una lavadora que no enciende, empezaba un rastro en papel.
+
+La pieza salió pequeña, como estaba previsto, porque **casi todo ya existía**:
+el kardex, el estado `garantia` de `unidades` —reservado desde el primer día,
+la API lo describe como «salió a reparación y no es vendible mientras tanto»— y
+`productos.meses_garantia`. Una tabla nueva y ninguna columna más en `unidades`.
+
+#### La garantía contaba desde el almacén, no desde la venta
+
+Es lo primero que salió al mirar el accessor, y era un fallo con cara al
+cliente. `Unidad::garantiaHasta()` contaba `ingresado_en + meses_garantia`: un
+refrigerador con 12 meses que pasó 8 en el depósito llegaba a casa del comprador
+con 4.
+
+Y esa fecha recortada **es la que se imprime en el recibo** (`ventas/recibo`),
+en el historial y en la API. Ahora cuenta desde `vendido_en` si el aparato se
+vendió, y desde `ingresado_en` si sigue en stock —que ahí sí es la garantía que
+el proveedor le dio a la tienda—. También pasa a `addMonthsNoOverflow`, por lo
+mismo que las cuotas: comprado un 31 de enero, un mes vence el 28 de febrero.
+
+> **Cambia un número que ya se venía enseñando.** Lo alarga, nunca lo acorta, y
+> lo alarga hacia lo que el cliente creía tener. Los recibos ya impresos no se
+> pueden rehacer, pero desde ahora dicen la verdad.
+
+#### La cobertura se congela al recibir
+
+`reparaciones.en_garantia` y `garantia_hasta` se calculan una vez, al abrir la
+orden, y se guardan.
+
+Deducirlos al leer los ataría a `productos.meses_garantia`, que alguien puede
+cambiar mañana: una reparación aceptada como garantía aparecería meses después
+como cobrable, y al revés. Es el mismo criterio por el que la venta congela su
+costo.
+
+En garantía el costo se fuerza a cero y no se acepta otro: un importe guardado
+en una orden de garantía es una promesa rota por escrito.
+
+#### El aparato vuelve al estado del que salió
+
+Entrar al taller pone la unidad en `garantia` y escribe el kardex. Salir la
+devuelve — y **de dónde volver se guarda**, en `estado_unidad_origen`.
+
+No es lo mismo un aparato vendido que vuelve por garantía que uno de stock que
+llegó fallado del proveedor: al primero hay que devolverle su `vendido` y al
+segundo su `en_stock`. Adivinarlo mal devuelve al catálogo un aparato que ya
+tiene dueño.
+
+> El primer intento guardaba el estado de origen como una marca `[origen:...]`
+> al final de las notas. Funcionaba y era horrible: una cadena mágica dentro de
+> un campo que el usuario lee. Una columna cuesta lo mismo y se explica sola.
+
+#### La máquina de estados
+
+```
+recibida ──▶ en_reparacion ⇄ esperando_repuesto ──▶ lista ──▶ entregada
+                   │
+                   └──▶ irreparable ──────────────────────────▶ entregada
+
+cualquiera abierta ──▶ cancelada
+```
+
+`irreparable` **también se entrega**: el aparato sigue siendo del cliente y
+viene a recogerlo aunque no tenga arreglo. Por eso no cierra la orden por sí
+solo — el aparato está en el taller hasta que alguien se lo lleva.
+
+Y sin arreglo el costo se pone en cero: no se cobra mano de obra que no arregló
+nada.
+
+#### Lo atrasado es lo prometido y no hecho
+
+Una orden `lista` que el cliente no viene a recoger **no está atrasada**: el
+taller cumplió. `scopeAtrasadas` excluye `lista` a propósito, y sin fecha
+prometida no hay atraso — igual que en las entregas.
+
+#### Un aparato no entra dos veces
+
+Se comprueba que no haya otra orden abierta sobre la misma unidad: dos órdenes
+partirían el historial de una misma reparación en dos. Cerrada la anterior, el
+mismo aparato puede volver las veces que haga falta, y cada vuelta es una orden
+más en su historia.
+
+#### Recibir y atender son dos permisos
+
+`reparaciones.recibir` es aceptar el aparato en el mostrador; `reparaciones.
+atender` es el trabajo del técnico —diagnosticar, dar por lista, declarar sin
+arreglo—. El rol `vendedor` tiene el primero y no el segundo.
+
+**Entregar es la excepción**: lo puede hacer cualquiera de los dos, porque el
+cliente viene a recoger su aparato y no siempre hay alguien del taller delante.
+
+#### Código propio, al revés que las entregas
+
+Aquí sí hay `REP-2026-000123`. La diferencia con las entregas es que el cliente
+**se va sin su aparato y con un papel en la mano**, y ese papel necesita un
+número con el que volver. `GeneradorCodigoReparacion` tiene la misma forma que
+el de ventas, unicidad garantizada por el índice y reintento ante duplicado.
 
 ### Entrega a domicilio e instalación (2026-08-29)
 

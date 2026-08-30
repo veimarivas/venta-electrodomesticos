@@ -59,10 +59,14 @@ vuelve a estar entera en verde, que es lo que la hace servir de alarma.
 
 ---
 
-## Fase 1 — Lo que la tienda hace y el sistema no
+## Fase 1 — Lo que la tienda hace y el sistema no ✅
 
-El grueso del valor. No son mejoras del software existente: son partes del
-negocio que hoy viven fuera, en cuadernos y en la memoria de quien atiende.
+**Completa el 2026-08-30.** Era el grueso del valor, y no eran mejoras del
+software existente: eran partes del negocio que vivían fuera, en cuadernos y en
+la memoria de quien atiende. Ya no.
+
+Lo que queda de cada pieza está anotado abajo, y casi todo apunta al mismo
+sitio: **el teléfono**. Eso es la fase 2.
 
 | | Qué | Esfuerzo |
 |---|---|---|
@@ -70,7 +74,7 @@ negocio que hoy viven fuera, en cuadernos y en la memoria de quien atiende.
 | ✅ | **Cierre de caja** | 1 semana |
 | ✅ | **Venta a crédito y cuotas** | 2–3 semanas |
 | ✅ | **Entrega e instalación** | 1–2 semanas |
-| ⬜ | **Garantía y servicio técnico** | 2 semanas |
+| ✅ | **Garantía y servicio técnico** | 2 semanas |
 
 ### Devolución y cambio ✅
 
@@ -133,17 +137,26 @@ El detalle de por qué está así, en [PLAN.md](PLAN.md).
 media razón para hacerla —quien reparte lleva el móvil, no el panel—; y avisar
 al cliente de que su aparato sale hoy.
 
-### Garantía y servicio técnico
+### Garantía y servicio técnico ✅
 
-**Hoy:** `productos.meses_garantia` calcula una fecha (`garantia_hasta`) y ahí
-termina.
+Hecho el 2026-08-30. *Servicio técnico* recibe el aparato buscándolo por su
+serial, dice al momento si está en garantía y abre una orden con su número —el
+papel con el que vuelve el cliente—. De ahí pasa por diagnóstico, espera de
+repuesto si hace falta, y se entrega. El aparato sale del stock mientras está en
+el taller y vuelve solo al estado del que salió, con todo en el kardex.
 
-El sistema sabe decir si un aparato está en garantía, pero no qué hacer después.
-Cuando el cliente vuelve con una lavadora que no enciende, empieza un rastro en
-papel.
+Salió pequeña, como estaba previsto: una tabla nueva y ninguna columna más en
+`unidades`.
 
-La pieza que falta es pequeña porque **el kardex ya existe**: una reparación es
-otro tipo de movimiento sobre una unidad ya identificada por serial.
+**De paso apareció un fallo con cara al cliente:** la garantía se contaba desde
+que el aparato entró al almacén, no desde que se vendió. Un refrigerador con 12
+meses que pasó 8 en el depósito llegaba a casa del comprador con 4 — y esa fecha
+recortada era la que se imprimía en su recibo.
+
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda de esta pieza:** el comprobante impreso de la orden para dárselo
+al cliente, y avisarle cuando su aparato está listo —hoy hay que llamarlo—.
 
 ---
 
@@ -157,6 +170,7 @@ trabajar».
 |---|---|---|
 | ⬜ | Marcar entregas desde el teléfono | 4 días |
 | ⬜ | Cobrar cuotas desde el teléfono | 4 días |
+| ⬜ | Recibir y consultar reparaciones desde el teléfono | 4 días |
 | ⬜ | Recepcionar compras desde el teléfono | 1 semana |
 | ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
 | ⬜ | Editar el propio perfil y la ficha del cliente | 2 días |
@@ -190,15 +204,15 @@ Conviene confirmar en qué régimen está la tienda antes de estimar nada.
 1. **Esta semana** — dejar corriendo los tres procesos del servidor y comprobar
    que la copia del día siguiente existe de verdad. Es lo único que queda de la
    fase 0 y no es trabajo de código: sin eso, todo lo demás es opcional.
-2. ~~Devolución, cierre de caja, venta a crédito y entregas~~ — hechas. De la
-   fase 1 solo queda **garantía y servicio técnico**, y es la más chica de todas
-   porque el kardex ya existe: una reparación es otro tipo de movimiento sobre
-   una unidad ya identificada por serial.
-3. **A continuación** — esa. Cierra el círculo: el sistema ya sabe decir si un
-   aparato está en garantía, pero no qué hacer después.
-4. **En paralelo** — las piezas de la fase 2. Son pequeñas, independientes y no
-   bloquean nada. Ahora hay dos más, y las dos son la otra mitad de algo ya
-   hecho: marcar entregas y cobrar cuotas desde el teléfono.
+2. ~~La fase 1 entera~~ — hecha el 2026-08-30. El sistema ya cubre lo que la
+   tienda hace todos los días, del cobro a la reparación.
+3. **A continuación** — la **fase 2**, que ahora es la que manda. Ha crecido con
+   lo que dejó cada pieza nueva: entregas y cuotas desde el teléfono. Son cinco
+   trabajos pequeños e independientes, y juntos son la diferencia entre «la app
+   sirve para vender» y «sirve para trabajar».
+4. **Antes de la fase 3, una decisión** — no un desarrollo: confirmar el régimen
+   fiscal de la tienda. Es lo único que puede obligar a rehacer trabajo ya
+   hecho, y averiguarlo es gratis.
 
 > **Sobre el orden.** La tentación era empezar por lo vistoso. Pero el crédito
 > toca la tabla de ventas y las devoluciones también; hacerlos a la vez obligaba
