@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CatalogoController;
 use App\Http\Controllers\Api\V1\CategoriaController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
+use App\Http\Controllers\Api\V1\CreditoController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DispositivoController;
 use App\Http\Controllers\Api\V1\EntregaController;
@@ -314,6 +315,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/entregas', [EntregaController::class, 'index'])->name('entregas.index');
             Route::get('/entregas/{entrega}', [EntregaController::class, 'show'])->name('entregas.show');
         });
+
+        // Cartera. Escribe por lo mismo que las entregas: cobrar una cuota
+        // pasa en el mostrador o en la puerta del cliente. Abrir un crédito
+        // no está aquí — eso ocurre al cobrar la venta, con el plan delante.
+        Route::middleware('permission:creditos.ver')->group(function () {
+            Route::get('/creditos', [CreditoController::class, 'index'])->name('creditos.index');
+            Route::get('/creditos/{credito}', [CreditoController::class, 'show'])->name('creditos.show');
+        });
+
+        Route::post('/creditos/{credito}/cobrar', [CreditoController::class, 'cobrar'])
+            ->middleware('permission:creditos.cobrar')->name('creditos.cobrar');
 
         Route::middleware('permission:entregas.gestionar')->group(function () {
             Route::post('/entregas/{entrega}/despachar', [EntregaController::class, 'despachar'])

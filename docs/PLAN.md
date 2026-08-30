@@ -878,6 +878,69 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### Cobrar cuotas desde el teléfono (2026-08-30)
+
+Tercera parte de la API que escribe, después del POS y las entregas, y por la
+misma clase de razón: cobrar una cuota pasa en el mostrador o en la puerta del
+cliente, no delante del panel.
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /creditos` (filtros `filtro`, `buscar`) | `creditos.ver` |
+| `GET /creditos/{credito}` | `creditos.ver` |
+| `POST /creditos/{credito}/cobrar` | `creditos.cobrar` |
+
+**Abrir un crédito no está en la API.** Eso ocurre al cobrar la venta, con el
+plan entero delante; y `creditos.crear` sigue siendo un permiso que el vendedor
+no tiene. La separación de los dos permisos se nota aquí: la app deja mirar la
+cartera a quien solo tiene `creditos.ver` y cobrar solo a quien tiene
+`creditos.cobrar`.
+
+#### `cobrar` devuelve el crédito, no el pago
+
+Tras cobrar, lo que la pantalla necesita repintar es el **saldo y el estado de
+las cuotas**, no la fila que acaba de insertar. Devolver el pago obligaría a
+una segunda petición para lo único que se va a mirar.
+
+Y tampoco se elige la cuota desde el móvil: el servicio imputa de la más
+antigua a la más nueva. Dejar elegir permitiría saldar la de diciembre dejando
+viva la de agosto.
+
+#### El saldo llega por dos caminos y el recurso los distingue
+
+En el listado se suma en SQL con `withSum` —cargar las cuotas de toda la
+cartera para restar dos columnas no cabe en memoria—; en la ficha se calcula
+sobre las cuotas ya cargadas. `CreditoResource` mira **los atributos crudos**
+del modelo para saber cuál tiene:
+
+```php
+$atributos = $this->resource->getAttributes();
+if (isset($atributos['comprometido'], $atributos['cobrado'])) { … }
+```
+
+Con `$this->comprometido` a secas no valdría: bajo `Model::shouldBeStrict()`,
+leer una columna que la consulta no trajo **lanza excepción** en vez de
+devolver null.
+
+Lo mismo con `esta_en_mora`, que solo se envía si las cuotas están cargadas: su
+accessor las pediría por su cuenta y el lazy loading está deshabilitado.
+
+#### En la app
+
+Dos pantallas colgando de **Ventas**, junto a las entregas: la cartera con sus
+chips —vigentes, vencidos, esta semana— y el estado de cuenta con el plan, los
+pagos y el botón de cobrar.
+
+El diálogo **propone el importe de la cuota que toca** porque es lo que se
+cobra casi siempre, pero se puede cambiar: hay quien trae dos juntas y quien
+trae la mitad. Si el método no es efectivo pide el comprobante, igual que el
+panel.
+
+Cuando el servidor rechaza el cobro, la app **enseña su mensaje tal cual** —«el
+pago supera el saldo del crédito»—: un «algo salió mal» genérico no orienta a
+nadie en el mostrador. Por eso el controlador traduce los `RuntimeException` a
+422 en vez de dejarlos subir a 500.
+
 ### Entregas desde el teléfono (2026-08-30)
 
 La mitad que le faltaba al módulo: quien reparte lleva el móvil, no el panel.

@@ -889,6 +889,36 @@ marcador — llamar antes de salir evita el viaje en balde.
 
 ---
 
+### La cartera desde el teléfono
+
+Se entra por el icono de billetera en la cabecera de **Ventas**.
+
+Arranca por los **vigentes**, que es a quien hay que cobrar. Los chips filtran
+por *vencidos*, *esta semana*, *pagados* o *todos*, y arriba se ve cuánto suma
+lo que estás mirando — el número que se mira antes de salir a cobrar.
+
+Cada tarjeta trae el cliente, su saldo, lo financiado y **la cuota que toca**
+con su fecha; si está vencida, en rojo.
+
+Toca una para ver el estado de cuenta: el plan entero cuota por cuota, los
+pagos recibidos con su número de recibo, y el botón **Registrar pago**.
+
+El diálogo viene con **el importe de la cuota que toca ya escrito**, y se puede
+cambiar: hay quien trae dos juntas y quien trae la mitad. Si el pago no es en
+efectivo, pide el número de comprobante del banco.
+
+> **No se elige qué cuota se paga**, ni desde el teléfono ni desde el panel: el
+> dinero se aplica de la más antigua a la más nueva. Y no se acepta un pago
+> mayor que el saldo.
+
+> **Abrir un crédito no se hace desde el teléfono.** Eso ocurre al cobrar la
+> venta, con el plan entero delante.
+
+Si el sistema rechaza el cobro, te dice el motivo con esas palabras —«el pago
+supera el saldo del crédito»—, no un «algo salió mal».
+
+---
+
 ### Inventario desde el teléfono
 
 Es la pantalla del almacén: se usa **de pie, con el aparato en la mano**. Se

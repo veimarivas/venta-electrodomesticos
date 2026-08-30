@@ -169,7 +169,7 @@ trabajar».
 | | Qué | Esfuerzo |
 |---|---|---|
 | ✅ | Marcar entregas desde el teléfono | 4 días |
-| ⬜ | Cobrar cuotas desde el teléfono | 4 días |
+| ✅ | Cobrar cuotas desde el teléfono | 4 días |
 | ⬜ | Recibir y consultar reparaciones desde el teléfono | 4 días |
 | ⬜ | Recepcionar compras desde el teléfono | 1 semana |
 | ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
@@ -190,6 +190,21 @@ El detalle de por qué está así, en [PLAN.md](PLAN.md).
 
 **Lo que queda:** tocar el teléfono para marcar en vez de copiarlo —necesita el
 paquete `url_launcher`—, y un mapa o enlace a la dirección.
+
+### Cobrar cuotas desde el teléfono ✅
+
+Hecho el 2026-08-30. Dos pantallas colgando de *Ventas*: la cartera —con chips
+de vigentes, vencidos y los que vencen esta semana— y el estado de cuenta de
+cada crédito, con su plan, sus pagos y el botón de cobrar.
+
+El cobro propone el importe de la cuota que toca y se puede cambiar. Sigue sin
+poder elegirse **qué** cuota se paga: el servidor imputa de la más antigua a la
+más nueva. Abrir un crédito tampoco se hace desde el móvil — eso ocurre al
+cobrar la venta.
+
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda:** el recibo del pago para mandárselo al cliente por WhatsApp.
 
 ---
 
