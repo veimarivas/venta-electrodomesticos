@@ -443,9 +443,19 @@ cachés (`php artisan optimize:clear`).
 
 ## 7. La app del teléfono
 
-La app móvil (`../electronica_hogar_app`) habla con este mismo servidor por
-`/api/v1`, con tokens de Sanctum. No hay nada que instalar en el servidor para
-que funcione: la API ya va montada con la aplicación web.
+La app móvil habla con este mismo servidor por `/api/v1`, con tokens de
+Sanctum. No hay nada que instalar en el servidor para que funcione: la API ya
+va montada con la aplicación web.
+
+| | |
+|---|---|
+| Código | <https://github.com/veimarivas/venta-electrodomesticos-app> |
+| En este equipo | `../electronica_hogar_app` |
+
+> **Es un repositorio aparte del backend**, y a propósito: se compilan, se
+> versionan y se reparten por caminos distintos —uno se despliega en el
+> servidor, el otro se instala en teléfonos—. Lo que sí tienen que ir
+> acompasados son las versiones: cada APK declara qué endpoints necesita.
 
 **La dirección del servidor se congela al compilar el APK**, no es un ajuste
 dentro de la app:
