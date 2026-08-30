@@ -857,6 +857,38 @@ precios o mirar el inventario **con la cuenta de otra persona**.
 
 ---
 
+### Entregas desde el teléfono
+
+La pantalla del camión. Se entra por el icono de camión en la cabecera de
+**Ventas**.
+
+Arranca por lo abierto, que es lo que da trabajo. El primer chip, **Lo mío**,
+deja solo las entregas que llevas tú — es lo que se toca al arrancar la
+mañana. Los demás filtran por *para hoy*, *atrasadas* o *todas*.
+
+Cada tarjeta trae lo que hace falta en la calle sin abrir nada: la dirección, la
+referencia, el cliente, el día acordado y **el serial de cada aparato**, que es
+lo que se comprueba antes de cargar.
+
+| Botón | Cuándo |
+|---|---|
+| **Salgo** | Al cargar el camión. Queda registrado a tu nombre y con la hora |
+| **Entregada** | Al llegar. Hay que anotar **quién recibió**; si la entrega llevaba instalación, ahí se marca que quedó instalada |
+| **No se pudo** | No había nadie, la dirección estaba mal. Queda para reprogramar |
+
+Si hay teléfono de contacto, tocarlo **lo copia** para que lo pegues en el
+marcador — llamar antes de salir evita el viaje en balde.
+
+> **Lo que no se hace desde el teléfono es programar** una entrega. Hace falta
+> elegir aparatos de una venta y teclear una dirección, y eso se hace en el
+> mostrador con el cliente delante.
+
+> Si al confirmar te dice que la entrega ya se hizo, es que alguien la marcó
+> desde el panel mientras andabas fuera. La lista se refresca sola para que
+> veas el estado de verdad.
+
+---
+
 ### Inventario desde el teléfono
 
 Es la pantalla del almacén: se usa **de pie, con el aparato en la mano**. Se

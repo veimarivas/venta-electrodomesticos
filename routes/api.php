@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DispositivoController;
+use App\Http\Controllers\Api\V1\EntregaController;
 use App\Http\Controllers\Api\V1\MarcaController;
 use App\Http\Controllers\Api\V1\NotificacionController;
 use App\Http\Controllers\Api\V1\PersonaController;
@@ -303,6 +304,26 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('permission:ventas.ver')->group(function () {
             Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
             Route::get('/ventas/{venta}', [VentaController::class, 'show'])->name('ventas.show');
+        });
+
+        // Entregas. La otra parte que escribe, y por la misma razón que el POS:
+        // quien reparte lleva el móvil, no el panel. **Programar** una entrega
+        // no está aquí —hace falta elegir aparatos y teclear una dirección, y
+        // eso se hace en el mostrador con el cliente delante—.
+        Route::middleware('permission:entregas.ver')->group(function () {
+            Route::get('/entregas', [EntregaController::class, 'index'])->name('entregas.index');
+            Route::get('/entregas/{entrega}', [EntregaController::class, 'show'])->name('entregas.show');
+        });
+
+        Route::middleware('permission:entregas.gestionar')->group(function () {
+            Route::post('/entregas/{entrega}/despachar', [EntregaController::class, 'despachar'])
+                ->name('entregas.despachar');
+            Route::post('/entregas/{entrega}/confirmar', [EntregaController::class, 'confirmar'])
+                ->name('entregas.confirmar');
+            Route::post('/entregas/{entrega}/fallar', [EntregaController::class, 'fallar'])
+                ->name('entregas.fallar');
+            Route::post('/entregas/{entrega}/reprogramar', [EntregaController::class, 'reprogramar'])
+                ->name('entregas.reprogramar');
         });
     });
 });

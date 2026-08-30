@@ -878,6 +878,64 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
 
+### Entregas desde el teléfono (2026-08-30)
+
+La mitad que le faltaba al módulo: quien reparte lleva el móvil, no el panel.
+
+#### La segunda parte de la API que escribe
+
+Hasta ahora solo el POS escribía —«la cámara lee la etiqueta más rápido de lo
+que se teclea un serial»—. Las entregas son el segundo caso y por la misma
+clase de razón: el acto ocurre lejos del mostrador.
+
+Lo que **no** está en la API es **programar** una entrega. Hace falta elegir
+aparatos de una venta y teclear una dirección, y eso se hace con el cliente
+delante. Exponerlo por API sin un flujo pensado para el móvil invita a
+direcciones a medias.
+
+| Endpoint | Permiso |
+|---|---|
+| `GET /entregas` (filtros `filtro`, `mias`, `buscar`) | `entregas.ver` |
+| `GET /entregas/{entrega}` | `entregas.ver` |
+| `POST /entregas/{entrega}/despachar` | `entregas.gestionar` |
+| `POST /entregas/{entrega}/confirmar` | `entregas.gestionar` |
+| `POST /entregas/{entrega}/fallar` | `entregas.gestionar` |
+| `POST /entregas/{entrega}/reprogramar` | `entregas.gestionar` |
+
+#### Los errores de negocio son 422, no 500
+
+`ProgramacionDeEntregas` distingue «no se puede hacer eso» de un fallo técnico
+lanzando `RuntimeException`. El controlador la traduce a **422 con su mensaje**.
+
+Dejarla subir daría un 500, y el cliente HTTP de la app lo enseñaría como «no
+se pudo conectar con el servidor»: el repartidor creería que no hay red cuando
+lo que pasa es que la entrega ya se confirmó desde el panel.
+
+#### `despachar` sin cuerpo queda a nombre de quien llama
+
+Desde el móvil, el que despacha es casi siempre el que se lo lleva. `repartidor_
+id` sigue aceptándose para el caso de quien despacha a otro desde el mostrador.
+
+#### La app: dónde vive la pantalla
+
+Fuera del `ShellRoute`, colgando de **Ventas** por un icono en su cabecera. La
+barra inferior ya tiene cinco pestañas —el máximo razonable—, y una sexta
+habría estorbado a todos para servir a uno.
+
+Ventas y entregas son además la misma historia a dos tiempos: lo que se cobró y
+lo que falta por llevar.
+
+- El chip **«Lo mío»** primero: es lo que abre quien va conduciendo.
+- El **serial de cada aparato en la tarjeta**, sin abrir nada: es lo que se
+  comprueba antes de cargar el camión.
+- **`esta_atrasada` viaja calculada** del servidor. La fecha de un teléfono
+  puede estar mal, y «atrasada» es una decisión del servidor.
+- El teléfono de contacto **se copia al portapapeles** en vez de abrir el
+  marcador: marcar habría necesitado `url_launcher`, un paquete más para lo que
+  se resuelve pegando.
+- Tras un error, la lista **se refresca igual**: si falló porque otro la movió
+  desde el panel, hay que enseñar el estado de verdad.
+
 ### Garantía y servicio técnico (2026-08-30)
 
 El sistema sabía decir si un aparato estaba en garantía y ahí terminaba. Cuando

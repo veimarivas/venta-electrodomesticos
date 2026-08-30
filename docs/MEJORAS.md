@@ -168,12 +168,28 @@ trabajar».
 
 | | Qué | Esfuerzo |
 |---|---|---|
-| ⬜ | Marcar entregas desde el teléfono | 4 días |
+| ✅ | Marcar entregas desde el teléfono | 4 días |
 | ⬜ | Cobrar cuotas desde el teléfono | 4 días |
 | ⬜ | Recibir y consultar reparaciones desde el teléfono | 4 días |
 | ⬜ | Recepcionar compras desde el teléfono | 1 semana |
 | ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
 | ⬜ | Editar el propio perfil y la ficha del cliente | 2 días |
+
+### Marcar entregas desde el teléfono ✅
+
+Hecho el 2026-08-30. Era media razón de ser del módulo: quien reparte lleva el
+móvil, no el panel. Desde *Ventas → Entregas* en la app se ve la ruta —con el
+chip **Lo mío** para ver solo lo suyo—, se despacha, se confirma con el nombre
+de quien recibió y se anota un fallo si no se pudo. El serial de cada aparato
+va en la tarjeta, que es lo que se comprueba antes de cargar el camión.
+
+Programar sigue siendo del mostrador: hace falta elegir aparatos y teclear una
+dirección, y eso se hace con el cliente delante.
+
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda:** tocar el teléfono para marcar en vez de copiarlo —necesita el
+paquete `url_launcher`—, y un mapa o enlace a la dirección.
 
 ---
 
