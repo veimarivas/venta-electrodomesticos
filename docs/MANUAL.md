@@ -107,11 +107,71 @@ que es el que tienes en la mano.
 del cobro resume las líneas, el cliente, cómo paga y el total: una venta
 registrada solo se deshace anulándola, y la anulación queda en el histórico.
 
-Se cobra en **efectivo, QR o mixto**.
+Se cobra en **efectivo, QR, mixto o a crédito**.
 
 Al cobrar, en un solo movimiento: se emite la venta, los aparatos pasan a
 *vendido*, queda el rastro en el kardex y el aviso llega al administrador. O
 pasa todo, o no pasa nada — nunca queda media venta.
+
+### Vender a plazos
+
+Elige **Crédito** como método de pago y aparecen tres campos: la **cuota
+inicial** que el cliente adelanta ahora (puede ser cero), en **cuántas cuotas**
+paga el resto y **cuándo vence la primera**. Las demás caen el mismo día de
+cada mes.
+
+Antes de confirmar, el recuadro dice cuánto queda a deber y de cuánto es cada
+cuota. Es la parte que conviene leerle al cliente en voz alta.
+
+Tres cosas que el sistema no te deja saltarte:
+
+- **Hay que elegir el cliente.** A crédito no vale la venta al público: una
+  deuda sin deudor no se puede cobrar.
+- **La inicial no puede cubrir toda la venta.** Si la cubre, es un pago al
+  contado con otro nombre.
+- **Vender a plazos se autoriza aparte.** Quien no tiene el permiso ni siquiera
+  ve la opción. De fábrica lo tienen el administrador y el supervisor, no el
+  vendedor — a quién se le fía es decisión del dueño. Se cambia en *Sistema →
+  Roles* sin tocar nada más.
+
+**Sin interés.** La suma de las cuotas es exactamente lo que se financió. Si
+quieres cobrar más caro a plazos, sube el precio pactado del aparato en el
+carrito: así el recargo queda dentro de la venta y los reportes de ganancia lo
+cuentan solos.
+
+Al cobrar, al cajón entra **solo la cuota inicial**. El resto no es dinero
+cobrado, es una deuda, y por eso no aparece en el cuadre de tu turno.
+
+### Cobrar una cuota
+
+*Ventas → Créditos y cuotas*. La pantalla abre por lo urgente: cuánto hay en la
+calle, cuánto está vencido y qué vence esta semana. El filtro **Con cuotas
+vencidas** es la lista de a quién llamar hoy.
+
+Entra en un crédito y pulsa **Registrar pago**. Viene ya escrito el importe de
+la cuota que toca, pero puedes cambiarlo: hay quien trae dos cuotas juntas y
+quien trae la mitad.
+
+**No se elige qué cuota se paga.** El dinero se aplica de la más antigua a la
+más nueva. Si se pudiera elegir, se saldaría la de diciembre dejando viva la de
+agosto y la palabra «vencido» dejaría de significar nada. Si el pago alcanza
+para cuota y media, se reparte entre las dos y las dos quedan bajo el **mismo
+número de recibo**.
+
+Tampoco se acepta un pago **mayor que el saldo**: dejaría un dinero a favor que
+el sistema no lleva y un sobrante sin explicación en tu cajón al cerrar.
+
+Lo cobrado en efectivo **sí cuenta en el cuadre de tu turno**, aunque no venga
+de una venta.
+
+> **Si devuelves un aparato de una venta a plazos**, la deuda baja sola: se
+> recortan las **últimas** cuotas. El cliente sigue pagando lo mismo cada mes y
+> termina antes, en vez de recibir un plan nuevo con otro importe. Si ya había
+> pagado más de lo que quedaba debiendo, el crédito lo anota como saldo a favor
+> del cliente y ese dinero se le devuelve en el mostrador.
+
+Cada mañana, a las 8:30, llega un aviso con las cuotas que **vencen hoy** y las
+que **se vencieron ayer**. Va a quien puede ver la cartera.
 
 ### El recibo
 

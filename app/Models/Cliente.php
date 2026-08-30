@@ -46,6 +46,15 @@ class Cliente extends Model
     }
 
     /**
+     * Sus planes de cuotas. Del más reciente al más antiguo, que es como se
+     * lee un estado de cuenta.
+     */
+    public function creditos(): HasMany
+    {
+        return $this->hasMany(Credito::class)->latest('id');
+    }
+
+    /**
      * Búsqueda por código o por los datos de la persona.
      */
     public function scopeBuscar(Builder $query, ?string $termino): Builder

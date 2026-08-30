@@ -29,6 +29,7 @@ class RegistroDeVenta
         private readonly GeneradorCodigoVenta $generador,
         private readonly Kardex $kardex,
         private readonly ArqueoDeCaja $arqueo,
+        private readonly PlanDeCuotas $planDeCuotas,
     ) {}
 
     /**
@@ -181,6 +182,17 @@ class RegistroDeVenta
                     );
                 }
 
+                // El plan va dentro de la misma transacción: una venta a
+                // crédito sin cuotas sería una deuda que nadie sabe cobrar, y
+                // unas cuotas sin venta, un cobro sin respaldo.
+                if ($venta->metodo_pago === 'credito') {
+                    $this->planDeCuotas->crear(
+                        $venta->fresh(),
+                        $cabecera['credito'] ?? [],
+                        $userId
+                    );
+                }
+
                 return $venta->fresh();
             });
         } catch (QueryException $e) {
@@ -229,8 +241,11 @@ class RegistroDeVenta
      * El total manda: la suma de lo cobrado en efectivo y por QR tiene que dar
      * exactamente el total de la venta. Un cliente que paga de más recibe
      * cambio (eso es caja, no venta), y uno que paga de menos deja una deuda
-     * que este sistema no lleva. Cualquiera de los dos casos sería un arqueo
-     * que no cuadra al cierre del día.
+     * que no se lleva así. Cualquiera de los dos casos sería un arqueo que no
+     * cuadra al cierre del día.
+     *
+     * La excepción es el crédito, donde deber es justamente el trato: entra la
+     * cuota inicial y el resto queda en el plan de cuotas.
      *
      * @param  array<string, mixed>  $cabecera
      * @param  int  $total  En centavos.
@@ -246,6 +261,27 @@ class RegistroDeVenta
 
         $qrCobroId = $cabecera['qr_cobro_id'] ?? null;
         $comprobante = $cabecera['comprobante_qr'] ?? null;
+
+        // A crédito lo único que entra al cajón es la cuota inicial, que puede
+        // ser cero. El resto no es dinero cobrado sino una deuda, y vive en el
+        // plan de cuotas. Guardarla en `monto_efectivo` —lo realmente
+        // recibido— deja el arqueo cuadrando sin ningún caso especial: el
+        // cierre suma esa columna igual que en cualquier otra venta.
+        //
+        // Lo que valga esa inicial lo juzga PlanDeCuotas, que es quien conoce
+        // el plan entero; aquí solo se coloca. Si no pasa sus reglas, la
+        // transacción se deshace y esta venta nunca existió.
+        if ($metodo === 'credito') {
+            return [
+                'metodo_pago' => 'credito',
+                'qr_cobro_id' => null,
+                'monto_efectivo' => ProrrateoDeGastos::aDecimal(
+                    ProrrateoDeGastos::aCentavos($cabecera['credito']['cuota_inicial'] ?? 0)
+                ),
+                'monto_qr' => ProrrateoDeGastos::aDecimal(0),
+                'comprobante_qr' => null,
+            ];
+        }
 
         // Efectivo puro: no hay banco de por medio.
         if (! in_array($metodo, Venta::METODOS_CON_QR, true)) {
@@ -366,6 +402,15 @@ class RegistroDeVenta
                 'motivo_anulacion' => $motivo,
             ]);
 
+            // Si iba a plazos, deja de ser cartera. Las cuotas y los pagos que
+            // ya entraron se quedan como están: ese dinero existió y sigue
+            // contando en el arqueo del turno en que se recibió.
+            $credito = $venta->credito()->first();
+
+            if ($credito !== null) {
+                $this->planDeCuotas->anular($credito);
+            }
+
             return $devueltas;
         });
     }
@@ -447,8 +492,49 @@ class RegistroDeVenta
                 'unidad_vendida_id' => null,
             ]);
 
+            // La rebaja se calcula ANTES de recalcular la venta: después, esta
+            // línea ya no cuenta en el total y su importe sería irrecuperable.
+            $rebaja = $detalle->refresh()->netoEnCentavos();
+
             $this->recalcular($venta->refresh(), $motivo);
+
+            $this->ajustarCredito($venta->refresh(), $rebaja);
         });
+    }
+
+    /**
+     * Un aparato devuelto de una venta a plazos baja la deuda, no el bolsillo.
+     *
+     * Se descuenta desde la última cuota hacia atrás: el cliente sigue pagando
+     * lo mismo cada mes y termina antes. Si lo devuelto supera lo que aún
+     * debía —porque ya había pagado casi todo—, ese sobrante es dinero suyo
+     * que hay que devolverle en el mostrador; el sistema lo deja anotado en el
+     * motivo, no lo mueve solo.
+     */
+    private function ajustarCredito(Venta $venta, int $rebajaEnCentavos): void
+    {
+        $credito = $venta->credito()->first();
+
+        if ($credito === null) {
+            return;
+        }
+
+        // Devueltos todos los aparatos, la venta ya quedó anulada arriba.
+        if ($venta->esta_anulada) {
+            $this->planDeCuotas->anular($credito);
+
+            return;
+        }
+
+        $sobrante = $this->planDeCuotas->reducir($credito, $rebajaEnCentavos);
+
+        if ($sobrante > 0) {
+            $credito->update([
+                'notas' => trim(($credito->notas ?? '')."\n".
+                    'Devolución del '.now()->format('d/m/Y').': quedan '.
+                    ProrrateoDeGastos::aDecimal($sobrante).' Bs a favor del cliente.'),
+            ]);
+        }
     }
 
     /**

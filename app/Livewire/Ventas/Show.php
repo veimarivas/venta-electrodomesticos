@@ -126,6 +126,7 @@ class Show extends Component
             'cliente.persona',
             'user',
             'qrCobro',
+            'credito.cuotas',
         ]);
 
         // Los aparatos devueltos siguen en la tabla como histórico, pero no
@@ -141,6 +142,7 @@ class Show extends Component
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeDevolver' => (auth()->user()?->can('ventas.anular') ?? false)
                 && $this->venta->esta_completada,
+            'puedeVerCredito' => auth()->user()?->can('creditos.ver') ?? false,
         ]);
     }
 }

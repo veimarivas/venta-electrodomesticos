@@ -297,6 +297,20 @@ una página `https://`, que el navegador bloquea como contenido mixto.
 | 01:30 | `backup:clean` | Borra lo que ya no toca conservar |
 | 02:00 | `backup:run` | Vuelca la base y comprime |
 | 08:00 | `backup:monitor` | Avisa por correo si la última copia tiene más de un día |
+| 08:30 | `cuotas:avisar` | Avisa de las cuotas que vencen hoy y de las que se vencieron ayer |
+
+> **`cuotas:avisar` también depende de `schedule:work`.** Sin ese proceso vivo
+> la cartera se puede consultar en pantalla, pero nadie recibe el aviso, y una
+> cuota que nadie mira se convierte en mora en silencio. Se puede lanzar a mano
+> para comprobarlo:
+>
+> ```bash
+> php artisan cuotas:avisar
+> ```
+>
+> Contesta cuántas cuotas vencen hoy y cuántas se vencieron ayer. No lleva
+> marca de «ya avisado» a propósito: el disparo son dos fechas exactas, así que
+> repetirlo el mismo día vuelve a avisar de lo mismo y al día siguiente ya no.
 
 **Qué se guarda:** el volcado completo de la base, las imágenes que subió el
 usuario (`storage/app/public`) y el `.env`. El código no: vuelve del

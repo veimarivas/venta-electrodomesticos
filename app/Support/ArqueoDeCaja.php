@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Caja;
+use App\Models\PagoCredito;
 use App\Models\Venta;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -119,7 +120,13 @@ class ArqueoDeCaja
      *
      *   · `efectivo` → el total
      *   · `mixto`    → solo su parte en efectivo
+     *   · `credito`  → solo la cuota inicial, que es lo único que se recibió
      *   · el resto   → nada, se cobró fuera de caja
+     *
+     * A eso se suman los **pagos de cuotas** cobrados en el turno. Un cliente
+     * que viene a pagar su cuota deja billetes en el mismo cajón sin que haya
+     * ninguna venta de por medio: sin contarlos, cada cierre con cobranza
+     * saldría con un sobrante que nadie sabe explicar.
      */
     public function efectivoCobradoEnCentavos(Caja $caja): int
     {
@@ -127,13 +134,32 @@ class ArqueoDeCaja
             ->completadas()
             ->get(['metodo_pago', 'total', 'monto_efectivo']);
 
-        return $ventas->reduce(function (int $suma, Venta $venta): int {
+        $porVentas = $ventas->reduce(function (int $suma, Venta $venta): int {
             return $suma + match ($venta->metodo_pago) {
                 'efectivo' => ProrrateoDeGastos::aCentavos($venta->total),
-                'mixto' => ProrrateoDeGastos::aCentavos($venta->monto_efectivo),
+                'mixto', 'credito' => ProrrateoDeGastos::aCentavos($venta->monto_efectivo),
                 default => 0,
             };
         }, 0);
+
+        return $porVentas + $this->cobranzaEnCentavos($caja);
+    }
+
+    /**
+     * Cuotas cobradas en efectivo durante el turno.
+     *
+     * Los pagos de un crédito **anulado no se descuentan**: ese dinero entró
+     * al cajón y sigue ahí. Lo que haya que devolverle al cliente se resuelve
+     * en el mostrador, no restándolo de un arqueo.
+     */
+    public function cobranzaEnCentavos(Caja $caja): int
+    {
+        $total = PagoCredito::query()
+            ->where('caja_id', $caja->id)
+            ->enEfectivo()
+            ->sum('monto');
+
+        return ProrrateoDeGastos::aCentavos($total);
     }
 
     /**
@@ -150,8 +176,27 @@ class ArqueoDeCaja
         return Venta::query()
             ->completadas()
             ->whereNull('caja_id')
-            ->whereIn('metodo_pago', ['efectivo', 'mixto'])
+            // Una venta a crédito solo trae billetes si hubo cuota inicial:
+            // con inicial cero no entró nada al cajón y contarla como suelta
+            // asustaría sin motivo.
+            ->where(fn ($q) => $q->whereIn('metodo_pago', ['efectivo', 'mixto'])
+                ->orWhere(fn ($c) => $c->where('metodo_pago', 'credito')->where('monto_efectivo', '>', 0)))
             ->whereBetween('vendida_en', [$caja->abierta_en, $hasta])
+            ->count();
+    }
+
+    /**
+     * Cuotas cobradas en efectivo en el horario del turno que no quedaron
+     * atadas a él. Mismo caso que las ventas sueltas: se enseñan, no se suman.
+     */
+    public function cobranzaSuelta(Caja $caja): int
+    {
+        $hasta = $caja->cerrada_en ?? now();
+
+        return PagoCredito::query()
+            ->whereNull('caja_id')
+            ->enEfectivo()
+            ->whereBetween('pagado_en', [$caja->abierta_en, $hasta])
             ->count();
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -55,6 +56,7 @@ class Venta extends Model
         'transferencia' => 'Transferencia',
         'qr' => 'QR',
         'mixto' => 'Mixto (efectivo + QR)',
+        'credito' => 'Crédito',
     ];
 
     /** Los que exigen respaldo del banco: se cobran fuera de caja. */
@@ -67,7 +69,7 @@ class Venta extends Model
      * cobradas así y el histórico tiene que poder mostrarlas— pero ya no se
      * ofrecen al cobrar. Quitarlos del enum rompería esas ventas.
      */
-    public const METODOS_POS = ['efectivo', 'qr', 'mixto'];
+    public const METODOS_POS = ['efectivo', 'qr', 'mixto', 'credito'];
 
     public const ESTADOS = [
         'completada' => 'Completada',
@@ -125,6 +127,17 @@ class Venta extends Model
     public function detalles(): HasMany
     {
         return $this->hasMany(VentaDetalle::class);
+    }
+
+    /** Plan de cuotas, si se vendió a crédito. */
+    public function credito(): HasOne
+    {
+        return $this->hasOne(Credito::class);
+    }
+
+    protected function esACredito(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->metodo_pago === 'credito');
     }
 
     protected function estaAnulada(): Attribute

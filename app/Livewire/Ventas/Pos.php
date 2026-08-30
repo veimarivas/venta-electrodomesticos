@@ -9,6 +9,7 @@ use App\Models\Unidad;
 use App\Models\Venta;
 use App\Support\GeneradorCodigoCliente;
 use App\Support\GeneradorCodigoVenta;
+use App\Support\PlanDeCuotas;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RegistroDeVenta;
 use Illuminate\Contracts\View\View;
@@ -76,6 +77,17 @@ class Pos extends Component
 
     public string $montoQr = '';
 
+    // ---- Venta a crédito --------------------------------------------------
+
+    /** Lo que el cliente adelanta en el mostrador. Vacío es cero. */
+    public string $cuotaInicial = '';
+
+    /** En cuántas cuotas se reparte el resto. */
+    public string $numeroCuotas = '6';
+
+    /** Cuándo vence la primera; las demás caen el mismo día de cada mes. */
+    public string $primerVencimiento = '';
+
     // ---- Alta rápida de cliente -------------------------------------------
 
     public string $nuevoCarnet = '';
@@ -109,7 +121,13 @@ class Pos extends Component
     protected function rules(): array
     {
         return [
-            'clienteId' => ['nullable', 'integer', Rule::exists('clientes', 'id')->whereNull('deleted_at')],
+            // A crédito el cliente deja de ser opcional: una deuda sin deudor
+            // no se puede cobrar.
+            'clienteId' => [
+                $this->pagoEsCredito ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->whereNull('deleted_at'),
+            ],
             // Solo lo que el mostrador ofrece hoy: tarjeta y transferencia
             // siguen en el enum por el histórico, pero no se cobran así.
             'metodoPago' => ['required', Rule::in(Venta::METODOS_POS)],
@@ -125,6 +143,15 @@ class Pos extends Component
                 'integer',
                 Rule::exists('qrs_cobro', 'id')->whereNull('deleted_at'),
             ],
+            'cuotaInicial' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'numeroCuotas' => [
+                $this->pagoEsCredito ? 'required' : 'nullable',
+                'integer', 'min:1', 'max:'.PlanDeCuotas::MAX_CUOTAS,
+            ],
+            'primerVencimiento' => [
+                $this->pagoEsCredito ? 'required' : 'nullable',
+                'date', 'after_or_equal:today',
+            ],
         ];
     }
 
@@ -139,6 +166,11 @@ class Pos extends Component
             'carrito.*.precio.required' => 'Indica el precio de venta.',
             'carrito.*.precio.min' => 'El precio debe ser mayor a cero.',
             'metodoPago.required' => 'Elige el método de pago.',
+            'clienteId.required' => 'Una venta a crédito necesita un cliente identificado.',
+            'numeroCuotas.required' => 'Indica en cuántas cuotas se paga.',
+            'numeroCuotas.max' => 'Como mucho '.PlanDeCuotas::MAX_CUOTAS.' cuotas.',
+            'primerVencimiento.required' => 'Indica cuándo vence la primera cuota.',
+            'primerVencimiento.after_or_equal' => 'La primera cuota no puede vencer antes de hoy.',
             'qrCobroId.required' => 'Elige el QR con el que va a pagar el cliente.',
             'comprobante.required' => 'Sube el respaldo del pago por QR.',
             'comprobante.image' => 'El respaldo debe ser una imagen del comprobante.',
@@ -160,6 +192,9 @@ class Pos extends Component
             'comprobante' => 'respaldo del pago',
             'montoEfectivo' => 'monto en efectivo',
             'montoQr' => 'monto por QR',
+            'cuotaInicial' => 'cuota inicial',
+            'numeroCuotas' => 'número de cuotas',
+            'primerVencimiento' => 'primer vencimiento',
             'nuevoCarnet' => 'carnet',
             'nuevoNombres' => 'nombres',
             'nuevoApellidoPaterno' => 'apellido paterno',
@@ -545,6 +580,7 @@ class Pos extends Component
         $this->reset([
             'carrito', 'clienteId', 'buscarCliente', 'notas', 'buscar',
             'qrCobroId', 'comprobante', 'montoEfectivo', 'montoQr', 'quitarIndice',
+            'cuotaInicial', 'numeroCuotas', 'primerVencimiento',
         ]);
 
         $this->metodoPago = 'efectivo';
@@ -735,6 +771,58 @@ class Pos extends Component
         return in_array($this->metodoPago, Venta::METODOS_CON_QR, true);
     }
 
+    /** ¿Esta venta se va a plazos? */
+    #[Computed]
+    public function pagoEsCredito(): bool
+    {
+        return $this->metodoPago === 'credito';
+    }
+
+    /** Lo que queda a deber tras la inicial, en centavos. */
+    #[Computed]
+    public function financiadoEnCentavos(): int
+    {
+        return max(0, $this->totalEnCentavos - ProrrateoDeGastos::aCentavos($this->cuotaInicial ?: '0'));
+    }
+
+    /**
+     * Lo que va a costar cada cuota, para verlo antes de cobrar.
+     *
+     * Es la primera cuota, no un promedio: el reparto carga en ella los
+     * centavos que no dividen exactos, así que es la más cara del plan y la
+     * cifra que conviene enseñar.
+     */
+    #[Computed]
+    public function montoCuotaEnCentavos(): int
+    {
+        $cuotas = (int) $this->numeroCuotas;
+
+        if ($cuotas < 1 || $this->financiadoEnCentavos <= 0) {
+            return 0;
+        }
+
+        return ProrrateoDeGastos::repartir($this->financiadoEnCentavos, array_fill(0, $cuotas, 1))[0];
+    }
+
+    /** ¿El plan de cuotas está completo y es coherente? */
+    #[Computed]
+    public function creditoValido(): bool
+    {
+        if (! $this->pagoEsCredito) {
+            return true;
+        }
+
+        $cuotas = (int) $this->numeroCuotas;
+
+        // Una inicial que cubre toda la venta no es un crédito: es un pago al
+        // contado con un nombre equivocado.
+        return $this->clienteId !== null
+            && $this->financiadoEnCentavos > 0
+            && ProrrateoDeGastos::aCentavos($this->cuotaInicial ?: '0') >= 0
+            && $cuotas >= 1 && $cuotas <= PlanDeCuotas::MAX_CUOTAS
+            && $this->primerVencimiento !== '';
+    }
+
     /**
      * QR que se pueden mostrar hoy: activos y sin caducar.
      *
@@ -763,6 +851,20 @@ class Pos extends Component
     {
         $this->reset(['montoEfectivo', 'montoQr', 'comprobante']);
         $this->resetValidation(['comprobante', 'qrCobroId', 'montoEfectivo', 'montoQr']);
+
+        if ($this->pagoEsCredito) {
+            $this->qrCobroId = null;
+
+            // El primer vencimiento se propone a un mes vista, que es el trato
+            // habitual, pero se puede cambiar. La inicial no se propone: es un
+            // importe que el cajero cuenta, no que el sistema adivine.
+            $this->primerVencimiento = now()->addMonthNoOverflow()->format('Y-m-d');
+
+            return;
+        }
+
+        $this->reset(['cuotaInicial', 'numeroCuotas', 'primerVencimiento']);
+        $this->resetValidation(['cuotaInicial', 'numeroCuotas', 'primerVencimiento']);
 
         if (! $this->pagoUsaQr) {
             $this->qrCobroId = null;
@@ -958,6 +1060,10 @@ class Pos extends Component
             }
         }
 
+        if ($this->pagoEsCredito) {
+            return $this->creditoValido;
+        }
+
         if (! $this->pagoUsaQr) {
             return true;
         }
@@ -1003,6 +1109,13 @@ class Pos extends Component
     {
         $this->autorizar('ventas.crear');
 
+        // El componente es un endpoint invocable: esconder la opción de
+        // crédito en la vista no impide que alguien la mande desde el
+        // navegador, así que el permiso se comprueba también aquí.
+        if ($this->pagoEsCredito) {
+            $this->autorizar('creditos.crear');
+        }
+
         $this->validate();
 
         if (! $this->ventaValida) {
@@ -1017,6 +1130,13 @@ class Pos extends Component
     public function cobrar(): void
     {
         $this->autorizar('ventas.crear');
+
+        // El componente es un endpoint invocable: esconder la opción de
+        // crédito en la vista no impide que alguien la mande desde el
+        // navegador, así que el permiso se comprueba también aquí.
+        if ($this->pagoEsCredito) {
+            $this->autorizar('creditos.crear');
+        }
 
         $this->validate();
 
@@ -1053,6 +1173,11 @@ class Pos extends Component
                     'monto_efectivo' => $this->montoEfectivo,
                     'monto_qr' => $this->montoQr,
                     'comprobante_qr' => $comprobante,
+                    'credito' => $this->pagoEsCredito ? [
+                        'cuota_inicial' => $this->cuotaInicial ?: '0',
+                        'numero_cuotas' => (int) $this->numeroCuotas,
+                        'primer_vencimiento' => $this->primerVencimiento,
+                    ] : null,
                 ],
                 userId: auth()->id(),
             );
@@ -1092,9 +1217,16 @@ class Pos extends Component
     public function render(): View
     {
         return view('livewire.ventas.pos', [
-            // Los tres del mostrador para elegir; el mapa completo para poder
+            // Los del mostrador para elegir; el mapa completo para poder
             // nombrar el método de una venta vieja en el comprobante.
-            'metodosPos' => Venta::METODOS_POS,
+            //
+            // Vender a plazos se autoriza aparte: quien no tenga el permiso ni
+            // siquiera ve la opción, porque decidir a quién se le fía es del
+            // dueño, no de quien atiende.
+            'metodosPos' => array_values(array_filter(
+                Venta::METODOS_POS,
+                fn (string $metodo): bool => $metodo !== 'credito' || (auth()->user()?->can('creditos.crear') ?? false)
+            )),
             'metodosPago' => Venta::METODOS_PAGO,
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeCrearClientes' => auth()->user()?->can('clientes.crear') ?? false,

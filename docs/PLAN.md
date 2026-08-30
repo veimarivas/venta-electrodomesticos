@@ -78,6 +78,12 @@ erDiagram
     VENTA_DETALLES ||--|| UNIDADES : "vende 1 unidad"
     CLIENTES   ||--o{ VENTAS : compra
     USERS      ||--o{ VENTAS : registra
+    VENTAS     ||--o| CREDITOS : "plan de cuotas"
+    CLIENTES   ||--o{ CREDITOS : debe
+    CREDITOS   ||--o{ CUOTAS : "vencimientos"
+    CUOTAS     ||--o{ PAGOS_CREDITO : "se cobra en"
+    CAJAS      ||--o{ PAGOS_CREDITO : "entran al turno"
+    CAJAS      ||--o{ VENTAS : "turno"
     UNIDADES   ||--o{ MOVIMIENTOS_INVENTARIO : kardex
     USERS      ||--o{ DISPOSITIVOS : "teléfonos FCM"
 ```
@@ -292,6 +298,50 @@ ganancia (decimal 12,2), timestamps
 > Sigue siendo una garantía **a nivel de base de datos**, que es lo que importa: no basta con comprobarlo en PHP, porque dos cajeros escaneando el mismo aparato a la vez pasarían la comprobación y solo el índice único frena la segunda venta.
 >
 > `costo_unitario` se copia de `unidades.costo_unitario` en el momento de la venta: si mañana cambia el costo del producto, la ganancia histórica no debe moverse.
+
+**`creditos`** — el plan de cuotas de una venta a plazos *(implementada 2026-08-29)*
+```
+id, venta_id (FK, UNIQUE), cliente_id (FK), cuota_inicial, total_financiado,
+numero_cuotas (tinyint), primer_vencimiento (date),
+estado (vigente|pagado|anulado), creado_por (FK users), notas, timestamps
+
+ÍNDICES: index(estado, cliente_id)
+```
+> Modelo `Credito`. **No guarda saldo**: es la suma de lo que falta en las cuotas. Una columna de saldo se desincroniza el día que alguien corrige un pago a mano, y a partir de ahí la cartera miente sin que nadie lo note. En los listados se arma con `withSum` en la misma consulta, para poder ordenar por él sin traer la cartera entera a PHP.
+>
+> `cliente_id` se repite aquí aunque la venta ya lo sepa: la cartera se consulta por cliente y ese es el camino corto, y además fija quién firmó.
+>
+> `total_financiado` se guarda aunque parezca deducible de `ventas.total`, porque ese total **cambia** si después se devuelve un aparato.
+>
+> La **cuota inicial no es una cuota**: es parte del cobro de la venta y vive en `ventas.monto_efectivo`. Se copia aquí para poder leerla sin depender de un total que puede moverse.
+
+**`cuotas`** — cada vencimiento del plan *(implementada 2026-08-29)*
+```
+id, credito_id (FK cascade), numero (tinyint), vence_en (date),
+monto, monto_pagado (default 0), pagada_en (nullable), timestamps
+
+ÍNDICES: unique(credito_id, numero), index(vence_en, pagada_en)
+```
+> Modelo `Cuota`. **El estado no se guarda**, se deduce de `monto_pagado` contra `monto`; el filtro «pendientes» es un `whereColumn` en SQL. Guardarlo obligaría a recordar actualizarlo en los cuatro caminos que tocan el dinero —cobro, corrección, devolución, anulación— y basta olvidarse en uno para que la cartera empiece a mentir.
+>
+> Los importes no son todos iguales: `ProrrateoDeGastos::repartir()` carga en las primeras cuotas los centavos que no dividen exactos, así que la suma da el financiado al céntimo.
+
+**`pagos_credito`** — cada imputación de dinero a una cuota *(implementada 2026-08-29)*
+```
+id, credito_id (FK), cuota_id (FK), recibo (indexado),
+caja_id (FK nullOnDelete, nullable), user_id (FK), monto,
+metodo_pago (enum: efectivo|qr|transferencia), comprobante_qr (nullable),
+pagado_en, notas, timestamps
+
+ÍNDICES: index(caja_id, metodo_pago), index(pagado_en)
+```
+> Modelo `PagoCredito` (con `$table = 'pagos_credito'`).
+>
+> `cuota_id` es obligatorio: un pago siempre se imputa a una cuota concreta. Una entrega que alcanza para cuota y media son **dos filas con el mismo `recibo`** — una sola fila con el total dejaría sin respuesta qué cuota quedó saldada, que es lo que se discute en el mostrador.
+>
+> El número de recibo sale del **id de la primera fila** del grupo: el autoincremento ya garantiza que no se repita, mientras que un `MAX+1` podría dar el mismo número a dos cajeros cobrando a créditos distintos en el mismo instante.
+>
+> `caja_id` nullable por la misma razón que en `ventas`: se puede cobrar sin caja abierta, y el cierre lo enseña en vez de sumarlo por su cuenta.
 
 **`movimientos_inventario`** — kardex/auditoría de cada unidad *(implementada 2026-08-16)*
 ```
@@ -765,6 +815,146 @@ Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es 
 > - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
 > - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
 > - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+
+### Venta a crédito y cuotas (2026-08-29)
+
+En electrodomésticos buena parte de lo que se vende se vende a plazos, y el
+sistema solo entendía el pago completo en el momento: **toda la cartera vivía
+fuera**, en un cuaderno. Es la diferencia entre un sistema que registra lo que
+ya pasó y uno que dice a quién hay que llamar hoy.
+
+Va después de la devolución a propósito: los dos tocan la tabla de ventas, y
+hacerlos a la vez obligaba a rehacer uno de los dos.
+
+#### Sin interés, y por qué
+
+La suma de las cuotas es exactamente lo financiado, ni un centavo más. Si la
+tienda quiere cobrar más caro a plazos, sube el **precio pactado** de la línea
+en el punto de venta —que ya se podía— y el recargo queda dentro de la venta,
+donde los reportes de ganancia ya lo cuentan.
+
+Un interés aparte obligaba a decidir si es ingreso, a separarlo del costo en
+cada consulta y a explicárselo a alguien en el mostrador. Se puede añadir más
+tarde sin rehacer nada; añadirlo hoy habría encarecido todo lo demás.
+
+#### La cuota inicial no es una cuota
+
+Es la decisión que sostiene el resto. La inicial es **parte del cobro de la
+venta**, no del plan: se guarda en `ventas.monto_efectivo`, que es literalmente
+lo que se recibió.
+
+El premio está en el arqueo. `efectivoCobradoEnCentavos()` ya sumaba esa
+columna para el pago mixto, así que el crédito entró con **un solo brazo más en
+el `match`**: `'mixto', 'credito' => monto_efectivo`. Si la inicial hubiera
+vivido dentro del plan de cuotas, el cierre de caja habría necesitado saber qué
+es un crédito, y el arqueo dejaría de ser una consulta sobre ventas.
+
+#### Tres tablas y ninguna columna de saldo
+
+| Tabla | Qué guarda |
+|---|---|
+| `creditos` | El plan pactado: inicial, financiado, cuántas cuotas, desde cuándo |
+| `cuotas` | Cada vencimiento con lo que lleva pagado |
+| `pagos_credito` | Cada imputación de dinero a una cuota |
+
+**El saldo no se guarda**: es la suma de lo que falta en las cuotas. Una columna
+de saldo se desincroniza el día que alguien corrige un pago a mano, y a partir
+de ahí la cartera miente sin que nadie lo note. Lo mismo con el estado de cada
+cuota: se deduce de `monto_pagado` contra `monto`, y el filtro «pendientes» es
+un `whereColumn` en SQL, no un enum que haya que acordarse de actualizar en los
+cuatro caminos que tocan el dinero.
+
+En el listado, el saldo se arma con `withSum` en la misma consulta para poder
+ordenar por él sin traer la cartera entera a PHP.
+
+#### Una entrega de dinero puede ser dos filas
+
+`pagos_credito.cuota_id` es obligatorio: un pago siempre se imputa a una cuota
+concreta. Si el cliente entrega lo justo para cuota y media, se guardan **dos
+filas con el mismo `recibo`**.
+
+Una sola fila con el total dejaría sin respuesta qué cuota quedó saldada, que es
+justo lo que se discute en el mostrador. El número de recibo sale del **id de la
+primera fila**: el autoincremento ya garantiza que no se repita, mientras que un
+`MAX+1` podría dar el mismo número a dos cajeros cobrando a créditos distintos
+en el mismo instante.
+
+#### La imputación no se elige
+
+Siempre de la cuota más antigua a la más nueva. Dejar elegir permitiría saldar
+la de diciembre dejando viva la de agosto, y la mora dejaría de significar nada.
+
+Tampoco se acepta un pago **mayor que el saldo** —mismo criterio que el cobro de
+una venta—: dejaría un saldo a favor que el sistema no lleva y un sobrante sin
+explicación en el cajón al cerrar.
+
+Las cuotas pendientes se leen con `lockForUpdate`: dos cobros simultáneos sobre
+el mismo crédito imputarían los dos a la misma cuota y el cliente acabaría
+pagando de más.
+
+#### La devolución recorta el plan por el final
+
+Devolver un aparato de una venta a plazos baja la deuda, no el bolsillo. Se
+descuenta **desde la última cuota hacia atrás**: el cliente sigue pagando lo
+mismo cada mes y termina antes. Rebajar todas por igual obligaría a reimprimir
+el plan y a explicar un importe nuevo cada mes.
+
+Solo se rebaja lo que aún se debe. Lo ya cobrado no se toca: ese dinero está en
+un cajón que ya se cuadró. Si lo devuelto supera el saldo, el sobrante se anota
+en las notas del crédito como saldo a favor y se devuelve en el mostrador — el
+sistema no mueve dinero por su cuenta.
+
+> **`reorder`, no `orderByDesc`.** La relación `cuotas()` ya ordena por número
+> ascendente; encadenar un segundo criterio deja mandando al primero, y el
+> recorte empezaba por la cuota que vence **antes**, justo al revés. Lo cazó la
+> prueba del plan recortado; hay un test que lo fija.
+
+> **`addMonthsNoOverflow`, no `addMonths`.** Con la primera cuota el 31 de
+> enero, `addMonths` da el 3 de marzo —febrero no tiene 31— y el cliente vería
+> un vencimiento que no pactó. Sin overflow cae el 28.
+
+> **El reparto usa `ProrrateoDeGastos::repartir`**, el mismo del prorrateo de
+> compras: 1000 en 3 cuotas da 333,34 / 333,33 / 333,33 y suma exacto. Dividir y
+> redondear dejaría 999,99, un centavo que nadie sabría a quién cobrar.
+
+#### Fiar y cobrar son dos permisos
+
+`creditos.crear` es autorizar el crédito al vender; `creditos.cobrar` es recibir
+una cuota; `creditos.ver` es consultar la cartera. Al rol `vendedor` le llegan
+los dos últimos: **a quién se le fía es decisión del dueño**, no de quien
+atiende. Se cambia desde Roles sin tocar código.
+
+En el punto de venta, quien no tiene `creditos.crear` ni siquiera ve la opción
+—y el permiso se revalida en `cobrar()`, porque el componente Livewire es un
+endpoint invocable y esconder un botón no impide mandar el método desde el
+navegador.
+
+#### El aviso diario
+
+`cuotas:avisar`, a las 8:30, avisa de lo que **vence hoy** y de lo que **se
+venció ayer**, a quien tenga `creditos.ver`.
+
+**No hay columna de «ya avisado», y es deliberado.** El disparo son dos fechas
+exactas, así que cada cuota genera como mucho dos avisos y el segundo solo si
+sigue sin pagarse. Una marca en la base habría que mantenerla al corregir un
+pago, y bastaría olvidarse una vez para que una cuota dejara de avisar para
+siempre.
+
+#### Todo o nada
+
+El plan se crea **dentro de la transacción de la venta**. Una venta a crédito
+sin cuotas sería una deuda que nadie sabe cobrar, y unas cuotas sin venta, un
+cobro sin respaldo. Si el plan no pasa sus reglas, la venta no llega a existir y
+el aparato no sale del stock. Hay un test que lo fija.
+
+#### De paso: la ficha de venta con cliente reventaba
+
+`ventas/show.blade.php` leía `persona->numero_documento`, columna que **no
+existe** —es `carnet`—. Con `Model::shouldBeStrict()` eso no es un valor vacío
+sino una excepción, así que el detalle de **cualquier venta con cliente**
+respondía 500. No se había visto porque ninguna prueba abría esa pantalla con un
+cliente asignado; el crédito la abre siempre, porque a plazos el cliente es
+obligatorio.
 
 ### El buscador del topbar busca de verdad (2026-08-29)
 

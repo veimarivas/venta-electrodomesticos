@@ -38,3 +38,20 @@ Schedule::command('backup:run')
 */
 Schedule::command('backup:monitor')
     ->dailyAt('08:00');
+
+/*
+|--------------------------------------------------------------------------
+| Cuotas por cobrar
+|--------------------------------------------------------------------------
+|
+| A primera hora, antes de abrir: las cuotas que vencen hoy y las que se
+| vencieron ayer. La cartera ya se puede consultar en pantalla, pero un
+| listado solo sirve a quien se acuerda de abrirlo, y una cuota que nadie
+| mira se convierte en mora en silencio.
+|
+| `withoutOverlapping` por si el envío se alarga con muchos destinatarios:
+| dos pasadas a la vez duplicarían cada aviso.
+*/
+Schedule::command('cuotas:avisar')
+    ->dailyAt('08:30')
+    ->withoutOverlapping();

@@ -91,6 +91,29 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->whereNumber('venta')
         ->middleware('permission:ventas.ver')->name('ventas.recibo');
 
+    // ANTES que `/creditos/{credito}`, por la misma razón que en /ventas: una
+    // ruta estática declarada después caería en el model binding y respondería
+    // 404 sin explicar nada.
+    Route::view('/creditos', 'backend.creditos.index', [
+        'title' => 'Créditos y cuotas',
+        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Créditos' => null],
+    ])->middleware('permission:creditos.ver')->name('creditos.index');
+
+    Route::get('/creditos/{credito}', function (\App\Models\Credito $credito) {
+        $credito->load('venta');
+
+        return view('backend.creditos.show', [
+            'title' => 'Crédito de la venta '.$credito->venta->codigo,
+            'breadcrumbs' => [
+                'Inicio' => null,
+                'Ventas' => null,
+                'Créditos' => route('creditos.index'),
+                $credito->venta->codigo => null,
+            ],
+            'credito' => $credito,
+        ]);
+    })->whereNumber('credito')->middleware('permission:creditos.ver')->name('creditos.show');
+
     Route::view('/clientes', 'backend.clientes.index', [
         'title' => 'Clientes',
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Clientes' => null],

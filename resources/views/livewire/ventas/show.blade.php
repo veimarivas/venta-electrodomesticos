@@ -141,8 +141,11 @@
                             </div>
                             <div class="min-w-0">
                                 <h5 class="mb-0">{{ $venta->cliente->persona->nombre_completo }}</h5>
-                                @if ($venta->cliente->persona->numero_documento)
-                                    <small class="text-muted font-monospace">{{ $venta->cliente->persona->numero_documento }}</small>
+                                {{-- `carnet`, no `numero_documento`: esa columna no
+                                     existe en `personas` y con `shouldBeStrict()`
+                                     tumbaba la ficha de toda venta con cliente. --}}
+                                @if ($venta->cliente->persona->carnet)
+                                    <small class="text-muted font-monospace">{{ $venta->cliente->persona->carnet }}</small>
                                 @endif
                             </div>
                         </div>
@@ -396,12 +399,42 @@
                         </div>
                     @endif
 
+                    @if ($venta->credito)
+                        {{-- A plazos el «método de pago» solo cuenta la mitad: lo
+                             que importa es cuánto entró hoy y cuánto queda
+                             debiendo. --}}
+                        <div class="ventas-show-pago-mixto">
+                            <span class="ventas-show-pago-mixto-item">
+                                <i class="ri-money-dollar-box-line"></i>
+                                Inicial Bs
+                                {{ number_format((float) $venta->credito->cuota_inicial, 2, ',', '.') }}
+                            </span>
+                            <span class="ventas-show-pago-mixto-item">
+                                <i class="ri-calendar-schedule-line"></i>
+                                {{ $venta->credito->numero_cuotas }}
+                                {{ $venta->credito->numero_cuotas === 1 ? 'cuota' : 'cuotas' }} ·
+                                saldo Bs
+                                {{ number_format($venta->credito->saldoEnCentavos() / 100, 2, ',', '.') }}
+                            </span>
+                        </div>
+                    @endif
+
                     @if ($venta->qrCobro)
                         <span class="ventas-show-qr-badge">
                             <i class="ri-qr-code-line align-bottom"></i> {{ $venta->qrCobro->nombre }}
                         </span>
                     @endif
                 </div>
+
+                @if ($venta->credito && $puedeVerCredito)
+                    <div class="mt-3">
+                        <a href="{{ route('creditos.show', $venta->credito) }}" class="ventas-show-comprobante">
+                            <i class="ri-hand-coin-line"></i>
+                            <span>Ver el plan de cuotas y sus pagos</span>
+                            <i class="ri-arrow-right-line" style="font-size: .8rem; opacity: .6;"></i>
+                        </a>
+                    </div>
+                @endif
 
                 @if ($venta->comprobante_url)
                     <div class="mt-3">

@@ -468,6 +468,7 @@
                                     'efectivo' => 'ri-money-dollar-box-line',
                                     'qr' => 'ri-qr-code-line',
                                     'mixto' => 'ri-split-cells-horizontal',
+                                    'credito' => 'ri-calendar-schedule-line',
                                 ];
                             @endphp
                             @foreach ($metodosPos as $valor)
@@ -482,6 +483,76 @@
                         </div>
                         @error('metodoPago') <div class="text-danger fs-12 mt-2">{{ $message }}</div> @enderror
                     </div>
+
+                    {{-- ---------- Venta a crédito ---------- --}}
+                    @if ($this->pagoEsCredito)
+                        <div class="pos-seccion">
+                            @if ($clienteId === null)
+                                {{-- Se dice antes de teclear el plan: una deuda sin
+                                     deudor no se puede cobrar, y descubrirlo al
+                                     confirmar obliga a rehacerlo todo. --}}
+                                <div class="pos-aviso pos-aviso-error mb-2">
+                                    <i class="ri-error-warning-line"></i>
+                                    <span>Elige el cliente antes de armar el plan: a crédito no vale la venta
+                                        al público.</span>
+                                </div>
+                            @endif
+
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label for="v-inicial" class="form-label fs-12 text-muted mb-1">
+                                        <i class="ri-money-dollar-box-line align-bottom"></i> Cuota inicial
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light">Bs</span>
+                                        <input type="number" step="0.01" min="0" id="v-inicial"
+                                            class="form-control text-end" placeholder="0.00"
+                                            wire:model.live.debounce.500ms="cuotaInicial">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label for="v-cuotas" class="form-label fs-12 text-muted mb-1">
+                                        <i class="ri-hashtag align-bottom"></i> Cuotas
+                                    </label>
+                                    <input type="number" min="1" max="{{ \App\Support\PlanDeCuotas::MAX_CUOTAS }}"
+                                        id="v-cuotas" class="form-control form-control-sm text-end"
+                                        wire:model.live.debounce.500ms="numeroCuotas">
+                                </div>
+                            </div>
+
+                            <div class="mt-2">
+                                <label for="v-vencimiento" class="form-label fs-12 text-muted mb-1">
+                                    <i class="ri-calendar-event-line align-bottom"></i> Vence la primera
+                                </label>
+                                <input type="date" id="v-vencimiento" class="form-control form-control-sm"
+                                    wire:model.live="primerVencimiento">
+                                <small class="text-muted fs-12">Las demás caen el mismo día de cada mes.</small>
+                            </div>
+
+                            @error('cuotaInicial') <div class="text-danger fs-12 mt-2">{{ $message }}</div> @enderror
+                            @error('numeroCuotas') <div class="text-danger fs-12 mt-2">{{ $message }}</div> @enderror
+                            @error('primerVencimiento') <div class="text-danger fs-12 mt-2">{{ $message }}</div> @enderror
+                            @error('clienteId') <div class="text-danger fs-12 mt-2">{{ $message }}</div> @enderror
+
+                            @if ($this->montoCuotaEnCentavos > 0)
+                                {{-- Se enseña la primera cuota, que es la más cara:
+                                     el reparto carga en ella los centavos que no
+                                     dividen exactos. --}}
+                                <div class="pos-aviso mt-2">
+                                    <i class="ri-information-line"></i>
+                                    <span>
+                                        Quedan a deber
+                                        <strong>Bs
+                                            {{ number_format($this->financiadoEnCentavos / 100, 2, ',', '.') }}</strong>
+                                        en {{ (int) $numeroCuotas }}
+                                        {{ (int) $numeroCuotas === 1 ? 'cuota' : 'cuotas' }} de hasta
+                                        <strong>Bs
+                                            {{ number_format($this->montoCuotaEnCentavos / 100, 2, ',', '.') }}</strong>.
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
                     {{-- ---------- Cobro por QR ---------- --}}
                     @if ($this->pagoUsaQr)
@@ -1009,6 +1080,26 @@
                                 <strong>
                                     Bs {{ number_format((float) ($montoEfectivo ?: 0), 2, ',', '.') }}
                                     · Bs {{ number_format((float) ($montoQr ?: 0), 2, ',', '.') }}
+                                </strong>
+                            </div>
+                        @endif
+                        @if ($this->pagoEsCredito)
+                            {{-- Lo que de verdad se está firmando: cuánto entra hoy
+                                 y cuánto queda debiendo. Es la parte del resumen
+                                 que hay que leerle al cliente. --}}
+                            <div class="pos-confirmar-fila">
+                                <span>Inicial / a deber</span>
+                                <strong>
+                                    Bs {{ number_format((float) ($cuotaInicial ?: 0), 2, ',', '.') }}
+                                    · Bs {{ number_format($this->financiadoEnCentavos / 100, 2, ',', '.') }}
+                                </strong>
+                            </div>
+                            <div class="pos-confirmar-fila">
+                                <span>Plan</span>
+                                <strong>
+                                    {{ (int) $numeroCuotas }}
+                                    {{ (int) $numeroCuotas === 1 ? 'cuota' : 'cuotas' }} desde el
+                                    {{ $primerVencimiento !== '' ? \Illuminate\Support\Carbon::parse($primerVencimiento)->format('d/m/Y') : '—' }}
                                 </strong>
                             </div>
                         @endif

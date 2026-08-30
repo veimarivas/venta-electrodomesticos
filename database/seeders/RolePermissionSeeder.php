@@ -29,6 +29,9 @@ class RolePermissionSeeder extends Seeder
         // -el histórico de cierres y sus diferencias- es de quien supervisa.
         'caja' => ['ver', 'gestionar'],
         'ventas' => ['ver', 'crear', 'anular'],
+        // `crear` es autorizar el crédito al vender; `cobrar` es recibir una
+        // cuota. Van separados porque fiar y cobrar no son la misma decisión.
+        'creditos' => ['ver', 'crear', 'cobrar'],
         // Los QR de cobro son dinero de la tienda: quien vende necesita verlos
         // para mostrarlos, pero registrarlos o cambiarles la fecha no.
         'qrs_cobro' => ['ver', 'crear', 'editar', 'eliminar'],
@@ -57,6 +60,7 @@ class RolePermissionSeeder extends Seeder
             'stock.ver',
             'caja.ver', 'caja.gestionar',
             'ventas.ver', 'ventas.crear', 'ventas.anular',
+            'creditos.ver', 'creditos.crear', 'creditos.cobrar',
             'qrs_cobro.ver', 'qrs_cobro.crear', 'qrs_cobro.editar',
             'clientes.ver', 'clientes.crear', 'clientes.editar',
             'reportes.ver', 'reportes.ver_costos',
@@ -73,6 +77,10 @@ class RolePermissionSeeder extends Seeder
             // quien supervisa, no suyo.
             'caja.gestionar',
             'ventas.ver', 'ventas.crear',
+            // Consulta la cartera y recibe cuotas, pero **no autoriza créditos
+            // nuevos**: a quién se le fía lo decide el dueño. Si la tienda
+            // prefiere otra cosa, se cambia desde Roles sin tocar código.
+            'creditos.ver', 'creditos.cobrar',
             // Ver, no administrar: el vendedor muestra el QR en el mostrador.
             'qrs_cobro.ver',
             'clientes.ver', 'clientes.crear',

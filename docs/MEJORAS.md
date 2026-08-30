@@ -68,7 +68,7 @@ negocio que hoy viven fuera, en cuadernos y en la memoria de quien atiende.
 |---|---|---|
 | ✅ | **Devolución y cambio** | 4–5 días |
 | ✅ | **Cierre de caja** | 1 semana |
-| ⬜ | **Venta a crédito y cuotas** | 2–3 semanas |
+| ✅ | **Venta a crédito y cuotas** | 2–3 semanas |
 | ⬜ | **Entrega e instalación** | 1–2 semanas |
 | ⬜ | **Garantía y servicio técnico** | 2 semanas |
 
@@ -98,19 +98,23 @@ El detalle de por qué está así, en [PLAN.md](PLAN.md).
 para pagar un flete, meter un ingreso— que hoy solo se pueden anotar en las
 notas del cierre.
 
-### Venta a crédito y cuotas
+### Venta a crédito y cuotas ✅
 
-**Hoy:** `Venta::METODOS_PAGO` = efectivo, QR, mixto, tarjeta, transferencia. La
-tabla `ventas` no tiene saldo, cuotas ni vencimientos.
+Hecho el 2026-08-29. En el punto de venta, *Crédito* es un método de pago más:
+se teclea la cuota inicial, en cuántas cuotas se paga el resto y cuándo vence la
+primera. *Ventas → Créditos y cuotas* es la cartera —cuánto hay en la calle,
+cuánto está vencido, qué vence esta semana— y desde la ficha de cada crédito se
+reciben los pagos, que se imputan solos de la cuota más antigua a la más nueva.
 
-En electrodomésticos buena parte de lo que se vende se vende a plazos. Hoy el
-sistema solo entiende el pago completo en el momento, así que **toda la cartera
-está fuera**: quién debe, cuánto, desde cuándo y qué cuota vence esta semana.
+Sin interés: la suma de las cuotas es exactamente lo financiado. Al cajón entra
+solo la inicial, y las cuotas cobradas en efectivo cuentan en el cierre del
+turno en que se recibieron. Cada mañana sale el aviso de lo que vence.
 
-Es la diferencia entre un sistema que registra lo que ya pasó y uno que dice a
-quién hay que llamar hoy. Necesita plan de cuotas al cobrar, pagos parciales,
-estado de cuenta por cliente y aviso de vencimiento —que se apoya en las
-notificaciones que ya existen—.
+El detalle de por qué está así, en [PLAN.md](PLAN.md).
+
+**Lo que queda de esta pieza:** cobrar cuotas desde el teléfono, el estado de
+cuenta impreso para dárselo al cliente, y un recordatorio al propio cliente por
+WhatsApp o SMS —hoy el aviso es solo para quien cobra—.
 
 ### Entrega e instalación
 
@@ -144,6 +148,7 @@ trabajar».
 
 | | Qué | Esfuerzo |
 |---|---|---|
+| ⬜ | Cobrar cuotas desde el teléfono | 4 días |
 | ⬜ | Recepcionar compras desde el teléfono | 1 semana |
 | ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
 | ⬜ | Editar el propio perfil y la ficha del cliente | 2 días |
@@ -177,13 +182,16 @@ Conviene confirmar en qué régimen está la tienda antes de estimar nada.
 1. **Esta semana** — dejar corriendo los tres procesos del servidor y comprobar
    que la copia del día siguiente existe de verdad. Es lo único que queda de la
    fase 0 y no es trabajo de código: sin eso, todo lo demás es opcional.
-2. ~~Devolución y cierre de caja~~ — hechas. Eran las dos más baratas de la fase
-   1 y las que quitan fricción diaria desde el primer día.
-3. **El proyecto grande** — venta a crédito, cuando no haya otra cosa a medias.
+2. ~~Devolución, cierre de caja y venta a crédito~~ — hechas. Con eso, la fase 1
+   se queda en lo que pasa **después** de cobrar.
+3. **A continuación** — entrega e instalación. Es la siguiente que la tienda hace
+   todos los días y el sistema no: entre cobrar un refrigerador y dejarlo en la
+   casa del cliente hay días, una dirección y alguien que llama preguntando.
 4. **En paralelo** — las piezas de la fase 2. Son pequeñas, independientes y no
-   bloquean nada.
+   bloquean nada. Ahora hay una más: cobrar cuotas desde el teléfono.
 
-> **Sobre el orden.** La tentación es empezar por lo vistoso. Pero el crédito
-> toca la tabla de ventas y las devoluciones también; hacerlos a la vez obliga a
-> rehacer uno de los dos. Devoluciones primero —es más chico— y luego crédito
-> sobre esa base.
+> **Sobre el orden.** La tentación era empezar por lo vistoso. Pero el crédito
+> toca la tabla de ventas y las devoluciones también; hacerlos a la vez obligaba
+> a rehacer uno de los dos. Se hicieron las devoluciones primero —es más chico—
+> y el crédito encima de esa base, que es lo que permitió que devolver un
+> aparato de una venta a plazos recorte el plan en vez de romperlo.
