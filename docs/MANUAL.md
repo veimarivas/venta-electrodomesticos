@@ -989,6 +989,27 @@ faltan por registrar.
 Al confirmar, la app dice **de qué tipo era la etiqueta** («Leído como EAN-13»).
 Si ese texto aparece, la cámara hizo su trabajo.
 
+#### Cuando hay varias etiquetas juntas
+
+Una caja suele llevar encima el código del fabricante, el de la tienda y a veces
+dos o tres del transportista, todos a un centímetro unos de otros. Tres cosas
+evitan que la cámara coja el que no es:
+
+- **Solo lee lo que está dentro del marco.** Lo de fuera se ve oscurecido y no
+  cuenta. Acerca o aleja el teléfono hasta que solo la etiqueta que quieres
+  quede dentro del recuadro.
+- **Si aun así entran varias, te pregunta cuál.** Sale la lista con todos los
+  códigos que vio, y el primero es el que estaba más centrado. Tocas el que
+  toca, o *Seguir buscando* para volver a apuntar.
+- **El botón ✅ de la barra superior** hace que te pregunte **siempre**, aunque
+  solo vea un código. Es lo que conviene al recepcionar mercadería. Queda
+  activado hasta que lo apagues, también entre sesiones.
+
+Esto vale igual para **vender**: el escáner es el mismo en las dos pantallas.
+
+> Mientras la app te está preguntando, la cámara está en pausa: no va a leer
+> otra cosa por detrás mientras decides.
+
 > **Cuidado con los códigos de la caja: un EAN-13 o un UPC no es un serial.**
 > Identifican el **modelo**, no el aparato concreto: todos los televisores
 > iguales traen el mismo número. Si lo guardas como serial, el siguiente igual
