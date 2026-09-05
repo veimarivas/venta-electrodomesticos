@@ -25,7 +25,6 @@ class ProductoFactory extends Factory
         return [
             'categoria_id' => Categoria::factory(),
             'marca_id' => null,
-            'sku' => fake()->unique()->bothify(strtoupper('????-####')),
             'nombre' => $nombre,
             'slug' => Str::slug($nombre),
             'modelo' => fake()->bothify('??-####'),

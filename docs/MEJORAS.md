@@ -230,6 +230,23 @@ Conviene confirmar en qué régimen está la tienda antes de estimar nada.
 
 ---
 
+## Apuntes técnicos
+
+### Booleanos en multipart/form-data (2026-09-04)
+
+Al enviar un formulario con archivo (multipart) desde la app móvil, los campos
+booleanos (`activa`, `activo`) fallaban con 422: *"El campo debe tener un valor
+verdadero o falso"*. La causa: Dio serializaba `true`/`false` como strings que
+Laravel no aceptaba en el contexto multipart.
+
+**Solución** en `_aplanar()` de `cliente_api.dart`: convertir booleanos a enteros
+`1`/`0` en vez de enviarlos como `bool`. Laravel acepta enteros sin problema.
+También se eliminó el `Content-Type` global `application/json` y se establece
+por petición (`publicar` → JSON, `publicarConArchivo` → multipart) para evitar
+conflictos.
+
+---
+
 ## Por dónde empezar
 
 1. **Esta semana** — dejar corriendo los tres procesos del servidor y comprobar

@@ -126,7 +126,6 @@ class CatalogoController extends Controller
             ->when($datos['solo_activos'] ?? false, fn ($q) => $q->activos())
             ->when($termino !== '', fn ($q) => $q->where(function ($sub) use ($termino) {
                 $sub->where('nombre', 'like', "%{$termino}%")
-                    ->orWhere('sku', 'like', "%{$termino}%")
                     ->orWhere('modelo', 'like', "%{$termino}%")
                     // También por el serial del aparato: en la tienda se
                     // pregunta por la etiqueta que tiene delante.

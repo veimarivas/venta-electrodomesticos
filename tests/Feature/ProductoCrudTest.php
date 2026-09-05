@@ -41,7 +41,6 @@ class ProductoCrudTest extends TestCase
         return array_merge([
             'nombre' => 'Smart TV 55" 4K',
             'slug' => 'smart-tv-55-4k',
-            'sku' => 'TV-55-4K',
             'categoriaId' => null,
             'marcaId' => null,
             'modelo' => 'UN55CU8000',
@@ -66,14 +65,14 @@ class ProductoCrudTest extends TestCase
                 && $productos->lastPage() === 3);
     }
 
-    public function test_el_buscador_filtra_por_nombre_sku_y_modelo(): void
+    public function test_el_buscador_filtra_por_nombre_y_modelo(): void
     {
         Producto::factory()->count(15)->create();
-        Producto::factory()->create(['sku' => 'ZZZ-0001', 'nombre' => 'Buscada']);
+        Producto::factory()->create(['nombre' => 'Buscada']);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
-            ->set('buscar', 'ZZZ-0001')
+            ->set('buscar', 'Buscada')
             ->assertViewHas('productos', fn ($productos) => $productos->total() === 1
                 && $productos->first()->nombre === 'Buscada');
     }
@@ -134,8 +133,6 @@ class ProductoCrudTest extends TestCase
             ->assertSet('formularioValido', false)
             ->set('nombre', 'TV')
             ->assertSet('formularioValido', false)
-            ->set('sku', 'TV-01')
-            ->assertSet('formularioValido', false)
             ->set('categoriaId', $this->categoria()->id)
             ->assertSet('formularioValido', false)
             ->set('precio', '100')
@@ -146,8 +143,6 @@ class ProductoCrudTest extends TestCase
     {
         Livewire::actingAs($this->admin())
             ->test(Index::class)
-            ->set('sku', 'a!')
-            ->assertHasErrors(['sku' => 'regex'])
             ->set('precio', '-5')
             ->assertHasErrors(['precio' => 'min'])
             ->set('mesesGarantia', 999)
@@ -162,7 +157,6 @@ class ProductoCrudTest extends TestCase
             ->test(Index::class)
             ->set('nombre', 'Barra de Sonido 2.1')
             ->assertSet('slug', 'barra-de-sonido-21')
-            ->set('sku', 'BAR-21')
             ->set('categoriaId', $this->categoria()->id)
             ->set('precio', '100')
             ->call('guardar')
@@ -181,17 +175,17 @@ class ProductoCrudTest extends TestCase
             ->assertSet('slug', 'barra-sonido');
     }
 
-    public function test_no_permite_dos_productos_con_el_mismo_sku(): void
+    public function test_no_permite_dos_productos_con_el_mismo_nombre(): void
     {
-        Producto::factory()->create(['sku' => 'TV-55-4K']);
+        Producto::factory()->create(['nombre' => 'TV 55']);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
             ->set($this->datosValidos())
             ->call('guardar')
-            ->assertHasErrors(['sku' => 'unique']);
+            ->assertHasErrors(['slug' => 'unique']);
 
-        $this->assertSame(1, Producto::where('sku', 'TV-55-4K')->count());
+        $this->assertSame(1, Producto::where('slug', 'smart-tv-55-4k')->count());
     }
 
     public function test_registra_un_producto_con_categoria_marca_y_especificaciones(): void
@@ -219,7 +213,6 @@ class ProductoCrudTest extends TestCase
             ->assertDispatched('toast', tipo: 'success', mensaje: 'Producto creado correctamente.');
 
         $this->assertDatabaseHas('productos', [
-            'sku' => 'TV-55-4K',
             'categoria_id' => $categoria->id,
             'marca_id' => $marca->id,
             'precio_venta' => 4299.00,
@@ -255,15 +248,14 @@ class ProductoCrudTest extends TestCase
         $this->assertSame(0, Producto::count());
     }
 
-    public function test_al_editar_el_slug_y_sku_propios_no_chocan_consigo_mismo(): void
+    public function test_al_editar_el_slug_propio_no_choca_consigo_mismo(): void
     {
         $categoria = $this->categoria();
-        $producto = Producto::factory()->create(['sku' => 'TV-55-4K', 'categoria_id' => $categoria->id]);
+        $producto = Producto::factory()->create(['categoria_id' => $categoria->id]);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
             ->call('abrirEditar', $producto->id)
-            ->assertSet('sku', 'TV-55-4K')
             ->set('nombre', 'Smart TV 55" QLED')
             ->call('guardar')
             ->assertHasNoErrors()

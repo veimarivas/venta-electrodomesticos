@@ -159,7 +159,6 @@ class DashboardController extends Controller
                 ->map(fn ($p): array => [
                     'id' => $p->id,
                     'nombre' => $p->nombre,
-                    'sku' => $p->sku,
                     'unidades' => (int) $p->unidades,
                     'ingreso' => (float) $p->ingreso,
                     ...($verCostos ? ['ganancia' => (float) $p->ganancia] : []),

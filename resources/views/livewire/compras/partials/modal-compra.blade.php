@@ -145,7 +145,7 @@
                         <div class="col-md-4">
                             <div class="search-box">
                                 <input type="text" class="form-control form-control-sm crud-busqueda"
-                                    placeholder="Nombre, SKU o modelo..."
+                                    placeholder="Nombre o modelo..."
                                     wire:model.live.debounce.350ms="buscarProducto">
                                 <i class="ri-search-line search-icon"></i>
                             </div>
@@ -169,8 +169,7 @@
                                 <span class="min-w-0 flex-grow-1 text-start">
                                     <span class="d-block fw-semibold text-truncate">{{ $producto->nombre }}</span>
                                     <span class="d-block text-muted fs-12 text-truncate">
-                                        {{ $producto->sku }}
-                                        @if ($producto->marca) · {{ $producto->marca->nombre }} @endif
+                                        @if ($producto->marca) {{ $producto->marca->nombre }} @endif
                                         @if ($producto->categoria) · {{ $producto->categoria->nombre }} @endif
                                     </span>
                                 </span>
@@ -225,8 +224,7 @@
                                             <td>
                                                 <div class="fw-semibold text-truncate">{{ $p?->nombre ?? 'Producto' }}</div>
                                                 <small class="text-muted">
-                                                    {{ $p?->sku }}
-                                                    @if ($p?->marca) · {{ $p->marca->nombre }} @endif
+                                                    @if ($p?->marca) {{ $p->marca->nombre }} @endif
                                                 </small>
                                             </td>
 

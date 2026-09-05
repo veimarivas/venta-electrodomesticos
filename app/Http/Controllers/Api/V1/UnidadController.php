@@ -49,8 +49,7 @@ class UnidadController extends Controller
             ->when($termino !== '', fn ($q) => $q->where(function ($q2) use ($termino) {
                 $q2->where('codigo_interno', 'like', "%{$termino}%")
                     ->orWhere('serial', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%"));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             }))
             ->orderBy('codigo_interno')
             // Desempate estable: sin él dos unidades del mismo código pueden

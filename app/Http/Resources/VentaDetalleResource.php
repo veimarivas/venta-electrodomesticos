@@ -22,7 +22,6 @@ class VentaDetalleResource extends JsonResource
         return [
             'id' => $this->id,
             'producto' => $this->producto?->nombre,
-            'sku' => $this->producto?->sku,
             'codigo_interno' => $this->unidad?->codigo_interno,
             'serial' => $this->unidad?->serial,
             'precio_unitario' => (float) $this->precio_unitario,

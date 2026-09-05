@@ -484,8 +484,7 @@ class Index extends Component
             ->when($termino !== '', fn ($q) => $q->where(function ($q2) use ($termino) {
                 $q2->where('codigo_interno', 'like', "%{$termino}%")
                     ->orWhere('serial', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%"));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             }))
             ->orderBy($this->ordenarPor, $this->direccionOrden)
             ->orderBy('id')

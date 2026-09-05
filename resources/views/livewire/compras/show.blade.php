@@ -248,7 +248,7 @@
                                         @endif
                                         <div class="min-w-0">
                                             <h6 class="mb-0 text-truncate">{{ $linea->producto->nombre }}</h6>
-                                            <small class="compras-show-sku">{{ $linea->producto->sku }}</small>
+
                                         </div>
                                     </div>
                                 </td>
@@ -328,7 +328,7 @@
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <div class="d-flex align-items-center gap-2">
                                 <h6 class="mb-0">{{ $producto['nombre'] }}</h6>
-                                <small class="compras-show-sku">{{ $producto['sku'] }}</small>
+
                             </div>
                             <span class="compras-show-unidad-count">{{ $producto['total'] }} unidades</span>
                         </div>

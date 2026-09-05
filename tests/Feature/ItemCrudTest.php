@@ -106,7 +106,6 @@ class ItemCrudTest extends TestCase
         $marca = Marca::factory()->create(['nombre' => 'Samsung']);
         $producto = Producto::factory()->create([
             'nombre' => 'TV Samsung',
-            'sku' => 'TV-SAM-55',
             'categoria_id' => $categoria->id,
             'marca_id' => $marca->id,
             'meses_garantia' => 24,
@@ -120,11 +119,10 @@ class ItemCrudTest extends TestCase
             ->get('/inventario/unidades');
 
         // La cabecera del listado muestra la ficha completa del producto, no
-        // solo su nombre: categoría, SKU, marca y garantía.
+        // solo su nombre: categoría, marca y garantía.
         $respuesta
             ->assertOk()
             ->assertSee('TV Samsung')
-            ->assertSee('TV-SAM-55')
             ->assertSee('Televisores')
             ->assertSee('Samsung')
             ->assertSee('24 meses');
@@ -245,7 +243,7 @@ class ItemCrudTest extends TestCase
 
     public function test_el_codigo_interno_se_genera_con_el_formato_del_plan(): void
     {
-        $producto = Producto::factory()->create(['sku' => 'TVSAM55']);
+        $producto = Producto::factory()->create();
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
@@ -253,20 +251,23 @@ class ItemCrudTest extends TestCase
             ->call('guardar')
             ->assertHasNoErrors();
 
-        $this->assertMatchesRegularExpression('/^TVSAM55-\d{4}-\d{4}$/', Unidad::first()->codigo_interno);
+        $codigo = Unidad::first()->codigo_interno;
+        $prefijo = 'P'.str_pad((string) $producto->id, 3, '0', STR_PAD_LEFT).'-'.now()->format('ym');
+        $this->assertStringStartsWith($prefijo, $codigo);
     }
 
     public function test_el_correlativo_del_codigo_avanza_por_producto_y_mes(): void
     {
-        $producto = Producto::factory()->create(['sku' => 'AAA']);
+        $producto = Producto::factory()->create();
         $generador = app(GeneradorCodigoUnidad::class);
         $mes = now()->format('ym');
+        $prefijo = 'P'.str_pad((string) $producto->id, 3, '0', STR_PAD_LEFT).'-'.$mes;
 
         $a = $generador->crearCon(['producto_id' => $producto->id]);
         $b = $generador->crearCon(['producto_id' => $producto->id]);
 
-        $this->assertSame("AAA-{$mes}-0001", $a->codigo_interno);
-        $this->assertSame("AAA-{$mes}-0002", $b->codigo_interno);
+        $this->assertSame("{$prefijo}-0001", $a->codigo_interno);
+        $this->assertSame("{$prefijo}-0002", $b->codigo_interno);
     }
 
     public function test_no_permite_dos_unidades_con_el_mismo_serial(): void

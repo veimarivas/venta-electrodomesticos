@@ -140,20 +140,20 @@ class CatalogoApiTest extends TestCase
         $this->assertContains('De la hija', $nombres);
     }
 
-    public function test_el_listado_busca_por_nombre_sku_y_serial(): void
+    public function test_el_listado_busca_por_nombre_y_serial(): void
     {
-        $producto = $this->producto(['nombre' => 'Licuadora', 'sku' => 'LIC-01']);
+        $producto = $this->producto(['nombre' => 'Licuadora']);
         $unidad = Unidad::factory()->create([
             'producto_id' => $producto->id,
             'estado' => 'en_stock',
             'serial' => 'SN-ABC-999',
         ]);
 
-        $this->producto(['nombre' => 'Televisor', 'sku' => 'TV-01']);
+        $this->producto(['nombre' => 'Televisor']);
 
         Sanctum::actingAs($this->admin());
 
-        foreach (['Licua', 'LIC-01', $unidad->serial] as $termino) {
+        foreach (['Licua', $unidad->serial] as $termino) {
             $datos = $this->getJson('/api/v1/catalogo/productos?buscar='.urlencode($termino))
                 ->assertOk()
                 ->json('data');

@@ -10,7 +10,7 @@ use Throwable;
 
 /**
  * Genera el código interno de cada unidad física (unidades) con el formato
- * {SKU}-{AAMM}-{correlativo} (ej. TVSAM55-2608-0042).
+ * P{id}-{AAMM}-{correlativo} (ej. P001-2608-0042).
  *
  * El correlativo se calcula por producto y mes sobre el máximo existente,
  * incluyendo los registros archivados (softDeletes), para no reutilizar
@@ -31,7 +31,7 @@ class GeneradorCodigoUnidad
      */
     public function siguiente(Producto $producto): string
     {
-        return $this->formatear($producto->sku, $this->ultimoCorrelativo($producto->sku) + 1);
+        return $this->formatear($producto->id, $this->ultimoCorrelativo($producto->id) + 1);
     }
 
     /**
@@ -41,13 +41,13 @@ class GeneradorCodigoUnidad
      */
     public function crearCon(array $datos): Unidad
     {
-        $sku = Producto::findOrFail($datos['producto_id'])->sku;
+        $productoId = $datos['producto_id'];
 
         for ($intento = 1; $intento <= self::INTENTOS; $intento++) {
             try {
                 return DB::transaction(fn (): Unidad => Unidad::create([
                     ...$datos,
-                    'codigo_interno' => $this->formatear($sku, $this->ultimoCorrelativo($sku) + 1),
+                    'codigo_interno' => $this->formatear($productoId, $this->ultimoCorrelativo($productoId) + 1),
                 ]));
             } catch (QueryException $e) {
                 // Solo se reintenta ante una colisión del código interno;
@@ -66,9 +66,9 @@ class GeneradorCodigoUnidad
      * Mayor correlativo usado para este producto y mes, 0 si aún no hay
      * unidades con ese prefijo.
      */
-    private function ultimoCorrelativo(string $sku): int
+    private function ultimoCorrelativo(int $productoId): int
     {
-        $prefijo = $this->prefijo($sku);
+        $prefijo = $this->prefijo($productoId);
         $maximo = Unidad::withTrashed()
             ->where('codigo_interno', 'like', $prefijo.'%')
             ->selectRaw('MAX(CAST(SUBSTRING(codigo_interno, ?) AS UNSIGNED)) as maximo', [strlen($prefijo) + 1])
@@ -77,16 +77,14 @@ class GeneradorCodigoUnidad
         return (int) $maximo;
     }
 
-    private function prefijo(string $sku): string
+    private function prefijo(int $productoId): string
     {
-        $skuLimpio = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $sku));
-
-        return $skuLimpio.'-'.now()->format('ym').'-';
+        return 'P'.str_pad((string) $productoId, 3, '0', STR_PAD_LEFT).'-'.now()->format('ym').'-';
     }
 
-    private function formatear(string $sku, int $correlativo): string
+    private function formatear(int $productoId, int $correlativo): string
     {
-        return $this->prefijo($sku).str_pad((string) $correlativo, self::DIGITOS, '0', STR_PAD_LEFT);
+        return $this->prefijo($productoId).str_pad((string) $correlativo, self::DIGITOS, '0', STR_PAD_LEFT);
     }
 
     /**

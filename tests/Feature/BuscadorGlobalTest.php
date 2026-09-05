@@ -65,16 +65,15 @@ class BuscadorGlobalTest extends TestCase
             ->assertSee('Sin resultados para');
     }
 
-    public function test_encuentra_un_producto_por_nombre_sku_o_modelo(): void
+    public function test_encuentra_un_producto_por_nombre_o_modelo(): void
     {
         Producto::factory()->create([
             'nombre' => 'Refrigerador Doble Puerta',
-            'sku' => 'REF-900',
             'modelo' => 'RD-900X',
         ]);
-        Producto::factory()->create(['nombre' => 'Licuadora', 'sku' => 'LIC-1', 'modelo' => 'L-1']);
+        Producto::factory()->create(['nombre' => 'Licuadora', 'modelo' => 'L-1']);
 
-        foreach (['Refrigerador', 'REF-900', 'RD-900X'] as $termino) {
+        foreach (['Refrigerador', 'RD-900X'] as $termino) {
             $this->actingAs($this->admin())
                 ->get('/buscar?q='.urlencode($termino))
                 ->assertOk()

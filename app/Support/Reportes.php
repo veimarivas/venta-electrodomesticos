@@ -159,7 +159,7 @@ class Reportes
     public function topProductos(CarbonInterface $desde, CarbonInterface $hasta, int $limite = 8): Collection
     {
         return Producto::query()
-            ->select('productos.id', 'productos.nombre', 'productos.sku')
+            ->select('productos.id', 'productos.nombre')
             ->join('venta_detalles', 'venta_detalles.producto_id', '=', 'productos.id')
             ->join('ventas', 'ventas.id', '=', 'venta_detalles.venta_id')
             ->where('ventas.estado', 'completada')
@@ -167,7 +167,7 @@ class Reportes
             ->selectRaw('count(*) as unidades')
             ->selectRaw('sum(venta_detalles.precio_unitario - venta_detalles.descuento) as ingreso')
             ->selectRaw('sum(venta_detalles.ganancia) as ganancia')
-            ->groupBy('productos.id', 'productos.nombre', 'productos.sku')
+            ->groupBy('productos.id', 'productos.nombre')
             ->orderByDesc('unidades')
             ->limit($limite)
             ->get();

@@ -99,7 +99,7 @@
                                     @endif
                                     <h4 class="producto-ficha-nombre mb-2">{{ $producto->nombre }}</h4>
                                     <div class="d-flex flex-wrap align-items-center gap-2">
-                                        <span class="producto-ficha-sku">{{ $producto->sku }}</span>
+
                                         @if ($producto->modelo)
                                             <span class="producto-ficha-modelo">{{ $producto->modelo }}</span>
                                         @endif
@@ -406,7 +406,7 @@
                                     <h6 class="mb-0">{{ $unidad->producto->nombre ?? '—' }}</h6>
                                     @if ($unidad->producto)
                                         <small class="text-muted">
-                                            <code class="fs-12">{{ $unidad->producto->sku }}</code>
+
                                         </small>
                                     @endif
                                 </td>
@@ -630,7 +630,7 @@
                                             <div class="min-w-0">
                                                 <span class="fw-semibold d-block text-truncate">{{ $producto->nombre }}</span>
                                                 <small class="text-muted d-block text-truncate">
-                                                    {{ $producto->sku }}@if ($producto->modelo) · {{ $producto->modelo }}@endif
+                                                    @if ($producto->modelo) {{ $producto->modelo }} @endif
                                                 </small>
                                             </div>
                                         </div>
@@ -648,7 +648,7 @@
                                                 class="form-select border-start-0 @error('productoId') is-invalid @enderror">
                                                 <option value="">— Elige un producto —</option>
                                                 @foreach ($productos as $opcionProducto)
-                                                    <option value="{{ $opcionProducto->id }}">{{ $opcionProducto->nombre }} ({{ $opcionProducto->sku }})</option>
+                                                    <option value="{{ $opcionProducto->id }}">{{ $opcionProducto->nombre }}</option>
                                                 @endforeach
                                             </select>
                                             @error('productoId')
@@ -682,7 +682,7 @@
                                         <i class="ri-qr-code-line"></i>
                                         <div class="min-w-0">
                                             <code class="fs-14">{{ $this->codigoPreview !== '' ? $this->codigoPreview : 'Elige un producto para generarlo' }}</code>
-                                            <small class="d-block text-muted">Formato SKU-AAMM-correlativo. Se genera solo al guardar.</small>
+                                            <small class="d-block text-muted">Se genera solo al guardar.</small>
                                         </div>
                                     </div>
                                 </div>

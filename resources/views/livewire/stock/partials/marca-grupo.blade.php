@@ -119,9 +119,8 @@
                                             <span class="fw-medium text-truncate d-block">{{ $producto->nombre }}</span>
                                         @endcan
                                         <small class="d-block stock-text-muted">
-                                            <code class="fs-12 stock-bg-inactive" style="border-radius: .3rem; padding: .1rem .35rem;">{{ $producto->sku }}</code>
                                             @if ($producto->modelo)
-                                                · {{ $producto->modelo }}
+                                                {{ $producto->modelo }}
                                             @endif
                                         </small>
                                     </span>

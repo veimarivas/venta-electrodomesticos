@@ -100,7 +100,6 @@ class SearchController extends Controller
             ->map(fn (Producto $producto) => [
                 'titulo' => $producto->nombre,
                 'detalle' => implode(' · ', array_filter([
-                    $producto->sku,
                     $producto->marca?->nombre,
                     $producto->categoria?->nombre,
                 ])),

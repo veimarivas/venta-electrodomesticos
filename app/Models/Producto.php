@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable([
     'categoria_id',
     'marca_id',
-    'sku',
     'nombre',
     'slug',
     'modelo',
@@ -72,7 +71,7 @@ class Producto extends Model
 
     /**
      * Búsqueda por lo que el mostrador tiene a mano: el nombre que dice el
-     * cliente, el SKU de la etiqueta o el modelo impreso en el aparato.
+     * cliente o el modelo impreso en el aparato.
      */
     public function scopeBuscar(Builder $query, ?string $termino): Builder
     {
@@ -83,7 +82,7 @@ class Producto extends Model
         }
 
         return $query->where(function (Builder $q) use ($termino) {
-            foreach (['nombre', 'sku', 'modelo'] as $campo) {
+            foreach (['nombre', 'modelo'] as $campo) {
                 $q->orWhere($campo, 'like', "%{$termino}%");
             }
         });

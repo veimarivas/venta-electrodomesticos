@@ -225,7 +225,7 @@
             <div class="etiqueta">
                 <div>
                     <div class="etiqueta-producto">{{ $unidad->producto->nombre }}</div>
-                    <div class="etiqueta-marca">{{ $unidad->producto->sku }}</div>
+
                 </div>
 
                 <div class="etiqueta-codigo-svg">

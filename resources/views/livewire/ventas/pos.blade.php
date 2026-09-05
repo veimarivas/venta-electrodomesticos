@@ -60,7 +60,7 @@
                     </label>
                     <div class="search-box">
                         <input type="text" id="v-buscar" class="form-control form-control-lg crud-busqueda pos-input-buscar"
-                            placeholder="Escanea o escribe el serial, el código interno, el SKU o el nombre..."
+                            placeholder="Escanea o escribe el serial, el código interno o el nombre..."
                             wire:model.live.debounce.300ms="buscar" autofocus>
                         <i class="ri-search-line search-icon"></i>
                     </div>
@@ -88,7 +88,7 @@
                                             <code>{{ $unidad->codigo_interno }}</code>
                                             @if ($unidad->serial) · Serial {{ $unidad->serial }} @endif
                                             @if ($unidad->producto?->marca) · {{ $unidad->producto->marca->nombre }} @endif
-                                            @if ($unidad->producto?->sku) · SKU {{ $unidad->producto->sku }} @endif
+
                                         </span>
 
                                         @unless ($vendible)
@@ -225,12 +225,7 @@
                                                                     {{ $u->producto->modelo }}
                                                                 </span>
                                                             @endif
-                                                            @if ($u?->producto?->sku)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-hashtag"></i>
-                                                                    {{ $u->producto->sku }}
-                                                                </span>
-                                                            @endif
+
                                                             @if ($u?->producto?->categoria)
                                                                 <span class="pos-carrito-dato">
                                                                     <i class="ri-folder-2-line"></i>

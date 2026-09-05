@@ -112,7 +112,7 @@
                     <div class="crud-filtros justify-content-md-end">
                         <div class="search-box flex-grow-1" style="max-width: 22rem">
                             <input type="text" class="form-control crud-busqueda"
-                                placeholder="Buscar por nombre, SKU o modelo..."
+                                placeholder="Buscar por nombre o modelo..."
                                 wire:model.live.debounce.400ms="buscar">
                             <i class="ri-search-line search-icon"></i>
                             @if ($buscar !== '')
@@ -266,9 +266,8 @@
                                 <td>
                                     <h6 class="mb-0">{{ $producto->nombre }}</h6>
                                     <small class="text-muted">
-                                        <code class="fs-12">{{ $producto->sku }}</code>
                                         @if ($producto->modelo)
-                                            · {{ $producto->modelo }}
+                                            {{ $producto->modelo }}
                                         @endif
                                     </small>
                                 </td>
@@ -457,23 +456,6 @@
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                            </div>
-
-                            <div class="col-md-5">
-                                <label for="sku" class="form-label">
-                                    SKU <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0"><i
-                                            class="ri-barcode-line"></i></span>
-                                    <input type="text" id="sku" wire:model.live.debounce.400ms="sku"
-                                        class="form-control border-start-0 ps-0 @error('sku') is-invalid @elseif ($sku !== '') is-valid @enderror"
-                                        placeholder="TVSAM55" maxlength="40">
-                                    @error('sku')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="form-text">Código corto interno del modelo.</div>
                             </div>
 
                             <div class="col-md-7">

@@ -265,7 +265,7 @@
                         <div class="dash-alerta" wire:key="minimo-{{ $producto->id }}">
                             <div class="min-w-0">
                                 <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
-                                <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? $producto->sku }}</small>
+                                <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
                             </div>
                             <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
                                 {{ $producto->disponibles }} / {{ $producto->stock_minimo }}

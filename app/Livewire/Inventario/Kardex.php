@@ -137,8 +137,7 @@ class Kardex extends Component
             ->where(function ($q) use ($termino) {
                 $q->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%"));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             })
             ->orderBy('codigo_interno')
             ->limit(15)
@@ -244,8 +243,7 @@ class Kardex extends Component
 
                 $q->whereHas('unidad', fn ($u) => $u->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%")));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")));
             })
             ->orderByDesc('created_at')
             ->orderByDesc('id')

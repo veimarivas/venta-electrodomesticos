@@ -46,7 +46,6 @@ class Show extends Component
             ->groupBy(fn (Unidad $u) => $u->producto->nombre ?? 'Sin producto')
             ->map(fn ($grupo, $nombre) => [
                 'nombre' => $nombre,
-                'sku' => $grupo->first()->producto->sku ?? '',
                 'unidades' => $grupo,
                 'total' => $grupo->count(),
                 'en_stock' => $grupo->where('estado', 'en_stock')->count(),

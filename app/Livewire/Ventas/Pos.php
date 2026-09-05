@@ -303,8 +303,7 @@ class Pos extends Component
             ->where(function ($q) use ($termino) {
                 $q->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%"));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             })
             // Los vendibles primero: son los que se pueden cobrar.
             ->orderByRaw("estado = 'en_stock' desc")

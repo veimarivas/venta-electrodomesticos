@@ -154,7 +154,7 @@ function initTopProductos(canvasId, datos) {
 
     const labels = datos.map(d => truncar(d.nombre, 14));
     const values = datos.map(d => Number(d.ingreso));
-    const metas = datos.map(d => `${d.unidades} ${d.unidades == 1 ? 'un.' : 'un.'} · ${d.sku}`);
+    const metas = datos.map(d => `${d.unidades} ${d.unidades == 1 ? 'un.' : 'un.'}`);
 
     const opts = baseOptions();
 

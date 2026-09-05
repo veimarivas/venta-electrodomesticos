@@ -46,8 +46,6 @@ class Index extends Component
 
     public string $slug = '';
 
-    public string $sku = '';
-
     public ?int $categoriaId = null;
 
     public ?int $marcaId = null;
@@ -107,7 +105,6 @@ class Index extends Component
     private const CAMPOS = [
         'nombre',
         'slug',
-        'sku',
         'categoriaId',
         'marcaId',
         'modelo',
@@ -130,10 +127,6 @@ class Index extends Component
             'slug' => [
                 'required', 'string', 'regex:/^[a-z0-9\-]+$/',
                 Rule::unique('productos', 'slug')->ignore($this->productoId)->whereNull('deleted_at'),
-            ],
-            'sku' => [
-                'required', 'string', 'regex:/^[A-Za-z0-9\-]{3,40}$/',
-                Rule::unique('productos', 'sku')->ignore($this->productoId)->whereNull('deleted_at'),
             ],
             'categoriaId' => ['required', 'integer', Rule::exists('categorias', 'id')->whereNull('deleted_at')],
             'marcaId' => ['nullable', 'integer', Rule::exists('marcas', 'id')],
@@ -162,9 +155,6 @@ class Index extends Component
             'slug.required' => 'El slug es obligatorio.',
             'slug.regex' => 'El slug solo puede contener minúsculas, números y guiones.',
             'slug.unique' => 'Ya existe un producto con este slug.',
-            'sku.required' => 'El SKU es obligatorio.',
-            'sku.regex' => 'El SKU solo puede contener letras, números y guiones (3 a 40 caracteres).',
-            'sku.unique' => 'Ya existe un producto con este SKU.',
             'categoriaId.required' => 'Elige una categoría.',
             'categoriaId.exists' => 'La categoría elegida ya no existe.',
             'marcaId.exists' => 'La marca elegida ya no existe.',
@@ -186,7 +176,6 @@ class Index extends Component
         return [
             'nombre' => 'nombre del producto',
             'slug' => 'slug',
-            'sku' => 'SKU',
             'categoriaId' => 'categoría',
             'marcaId' => 'marca',
             'modelo' => 'modelo',
@@ -352,7 +341,6 @@ class Index extends Component
         $this->productoId = $producto->id;
         $this->nombre = $producto->nombre;
         $this->slug = $producto->slug;
-        $this->sku = $producto->sku;
         $this->categoriaId = $producto->categoria_id;
         $this->marcaId = $producto->marca_id;
         $this->modelo = (string) $producto->modelo;
@@ -381,7 +369,6 @@ class Index extends Component
         $datos = [
             'nombre' => $validados['nombre'],
             'slug' => $validados['slug'],
-            'sku' => strtoupper($validados['sku']),
             'categoria_id' => $this->categoriaId,
             'marca_id' => $this->marcaId ?: null,
             'modelo' => $validados['modelo'] === '' ? null : $validados['modelo'],
@@ -787,7 +774,6 @@ class Index extends Component
             ->when($this->marcaFiltro, fn ($q) => $q->where('marca_id', $this->marcaFiltro))
             ->when($termino !== '', fn ($q) => $q->where(function ($q2) use ($termino) {
                 $q2->where('nombre', 'like', "%{$termino}%")
-                    ->orWhere('sku', 'like', "%{$termino}%")
                     ->orWhere('modelo', 'like', "%{$termino}%");
             }))
             ->orderBy($this->ordenarPor, $this->direccionOrden)

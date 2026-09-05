@@ -464,7 +464,6 @@ class Index extends Component
             ->when($this->buscarProducto !== '', function ($q) {
                 $termino = trim($this->buscarProducto);
                 $q->where(fn ($sub) => $sub->where('nombre', 'like', "%{$termino}%")
-                    ->orWhere('sku', 'like', "%{$termino}%")
                     ->orWhere('modelo', 'like', "%{$termino}%"));
             })
             ->orderBy('nombre')

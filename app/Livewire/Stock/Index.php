@@ -115,7 +115,6 @@ class Index extends Component
             ->when($this->marcasFiltro !== [], fn ($q) => $q->whereIn('marca_id', $this->marcasFiltro))
             ->when($termino !== '', fn ($q) => $q->where(function (Builder $q2) use ($termino) {
                 $q2->where('nombre', 'like', "%{$termino}%")
-                    ->orWhere('sku', 'like', "%{$termino}%")
                     ->orWhere('modelo', 'like', "%{$termino}%")
                     ->orWhereHas('marca', fn ($m) => $m->where('nombre', 'like', "%{$termino}%"));
             }))

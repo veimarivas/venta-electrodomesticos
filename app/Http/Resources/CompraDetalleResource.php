@@ -29,7 +29,6 @@ class CompraDetalleResource extends JsonResource
             'id' => $this->id,
             'producto' => $this->producto?->nombre,
             'producto_id' => $this->producto_id,
-            'sku' => $this->producto?->sku,
             'cantidad' => (int) $this->cantidad,
             'costo_unitario' => (float) $this->costo_unitario,
             'costo_real_unitario' => $costoReal,

@@ -8,7 +8,7 @@ use Milon\Barcode\DNS1D;
  * Genera los códigos de barras de las etiquetas de inventario.
  *
  * Se usa Code128, que admite letras, números y guiones: es lo que necesita el
- * formato de código interno ({SKU}-{AAMM}-{correlativo}). Los formatos EAN o
+ * formato de código interno ({AAMM}-{correlativo}). Los formatos EAN o
  * UPC solo aceptan dígitos y no servirían.
  */
 class GeneradorEtiquetas

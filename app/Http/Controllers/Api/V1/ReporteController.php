@@ -71,7 +71,6 @@ class ReporteController extends Controller
                 ->map(fn ($p): array => [
                     'id' => $p->id,
                     'nombre' => $p->nombre,
-                    'sku' => $p->sku,
                     'marca' => $p->marca?->nombre,
                     'disponibles' => (int) $p->disponibles,
                     'stock_minimo' => (int) $p->stock_minimo,

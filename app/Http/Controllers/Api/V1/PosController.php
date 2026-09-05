@@ -74,8 +74,7 @@ class PosController extends Controller
             ->where(function ($q) use ($termino) {
                 $q->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%")
-                        ->orWhere('sku', 'like', "%{$termino}%"));
+                    ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             })
             ->orderBy('codigo_interno')
             ->limit(12)
@@ -313,7 +312,6 @@ class PosController extends Controller
             'serial' => $unidad->serial,
             'producto' => $unidad->producto?->nombre,
             'producto_id' => $unidad->producto_id,
-            'sku' => $unidad->producto?->sku,
             'marca' => $unidad->producto?->marca?->nombre,
             // El precio de lista es la referencia; el tope, lo máximo que el
             // mostrador puede rebajar de él.

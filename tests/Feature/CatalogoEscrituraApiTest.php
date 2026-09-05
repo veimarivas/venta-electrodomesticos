@@ -197,7 +197,6 @@ class CatalogoEscrituraApiTest extends TestCase
 
         $this->postJson('/api/v1/catalogo/productos', [
             'nombre' => 'Televisor 55',
-            'sku' => 'TV-55-001',
             'categoria_id' => $categoria->id,
             'precio_venta' => 1899,
             'descuento_maximo' => 100,
@@ -234,7 +233,6 @@ class CatalogoEscrituraApiTest extends TestCase
         // sección de especificaciones sin nada dentro.
         $this->postJson('/api/v1/catalogo/productos', [
             'nombre' => 'Plancha',
-            'sku' => 'PLA-001',
             'categoria_id' => $categoria->id,
             'precio_venta' => 150,
             'descuento_maximo' => 0,
@@ -242,25 +240,6 @@ class CatalogoEscrituraApiTest extends TestCase
         ])->assertCreated();
 
         $this->assertNull(Producto::firstOrFail()->especificaciones);
-    }
-
-    public function test_el_sku_se_guarda_en_mayusculas(): void
-    {
-        $categoria = Categoria::factory()->create();
-
-        Sanctum::actingAs($this->admin());
-
-        // Se compara a ojo contra la etiqueta: «tv-55» y «TV-55» tienen que
-        // ser el mismo, igual que en el panel.
-        $this->postJson('/api/v1/catalogo/productos', [
-            'nombre' => 'Televisor',
-            'sku' => 'tv-55-002',
-            'categoria_id' => $categoria->id,
-            'precio_venta' => 100,
-            'descuento_maximo' => 0,
-        ])->assertCreated();
-
-        $this->assertSame('TV-55-002', Producto::firstOrFail()->sku);
     }
 
     public function test_la_rebaja_no_puede_superar_al_precio(): void
@@ -272,38 +251,20 @@ class CatalogoEscrituraApiTest extends TestCase
         // Un descuento mayor dejaría vender el aparato gratis o en negativo.
         $this->postJson('/api/v1/catalogo/productos', [
             'nombre' => 'Licuadora',
-            'sku' => 'LIC-001',
             'categoria_id' => $categoria->id,
             'precio_venta' => 300,
             'descuento_maximo' => 400,
         ])->assertStatus(422)->assertJsonValidationErrors('descuento_maximo');
     }
 
-    public function test_no_se_repite_el_sku(): void
+    public function test_editar_un_producto_no_choca_con_su_propio_slug(): void
     {
-        $categoria = Categoria::factory()->create();
-        Producto::factory()->create(['sku' => 'TV-55-001']);
-
-        Sanctum::actingAs($this->admin());
-
-        $this->postJson('/api/v1/catalogo/productos', [
-            'nombre' => 'Otro',
-            'sku' => 'TV-55-001',
-            'categoria_id' => $categoria->id,
-            'precio_venta' => 100,
-            'descuento_maximo' => 0,
-        ])->assertStatus(422)->assertJsonValidationErrors('sku');
-    }
-
-    public function test_editar_un_producto_no_choca_con_su_propio_sku(): void
-    {
-        $producto = Producto::factory()->create(['sku' => 'TV-55-001']);
+        $producto = Producto::factory()->create();
 
         Sanctum::actingAs($this->admin());
 
         $this->postJson("/api/v1/catalogo/productos/{$producto->id}", [
             'nombre' => 'Televisor renombrado',
-            'sku' => 'TV-55-001',
             'categoria_id' => $producto->categoria_id,
             'precio_venta' => 2000,
             'descuento_maximo' => 0,

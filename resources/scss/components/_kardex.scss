@@ -94,11 +94,6 @@
         i { color: #254970; font-size: .8rem; }
     }
     .kardex-ficha-nombre { color: var(--marca-tinta); font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
-    .kardex-ficha-sku {
-        display: inline-flex; align-items: center; padding: .25rem .6rem; border-radius: .4rem;
-        background: rgba(37, 73, 112,.08); color: #0c5e58; font-size: .76rem; font-weight: 650;
-        font-family: var(--vz-font-family-monospace, monospace);
-    }
     .kardex-ficha-serial {
         display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .6rem; border-radius: .4rem;
         background: var(--marca-suave); color: var(--marca-apagado); font-size: .76rem; font-weight: 600;

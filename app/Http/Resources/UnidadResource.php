@@ -63,7 +63,6 @@ class UnidadResource extends JsonResource
         return [
             ...$fila,
             'producto_id' => $this->producto_id,
-            'sku' => $this->producto?->sku,
             'marca' => $this->producto?->marca?->nombre,
             'categoria' => $this->producto?->categoria?->nombre,
             'notas' => $this->notas,

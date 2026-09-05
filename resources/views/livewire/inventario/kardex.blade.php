@@ -78,12 +78,12 @@
                 </span>
                 <div>
                     <h6 class="mb-0 kardex-buscador-titulo">Buscar aparato</h6>
-                    <small class="text-muted">Serial, código interno, SKU o nombre del producto</small>
+                    <small class="text-muted">Serial, código interno o nombre del producto</small>
                 </div>
             </div>
             <div class="search-box">
                 <input type="text" id="k-buscar" class="form-control form-control-lg crud-busqueda"
-                    placeholder="Escanea o escribe el serial, el código interno, el SKU o el nombre..."
+                    placeholder="Escanea o escribe el serial, el código interno o el nombre..."
                     wire:model.live.debounce.350ms="buscar" @if (! $unidadId) autofocus @endif>
                 <i class="ri-search-line search-icon"></i>
                 @if ($buscar !== '')

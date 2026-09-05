@@ -16,13 +16,13 @@ class ProductoSeeder extends Seeder
      * y marcas existan (Corren antes en DatabaseSeeder).
      */
     private const PRODUCTOS = [
-        ['nombre' => 'Smart TV 55" 4K', 'sku' => 'TVSAM55', 'modelo' => 'UN55CU8000', 'categoria' => 'televisores', 'marca' => 'samsung', 'precio' => 4299.00],
-        ['nombre' => 'Barra de sonido 2.1', 'sku' => 'BARSON21', 'modelo' => 'HW-B650', 'categoria' => 'audio', 'marca' => 'samsung', 'precio' => 1899.00],
-        ['nombre' => 'Audífonos Bluetooth', 'sku' => 'AUDXMAIR', 'modelo' => 'Redmi Buds 4', 'categoria' => 'audio', 'marca' => 'xiaomi', 'precio' => 349.00],
-        ['nombre' => 'Laptop 15.6" Ryzen 5', 'sku' => 'LAPHP15', 'modelo' => '15-fc0003la', 'categoria' => 'computacion', 'marca' => null, 'precio' => 5299.00],
-        ['nombre' => 'Refrigerador 12 pies', 'sku' => 'REFWH12', 'modelo' => 'WRM12', 'categoria' => 'refrigeracion', 'marca' => 'whirlpool', 'precio' => 3599.00],
-        ['nombre' => 'Lavadora 18 kg', 'sku' => 'LAVDA18', 'modelo' => 'WM18', 'categoria' => 'lavado', 'marca' => 'daewoo', 'precio' => 2799.00],
-        ['nombre' => 'Cable HDMI 2.1 2m', 'sku' => 'CABHDMI21', 'modelo' => 'HDMI21-2M', 'categoria' => 'accesorios', 'marca' => null, 'precio' => 89.00],
+        ['nombre' => 'Smart TV 55" 4K', 'modelo' => 'UN55CU8000', 'categoria' => 'televisores', 'marca' => 'samsung', 'precio' => 4299.00],
+        ['nombre' => 'Barra de sonido 2.1', 'modelo' => 'HW-B650', 'categoria' => 'audio', 'marca' => 'samsung', 'precio' => 1899.00],
+        ['nombre' => 'Audífonos Bluetooth', 'modelo' => 'Redmi Buds 4', 'categoria' => 'audio', 'marca' => 'xiaomi', 'precio' => 349.00],
+        ['nombre' => 'Laptop 15.6" Ryzen 5', 'modelo' => '15-fc0003la', 'categoria' => 'computacion', 'marca' => null, 'precio' => 5299.00],
+        ['nombre' => 'Refrigerador 12 pies', 'modelo' => 'WRM12', 'categoria' => 'refrigeracion', 'marca' => 'whirlpool', 'precio' => 3599.00],
+        ['nombre' => 'Lavadora 18 kg', 'modelo' => 'WM18', 'categoria' => 'lavado', 'marca' => 'daewoo', 'precio' => 2799.00],
+        ['nombre' => 'Cable HDMI 2.1 2m', 'modelo' => 'HDMI21-2M', 'categoria' => 'accesorios', 'marca' => null, 'precio' => 89.00],
     ];
 
     public function run(): void
@@ -35,7 +35,6 @@ class ProductoSeeder extends Seeder
                 ['slug' => Str::slug($datos['nombre'])],
                 [
                     'nombre' => $datos['nombre'],
-                    'sku' => $datos['sku'],
                     'categoria_id' => $categoria?->id,
                     'marca_id' => $marca?->id,
                     'modelo' => $datos['modelo'],

@@ -85,10 +85,6 @@ class ProductoController extends Controller
                 'nullable', 'string', 'regex:/^[a-z0-9\-]+$/',
                 Rule::unique('productos', 'slug')->ignore($producto?->id)->whereNull('deleted_at'),
             ],
-            'sku' => [
-                'required', 'string', 'regex:/^[A-Za-z0-9\-]{3,40}$/',
-                Rule::unique('productos', 'sku')->ignore($producto?->id)->whereNull('deleted_at'),
-            ],
             'categoria_id' => ['required', 'integer', Rule::exists('categorias', 'id')->whereNull('deleted_at')],
             'marca_id' => ['nullable', 'integer', Rule::exists('marcas', 'id')],
             'modelo' => ['nullable', 'string', 'max:120'],
@@ -108,8 +104,6 @@ class ProductoController extends Controller
         ], [
             'slug.regex' => 'El slug solo puede contener minúsculas, números y guiones.',
             'slug.unique' => 'Ya existe un producto con este slug.',
-            'sku.regex' => 'El SKU solo puede contener letras, números y guiones (3 a 40 caracteres).',
-            'sku.unique' => 'Ya existe un producto con este SKU.',
             'descuento_maximo.lte' => 'La rebaja máxima no puede superar al precio.',
         ]);
 
@@ -121,9 +115,6 @@ class ProductoController extends Controller
                 Producto::query(),
                 $producto?->id,
             ),
-            // En mayúsculas, como en el panel: el SKU se compara a ojo contra
-            // la etiqueta y «tv-55» y «TV-55» tienen que ser el mismo.
-            'sku' => strtoupper($datos['sku']),
             'categoria_id' => $datos['categoria_id'],
             'marca_id' => $datos['marca_id'] ?? null,
             'modelo' => $datos['modelo'] ?? null,

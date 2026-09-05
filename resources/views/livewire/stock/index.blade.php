@@ -221,7 +221,7 @@
                             <div class="d-flex justify-content-sm-end">
                                 <div class="search-box stock-buscador ms-2" style="max-width: 20rem">
                                     <input type="text" class="form-control"
-                                        placeholder="Buscar producto, SKU o marca..."
+                                        placeholder="Buscar producto o marca..."
                                         wire:model.live.debounce.400ms="buscar">
                                     <i class="ri-search-line search-icon"></i>
                                     @if ($buscar !== '')
