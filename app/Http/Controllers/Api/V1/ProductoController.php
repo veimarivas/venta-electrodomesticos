@@ -101,6 +101,7 @@ class ProductoController extends Controller
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'quitar_imagen' => ['nullable', 'boolean'],
             'activo' => ['nullable', 'boolean'],
+            'tiene_serial' => ['nullable', 'boolean'],
         ], [
             'slug.regex' => 'El slug solo puede contener minúsculas, números y guiones.',
             'slug.unique' => 'Ya existe un producto con este slug.',
@@ -124,6 +125,7 @@ class ProductoController extends Controller
             'stock_minimo' => $datos['stock_minimo'] ?? $producto?->stock_minimo ?? 0,
             'meses_garantia' => $datos['meses_garantia'] ?? $producto?->meses_garantia ?? 0,
             'activo' => $datos['activo'] ?? $producto?->activo ?? true,
+            'tiene_serial' => $datos['tiene_serial'] ?? $producto?->tiene_serial ?? true,
         ];
 
         if (array_key_exists('especificaciones', $datos)) {

@@ -86,6 +86,8 @@ class Index extends Component
 
     public bool $isActive = true;
 
+    public bool $tieneSerial = true;
+
     public bool $slugManual = false;
 
     // ---- Formulario rápido de marca ----------------------------------------
@@ -143,6 +145,7 @@ class Index extends Component
             'mesesGarantia' => ['integer', 'min:0', 'max:240'],
             'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
             'isActive' => ['boolean'],
+            'tieneSerial' => ['boolean'],
         ];
     }
 
@@ -354,6 +357,7 @@ class Index extends Component
         $this->minStock = $producto->stock_minimo;
         $this->mesesGarantia = $producto->meses_garantia;
         $this->isActive = $producto->activo;
+        $this->tieneSerial = $producto->tiene_serial;
         $this->slugManual = true;
 
         $this->resetValidation();
@@ -379,6 +383,7 @@ class Index extends Component
             'stock_minimo' => $validados['minStock'],
             'meses_garantia' => $validados['mesesGarantia'],
             'activo' => (bool) $this->isActive,
+            'tiene_serial' => (bool) $this->tieneSerial,
         ];
 
         if (! $this->slugManual) {

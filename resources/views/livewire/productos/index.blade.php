@@ -683,11 +683,16 @@
                                 </div>
                             </div>
 
-                            <div class="col-12 d-flex justify-content-end">
+                            <div class="col-12 d-flex justify-content-end gap-4">
                                 <div class="form-check form-switch form-switch-lg">
                                     <input type="checkbox" id="activo" class="form-check-input"
                                         wire:model.live="isActive">
                                     <label for="activo" class="form-check-label">Producto activo</label>
+                                </div>
+                                <div class="form-check form-switch form-switch-lg">
+                                    <input type="checkbox" id="tieneSerial" class="form-check-input"
+                                        wire:model.live="tieneSerial">
+                                    <label for="tieneSerial" class="form-check-label">Tiene serial</label>
                                 </div>
                             </div>
                         </div>

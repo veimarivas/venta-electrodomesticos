@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'stock_minimo',
     'meses_garantia',
     'activo',
+    'tiene_serial',
 ])]
 class Producto extends Model
 {
@@ -46,6 +47,7 @@ class Producto extends Model
             'stock_minimo' => 'integer',
             'meses_garantia' => 'integer',
             'activo' => 'boolean',
+            'tiene_serial' => 'boolean',
         ];
     }
 

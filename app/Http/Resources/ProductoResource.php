@@ -55,6 +55,7 @@ class ProductoResource extends JsonResource
             'stock_minimo' => (int) $this->stock_minimo,
             'meses_garantia' => (int) $this->meses_garantia,
             'activo' => (bool) $this->activo,
+            'tiene_serial' => (bool) $this->tiene_serial,
             'imagen_url' => $this->imagen
                 ? Storage::disk('public')->url($this->imagen)
                 : null,
