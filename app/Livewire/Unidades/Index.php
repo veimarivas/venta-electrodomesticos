@@ -176,6 +176,12 @@ class Index extends Component
         }
     }
 
+    /** Producto seleccionado en el formulario nuevo (para saber si tiene serial). */
+    public function getProductoSeleccionadoProperty(): ?Producto
+    {
+        return $this->productoId ? Producto::find($this->productoId) : null;
+    }
+
     public function updatedBuscar(): void
     {
         $this->resetPage();
