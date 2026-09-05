@@ -119,6 +119,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // el ajuste de estado/ubicación. Van con su propio permiso porque
         // cambian datos del inventario.
         Route::middleware('permission:unidades.editar')->group(function () {
+            Route::post('/unidades', [UnidadController::class, 'store'])
+                ->name('unidades.store');
             Route::post('/unidades/{unidad}/serial', [UnidadController::class, 'registrarSerial'])
                 ->name('unidades.serial');
             Route::post('/unidades/{unidad}', [UnidadController::class, 'actualizar'])

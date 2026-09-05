@@ -29,6 +29,39 @@ use RuntimeException;
 class UnidadController extends Controller
 {
     /**
+     * Registra una nueva unidad desde el teléfono.
+     *
+     * El teléfono escanea el código de barras y crea la unidad con los datos
+     * básicos: producto, serial y precio de venta. El costo y la compra se
+     * asignan después al recepcionar la compra desde el panel.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'serial' => ['nullable', 'string', 'max:100'],
+            'precio_venta' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+        ]);
+
+        // Si no se envía precio, se usa el precio de venta del producto.
+        $producto = \App\Models\Producto::findOrFail($datos['producto_id']);
+        $precioVenta = $datos['precio_venta'] ?? $producto->precio_venta;
+
+        $unidad = app(\App\Support\GeneradorCodigoUnidad::class)->crearCon([
+            'producto_id' => $datos['producto_id'],
+            'serial' => $datos['serial'] ?? null,
+            'estado' => 'en_stock',
+            'precio_venta' => $precioVenta,
+            'costo_unitario' => 0,
+        ]);
+
+        return response()->json([
+            'mensaje' => 'Unidad registrada.',
+            'data' => new UnidadResource($unidad->load('producto')),
+        ], 201);
+    }
+
+    /**
      * Listado del inventario, con los mismos filtros que el panel.
      */
     public function index(Request $request): AnonymousResourceCollection
