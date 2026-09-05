@@ -571,14 +571,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-end-0"><i class="ri-fingerprint-line"></i></span>
                                         <input type="text" id="serial" wire:model.live.debounce.400ms="serial"
-                                            @if (!$producto->tiene_serial) disabled @endif
+                                            @if ($producto?->tiene_serial === false) disabled @endif
                                             class="form-control border-start-0 ps-0 @error('serial') is-invalid @enderror"
-                                            placeholder="{{ $producto->tiene_serial ? 'Ej. S3X9A2K1' : 'Este producto no usa serial' }}" maxlength="100">
+                                            placeholder="{{ ($producto?->tiene_serial ?? true) ? 'Ej. S3X9A2K1' : 'Este producto no usa serial' }}" maxlength="100">
                                         @error('serial')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    @if (!$producto->tiene_serial)
+                                    @if ($producto?->tiene_serial === false)
                                         <div class="form-text text-muted">Este producto no maneja serial de fabricante.</div>
                                     @endif
                                 </div>
@@ -669,14 +669,14 @@
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-end-0"><i class="ri-fingerprint-line"></i></span>
                                         <input type="text" id="serial" wire:model.live.debounce.400ms="serial"
-                                            @if ($productoId && !$productoSeleccionado?->tiene_serial) disabled @endif
+                                            @if ($productoId && $productoSeleccionado?->tiene_serial === false) disabled @endif
                                             class="form-control border-start-0 ps-0 @error('serial') is-invalid @enderror"
-                                            placeholder="{{ $productoId && $productoSeleccionado?->tiene_serial ? 'Ej. S3X9A2K1' : 'Este producto no usa serial' }}" maxlength="100">
+                                            placeholder="{{ $productoId && $productoSeleccionado?->tiene_serial === false ? 'Este producto no usa serial' : 'Ej. S3X9A2K1' }}" maxlength="100">
                                         @error('serial')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
-                                    @if ($productoId && !$productoSeleccionado?->tiene_serial)
+                                    @if ($productoId && $productoSeleccionado?->tiene_serial === false)
                                         <div class="form-text text-muted">Este producto no maneja serial de fabricante.</div>
                                     @else
                                         <div class="form-text">Si el fabricante lo trae. Se puede dejar vacío.</div>
