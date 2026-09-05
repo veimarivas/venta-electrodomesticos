@@ -41,19 +41,32 @@ class UnidadController extends Controller
             'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
             'serial' => ['nullable', 'string', 'max:100'],
             'precio_venta' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'costo_unitario' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
         ]);
 
-        // Si no se envía precio, se usa el precio de venta del producto.
         $producto = \App\Models\Producto::findOrFail($datos['producto_id']);
         $precioVenta = $datos['precio_venta'] ?? $producto->precio_venta;
+        $costoUnitario = $datos['costo_unitario'] ?? 0;
 
-        $unidad = app(\App\Support\GeneradorCodigoUnidad::class)->crearCon([
-            'producto_id' => $datos['producto_id'],
-            'serial' => $datos['serial'] ?? null,
-            'estado' => 'en_stock',
-            'precio_venta' => $precioVenta,
-            'costo_unitario' => 0,
-        ]);
+        try {
+            $unidad = app(\App\Support\GeneradorCodigoUnidad::class)->crearCon([
+                'producto_id' => $datos['producto_id'],
+                'serial' => $datos['serial'] ?? null,
+                'estado' => 'en_stock',
+                'precio_venta' => $precioVenta,
+                'costo_unitario' => $costoUnitario,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1062) {
+                $serial = $datos['serial'] ?? '';
+                $existente = \App\Models\Unidad::where('serial', $serial)->first();
+                $codigo = $existente?->codigo_interno ?? '(desconocida)';
+                return response()->json([
+                    'mensaje' => "El serial \"{$serial}\" ya está registrado en la unidad {$codigo}.",
+                ], 422);
+            }
+            throw $e;
+        }
 
         return response()->json([
             'mensaje' => 'Unidad registrada.',
