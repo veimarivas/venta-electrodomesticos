@@ -133,7 +133,7 @@ php artisan up
 Para comprobar que volvió, **302** (redirige al login) y no 503:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://ventas.posgradosinnovaciencia.com/dashboard
+curl -s -o /dev/null -w "%{http_code}\n" http://69.62.91.168:8010/dashboard
 ```
 
 Para comprobar que una ruta nueva llegó de verdad, sin entrar a la aplicación:
@@ -147,7 +147,7 @@ contesta **404**. Es la diferencia que distingue «no subí el código» de «no
 permiso»:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://ventas.posgradosinnovaciencia.com/api/v1/unidades/1/serial -H "Accept: application/json"
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://69.62.91.168:8010/api/v1/unidades/1/serial -H "Accept: application/json"
 ```
 
 > **La app móvil no se actualiza sola con el servidor.** Si una versión del APK
@@ -208,7 +208,7 @@ entre el `php artisan down` y el `php artisan up`. Para verlo desde fuera sin
 entrar al servidor:
 
 ```bash
-curl -s -i https://ventas.posgradosinnovaciencia.com/ | head -5
+curl -s -i http://69.62.91.168:8010/ | head -5
 ```
 
 Si el `Server:` dice nginx pero el cuerpo es la página de Laravel, es
@@ -461,7 +461,7 @@ va montada con la aplicación web.
 dentro de la app:
 
 ```bash
-flutter build apk --release --dart-define=API_URL=https://ventas.posgradosinnovaciencia.com/api/v1
+flutter build apk --release --dart-define=API_URL=http://69.62.91.168:8010/api/v1
 ```
 
 Si el dominio cambia, hay que **generar e instalar un APK nuevo**. El APK va
@@ -470,16 +470,16 @@ antes el anterior. El detalle está en el README de la app.
 
 Lo que este servidor tiene que cumplir para que el teléfono funcione:
 
-- **`APP_URL` con la dirección pública y https.** De ahí salen las URL de las
+- **`APP_URL` con la dirección pública.** De ahí salen las URL de las
   imágenes (QR de cobro, fotos de productos, logos). Con `APP_URL` apuntando a
   `localhost`, la app carga los datos pero las imágenes salen vacías.
-- **Certificado válido.** Android rechaza un certificado caducado o autofirmado y
-  la app solo dirá que no pudo conectar. El aviso de caducidad conviene tenerlo
-  en el calendario.
+- **Certificado válido si algún día se pasa a https.** Android rechaza un
+  certificado caducado o autofirmado y la app solo dirá que no pudo conectar.
+  Hoy el servidor habla por http y la app lo tiene permitido para esta IP.
 - **Que `/api/v1/auth/login` devuelva JSON**, no el HTML de error de Laravel:
 
 ```bash
-curl -s -X POST https://ventas.posgradosinnovaciencia.com/api/v1/auth/login -H "Accept: application/json" -d '{}'
+curl -s -X POST http://69.62.91.168:8010/api/v1/auth/login -H "Accept: application/json" -d '{}'
 ```
 
 Debe responder un JSON con `message` y `errors` (faltan `usuario`, `password` y

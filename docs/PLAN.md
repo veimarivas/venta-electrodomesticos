@@ -2688,11 +2688,11 @@ blanco, reescribir el propio, permisos y sesión) y tres casos nuevos en
 
 ### La app del teléfono apunta al servidor de producción (2026-08-23)
 
-El backend quedó publicado en `https://ventas.posgradosinnovaciencia.com`, y la
+El backend quedó publicado en `http://69.62.91.168:8010`, y la
 app móvil se compiló contra esa dirección para instalarla en un teléfono físico.
 
 ```bash
-flutter build apk --release --dart-define=API_URL=https://ventas.posgradosinnovaciencia.com/api/v1
+flutter build apk --release --dart-define=API_URL=http://69.62.91.168:8010/api/v1
 ```
 
 **No hizo falta tocar el código de la app.** La URL nunca estuvo escrita en los
