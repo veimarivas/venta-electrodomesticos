@@ -9,10 +9,14 @@ use App\Http\Resources\UnidadResource;
 use App\Models\Compra;
 use App\Models\CompraDetalle;
 use App\Models\PagoCompra;
+use App\Models\Producto;
+use App\Support\GeneradorCodigoCompra;
+use App\Support\ProrrateoDeGastos;
 use App\Support\RecepcionDeCompra;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -96,6 +100,130 @@ class CompraController extends Controller
                 'en_stock' => $compra->unidades()->disponibles()->count(),
             ],
         ]);
+    }
+
+    /**
+     * Registra una compra nueva en estado `pendiente`.
+     *
+     * El detalle por producto tiene que cuadrar EXACTAMENTE con el total: si la
+     * suma de las líneas no coincide, queda un costo que nadie carga y el
+     * inventario deja de valer lo que realmente costó. La compra nace sin
+     * unidades: se generan al recepcionar, cuando se verifica la mercadería.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.crear') ?? false, 403);
+
+        $datos = $request->validate([
+            'proveedor_id' => ['required', 'integer', Rule::exists('proveedores', 'id')->whereNull('deleted_at')],
+            'numero_factura' => ['nullable', 'string', 'max:60'],
+            'fecha_compra' => ['required', 'date', 'before_or_equal:today', 'after:2000-01-01'],
+            'total' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'notas' => ['nullable', 'string', 'max:2000'],
+            'lineas' => ['required', 'array', 'min:1', 'max:50'],
+            'lineas.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'lineas.*.cantidad' => ['required', 'integer', 'min:1', 'max:9999'],
+            'lineas.*.costo_total' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+        ]);
+
+        // Cuadre al centavo: mismas reglas que el panel.
+        $totalCentavos = ProrrateoDeGastos::aCentavos($datos['total']);
+        $asignadoCentavos = array_sum(array_map(
+            fn (array $linea): int => ProrrateoDeGastos::aCentavos($linea['costo_total']),
+            $datos['lineas']
+        ));
+
+        if ($asignadoCentavos !== $totalCentavos) {
+            return response()->json([
+                'message' => 'El detalle por producto debe sumar exactamente el total de la compra.',
+                'errors' => ['lineas' => ['La suma de los productos no cuadra con el total.']],
+            ], 422);
+        }
+
+        // Un producto no puede repetirse en dos líneas: el prorrateo y el
+        // conteo de unidades se vuelven ambiguos.
+        $productoIds = array_column($datos['lineas'], 'producto_id');
+
+        if (count($productoIds) !== count(array_unique($productoIds))) {
+            return response()->json([
+                'message' => 'Un producto no puede repetirse en dos líneas de la misma compra.',
+                'errors' => ['lineas' => ['Productos repetidos.']],
+            ], 422);
+        }
+
+        $productos = Producto::whereIn('id', $productoIds)->get()->keyBy('id');
+
+        $compra = DB::transaction(function () use ($request, $datos, $productos, $totalCentavos): Compra {
+            $compra = app(GeneradorCodigoCompra::class)->crearCon([
+                'proveedor_id' => (int) $datos['proveedor_id'],
+                'numero_factura' => trim($datos['numero_factura'] ?? '') !== ''
+                    ? trim($datos['numero_factura'])
+                    : null,
+                'fecha_compra' => $datos['fecha_compra'],
+                'notas' => trim($datos['notas'] ?? '') !== '' ? trim($datos['notas']) : null,
+                'user_id' => $request->user()->id,
+                'subtotal' => ProrrateoDeGastos::aDecimal($totalCentavos),
+                'total' => ProrrateoDeGastos::aDecimal($totalCentavos),
+                'descuento' => '0.00',
+                'impuesto' => '0.00',
+                'flete' => '0.00',
+                'otros_gastos' => '0.00',
+                'estado' => 'pendiente',
+            ]);
+
+            foreach ($datos['lineas'] as $linea) {
+                $producto = $productos[$linea['producto_id']];
+                $cantidad = (int) $linea['cantidad'];
+                $pagado = ProrrateoDeGastos::aCentavos($linea['costo_total']);
+
+                CompraDetalle::create([
+                    'compra_id' => $compra->id,
+                    'producto_id' => $producto->id,
+                    'cantidad' => $cantidad,
+                    // Promedio, solo de referencia: el reparto exacto al
+                    // centavo lo hace RecepcionDeCompra sobre cada unidad.
+                    'costo_unitario' => ProrrateoDeGastos::aDecimal(intdiv($pagado, $cantidad)),
+                    'subtotal' => ProrrateoDeGastos::aDecimal($pagado),
+                    'precio_venta' => $producto->precio_venta,
+                ]);
+            }
+
+            return $compra->fresh();
+        });
+
+        $compra->load([
+            'proveedor',
+            'user',
+            'detalles' => fn ($d) => $d->with('producto')->withCount('unidades')->orderBy('id'),
+            'pagos.user',
+        ]);
+        $compra->loadCount(['detalles', 'unidades'])->loadSum('pagos as total_pagado', 'monto');
+
+        return (new CompraResource($compra))
+            ->conDetalle()
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Quita una compra que todavía no se recepcionó.
+     *
+     * Una compra recepcionada no se borra: sus unidades ya están en el almacén
+     * o vendidas, y quedarían sin origen.
+     */
+    public function destroy(Request $request, Compra $compra): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.eliminar') ?? false, 403);
+
+        if (! $compra->puede_recepcionarse) {
+            return response()->json([
+                'message' => 'Una compra recepcionada o anulada no se puede eliminar.',
+            ], 422);
+        }
+
+        $compra->delete();
+
+        return response()->json(['mensaje' => 'Compra eliminada.']);
     }
 
     /**

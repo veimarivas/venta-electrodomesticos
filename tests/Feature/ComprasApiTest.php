@@ -285,12 +285,94 @@ class ComprasApiTest extends TestCase
         $this->getJson('/api/v1/proveedores')->assertForbidden();
     }
 
-    public function test_la_api_no_permite_crear_compras(): void
+    public function test_la_api_registra_una_compra_pendiente(): void
     {
-        // Crear compras se hace desde el panel web con la factura delante.
+        $proveedor = Proveedor::factory()->create();
+        $producto = Producto::factory()->create(['activo' => true, 'precio_venta' => 1800]);
+
         Sanctum::actingAs($this->admin());
 
-        $this->postJson('/api/v1/compras')->assertStatus(405);
+        $respuesta = $this->postJson('/api/v1/compras', [
+            'proveedor_id' => $proveedor->id,
+            'numero_factura' => 'F-0042',
+            'fecha_compra' => now()->toDateString(),
+            'total' => 3300,
+            'lineas' => [
+                ['producto_id' => $producto->id, 'cantidad' => 3, 'costo_total' => 3300],
+            ],
+        ])->assertCreated();
+
+        $this->assertSame('pendiente', $respuesta->json('data.estado'));
+        $this->assertEquals(3300, $respuesta->json('data.total'));
+        // Nace sin unidades: se generan al recepcionar.
+        $this->assertSame(0, $respuesta->json('data.unidades'));
+
+        $compra = Compra::first();
+        $this->assertSame('pendiente', $compra->estado);
+        $this->assertSame('1100.00', $compra->detalles()->first()->costo_unitario);
+    }
+
+    public function test_la_api_rechaza_una_compra_que_no_cuadra(): void
+    {
+        $proveedor = Proveedor::factory()->create();
+        $producto = Producto::factory()->create(['activo' => true]);
+
+        Sanctum::actingAs($this->admin());
+
+        // Total 3300 pero líneas que suman 3000: queda un costo sin cargar.
+        $this->postJson('/api/v1/compras', [
+            'proveedor_id' => $proveedor->id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => 3300,
+            'lineas' => [
+                ['producto_id' => $producto->id, 'cantidad' => 3, 'costo_total' => 3000],
+            ],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, Compra::count());
+    }
+
+    public function test_la_api_rechaza_un_producto_repetido_en_dos_lineas(): void
+    {
+        $proveedor = Proveedor::factory()->create();
+        $producto = Producto::factory()->create(['activo' => true]);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/compras', [
+            'proveedor_id' => $proveedor->id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => 2000,
+            'lineas' => [
+                ['producto_id' => $producto->id, 'cantidad' => 1, 'costo_total' => 1000],
+                ['producto_id' => $producto->id, 'cantidad' => 1, 'costo_total' => 1000],
+            ],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, Compra::count());
+    }
+
+    public function test_la_api_permite_eliminar_una_compra_pendiente(): void
+    {
+        $compra = $this->compraPendiente();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->deleteJson("/api/v1/compras/{$compra->id}")->assertOk();
+
+        $this->assertSoftDeleted('compras', ['id' => $compra->id]);
+    }
+
+    public function test_la_api_no_elimina_una_compra_recepcionada(): void
+    {
+        $compra = $this->compraPendiente();
+        $this->recepcionar($compra);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->deleteJson("/api/v1/compras/{$compra->id}")->assertStatus(422);
+
+        $this->assertDatabaseHas('compras', ['id' => $compra->id, 'deleted_at' => null]);
     }
 
     public function test_la_api_permite_recepcionar_compras_pendientes(): void

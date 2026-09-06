@@ -201,9 +201,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // Recepcionar una compra genera las unidades físicas del almacén y
         // congela sus costos. Requiere el mismo permiso que crear: quien
         // puede registrar una compra puede también recepcionarla.
-        Route::post('/compras/{compra}/recepcionar', [CompraController::class, 'recepcionar'])
-            ->middleware('permission:compras.crear')
-            ->name('compras.recepcionar');
+        Route::middleware('permission:compras.crear')->group(function () {
+            Route::post('/compras', [CompraController::class, 'store'])
+                ->name('compras.store');
+            Route::post('/compras/{compra}/recepcionar', [CompraController::class, 'recepcionar'])
+                ->name('compras.recepcionar');
+        });
+
+        Route::delete('/compras/{compra}', [CompraController::class, 'destroy'])
+            ->middleware('permission:compras.eliminar')
+            ->name('compras.destroy');
 
         // Pagos al proveedor: respaldos con boucher, varios por compra hasta
         // completar el total. Ver requiere compras.ver; registrar y quitar,
