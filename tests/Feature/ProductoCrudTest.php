@@ -177,7 +177,7 @@ class ProductoCrudTest extends TestCase
 
     public function test_no_permite_dos_productos_con_el_mismo_nombre(): void
     {
-        Producto::factory()->create(['nombre' => 'TV 55']);
+        Producto::factory()->create(['nombre' => 'Smart TV 55" 4K', 'slug' => 'smart-tv-55-4k']);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)

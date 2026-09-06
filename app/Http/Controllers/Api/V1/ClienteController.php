@@ -234,6 +234,62 @@ class ClienteController extends Controller
     }
 
     /**
+     * Permite editar los datos personales de un cliente desde la app.
+     *
+     * Actualiza la persona vinculada al cliente. Requiere `clientes.editar`.
+     * No requiere `personas.editar` porque el permiso de clientes es suficiente
+     * para editar la ficha de un cliente concreto.
+     */
+    public function update(Request $request, Cliente $cliente): ClienteResource
+    {
+        $persona = $persona = $cliente->persona;
+
+        $soloLetras = '/^[\p{L}\s\'\-]+$/u';
+
+        $datos = $request->validate([
+            'carnet' => [
+                'sometimes', 'string', 'regex:/^[0-9]{7,11}$/',
+                \Illuminate\Validation\Rule::unique('personas', 'carnet')
+                    ->ignore($persona->id)
+                    ->whereNull('deleted_at'),
+            ],
+            'nombres' => ['sometimes', 'string', 'min:2', 'max:100', "regex:{$soloLetras}"],
+            'apellido_paterno' => ['nullable', 'string', 'min:2', 'max:60', "regex:{$soloLetras}"],
+            'apellido_materno' => ['nullable', 'string', 'min:2', 'max:60', "regex:{$soloLetras}"],
+            'celular' => ['nullable', 'string', 'regex:/^[0-9]{8}$/'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'correo' => [
+                'nullable', 'email:rfc', 'max:150',
+                \Illuminate\Validation\Rule::unique('personas', 'correo')
+                    ->ignore($persona->id)
+                    ->whereNull('deleted_at'),
+            ],
+            'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
+        ], [
+            'carnet.regex' => 'El carnet debe contener entre 7 y 11 números.',
+            'carnet.unique' => 'Ya existe una persona registrada con este carnet.',
+            'celular.regex' => 'El celular debe tener 8 números.',
+            'correo.unique' => 'Ya existe una persona registrada con este correo.',
+        ]);
+
+        // Solo actualizar campos que se enviaron. Los apellidos se preservan
+        // si no se envían: la columna apellido_paterno es NOT NULL en la base.
+        $columnas = PersonaController::aColumnas(
+            array_merge([
+                'carnet' => $persona->carnet,
+                'nombres' => $persona->nombres,
+                'apellido_paterno' => $persona->apellido_paterno,
+                'apellido_materno' => $persona->apellido_materno,
+            ], $datos)
+        );
+        $persona->update($columnas);
+
+        $ficha = $this->consultaBase($request)->withTrashed()->findOrFail($cliente->id);
+
+        return new ClienteResource($ficha);
+    }
+
+    /**
      * Base común. El resumen de compras se calcula con subconsultas y no con
      * una relación cargada: la lista solo necesita los tres números, y traer
      * las ventas de cada cliente para contarlas sería traer medio histórico.

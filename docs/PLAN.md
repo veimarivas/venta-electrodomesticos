@@ -544,6 +544,10 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/dashboard/inventario` | qué hay en la estantería **ahora** (sin rango; costo solo con `ver_costos`) |
 | GET | `/ventas?desde&hasta&pagina&vendedor_id` | listado paginado |
 | GET | `/ventas/{id}` | detalle con unidades, seriales, costos y ganancia |
+| GET | `/ventas/{id}/recibo` | recibo en PDF inline (`ventas.ver`) |
+| **POST** | `/ventas/{id}/anular` | anula la venta con motivo (`ventas.anular`); devuelve unidades al stock |
+| **PUT** | `/auth/perfil` | actualizar nombre, correo y datos personales del usuario autenticado |
+| **PUT** | `/auth/password` | cambiar contraseña (requiere actual + nueva con confirmación) |
 | GET | `/catalogo/categorias` | árbol de categorías aplanado, con su nivel y conteos |
 | GET | `/catalogo/marcas` | marcas con sus productos y sus unidades en stock |
 | GET | `/catalogo/productos?buscar&categoria_id&marca_id&solo_disponibles` | listado paginado |
@@ -562,6 +566,7 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **POST** | `/personas/{id}` | datos personales; **el único sitio donde se editan** |
 | **DELETE** | `/clientes/{id}` | archiva la ficha; su historial se conserva |
 | **POST** | `/clientes/{id}/restaurar` | la devuelve al listado con su código |
+| **POST** | `/clientes/{id}` | editar datos personales del cliente (`clientes.editar`) |
 | GET | `/personal/trabajadores?buscar&cargo_id&estado` | listado paginado |
 | GET | `/personal/trabajadores/{id}` | ficha con su cuenta de acceso y lo que vendió |
 | GET | `/clientes?buscar&estado` | listado paginado con el resumen de compras |
@@ -591,7 +596,15 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/compras?buscar&proveedor_id&estado&desde&hasta` | listado paginado |
 | GET | `/compras/{id}` | ficha con el desglose y las líneas con su costo real |
 | GET | `/compras/{id}/unidades` | aparatos que entraron con esa compra |
+| **POST** | `/compras/{id}/recepcionar` | recepciona la compra: genera unidades y congela costos (`compras.crear`) |
 | GET | `/reportes/compras/{id}/rentabilidad` | rentabilidad de una compra |
+| GET | `/reparaciones?buscar&filtro` | listado paginado con filtros (abiertas, atrasadas, en_taller, listas, cerradas, todas) |
+| GET | `/reparaciones/{id}` | ficha completa con historial del kardex |
+| GET | `/reparaciones/buscar-unidad?termino` | buscar unidad por serial o código interno |
+| **POST** | `/reparaciones` | recibir unidad en el taller y abrir orden (`reparaciones.recibir`) |
+| **POST** | `/reparaciones/{id}/diagnosticar` | anotar diagnóstico y costo estimado (`reparaciones.atender`) |
+| **POST** | `/reparaciones/{id}/lista` | marcar como lista para entrega (`reparaciones.atender`) |
+| **POST** | `/reparaciones/{id}/entregar` | entregar al cliente con nombre de quien recibe (`reparaciones.recibir`) |
 | GET | `/inventario/stock-bajo` | productos por debajo del mínimo |
 | GET | `/notificaciones` | historial de avisos |
 
@@ -2311,8 +2324,8 @@ Cubierto por `AdministracionApiTest` (20 casos).
 
 Cuarta y última tanda. Con ella, **todo lo que se administra en el panel se
 puede administrar también desde el teléfono**, salvo lo que se dejó a propósito:
-anular ventas, recepcionar compras, las especificaciones de los productos y la
-papelera.
+las especificaciones de los productos y la papelera. Anular ventas y
+recepcionar compras se implementaron después (ver más abajo).
 
 | | |
 |---|---|
@@ -3022,8 +3035,9 @@ segundo, y teclearlo con el cliente delante cuesta bastante más.
 
 > **Esto cambia la postura de la API, y conviene tenerlo presente.** Hasta aquí
 > todo era lectura; ahora hay dos rutas que escriben. Se acotó al mínimo: cobrar
-> y dar de alta un cliente. Anular, recepcionar compras y editar catálogo siguen
-> siendo cosa del panel.
+> y dar de alta un cliente. Anular ventas y recepcionar compras se añadieron
+> después (ver secciones correspondientes). Editar catálogo sigue siendo cosa
+> del panel.
 
 #### API
 
@@ -3547,7 +3561,7 @@ la versión de escritorio.
 - **Rate limiting:** 60 req/min autenticado, y **5/min en el login** — es la puerta por la que se prueban contraseñas y aún no hay usuario al que atribuir el gasto.
 - **Los permisos se comprueban en el servidor**, no se confía en el cliente: `reportes.ver` para el dashboard, `ventas.ver` para el histórico, `reportes.ver_costos` para la rentabilidad.
 - **Costo y ganancia solo viajan a quien puede verlos.** La app la puede tener un vendedor; el margen de la tienda no es dato suyo. Se filtra dentro del propio Resource.
-- **Las ventas son de solo lectura por API.** Registrar y anular se hace en el mostrador, con el aparato delante; exponer eso sin un flujo pensado para el móvil invita a errores caros.
+- **Las ventas son de solo lectura por API, excepto anular.** Registrar la venta se hace en el mostrador; anular y ver el recibo sí están disponibles por API para la app del teléfono, con sus permisos correspondientes (`ventas.anular` y `ventas.ver`).
 
 > **Un fallo que salió al probar con `curl`:** el admin no tiene permisos asignados —los recibe todos por `Gate::before`—, así que `getAllPermissions()` devolvía una lista **vacía** y la app habría escondido todas las pantallas justo al usuario que puede todo. `UsuarioResource` ahora devuelve el catálogo completo para el admin y añade `es_admin`.
 

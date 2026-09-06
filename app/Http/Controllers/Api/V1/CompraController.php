@@ -6,18 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\CompraResource;
 use App\Http\Resources\UnidadResource;
 use App\Models\Compra;
+use App\Support\RecepcionDeCompra;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use RuntimeException;
 
 /**
- * Consulta de órdenes de compra desde la app.
+ * Consulta y recepción de órdenes de compra desde la app.
  *
- * Solo lectura, y aquí con más motivo que en el resto: **recepcionar una compra
- * genera las unidades físicas del almacén** y congela sus costos. Es una
- * operación que se hace con la mercadería delante, contando cajas y anotando
- * seriales; disparar eso desde un teléfono, sin la mercadería a la vista,
- * dejaría el inventario diciendo que hay aparatos que nadie ha recibido.
+ * La recepción genera las unidades físicas del almacén y congela sus costos.
+ * Originalmente era solo lectura, pero se abrió para que el mostrador pueda
+ * recepcionar con el teléfono —la mercadería está delante, se cuenta caja
+ * por caja— y no tener que volver al panel.
  */
 class CompraController extends Controller
 {
@@ -88,5 +89,45 @@ class CompraController extends Controller
                 'en_stock' => $compra->unidades()->disponibles()->count(),
             ],
         ]);
+    }
+
+    /**
+     * Recepciona una compra: genera las unidades físicas del almacén.
+     *
+     * La compra debe estar en estado `borrador` y tener al menos una línea.
+     * La recepción es atómica: o se genera todo el lote o no se crea nada.
+     *
+     * La app confirma antes de enviar: una compra recepcionada congela sus
+     * costos y no se puede deshacer sin anularla.
+     */
+    public function recepcionar(Request $request, Compra $compra): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.crear') ?? false, 403);
+
+        if (! $compra->es_borrador) {
+            return response()->json([
+                'message' => 'Solo se puede recepcionar una compra en estado borrador.',
+            ], 422);
+        }
+
+        try {
+            $generadas = app(RecepcionDeCompra::class)->recepcionar($compra->fresh());
+
+            $compra->refresh()->load([
+                'proveedor',
+                'user',
+                'detalles' => fn ($d) => $d->with('producto')->withCount('unidades'),
+            ]);
+            $compra->loadCount(['detalles', 'unidades']);
+
+            return response()->json([
+                'message' => "Compra recepcionada. Se generaron {$generadas} unidades.",
+                'data' => (new CompraResource($compra))->conDetalle()->resolve($request),
+            ]);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
     }
 }

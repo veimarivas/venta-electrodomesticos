@@ -33,6 +33,11 @@ class ComprasApiTest extends TestCase
         return User::factory()->create(['is_active' => true])->syncRoles('admin');
     }
 
+    private function vendedor(): User
+    {
+        return User::factory()->create(['is_active' => true])->syncRoles('vendedor');
+    }
+
     /**
      * Compra en borrador con una línea, lista para recepcionar.
      */
@@ -252,15 +257,50 @@ class ComprasApiTest extends TestCase
         $this->getJson('/api/v1/proveedores')->assertForbidden();
     }
 
-    public function test_la_api_no_permite_recepcionar_ni_crear_compras(): void
+    public function test_la_api_no_permite_crear_compras(): void
     {
-        // Recepcionar genera las unidades físicas del almacén: se hace con la
-        // mercadería delante, no desde el teléfono.
+        // Crear compras se hace desde el panel web con la factura delante.
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/compras')->assertStatus(405);
+    }
+
+    public function test_la_api_permite_recepcionar_compras_en_borrador(): void
+    {
         $compra = $this->compraBorrador();
 
         Sanctum::actingAs($this->admin());
 
-        $this->postJson('/api/v1/compras')->assertStatus(405);
-        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar")->assertNotFound();
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar")
+            ->assertOk()
+            ->assertJsonStructure([
+                'message',
+                'data' => ['id', 'estado'],
+            ]);
+
+        $compra->refresh();
+        $this->assertEquals('recepcionada', $compra->estado);
+    }
+
+    public function test_la_api_rechaza_recepcionar_compra_no_borrador(): void
+    {
+        $compra = $this->compraBorrador();
+        $compra->update(['estado' => 'recepcionada']);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar")
+            ->assertStatus(422);
+    }
+
+    public function test_recepcionar_compras_requiere_permiso(): void
+    {
+        $compra = $this->compraBorrador();
+        $vendedor = $this->vendedor();
+
+        Sanctum::actingAs($vendedor);
+
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar")
+            ->assertForbidden();
     }
 }

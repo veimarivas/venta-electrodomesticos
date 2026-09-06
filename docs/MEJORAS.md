@@ -170,10 +170,10 @@ trabajar».
 |---|---|---|
 | ✅ | Marcar entregas desde el teléfono | 4 días |
 | ✅ | Cobrar cuotas desde el teléfono | 4 días |
-| ⬜ | Recibir y consultar reparaciones desde el teléfono | 4 días |
-| ⬜ | Recepcionar compras desde el teléfono | 1 semana |
-| ⬜ | Anular una venta y ver el recibo desde la app | 3 días |
-| ⬜ | Editar el propio perfil y la ficha del cliente | 2 días |
+| ✅ | Recibir y consultar reparaciones desde el teléfono | 4 días |
+| ✅ | Recepcionar compras desde el teléfono | 1 semana |
+| ✅ | Anular una venta y ver el recibo desde la app | 3 días |
+| ✅ | Editar el propio perfil y la ficha del cliente | 2 días |
 
 ### Marcar entregas desde el teléfono ✅
 
@@ -205,6 +205,70 @@ cobrar la venta.
 El detalle de por qué está así, en [PLAN.md](PLAN.md).
 
 **Lo que queda:** el recibo del pago para mandárselo al cliente por WhatsApp.
+
+### Recepcionar compras desde el teléfono ✅
+
+Hecho el 2026-09-05. Desde la ficha de una compra en estado *Borrador*, el botón
+**Recepcionar** genera las unidades físicas del almacén y congela los costos.
+Un diálogo de confirmación explica que la operación es irreversible antes de
+proceder.
+
+La recepción usa el mismo servicio `RecepcionDeCompra` del panel: prorratea flete
+y gastos entre las unidades, genera los códigos internos y registra la entrada
+en el kardex. La compra pasa a *Recepcionada* y su costo queda congelado.
+
+**Lo que queda:** nada de esta pieza. La recepción desde el teléfono está
+completa.
+
+### Anular una venta y ver el recibo desde la app ✅
+
+Hecho el 2026-09-05. En la ficha de una venta (pantalla de detalle), la barra
+superior ahora muestra un **icono de recibo** y un **botón Anular**.
+
+- **Recibo**: descarga el PDF del recibo (inline) y lo abre con el visor del
+  teléfono. Funciona tanto para ventas completadas como anuladas: el recibo de
+  una venta anulada indica el estado arriba.
+- **Anular**: disponible solo para ventas completadas y con permiso
+  `ventas.anular`. Se pide un motivo (mínimo 4 caracteres) y se confirma en un
+  diálogo. Los aparatos vuelven al stock, se registran los movimientos de kardex
+  y la venta queda marcada como anulada. La acción es irreversible.
+
+En el backend, `VentaController@anular` y `VentaController@recibo` añaden las
+rutas `POST /ventas/{venta}/anular` y `GET /ventas/{venta}/recibo` bajo el
+grupo `auth:sanctum` y los permisos `ventas.anular` y `ventas.ver`
+respectivamente. El recibo se devuelve inline (Content-Type: application/pdf),
+no como base64, para que el visor del teléfono lo abra directamente.
+
+**Lo que queda:** nada de esta pieza.
+
+### Editar el propio perfil y la ficha del cliente ✅
+
+Hecho el 2026-09-05. La app ahora permite al usuario editar su propio perfil y,
+quien tenga permiso `clientes.editar`, editar los datos de un cliente.
+
+**Perfil propio:**
+- Nuevo endpoint `PUT /auth/perfil` para actualizar campos de `users` (name,
+  email) y de `personas` vinculada (nombres, apellidos, celular, dirección,
+  correo, fecha de nacimiento). No requiere permiso especial: cada uno edita lo
+  suyo.
+- Nuevo endpoint `PUT /auth/password` para cambiar la contraseña (requiere la
+  actual + nueva con confirmación).
+- Nueva pantalla `PantallaPerfil` en Flutter con botón de acceso desde el
+  encabezado del dashboard (icono de perfil). Muestra datos del usuario y su
+  persona, con diálogos para editar perfil y cambiar contraseña.
+- El `ControladorSesion` ahora tiene `actualizarUsuario()` para reflejar los
+  cambios en memoria y en disco sin cerrar sesión.
+
+**Edición de clientes:**
+- Nuevo endpoint `POST /clientes/{cliente}` con permiso `clientes.editar`
+  (requiere también estar autenticado). Actualiza los datos de la persona
+  vinculada al cliente. No requiere `personas.editar`.
+- Flutter ya tenía la pantalla de detalle de cliente con formulario de edición
+  (`HojaPersona`), que ahora usa el nuevo endpoint.
+
+**Tests:** 15 tests en `PerfilYClientesApiTest` (perfil, contraseña, cliente).
+
+**Lo que queda:** nada de esta pieza. La Fase 2 está completa.
 
 ---
 

@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProductoController;
 use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\QrCobroController;
+use App\Http\Controllers\Api\V1\ReparacionController;
 use App\Http\Controllers\Api\V1\ReporteController;
 use App\Http\Controllers\Api\V1\RolController;
 use App\Http\Controllers\Api\V1\TrabajadorController;
@@ -50,6 +51,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('/auth/perfil', [AuthController::class, 'perfil'])->name('auth.perfil');
+        Route::put('/auth/perfil', [AuthController::class, 'actualizarPerfil'])->name('auth.perfil.actualizar');
+        Route::put('/auth/password', [AuthController::class, 'cambiarContrasena'])->name('auth.password.cambiar');
 
         // Teléfonos para el push.
         Route::get('/dispositivos', [DispositivoController::class, 'index'])->name('dispositivos.index');
@@ -193,6 +196,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('compras.unidades');
         });
 
+        // Recepcionar una compra genera las unidades físicas del almacén y
+        // congela sus costos. Requiere el mismo permiso que crear: quien
+        // puede registrar una compra puede también recepcionarla.
+        Route::post('/compras/{compra}/recepcionar', [CompraController::class, 'recepcionar'])
+            ->middleware('permission:compras.crear')
+            ->name('compras.recepcionar');
+
         Route::middleware('permission:clientes.ver')->group(function () {
             Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
             Route::get('/clientes/{cliente}', [ClienteController::class, 'show'])->name('clientes.show');
@@ -220,6 +230,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:clientes.eliminar')->name('clientes.destroy');
         Route::post('/clientes/{cliente}/restaurar', [ClienteController::class, 'restaurar'])
             ->middleware('permission:clientes.editar')->name('clientes.restaurar');
+        Route::post('/clientes/{cliente}', [ClienteController::class, 'update'])
+            ->middleware('permission:clientes.editar')->name('clientes.update');
 
         // ---- Personas, cargos y trabajadores ------------------------------
         // Los datos personales se editan en un solo sitio: la misma persona
@@ -307,6 +319,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('permission:ventas.ver')->group(function () {
             Route::get('/ventas', [VentaController::class, 'index'])->name('ventas.index');
             Route::get('/ventas/{venta}', [VentaController::class, 'show'])->name('ventas.show');
+            Route::get('/ventas/{venta}/recibo', [VentaController::class, 'recibo'])->name('ventas.recibo');
+        });
+
+        Route::middleware('permission:ventas.anular')->group(function () {
+            Route::post('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
         });
 
         // Entregas. La otra parte que escribe, y por la misma razón que el POS:
@@ -339,5 +356,31 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/entregas/{entrega}/reprogramar', [EntregaController::class, 'reprogramar'])
                 ->name('entregas.reprogramar');
         });
+
+        // Reparaciones (servicio técnico). Consulta para todos los que tienen
+        // permiso; escritura (recibir, diagnosticar, entregar) según el permiso
+        // específico. El teléfono recibe aparatos y consulta el taller.
+        Route::middleware('permission:reparaciones.ver')->group(function () {
+            Route::get('/reparaciones', [ReparacionController::class, 'index'])->name('reparaciones.index');
+            Route::get('/reparaciones/{reparacion}', [ReparacionController::class, 'show'])->name('reparaciones.show');
+            Route::get('/reparaciones/buscar-unidad', [ReparacionController::class, 'buscarUnidad'])
+                ->name('reparaciones.buscar-unidad');
+        });
+
+        Route::post('/reparaciones', [ReparacionController::class, 'recibir'])
+            ->middleware('permission:reparaciones.recibir')
+            ->name('reparaciones.recibir');
+
+        Route::middleware('permission:reparaciones.atender')->group(function () {
+            Route::post('/reparaciones/{reparacion}/diagnosticar', [ReparacionController::class, 'diagnosticar'])
+                ->name('reparaciones.diagnosticar');
+            Route::post('/reparaciones/{reparacion}/lista', [ReparacionController::class, 'marcarLista'])
+                ->name('reparaciones.lista');
+        });
+
+        // Entregar puede quien recibe (mostrador) o quien atiende (técnico).
+        Route::post('/reparaciones/{reparacion}/entregar', [ReparacionController::class, 'entregar'])
+            ->middleware('permission:reparaciones.recibir')
+            ->name('reparaciones.entregar');
     });
 });

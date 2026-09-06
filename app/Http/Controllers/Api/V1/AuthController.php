@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UsuarioResource;
 use App\Models\User;
+use App\Http\Controllers\Api\V1\PersonaController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -80,5 +81,94 @@ class AuthController extends Controller
     public function perfil(Request $request): UsuarioResource
     {
         return new UsuarioResource($request->user()->load('persona'));
+    }
+
+    /**
+     * Permite al usuario autenticado actualizar su propio perfil.
+     *
+     * Actualiza campos de la tabla `users` (name, email, phone) y los campos
+     * de la tabla `personas` vinculada (nombres, apellidos, celular, dirección,
+     * correo, fecha de nacimiento).
+     *
+     * No requiere permiso especial: cada uno edita lo suyo.
+     */
+    public function actualizarPerfil(Request $request): UsuarioResource
+    {
+        $usuario = $request->user();
+        $persona = $usuario->persona;
+
+        $soloLetras = '/^[\p{L}\s\'\-]+$/u';
+
+        // Validar campos de users
+        $usuarioDatos = $request->validate([
+            'name' => ['sometimes', 'string', 'min:3', 'max:60'],
+            'email' => ['sometimes', 'email:rfc', 'max:150'],
+        ]);
+
+        // Validar campos de personas (solo si se envían)
+        $personaDatos = $request->validate([
+            'nombres' => ['sometimes', 'string', 'min:2', 'max:100', "regex:{$soloLetras}"],
+            'apellido_paterno' => ['nullable', 'string', 'min:2', 'max:60', "regex:{$soloLetras}"],
+            'apellido_materno' => ['nullable', 'string', 'min:2', 'max:60', "regex:{$soloLetras}"],
+            'celular' => ['nullable', 'string', 'regex:/^[0-9]{8}$/'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'correo' => ['nullable', 'email:rfc', 'max:150'],
+            'fecha_nacimiento' => ['nullable', 'date', 'before:today'],
+        ], [
+            'celular.regex' => 'El celular debe tener 8 números.',
+            'nombres.min' => 'El nombre debe tener al menos 2 caracteres.',
+        ]);
+
+        // Actualizar campos de users si se enviaron
+        if (!empty($usuarioDatos)) {
+            $usuario->update($usuarioDatos);
+        }
+
+        // Actualizar campos de personas si se enviaron
+        if (!empty($personaDatos) && $persona) {
+            $columnas = PersonaController::aColumnas(
+                array_merge([
+                    'carnet' => $persona->carnet,
+                    'nombres' => $persona->nombres,
+                    'apellido_paterno' => $persona->apellido_paterno,
+                    'apellido_materno' => $persona->apellido_materno,
+                ], $personaDatos)
+            );
+            $persona->update($columnas);
+        }
+
+        return new UsuarioResource($usuario->fresh('persona'));
+    }
+
+    /**
+     * Permite al usuario autenticado cambiar su propia contraseña.
+     *
+     * Requiere la contraseña actual para confirmar la identidad.
+     */
+    public function cambiarContrasena(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'password_actual' => ['required', 'string'],
+            'password_nuevo' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'password_actual.required' => 'Indica tu contraseña actual.',
+            'password_nuevo.required' => 'Indica la nueva contraseña.',
+            'password_nuevo.min' => 'La nueva contraseña debe tener al menos 8 caracteres.',
+            'password_nuevo.confirmed' => 'Las contraseñas no coinciden.',
+        ]);
+
+        $usuario = $request->user();
+
+        if (! Hash::check($datos['password_actual'], $usuario->password)) {
+            throw ValidationException::withMessages([
+                'password_actual' => 'La contraseña actual no es correcta.',
+            ]);
+        }
+
+        $usuario->update([
+            'password' => Hash::make($datos['password_nuevo']),
+        ]);
+
+        return response()->json(['mensaje' => 'Contraseña actualizada.']);
     }
 }

@@ -507,6 +507,25 @@ cliente y viene a recogerlo igual.
 dar por lista y declarar sin arreglo lo firma el técnico. De fábrica el vendedor
 tiene lo primero y no lo segundo.
 
+### Desde el teléfono
+
+El módulo de taller también está disponible en la app móvil. Desde la sección
+**Servicio técnico** (accesible desde el encabezado de Ventas):
+
+- **Ver reparaciones**: lista con filtros (abiertas, atrasadas, en taller,
+  listas, cerradas, todas) y búsqueda por número o cliente.
+- **Recibir**: botón para escanear o teclear el serial/código del aparato,
+  buscar la unidad, observaciones y fecha prometida.
+- **Diagnosticar**: en la ficha de la reparación, el técnico anota el
+  diagnóstico y costo estimado.
+- **Marcar lista**: anotar qué se le hizo.
+- **Entregar**: confirmar entrega con nombre de quien recibe.
+
+Los mismos permisos del panel web aplican: `reparaciones.ver` para consultar,
+`reparaciones.recibir` para recibir/entregar, `reparaciones.atender` para
+diagnosticar y marcar lista. `ventas.anular` para anular ventas desde el
+teléfono (requiere additionally `ventas.ver` para ver el detalle).
+
 ---
 
 ## 8. Reportes
@@ -570,8 +589,24 @@ personas, compras y avisos), **vender desde el mostrador** escaneando la
 etiqueta del aparato, y **mantener los datos**: catálogo, personal y clientes se
 registran y se editan desde el teléfono.
 
-Se quedan solo en el panel web: **anular ventas**, **recepcionar compras**, las
-**especificaciones** de los productos y la **papelera** (restaurar lo archivado).
+Se quedan solo en el panel web: las **especificaciones** de los productos y la
+**papelera** (restaurar lo archivado). Anular ventas y recepcionar compras ya
+están disponibles desde el teléfono (ver secciones correspondientes).
+
+### Mi perfil
+
+Desde el encabezado del dashboard, el icono de perfil abre **Mi perfil**,
+donde puedes:
+
+- **Ver tus datos**: nombre, usuario, correo, roles y datos de contacto.
+- **Editar perfil**: tocar el botón «Editar perfil» abre un diálogo con tu
+  nombre de usuario y correo. Los cambios se guardan al instante.
+- **Cambiar contraseña**: tocar «Cambiar contraseña» pide la actual y la nueva
+  (mínimo 8 caracteres, con confirmación).
+
+> **Los datos personales** (nombres, apellidos, celular, dirección) se editan
+> desde la ficha de tu persona en el panel web, no desde aquí. La app muestra
+> lo que hay, pero la edición de personas es cosa del administrador.
 
 Su **dashboard** muestra ahora lo mismo que Reportes en el panel: totales del
 período con su comparativo, gráfica diaria, más vendidos, **ventas por
@@ -636,9 +671,12 @@ Y en **Compras**, otras dos:
 - **Proveedores** — a quién llamar, cuánto se le ha comprado y sus últimas
   órdenes. Tocar uno filtra las órdenes por él.
 
-El alta y la edición siguen siendo cosa del panel: en el teléfono se consulta,
-no se edita. **Recepcionar una compra tampoco se puede desde la app**: eso se
-hace con la mercadería delante, contando cajas y anotando seriales.
+El alta y la edición de compras siguen siendo cosa del panel: se hacen con las
+facturas delante. Pero **recepcionar una compra ahora sí se puede desde el
+teléfono**: en la ficha de una compra en borrador aparece el botón
+**Recepcionar**, que genera las unidades del almacén y congela los costos. Un
+diálogo de confirmación advierte que la operación es irreversible antes de
+proceder.
 
 ### Vender desde el teléfono
 
@@ -675,7 +713,19 @@ El botón **Vender** aparece en cualquier pantalla de la app, abajo a la derecha
    stock, igual que en el mostrador.
 
 > Si la cámara no está disponible o falta el permiso, la pantalla lo dice y deja
-> teclear el serial a mano. Anular una venta sigue haciéndose desde el panel.
+> teclear el serial a mano.
+
+#### Ver recibo y anular venta desde el teléfono
+
+En la ficha de una venta, la barra superior muestra:
+
+- **Icono de recibo** — descarga el PDF del recibo (o lo abre directamente si hay
+  visor de PDF). Funciona tanto para ventas completadas como anuladas: el recibo
+  de una venta anulada indica el estado claramente arriba.
+- **Botón Anular** — disponible solo para ventas completadas y con permiso
+  `ventas.anular`. Se pide un motivo (mínimo 4 caracteres) y se confirma en un
+  diálogo. Los aparatos vuelven al stock, se registran los movimientos de kardex
+  y la venta queda marcada como anulada. La acción es **irreversible**.
 
 #### Si el escáner no mete el aparato al carrito
 
@@ -964,9 +1014,11 @@ siempre.
 > señala en rojo. Es una incoherencia: debería haber vuelto al stock, y hay que
 > corregirlo en el panel.
 
-**Lo que sigue estando solo en el panel:** dar de alta o de baja unidades (un
-aparato nace al recepcionar su compra, contando cajas) y cambiar precios y
-costos (se revisan con la factura delante, no en un pasillo).
+**Lo que sigue estando solo en el panel:** dar de alta unidades (un aparato nace
+al recepcionar su compra, contando cajas) y cambiar precios y costos (se
+revisan con la factura delante, no en un pasillo). La recepción desde el
+teléfono genera las unidades igual, pero la alta manual de una suelta sigue
+siendo cosa del panel.
 
 ---
 
