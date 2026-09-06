@@ -339,7 +339,7 @@ class Index extends Component
     {
         $this->autorizar('productos.editar');
 
-        $producto = Producto::findOrFail($id);
+        $producto = Producto::with('especificaciones')->findOrFail($id);
 
         $this->productoId = $producto->id;
         $this->nombre = $producto->nombre;
@@ -348,7 +348,7 @@ class Index extends Component
         $this->marcaId = $producto->marca_id;
         $this->modelo = (string) $producto->modelo;
         $this->descripcion = (string) $producto->descripcion;
-        $this->especificaciones = $this->formatearEspecificaciones((array) $producto->especificaciones);
+        $this->especificaciones = $this->formatearEspecificaciones($producto->especificaciones);
         $this->imagenActual = (string) $producto->imagen;
         $this->imagen = null;
         $this->quitarImagen = false;
@@ -377,7 +377,6 @@ class Index extends Component
             'marca_id' => $this->marcaId ?: null,
             'modelo' => $validados['modelo'] === '' ? null : $validados['modelo'],
             'descripcion' => $validados['descripcion'] === '' ? null : $validados['descripcion'],
-            'especificaciones' => $this->parsearEspecificaciones($validados['especificaciones'] ?? []),
             'precio_venta' => (float) $validados['precio'],
             'descuento_maximo' => (float) $validados['descuentoMaximo'],
             'stock_minimo' => $validados['minStock'],
@@ -406,12 +405,15 @@ class Index extends Component
                 Storage::disk('public')->delete($this->imagenActual);
             }
 
-            Producto::findOrFail($this->productoId)->update($datos);
+            $producto = Producto::findOrFail($this->productoId);
+            $producto->update($datos);
             $mensaje = 'Producto actualizado correctamente.';
         } else {
-            Producto::create($datos);
+            $producto = Producto::create($datos);
             $mensaje = 'Producto creado correctamente.';
         }
+
+        $this->sincronizarEspecificaciones($producto, $validados['especificaciones'] ?? []);
 
         $this->limpiarFormulario();
         $this->dispatch('cerrar-modal-producto');
@@ -617,45 +619,53 @@ class Index extends Component
     }
 
     /**
-     * Convierte las filas del repetidor en el objeto JSON que guarda la tabla.
-     * Una fila con característica pero sin valor se guarda como bandera
-     * (clave => true); las filas sin característica se descartan.
+     * Guarda las filas del repetidor en la tabla `producto_especificaciones`.
+     *
+     * Se reemplazan enteras: las características son de edición libre y
+     * reordenarlas no afecta a nada más del sistema, así que el camino simple
+     * (borrar y volver a insertar) es también el más honesto. Una fila con
+     * característica pero sin valor se guarda como distintivo (`valor = null`),
+     * y las filas sin característica se descartan.
      *
      * @param  array<int, array{clave?: string, valor?: string}>  $filas
-     * @return array<string, mixed>|null
      */
-    private function parsearEspecificaciones(array $filas): ?array
+    private function sincronizarEspecificaciones(Producto $producto, array $filas): void
     {
-        $especificaciones = [];
+        $producto->especificaciones()->delete();
+
+        $posicion = 0;
 
         foreach ($filas as $fila) {
             $clave = trim((string) ($fila['clave'] ?? ''));
-            $valor = trim((string) ($fila['valor'] ?? ''));
 
             if ($clave === '') {
                 continue;
             }
 
-            $especificaciones[$clave] = $valor === '' ? true : $valor;
-        }
+            $valor = trim((string) ($fila['valor'] ?? ''));
 
-        return $especificaciones === [] ? null : $especificaciones;
+            $producto->especificaciones()->create([
+                'clave' => $clave,
+                'valor' => $valor === '' ? null : $valor,
+                'posicion' => $posicion++,
+            ]);
+        }
     }
 
     /**
-     * Camino inverso: del JSON guardado a las filas que edita el formulario.
+     * Camino inverso: de las filas guardadas a las que edita el formulario.
      *
-     * @param  array<string, mixed>  $especificaciones
+     * @param  \Illuminate\Support\Collection<int, \App\Models\ProductoEspecificacion>  $especificaciones
      * @return array<int, array{clave: string, valor: string}>
      */
-    private function formatearEspecificaciones(array $especificaciones): array
+    private function formatearEspecificaciones($especificaciones): array
     {
         $filas = [];
 
-        foreach ($especificaciones as $clave => $valor) {
+        foreach ($especificaciones as $especificacion) {
             $filas[] = [
-                'clave' => (string) $clave,
-                'valor' => $valor === true ? '' : (string) $valor,
+                'clave' => $especificacion->clave,
+                'valor' => $especificacion->valor ?? '',
             ];
         }
 

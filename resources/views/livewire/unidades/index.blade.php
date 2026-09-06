@@ -168,7 +168,7 @@
                     </div>
                 </div>
 
-                @if ($producto->descripcion || ! empty($producto->especificaciones) || $unidadesPorEstado->isNotEmpty())
+                @if ($producto->descripcion || $producto->especificaciones->isNotEmpty() || $unidadesPorEstado->isNotEmpty())
                     <div class="producto-ficha-body">
                         <div class="row g-4">
                             @if ($producto->descripcion)
@@ -182,21 +182,21 @@
                                 </div>
                             @endif
 
-                            @if (! empty($producto->especificaciones) && is_array($producto->especificaciones))
+                            @if ($producto->especificaciones->isNotEmpty())
                                 <div class="col-lg-6">
                                     <div class="producto-ficha-seccion">
                                         <h6 class="producto-ficha-seccion-titulo">
                                             <i class="ri-list-check-2"></i> Especificaciones
                                         </h6>
                                         <div class="producto-ficha-specs">
-                                            @foreach ($producto->especificaciones as $clave => $valor)
+                                            @foreach ($producto->especificaciones as $especificacion)
                                                 <div class="producto-ficha-spec-item">
-                                                    <span class="producto-ficha-spec-clave">{{ $clave }}</span>
+                                                    <span class="producto-ficha-spec-clave">{{ $especificacion->clave }}</span>
                                                     <span class="producto-ficha-spec-valor">
-                                                        @if ($valor === true)
+                                                        @if ($especificacion->valor === null)
                                                             <i class="ri-check-line text-success"></i>
                                                         @else
-                                                            {{ $valor }}
+                                                            {{ $especificacion->valor }}
                                                         @endif
                                                     </span>
                                                 </div>

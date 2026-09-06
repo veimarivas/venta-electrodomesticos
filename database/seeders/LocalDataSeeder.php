@@ -215,14 +215,6 @@ class LocalDataSeeder extends Seeder
                     'nombre' => 'TCL 85" Serie QM51L QD-Mini LED QLED 4K UHD HDR Smart Google TV',
                     'modelo' => 'QM51L',
                     'descripcion' => "TCL QM51L Series Smart TV, The New Definition of Affordable Premium, es ideal para películas de acción rápida, deportes y juegos de siguiente nivel.",
-                    'especificaciones' => json_encode([
-                        'Sound technology' => 'Dolby Atmos',
-                        'Display' => 'Mini-LED',
-                        'Resolution' => '3840 x 2160',
-                        'Screen size' => '84.5 in',
-                        'Platform' => 'Google TV',
-                        'Refresh rate' => '60 Hz',
-                    ]),
                     'imagen' => 'productos/wSvcWGy3vU2y7r3xi2CtC4SYd6ps1TCW168J7NbL.png',
                     'precio_venta' => 8900.00,
                     'descuento_maximo' => 8500.00,
@@ -232,6 +224,26 @@ class LocalDataSeeder extends Seeder
                     'tiene_serial' => true,
                 ]
             );
+
+            $producto = Producto::where('slug', 'tcl-85-serie-qm51l-qd-mini-led-qled-4k-uhd-hdr-smart-google-tv')->first();
+
+            if ($producto && $producto->especificaciones()->count() === 0) {
+                // Características como filas, en el orden en que se registraron.
+                foreach ([
+                    'Sound technology' => 'Dolby Atmos',
+                    'Display' => 'Mini-LED',
+                    'Resolution' => '3840 x 2160',
+                    'Screen size' => '84.5 in',
+                    'Platform' => 'Google TV',
+                    'Refresh rate' => '60 Hz',
+                ] as $clave => $valor) {
+                    $producto->especificaciones()->create([
+                        'clave' => $clave,
+                        'valor' => $valor,
+                        'posicion' => $producto->especificaciones()->count(),
+                    ]);
+                }
+            }
         }
     }
 

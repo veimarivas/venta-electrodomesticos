@@ -288,6 +288,23 @@ delante—; la edición y la recepción, en cambio, ya trabajan desde el mostrad
 
 ---
 
+## Especificaciones en tabla propia (2026-09-06)
+
+Las características del producto vivían en una columna JSON con un fallo de
+formato: según por dónde se guardara convivían un objeto `{clave: valor}`, una
+lista de pares y un string de más (un `json_encode` en un seeder que el cast
+`array` volvía a codificar). Al editar un producto, el formulario mostraba «0»
+de característica con todo el JSON pegado en el valor.
+
+Se pasó a la tabla **`producto_especificaciones`** (una fila por característica,
+en orden; `valor` null = distintivo sin valor). La migración copió lo que había
+tolerando los tres formatos y quitó la columna. El contrato de la API no cambió:
+la app sigue mandando y recibiendo una lista de pares `[{clave, valor}]`. Editar
+un producto en el panel, en la app y en la ficha de unidades muestra ahora las
+características tal como se registraron.
+
+---
+
 ## Indicador de serial en la app (2026-09-06)
 
 | | Qué | Nota |

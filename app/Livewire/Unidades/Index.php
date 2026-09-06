@@ -495,7 +495,7 @@ class Index extends Component
         // especificaciones. Evita saltar al módulo de productos para
         // consultar de qué se están registrando unidades.
         $producto = $this->productoFiltro !== null
-            ? Producto::with(['categoria.padre', 'marca'])->find($this->productoFiltro)
+            ? Producto::with(['categoria.padre', 'marca', 'especificaciones'])->find($this->productoFiltro)
             : null;
 
         $unidades = Unidad::query()

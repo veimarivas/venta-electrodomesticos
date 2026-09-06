@@ -139,7 +139,7 @@ id, nombre (unique), slug, logo_ruta, activa, timestamps
 **`productos`** — el *modelo* del producto, no la unidad física
 ```
 id, categoria_id (FK), marca_id (FK nullable), sku (unique), nombre, slug,
-modelo, descripcion, especificaciones (json), imagen,
+modelo, descripcion, imagen,
 precio_venta (decimal 12,2)  -- precio de lista sugerido
 descuento_maximo (decimal 12,2, default 0)  -- tope de rebaja en Bs (2026-08-20)
 stock_minimo (int, default 0), meses_garantia (int, default 12),
@@ -147,7 +147,17 @@ activo (bool), timestamps, softDeletes
 ```
 > **`descuento_maximo` (2026-08-20):** lo máximo que el mostrador puede rebajar de este producto, en Bs y no en porcentaje — la tienda negocia «hasta 50 Bs menos», no «hasta un 8 %». Por defecto **0**, que significa «se cobra el precio de lista»: sin autorización expresa en la ficha, el POS no deja bajar ni un centavo. El formulario lo valida con `lte:precio` (rebajar más que el precio dejaría vender gratis) y `RegistroDeVenta` lo vuelve a comprobar al cobrar.
 
-> **CRUD aplicado (2026-08):** marcas y productos implementados con el mismo patrón Livewire del resto. Los logos/imágenes se suben con `WithFileUploads` al disco público (`storage/app/public/marcas`, `.../productos`) y se sirven vía `storage:link` (ya ejecutado). `marcas` no lleva softDeletes según el plan; `productos` sí. `especificaciones` se captura en el formulario como líneas «clave: valor». Productos solo cuelgan de categorías (sin restricción de hoja todavía: la validación de categoría hoja llega con compras).
+> **CRUD aplicado (2026-08):** marcas y productos implementados con el mismo patrón Livewire del resto. Los logos/imágenes se suben con `WithFileUploads` al disco público (`storage/app/public/marcas`, `.../productos`) y se sirven vía `storage:link` (ya ejecutado). `marcas` no lleva softDeletes según el plan; `productos` sí. Productos solo cuelgan de categorías (sin restricción de hoja todavía: la validación de categoría hoja llega con compras).
+
+**`producto_especificaciones`** — características del producto, una por fila *(implementada 2026-09-06)*
+```
+id, producto_id (FK cascade), clave (string 60), valor (string 200, nullable),
+posicion (int, el orden en que se registraron), timestamps
+ÍNDICES: index(producto_id, posicion)
+```
+> Modelo `ProductoEspecificacion`. Reemplaza a la columna JSON `productos.especificaciones`, que tenía un fallo serio de formato: convivían **tres** formatos según por dónde se guardara (objeto `{clave: valor}` del panel, lista de pares del teléfono, y un string de más por un `json_encode` en un seeder que el cast `array` volvía a codificar). El resultado era que al editar un producto, la primera columna salía «0» y el valor traía el JSON entero pegado.
+>
+> La tabla normaliza todo: una fila por característica, en orden. `valor` **null** es la bandera de distintivo sin valor («Bluetooth»), que antes se guardaba como `true`. La migración copió lo que había tolerando los tres formatos (`App\Support\Especificaciones::filasDesdeValor`), y el panel, la API y la app ya leen/escriben filas. El teléfono sigue mandando y recibiendo una **lista de pares** `[{clave, valor}]`; el cambio es interno y no tocó el contrato de la API.
 
 **`proveedores`**
 ```

@@ -198,6 +198,9 @@ class CatalogoController extends Controller
     {
         $consulta = $this->consultaBase()->whereKey($producto->id);
 
+        // Las especificaciones solo viajan en la ficha, y en orden.
+        $consulta->with('especificaciones');
+
         if ($request->user()?->can('unidades.ver')) {
             $consulta->with([
                 'unidades' => fn ($q) => $q->disponibles()

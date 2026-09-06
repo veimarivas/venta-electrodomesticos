@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'slug',
     'modelo',
     'descripcion',
-    'especificaciones',
     'imagen',
     'precio_venta',
     'descuento_maximo',
@@ -38,7 +37,6 @@ class Producto extends Model
         return [
             'categoria_id' => 'integer',
             'marca_id' => 'integer',
-            'especificaciones' => 'array',
             // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
             'precio_venta' => 'decimal:2',
             // Tope de rebaja en Bs sobre el precio de la unidad. 0 = se cobra
@@ -64,6 +62,16 @@ class Producto extends Model
     public function unidades(): HasMany
     {
         return $this->hasMany(Unidad::class);
+    }
+
+    /**
+     * Características del producto, en el orden en que se registraron.
+     */
+    public function especificaciones(): HasMany
+    {
+        return $this->hasMany(ProductoEspecificacion::class)
+            ->orderBy('posicion')
+            ->orderBy('id');
     }
 
     public function scopeActivos(Builder $query): Builder

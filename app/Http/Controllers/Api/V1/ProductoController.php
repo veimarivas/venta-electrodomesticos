@@ -24,9 +24,20 @@ class ProductoController extends Controller
 {
     use GeneraSlug;
 
+    /**
+     * Especificaciones validadas de la última petición, en el formato que las
+     * manda la app (lista de pares). `validar()` las extrae del payload y
+     * `store`/`update` las guardan en la tabla.
+     *
+     * @var array<int, array{clave?: string|null, valor?: string|null}>
+     */
+    private array $especificacionesNuevas = [];
+
     public function store(Request $request): JsonResponse
     {
         $producto = Producto::create($this->validar($request, null));
+
+        $this->sincronizarEspecificaciones($producto, $this->especificacionesNuevas);
 
         return (new ProductoResource($this->ficha($producto->id)))
             ->response()
@@ -46,6 +57,8 @@ class ProductoController extends Controller
             Storage::disk('public')->delete($imagenAnterior);
         }
 
+        $this->sincronizarEspecificaciones($producto, $this->especificacionesNuevas);
+
         return new ProductoResource($this->ficha($producto->id));
     }
 
@@ -60,7 +73,7 @@ class ProductoController extends Controller
     private function ficha(int $id): Producto
     {
         return Producto::query()
-            ->with(['categoria', 'marca'])
+            ->with(['categoria', 'marca', 'especificaciones'])
             ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
             ->findOrFail($id);
     }
@@ -121,6 +134,8 @@ class ProductoController extends Controller
             'descuento_maximo.lte' => 'La rebaja máxima no puede superar al precio.',
         ]);
 
+        $this->especificacionesNuevas = $datos['especificaciones'] ?? [];
+
         $guardar = [
             'nombre' => $datos['nombre'],
             'slug' => $this->slugUnico(
@@ -141,10 +156,6 @@ class ProductoController extends Controller
             'tiene_serial' => $datos['tiene_serial'] ?? $producto?->tiene_serial ?? true,
         ];
 
-        if (array_key_exists('especificaciones', $datos)) {
-            $guardar['especificaciones'] = $this->limpiarEspecificaciones($datos['especificaciones'] ?? []);
-        }
-
         if ($request->hasFile('imagen')) {
             $guardar['imagen'] = $request->file('imagen')->store('productos', 'public');
         } elseif ($datos['quitar_imagen'] ?? false) {
@@ -155,38 +166,32 @@ class ProductoController extends Controller
     }
 
     /**
-     * Convierte las filas del formulario al **mapa** que guarda la columna.
-     *
-     * La app las manda como lista de pares porque así se pintan en orden, pero
-     * en la base viven como objeto JSON (`{"Pantalla": "55 pulgadas"}`), que es
-     * el formato que escribe el panel y que `ProductoResource` sabe leer.
-     * Guardar aquí la lista de pares dejaría dos formatos en la misma columna
-     * según por dónde se hubiera creado el producto.
-     *
-     * Una característica **sin valor** se guarda como `true`, no se descarta:
-     * es la bandera del panel para cosas que se tienen o no se tienen
-     * («Bluetooth»). Sin clave, en cambio, no hay nada que decir.
+     * Guarda las características del producto en la tabla
+     * `producto_especificaciones`. Se reemplazan enteras: la edición es libre y
+     * el orden lo fija la `posicion`.
      *
      * @param  array<int, array{clave?: string|null, valor?: string|null}>  $filas
-     * @return array<string, string|true>|null
      */
-    private function limpiarEspecificaciones(array $filas): ?array
+    private function sincronizarEspecificaciones(Producto $producto, array $filas): void
     {
-        $especificaciones = [];
+        $producto->especificaciones()->delete();
+
+        $posicion = 0;
 
         foreach ($filas as $fila) {
             $clave = trim((string) ($fila['clave'] ?? ''));
-            $valor = trim((string) ($fila['valor'] ?? ''));
 
             if ($clave === '') {
                 continue;
             }
 
-            $especificaciones[$clave] = $valor === '' ? true : $valor;
-        }
+            $valor = trim((string) ($fila['valor'] ?? ''));
 
-        // NULL y no `[]`: un array vacío se guarda como `{}` y la ficha
-        // enseñaría una sección de especificaciones sin nada dentro.
-        return $especificaciones === [] ? null : $especificaciones;
+            $producto->especificaciones()->create([
+                'clave' => $clave,
+                'valor' => $valor === '' ? null : $valor,
+                'posicion' => $posicion++,
+            ]);
+        }
     }
 }

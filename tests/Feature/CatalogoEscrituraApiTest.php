@@ -214,13 +214,19 @@ class CatalogoEscrituraApiTest extends TestCase
 
         $producto = Producto::firstOrFail();
 
-        // Mapa, no lista de pares: es el formato que escribe el panel y el que
-        // `ProductoResource` sabe leer. Guardar otro dejaría dos formatos en la
-        // misma columna según por dónde se creó el producto.
-        $this->assertSame(
-            ['Pantalla' => '55 pulgadas', 'Bluetooth' => true],
-            $producto->especificaciones,
-        );
+        // Filas en orden, no un mapa: cada característica es una fila de la
+        // tabla `producto_especificaciones`. La sin valor («Bluetooth») se
+        // guarda con `valor` null —la bandera de distintivo— y la fila sin
+        // clave se descarta.
+        $filas = $producto->especificaciones()->orderBy('posicion')->get();
+
+        $this->assertCount(2, $filas);
+        $this->assertSame('Pantalla', $filas[0]->clave);
+        $this->assertSame('55 pulgadas', $filas[0]->valor);
+        $this->assertSame(0, $filas[0]->posicion);
+        $this->assertSame('Bluetooth', $filas[1]->clave);
+        $this->assertNull($filas[1]->valor);
+        $this->assertSame(1, $filas[1]->posicion);
     }
 
     public function test_un_producto_sin_especificaciones_las_guarda_como_nulo(): void
@@ -229,8 +235,7 @@ class CatalogoEscrituraApiTest extends TestCase
 
         Sanctum::actingAs($this->admin());
 
-        // Un array vacío se guardaría como `{}` y la ficha enseñaría una
-        // sección de especificaciones sin nada dentro.
+        // Sin filas: no debe quedar ninguna `producto_especificaciones`.
         $this->postJson('/api/v1/catalogo/productos', [
             'nombre' => 'Plancha',
             'categoria_id' => $categoria->id,
@@ -239,7 +244,7 @@ class CatalogoEscrituraApiTest extends TestCase
             'especificaciones' => [],
         ])->assertCreated();
 
-        $this->assertNull(Producto::firstOrFail()->especificaciones);
+        $this->assertTrue(Producto::firstOrFail()->especificaciones()->doesntExist());
     }
 
     public function test_la_rebaja_no_puede_superar_al_precio(): void

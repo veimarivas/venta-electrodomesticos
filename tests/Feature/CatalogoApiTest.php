@@ -36,7 +36,24 @@ class CatalogoApiTest extends TestCase
     /** Producto con `$enStock` unidades listas para vender. */
     private function producto(array $atributos = [], int $enStock = 0): Producto
     {
+        // Las especificaciones ya no viven en la columna: se guardan como
+        // filas de la tabla `producto_especificaciones`.
+        $especificaciones = $atributos['especificaciones'] ?? null;
+        unset($atributos['especificaciones']);
+
         $producto = Producto::factory()->create($atributos);
+
+        if (is_array($especificaciones)) {
+            $posicion = 0;
+
+            foreach ($especificaciones as $clave => $valor) {
+                $producto->especificaciones()->create([
+                    'clave' => (string) $clave,
+                    'valor' => $valor === true ? null : (string) $valor,
+                    'posicion' => $posicion++,
+                ]);
+            }
+        }
 
         Unidad::factory()->count($enStock)->create([
             'producto_id' => $producto->id,

@@ -220,10 +220,17 @@ class ProductoCrudTest extends TestCase
 
         $producto = Producto::first();
 
-        $this->assertSame(
-            ['Pantalla' => '55 pulgadas', 'Resolución' => '4K', 'HDR' => true],
-            $producto->especificaciones
-        );
+        // Cada característica es una fila de `producto_especificaciones`, en
+        // orden. La sin valor («HDR») se guarda con `valor` null.
+        $filas = $producto->especificaciones()->orderBy('posicion')->get();
+
+        $this->assertCount(3, $filas);
+        $this->assertSame('Pantalla', $filas[0]->clave);
+        $this->assertSame('55 pulgadas', $filas[0]->valor);
+        $this->assertSame('Resolución', $filas[1]->clave);
+        $this->assertSame('4K', $filas[1]->valor);
+        $this->assertSame('HDR', $filas[2]->clave);
+        $this->assertNull($filas[2]->valor);
     }
 
     public function test_agregar_y_quitar_especificaciones_no_guarda_el_producto(): void
@@ -289,6 +296,34 @@ class ProductoCrudTest extends TestCase
             ->test(Index::class)
             ->call('abrirCrear')
             ->assertForbidden();
+    }
+
+    public function test_al_editar_carga_las_especificaciones_en_orden(): void
+    {
+        // La regresión que este test fija: el producto con especificaciones
+        // «reventaba» el formulario al editar (clave «0», todo el JSON pegado
+        // en el valor) porque venían de una columna con formatos mezclados.
+        $producto = Producto::factory()->create();
+        $producto->especificaciones()->create([
+            'clave' => 'Pantalla',
+            'valor' => '55 pulgadas',
+            'posicion' => 0,
+        ]);
+        $producto->especificaciones()->create([
+            'clave' => 'HDR',
+            'valor' => null,
+            'posicion' => 1,
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->call('abrirEditar', $producto->id)
+            ->assertCount('especificaciones', 2)
+            ->assertSet('especificaciones.0.clave', 'Pantalla')
+            ->assertSet('especificaciones.0.valor', '55 pulgadas')
+            ->assertSet('especificaciones.1.clave', 'HDR')
+            // El distintivo sin valor se edita como vacío, no como «true».
+            ->assertSet('especificaciones.1.valor', '');
     }
 
     public function test_un_usuario_sin_permiso_no_entra_al_listado(): void

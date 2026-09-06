@@ -69,32 +69,17 @@ class ProductoResource extends JsonResource
             'descripcion' => $this->when($this->detalle, fn () => $this->descripcion),
             'especificaciones' => $this->when(
                 $this->detalle,
-                fn (): array => $this->especificacionesComoFilas()
+                fn (): array => $this->especificaciones
+                    ->map(fn ($e): array => [
+                        'clave' => $e->clave,
+                        // `valor` null es la bandera de distintivo sin valor
+                        // («Bluetooth»); la app la pinta como vacía.
+                        'valor' => $e->valor ?? '',
+                    ])
+                    ->values()
+                    ->all()
             ),
             'unidades' => UnidadResource::collection($this->whenLoaded('unidades')),
         ];
-    }
-
-    /**
-     * Las especificaciones se guardan como objeto JSON (`{"Pantalla": "55\""}`)
-     * y viajan como lista de pares: en la app se pintan en orden, y un mapa de
-     * JSON no garantiza ninguno.
-     *
-     * @return array<int, array{clave: string, valor: string}>
-     */
-    private function especificacionesComoFilas(): array
-    {
-        $filas = [];
-
-        foreach ((array) $this->especificaciones as $clave => $valor) {
-            $filas[] = [
-                'clave' => (string) $clave,
-                // `true` es la bandera que guarda el panel para una
-                // característica sin valor («Bluetooth»).
-                'valor' => $valor === true ? '' : (string) $valor,
-            ];
-        }
-
-        return $filas;
     }
 }

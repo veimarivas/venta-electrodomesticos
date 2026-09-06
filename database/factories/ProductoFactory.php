@@ -29,7 +29,6 @@ class ProductoFactory extends Factory
             'slug' => Str::slug($nombre),
             'modelo' => fake()->bothify('??-####'),
             'descripcion' => fake()->paragraph(),
-            'especificaciones' => ['color' => fake()->safeColorName(), 'peso' => '3 kg'],
             'imagen' => null,
             'precio_venta' => fake()->randomFloat(2, 50, 5000),
             'stock_minimo' => fake()->numberBetween(0, 10),
