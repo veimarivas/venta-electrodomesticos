@@ -5,6 +5,7 @@ use App\Http\Controllers\EtiquetaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\VitrinaController;
 use App\Models\Proveedor;
 use Illuminate\Support\Facades\Route;
 
@@ -128,6 +129,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         'title' => 'Categorías',
         'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Categorías' => null],
     ])->middleware('permission:categorias.ver')->name('categorias.index');
+
+    // La vitrina es la cara «de tienda» del catálogo: los más vendidos y las
+    // categorías con sus productos. Va dentro de Catálogo y con el mismo
+    // permiso de ver productos.
+    Route::get('/catalogo/vitrina', VitrinaController::class)
+        ->middleware('permission:productos.ver')->name('catalogo.vitrina');
 
     Route::view('/marcas', 'backend.marcas.index', [
         'title' => 'Marcas',

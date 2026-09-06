@@ -9,6 +9,8 @@ use App\Http\Resources\ProductoResource;
 use App\Models\Categoria;
 use App\Models\Marca;
 use App\Models\Producto;
+use App\Support\Vitrina;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -74,6 +76,27 @@ class CatalogoController extends Controller
         }
 
         return $filas;
+    }
+
+    /**
+     * Vitrina del catálogo: los más vendidos del mes arriba y el catálogo
+     * ordenado por categorías. Es lo que muestra la app en la pestaña
+     * «Tienda» y el panel en su Vitrina, sin búsqueda ni filtros: solo mirar.
+     */
+    public function vitrina(Request $request): JsonResponse
+    {
+        $datos = Vitrina::datos();
+
+        return response()->json([
+            'data' => [
+                'recomendados' => ProductoResource::collection($datos['recomendados']),
+                'categorias' => $datos['categorias']->map(fn (Categoria $c): array => [
+                    'id' => $c->id,
+                    'nombre' => $c->nombre,
+                    'productos' => ProductoResource::collection($c->productos),
+                ])->values(),
+            ],
+        ]);
     }
 
     public function marcas(Request $request): AnonymousResourceCollection

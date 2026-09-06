@@ -102,6 +102,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('permission:productos.ver')->group(function () {
             Route::get('/catalogo/categorias', [CatalogoController::class, 'categorias'])
                 ->name('catalogo.categorias');
+            Route::get('/catalogo/vitrina', [CatalogoController::class, 'vitrina'])
+                ->name('catalogo.vitrina');
             Route::get('/catalogo/marcas', [CatalogoController::class, 'marcas'])
                 ->name('catalogo.marcas');
             Route::get('/catalogo/productos', [CatalogoController::class, 'productos'])

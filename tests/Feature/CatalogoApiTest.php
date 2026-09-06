@@ -7,6 +7,8 @@ use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\Unidad;
 use App\Models\User;
+use App\Models\Venta;
+use App\Models\VentaDetalle;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -221,6 +223,81 @@ class CatalogoApiTest extends TestCase
         $this->assertArrayNotHasKey('unidades', $ficha);
         // El conteo sí: saber cuántos quedan no expone nada.
         $this->assertSame(2, $ficha['disponibles']);
+    }
+
+    // ---- Vitrina -----------------------------------------------------------
+
+    public function test_la_vitrina_agrupa_los_productos_por_categoria(): void
+    {
+        $audio = Categoria::factory()->create(['nombre' => 'Audio']);
+        $televisores = Categoria::factory()->create(['nombre' => 'Televisores']);
+
+        $this->producto(['categoria_id' => $audio->id, 'nombre' => 'Parlante']);
+        $this->producto(['categoria_id' => $televisores->id, 'nombre' => 'TV 55"']);
+
+        Sanctum::actingAs($this->admin());
+
+        $categorias = collect(
+            $this->getJson('/api/v1/catalogo/vitrina')->assertOk()->json('data.categorias')
+        );
+
+        // Ordenadas por nombre, cada una con sus productos dentro.
+        $this->assertCount(2, $categorias);
+        $this->assertSame('Audio', $categorias[0]['nombre']);
+        $this->assertSame('Parlante', $categorias[0]['productos'][0]['nombre']);
+        $this->assertSame('Televisores', $categorias[1]['nombre']);
+    }
+
+    public function test_la_vitrina_ordena_los_recomendados_por_unidades_vendidas(): void
+    {
+        $mas = $this->producto(['nombre' => 'El más vendido'], enStock: 5);
+        $menos = $this->producto(['nombre' => 'El segundo'], enStock: 3);
+
+        $venta = Venta::factory()->create(['vendida_en' => now()]);
+
+        VentaDetalle::factory()->count(3)->create([
+            'venta_id' => $venta->id,
+            'producto_id' => $mas->id,
+        ]);
+        VentaDetalle::factory()->count(1)->create([
+            'venta_id' => $venta->id,
+            'producto_id' => $menos->id,
+        ]);
+
+        Sanctum::actingAs($this->admin());
+
+        $recomendados = collect(
+            $this->getJson('/api/v1/catalogo/vitrina')->assertOk()->json('data.recomendados')
+        );
+
+        $this->assertCount(2, $recomendados);
+        $this->assertSame('El más vendido', $recomendados[0]['nombre']);
+        $this->assertSame('El segundo', $recomendados[1]['nombre']);
+    }
+
+    public function test_la_vitrina_no_abre_categorias_sin_productos(): void
+    {
+        Categoria::factory()->create(['nombre' => 'Vacía']);
+        $conProductos = Categoria::factory()->create(['nombre' => 'Con productos']);
+
+        $this->producto(['categoria_id' => $conProductos->id, 'nombre' => 'Parlante']);
+
+        Sanctum::actingAs($this->admin());
+
+        $categorias = $this->getJson('/api/v1/catalogo/vitrina')->assertOk()->json('data.categorias');
+
+        // La categoría sin productos no aparece: una sección vacía no aporta.
+        $this->assertCount(1, $categorias);
+        $this->assertSame('Con productos', $categorias[0]['nombre']);
+    }
+
+    public function test_la_vitrina_exige_el_permiso_de_ver_productos(): void
+    {
+        $usuario = User::factory()->create(['is_active' => true]);
+
+        Sanctum::actingAs($usuario);
+
+        $this->getJson('/api/v1/catalogo/vitrina')->assertForbidden();
     }
 
     public function test_el_catalogo_exige_el_permiso_de_ver_productos(): void

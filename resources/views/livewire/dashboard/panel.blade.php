@@ -25,7 +25,48 @@
         $hoy = $this->hoy;
         $semana = $this->semana;
         $mes = $this->mes;
+        $bajoMinimo = $this->bajoMinimo;
     @endphp
+
+    {{-- ===================== Bajo mínimo ===================== --}}
+    {{-- Va ANTES de los indicadores a propósito: lo que falta reponer es la
+         acción del día —hacer compras—, y enterrarlo bajo la caja del mes hacía
+         que se leyera al final. Es la misma alerta para quien no puede ver
+         reportes: el stock bajo es información de quien atiende. --}}
+    <div class="card dash-card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="card-title mb-0">
+                    <span class="dash-card-header-icono dash-card-header-icono--almacen"><i class="ri-alert-line"></i></span>
+                    Bajo mínimo
+                </h5>
+                <small class="text-muted fs-13">Lo que toca reponer: {{ $bajoMinimo->count() }} {{ $bajoMinimo->count() === 1 ? 'producto' : 'productos' }}</small>
+            </div>
+            @can('stock.ver')
+                <a href="{{ route('stock.index') }}" class="dash-ver-todas">
+                    Ver stock <i class="ri-arrow-right-line"></i>
+                </a>
+            @endcan
+        </div>
+        <div class="card-body">
+            @forelse ($bajoMinimo as $producto)
+                <div class="dash-alerta" wire:key="minimo-{{ $producto->id }}">
+                    <div class="min-w-0">
+                        <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
+                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
+                    </div>
+                    <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
+                        {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
+                    </span>
+                </div>
+            @empty
+                <p class="dash-alerta-ok mb-0">
+                    <i class="ri-checkbox-circle-line"></i>
+                    Todo el catálogo está por encima de su mínimo.
+                </p>
+            @endforelse
+        </div>
+    </div>
 
     {{--
         Todo lo que sigue son importes, y van tras `reportes.ver` igual que su
@@ -256,27 +297,6 @@
                             </li>
                         @endif
                     </ul>
-
-                    <h6 class="fs-13 mt-4 mb-2" style="color: #c98500; font-weight: 650;">
-                        <i class="ri-alert-line align-bottom me-1"></i> Bajo mínimo
-                    </h6>
-
-                    @forelse ($this->bajoMinimo as $producto)
-                        <div class="dash-alerta" wire:key="minimo-{{ $producto->id }}">
-                            <div class="min-w-0">
-                                <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
-                                <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
-                            </div>
-                            <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
-                                {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
-                            </span>
-                        </div>
-                    @empty
-                        <p class="dash-alerta-ok mb-0">
-                            <i class="ri-checkbox-circle-line"></i>
-                            Todo el catálogo está por encima de su mínimo.
-                        </p>
-                    @endforelse
                 </div>
             </div>
         </div>

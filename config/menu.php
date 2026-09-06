@@ -45,9 +45,10 @@ return [
     [
         'label' => 'Productos',
         'icon' => 'ri-archive-drawer-line',
-        'active' => ['categorias*', 'marcas*', 'productos*'],
+        'active' => ['categorias*', 'marcas*', 'productos*', 'catalogo/vitrina*'],
         'permission' => 'productos.ver',
         'children' => [
+            ['label' => 'Vitrina', 'route' => 'catalogo.vitrina', 'active' => 'catalogo/vitrina*', 'permission' => 'productos.ver'],
             ['label' => 'Categorías', 'route' => 'categorias.index', 'active' => 'categorias*', 'permission' => 'categorias.ver'],
             ['label' => 'Marcas', 'route' => 'marcas.index', 'active' => 'marcas*', 'permission' => 'marcas.ver'],
             ['label' => 'Productos', 'route' => 'productos.index', 'active' => 'productos*', 'permission' => 'productos.ver'],
