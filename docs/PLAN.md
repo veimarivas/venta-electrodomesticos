@@ -558,6 +558,9 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **DELETE** | `/catalogo/marcas/{id}` | baja **real** (no hay papelera); se niega si tiene productos |
 | **POST** | `/catalogo/productos` · `/catalogo/productos/{id}` | alta y edición, con foto opcional |
 | **DELETE** | `/catalogo/productos/{id}` | baja lógica; las unidades y el histórico se conservan |
+| **POST** | `/catalogo/productos/{id}/restaurar` | la papelera: devuelve el producto al catálogo (`productos.editar`) |
+| **POST** | `/catalogo/categorias/{id}/restaurar` | la papelera del árbol (`categorias.editar`) |
+| GET | `/catalogo/productos?solo_eliminados=1` · `/catalogo/categorias?solo_eliminadas=1` | lo archivado, para poder restaurarlo |
 | GET | `/personal/cargos` | cargos con cuánta gente los ocupa (vigentes y bajas) |
 | **POST** | `/personal/cargos` · `/personal/cargos/{id}` | alta y edición |
 | **DELETE** | `/personal/cargos/{id}` | baja **real**; se niega si alguna vez tuvo trabajadores |
@@ -597,6 +600,7 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/compras/{id}` | ficha con el desglose y las líneas con su costo real |
 | GET | `/compras/{id}/unidades` | aparatos que entraron con esa compra |
 | **POST** | `/compras/{id}/recepcionar` | recepciona la compra: genera unidades y congela costos (`compras.crear`) |
+| **POST** | `/compras/{id}` | edita una compra **pendiente sin pagos**: proveedor, fecha, factura, total y líneas (`compras.editar`); mismas reglas que el alta (cuadre al centavo) |
 | GET | `/reportes/compras/{id}/rentabilidad` | rentabilidad de una compra |
 | GET | `/reparaciones?buscar&filtro` | listado paginado con filtros (abiertas, atrasadas, en_taller, listas, cerradas, todas) |
 | GET | `/reparaciones/{id}` | ficha completa con historial del kardex |
