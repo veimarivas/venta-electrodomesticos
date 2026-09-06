@@ -160,6 +160,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:productos.editar')->name('catalogo.productos.update');
         Route::delete('/catalogo/productos/{producto}', [ProductoController::class, 'destroy'])
             ->middleware('permission:productos.eliminar')->name('catalogo.productos.destroy');
+        // La papelera: devolver al catálogo lo que se archivó (borrado lógico).
+        Route::post('/catalogo/productos/{producto}/restaurar', [ProductoController::class, 'restaurar'])
+            ->middleware('permission:productos.editar')->name('catalogo.productos.restaurar');
+        Route::post('/catalogo/categorias/{categoria}/restaurar', [CategoriaController::class, 'restaurar'])
+            ->middleware('permission:categorias.editar')->name('catalogo.categorias.restaurar');
 
         // Personal y clientes: también solo consulta. Cada uno con su permiso,
         // porque quien lleva las ventas no tiene por qué ver la ficha laboral
@@ -207,6 +212,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('/compras/{compra}/recepcionar', [CompraController::class, 'recepcionar'])
                 ->name('compras.recepcionar');
         });
+
+        // Editar una compra todavía no recepcionada (y sin pagos): corregir la
+        // factura del proveedor antes de verificar la mercadería.
+        Route::post('/compras/{compra}', [CompraController::class, 'update'])
+            ->middleware('permission:compras.editar')
+            ->name('compras.update');
 
         Route::delete('/compras/{compra}', [CompraController::class, 'destroy'])
             ->middleware('permission:compras.eliminar')

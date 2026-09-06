@@ -465,8 +465,8 @@ flutter build apk --release --dart-define=API_URL=http://69.62.91.168:8010/api/v
 ```
 
 Si el dominio cambia, hay que **generar e instalar un APK nuevo**. El APK va
-firmado con la clave de depuración, así que para reemplazarlo hay que desinstalar
-antes el anterior. El detalle está en el README de la app.
+firmado con la clave de release del equipo, que permite actualizar sin
+desinstalar. El detalle está en el README de la app.
 
 Lo que este servidor tiene que cumplir para que el teléfono funcione:
 

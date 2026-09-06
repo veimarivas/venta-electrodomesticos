@@ -297,6 +297,59 @@ class CatalogoEscrituraApiTest extends TestCase
         Storage::disk('public')->assertExists($imagen);
     }
 
+    // ---- Papelera -----------------------------------------------------------
+
+    public function test_restaura_un_producto_archivado_con_su_imagen(): void
+    {
+        Storage::fake('public');
+
+        $producto = Producto::factory()->create([
+            'imagen' => UploadedFile::fake()->image('tv.png')->store('productos', 'public'),
+        ]);
+        $producto->delete();
+
+        Sanctum::actingAs($this->admin());
+
+        // La papelera lo lista.
+        $papelera = $this->getJson('/api/v1/catalogo/productos?solo_eliminados=1')->assertOk()->json('data');
+        $this->assertCount(1, $papelera);
+        $this->assertSame($producto->id, $papelera[0]['id']);
+
+        // Y el listado normal no lo muestra.
+        $this->getJson('/api/v1/catalogo/productos')->assertOk()->assertJsonCount(0, 'data');
+
+        $this->postJson("/api/v1/catalogo/productos/{$producto->id}/restaurar")->assertOk();
+
+        $this->assertNotSoftDeleted('productos', ['id' => $producto->id]);
+        $this->assertSame($producto->imagen, $producto->fresh()->imagen);
+    }
+
+    public function test_restaura_una_categoria_archivada(): void
+    {
+        $categoria = Categoria::factory()->create();
+        $categoria->delete();
+
+        Sanctum::actingAs($this->admin());
+
+        $papelera = $this->getJson('/api/v1/catalogo/categorias?solo_eliminadas=1')->assertOk()->json('data');
+        $this->assertCount(1, $papelera);
+        $this->assertSame($categoria->id, $papelera[0]['id']);
+
+        $this->postJson("/api/v1/catalogo/categorias/{$categoria->id}/restaurar")->assertOk();
+
+        $this->assertNotSoftDeleted('categorias', ['id' => $categoria->id]);
+    }
+
+    public function test_restaurar_exige_permiso_de_edicion(): void
+    {
+        $producto = Producto::factory()->create();
+        $producto->delete();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson("/api/v1/catalogo/productos/{$producto->id}/restaurar")->assertForbidden();
+    }
+
     // ---- Permisos -----------------------------------------------------------
 
     public function test_un_vendedor_no_puede_escribir_en_el_catalogo(): void

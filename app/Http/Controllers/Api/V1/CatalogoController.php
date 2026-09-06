@@ -33,6 +33,21 @@ class CatalogoController extends Controller
      */
     public function categorias(Request $request): AnonymousResourceCollection
     {
+        // La papelera: las archivadas se listan planas y aparte del árbol,
+        // que es donde viven en el panel.
+        if ($request->boolean('solo_eliminadas')) {
+            $archivadas = Categoria::onlyTrashed()
+                ->withCount(['productos', 'hijos'])
+                ->orderBy('nombre')
+                ->get()
+                ->each(function (Categoria $c): void {
+                    $c->setAttribute('nivel', 0);
+                    $c->setAttribute('productos_rama', $c->productos_count);
+                });
+
+            return CategoriaResource::collection($archivadas);
+        }
+
         $categorias = Categoria::query()
             ->withCount(['productos', 'hijos'])
             ->ordenadas()
@@ -127,10 +142,17 @@ class CatalogoController extends Controller
             'marca_id' => ['nullable', 'integer', 'exists:marcas,id'],
             'solo_disponibles' => ['nullable', 'boolean'],
             'solo_activos' => ['nullable', 'boolean'],
+            'solo_eliminados' => ['nullable', 'boolean'],
             'por_pagina' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $termino = trim($datos['buscar'] ?? '');
+
+        // La papelera: solo lo archivado, para poder restaurarlo desde la app.
+        // El borrado es lógico y las ventas e inventario siguen apuntando aquí.
+        $base = $datos['solo_eliminados'] ?? false
+            ? $this->consultaBase()->onlyTrashed()
+            : $this->consultaBase();
 
         // Entrar en una categoría muestra también lo que cuelga de ella: si no,
         // un padre con el catálogo repartido entre subcategorías se vería vacío.
@@ -143,7 +165,7 @@ class CatalogoController extends Controller
                 : [$categoria->id, ...$categoria->descendientesIds()];
         }
 
-        $productos = $this->consultaBase()
+        $productos = $base
             ->when($idsRama !== [], fn ($q) => $q->whereIn('categoria_id', $idsRama))
             ->when(isset($datos['marca_id']), fn ($q) => $q->where('marca_id', $datos['marca_id']))
             ->when($datos['solo_activos'] ?? false, fn ($q) => $q->activos())

@@ -98,6 +98,19 @@ class CategoriaController extends Controller
     }
 
     /**
+     * Devuelve al árbol una categoría archivada. El `{categoria}` se resuelve
+     * a mano porque el model binding normal no encuentra borrados suaves.
+     */
+    public function restaurar(Request $request, int $categoria): JsonResponse
+    {
+        $categoria = Categoria::withTrashed()->findOrFail($categoria);
+
+        $categoria->restore();
+
+        return response()->json(['mensaje' => 'Categoría restaurada.']);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validar(Request $request, ?Categoria $categoria): array

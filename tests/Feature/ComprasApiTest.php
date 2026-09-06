@@ -477,6 +477,122 @@ class ComprasApiTest extends TestCase
             ->assertForbidden();
     }
 
+    // ---- Edición de una compra pendiente -----------------------------------
+
+    public function test_la_api_edita_una_compra_pendiente(): void
+    {
+        $compra = $this->compraPendiente(cantidad: 3, costo: 1000, flete: 300);
+        $otroProveedor = Proveedor::factory()->create();
+        $otroProducto = Producto::factory()->create(['activo' => true, 'precio_venta' => 900]);
+
+        Sanctum::actingAs($this->admin());
+
+        // Cambia proveedor, factura y líneas: 5 × 600 = 3000 de detalle.
+        $respuesta = $this->postJson("/api/v1/compras/{$compra->id}", [
+            'proveedor_id' => $otroProveedor->id,
+            'numero_factura' => 'F-NUEVA',
+            'fecha_compra' => now()->toDateString(),
+            'total' => 3000,
+            'lineas' => [
+                ['producto_id' => $otroProducto->id, 'cantidad' => 5, 'costo_total' => 3000],
+            ],
+        ])->assertOk();
+
+        $compra->refresh();
+
+        $this->assertSame('pendiente', $compra->estado);
+        $this->assertSame($otroProveedor->id, $compra->proveedor_id);
+        $this->assertSame('F-NUEVA', $compra->numero_factura);
+        $this->assertEquals(3000, $compra->total);
+        $this->assertEquals(3000, $respuesta->json('data.total'));
+        $this->assertCount(1, $compra->detalles);
+        $this->assertSame($otroProducto->id, $compra->detalles()->first()->producto_id);
+        // El código no cambia: es la misma orden corregida.
+        $this->assertNotNull($respuesta->json('data.codigo'));
+    }
+
+    public function test_la_api_no_edita_una_compra_recepcionada(): void
+    {
+        $compra = $this->compraPendiente();
+        $this->recepcionar($compra);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}", [
+            'proveedor_id' => Proveedor::factory()->create()->id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => 1000,
+            'lineas' => [['producto_id' => Producto::factory()->create()->id, 'cantidad' => 1, 'costo_total' => 1000]],
+        ])->assertStatus(422);
+    }
+
+    public function test_la_api_no_edita_una_compra_con_pagos(): void
+    {
+        $compra = $this->compraPendiente();
+        $compra->pagos()->create([
+            'user_id' => $this->admin()->id,
+            'monto' => 500,
+            'fecha' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}", [
+            'proveedor_id' => $compra->proveedor_id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => $compra->total,
+            'lineas' => [[
+                'producto_id' => $compra->detalles()->first()->producto_id,
+                'cantidad' => 1,
+                'costo_total' => (float) $compra->total,
+            ]],
+        ])->assertStatus(422);
+
+        // El total y las líneas no se tocaron.
+        $compra->refresh();
+        $this->assertEquals(3300, $compra->total);
+        $this->assertCount(1, $compra->detalles);
+    }
+
+    public function test_la_api_rechaza_editar_una_compra_que_no_cuadra(): void
+    {
+        $compra = $this->compraPendiente();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}", [
+            'proveedor_id' => $compra->proveedor_id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => 3000,
+            'lineas' => [[
+                'producto_id' => $compra->detalles()->first()->producto_id,
+                'cantidad' => 1,
+                'costo_total' => 2000,
+            ]],
+        ])->assertStatus(422);
+
+        $compra->refresh();
+        $this->assertEquals(3300, $compra->total);
+    }
+
+    public function test_editar_compras_requiere_permiso(): void
+    {
+        $compra = $this->compraPendiente();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson("/api/v1/compras/{$compra->id}", [
+            'proveedor_id' => $compra->proveedor_id,
+            'fecha_compra' => now()->toDateString(),
+            'total' => 1000,
+            'lineas' => [[
+                'producto_id' => $compra->detalles()->first()->producto_id,
+                'cantidad' => 1,
+                'costo_total' => 1000,
+            ]],
+        ])->assertForbidden();
+    }
+
     // ---- Pagos al proveedor -----------------------------------------------
 
     public function test_el_pago_suma_al_total_pagado_de_la_compra(): void

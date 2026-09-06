@@ -75,6 +75,19 @@ class ProductoController extends Controller
     }
 
     /**
+     * Devuelve al catálogo un producto archivado. El `{producto}` se resuelve
+     * a mano porque el model binding normal no encuentra borrados suaves.
+     */
+    public function restaurar(Request $request, int $producto): JsonResponse
+    {
+        $producto = Producto::withTrashed()->findOrFail($producto);
+
+        $producto->restore();
+
+        return response()->json(['mensaje' => 'Producto restaurado.']);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validar(Request $request, ?Producto $producto): array

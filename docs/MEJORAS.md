@@ -272,6 +272,24 @@ quien tenga permiso `clientes.editar`, editar los datos de un cliente.
 
 ---
 
+## CRUD completo y órdenes de compra desde el teléfono (2026-09-06)
+
+El catálogo ya se administraba desde la app; faltaban tres piezas y entraron las
+tres:
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Editar una compra pendiente** | Endpoint `POST /compras/{compra}` (`compras.editar`) + botón en la ficha de la orden. Mismas reglas que el alta (cuadre al centavo, productos sin repetir) y dos guardas: no se edita una compra **recepcionada** ni una que ya tenga **pagos** — su total empezó a moverse. |
+| ✅ | **Editar especificaciones del producto** | El formulario del teléfono pasó de conservarlas a editarlas: una fila por característica, mismo formato «clave: valor» que guarda la base. El backend ya lo soportaba. |
+| ✅ | **Papelera desde la app** | Chip «Papelera» en los listados de productos y categorías: lista los archivados (`solo_eliminados`) y los restaura con `POST /…/restaurar` (`productos.editar` / `categorias.editar`). |
+
+El alta de una compra sigue siendo cosa del panel —se hace con las facturas
+delante—; la edición y la recepción, en cambio, ya trabajan desde el mostrador.
+
+---
+
+---
+
 ## Fase 3 — Cuando la tienda crezca
 
 Nada de esto hace falta hoy, y adelantarlo costaría más de lo que ahorra.

@@ -589,9 +589,10 @@ personas, compras y avisos), **vender desde el mostrador** escaneando la
 etiqueta del aparato, y **mantener los datos**: catálogo, personal y clientes se
 registran y se editan desde el teléfono.
 
-Se quedan solo en el panel web: las **especificaciones** de los productos y la
-**papelera** (restaurar lo archivado). Anular ventas y recepcionar compras ya
-están disponibles desde el teléfono (ver secciones correspondientes).
+Se queda solo en el panel web: **registrar órdenes de compra**, que se hacen con
+las facturas delante. La papelera de productos y categorías (restaurar lo
+archivado) ya está en la app, y la de clientes vive en la ficha del propio
+cliente.
 
 ### Mi perfil
 
@@ -671,12 +672,12 @@ Y en **Compras**, otras dos:
 - **Proveedores** — a quién llamar, cuánto se le ha comprado y sus últimas
   órdenes. Tocar uno filtra las órdenes por él.
 
-El alta y la edición de compras siguen siendo cosa del panel: se hacen con las
-facturas delante. Pero **recepcionar una compra ahora sí se puede desde el
-teléfono**: en la ficha de una compra en borrador aparece el botón
-**Recepcionar**, que genera las unidades del almacén y congela los costos. Un
-diálogo de confirmación advierte que la operación es irreversible antes de
-proceder.
+El **registro** de compras sigue siendo cosa del panel: se hace con las facturas
+delante. Desde el teléfono, en la ficha de una compra en borrador aparece el
+botón **Recepcionar**, que genera las unidades del almacén y congela los costos
+(un diálogo de confirmación advierte que es irreversible), y el botón **Editar**
+para corregir la orden —proveedor, fecha, factura, total y líneas— mientras
+todavía no se verificó ni tiene pagos.
 
 ### Vender desde el teléfono
 
@@ -846,9 +847,9 @@ ficha de un producto también hay un lápiz arriba. Las opciones que no puedes u
 no aparecen: dependen de tus permisos.
 
 Al registrar un producto se piden nombre, SKU, categoría, precio y rebaja máxima;
-lo demás es opcional. Puedes elegir una foto de la galería. **Las
-especificaciones se editan solo desde el panel**, pero no se pierden: si editas
-el precio desde el teléfono, siguen ahí.
+lo demás es opcional. Puedes elegir una foto de la galería y editar las
+**especificaciones** —una fila por característica, con «clave» y «valor»—, igual
+que en el panel.
 
 Tres cosas que conviene saber antes de eliminar:
 
@@ -857,8 +858,9 @@ Tres cosas que conviene saber antes de eliminar:
 - Una **marca con productos** tampoco. Las marcas además **no van a la papelera**:
   eliminar una es definitivo.
 - Un **producto sí se puede eliminar aunque tenga aparatos en stock**. Va a la
-  papelera: las ventas que ya lo incluyen se conservan y se puede recuperar desde
-  el panel. Deja de ofrecerse en el punto de venta.
+  **papelera** —el chip «Papelera» del listado de productos y categorías—, y se
+  puede restaurar desde la propia app: las ventas que ya lo incluyen se conservan.
+  Deja de ofrecerse en el punto de venta mientras está archivado.
 
 ### Avisos de stock bajo
 
