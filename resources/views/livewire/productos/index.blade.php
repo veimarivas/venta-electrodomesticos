@@ -270,6 +270,15 @@
                                             {{ $producto->modelo }}
                                         @endif
                                     </small>
+                                    @if ($producto->tiene_serial)
+                                        <span class="badge bg-info-subtle text-info ms-1" title="Este producto maneja serial de fabricante">
+                                            <i class="ri-barcode-line align-middle"></i> Serial
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary-subtle text-secondary ms-1" title="Este producto no maneja serial">
+                                            <i class="ri-checkbox-blank-line align-middle"></i> Sin serial
+                                        </span>
+                                    @endif
                                 </td>
 
                                 <td>
