@@ -173,7 +173,7 @@
                                 </div>
                             @endif
 
-                            @if (! empty($producto->especificaciones))
+                            @if (! empty($producto->especificaciones) && is_array($producto->especificaciones))
                                 <div class="col-lg-6">
                                     <div class="producto-ficha-seccion">
                                         <h6 class="producto-ficha-seccion-titulo">

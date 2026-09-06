@@ -3298,6 +3298,10 @@ del `ShellRoute`, para que la barra inferior no estorbe.
 - **Ficha**: precio de lista, rebaja autorizada y precio mínimo, existencias
   contra el mínimo, especificaciones y los aparatos concretos con su código
   interno y su serial.
+- **Indicador de serial**: cada producto muestra un chip visual en el listado:
+  "Serial" en azul (turquesa) cuando `tieneSerial` es true, o "Sin serial" en
+  gris cuando es false. Permite identificar rápidamente qué productos requieren
+  registro de serial y cuáles no.
 
 > **El filtro vive en un provider compartido** (`filtroCatalogoProvider`), no en
 > cada pestaña: es lo que permite que elegir una categoría o una marca deje el

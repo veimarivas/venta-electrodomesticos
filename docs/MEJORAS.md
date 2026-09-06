@@ -288,7 +288,13 @@ delante—; la edición y la recepción, en cambio, ya trabajan desde el mostrad
 
 ---
 
----
+## Indicador de serial en la app (2026-09-06)
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Etiqueta visual de serial en listado de productos** | Chip "Serial" en azul cuando `tieneSerial` es true, "Sin serial" en gris cuando es false. Permite identificar rápidamente qué productos requieren registro de serial. Versión de la app: 1.8.0+12. |
+
+**Lo que queda:** nada de esta pieza.
 
 ## Fase 3 — Cuando la tienda crezca
 
