@@ -371,4 +371,40 @@ class ItemCrudTest extends TestCase
 
         $this->actingAs($sinRol)->get('/inventario/unidades')->assertForbidden();
     }
+
+    public function test_ver_codigo_de_barras_arma_el_svg_del_codigo_interno(): void
+    {
+        // El modal del código de barras se abría con un evento que nadie
+        // escuchaba (regresión). Aquí se fija lo que sí es comprobable desde
+        // PHP: al pedir el código de una unidad, el SVG se genera a partir de
+        // SU codigo_interno y se dispara el evento que abre el modal.
+        $producto = Producto::factory()->create();
+        $unidad = app(GeneradorCodigoUnidad::class)->crearCon([
+            'producto_id' => $producto->id,
+            'costo_unitario' => 100,
+            'precio_venta' => 200,
+            'estado' => 'en_stock',
+            'ingresado_en' => now(),
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->call('verCodigoBarras', $unidad->id)
+            ->assertSet('unidadBarras.id', $unidad->id)
+            ->assertDispatched('abrir-modal-barras');
+
+        // El SVG se generó a partir del código interno de ESA unidad.
+        $componente = Livewire::actingAs($this->admin())->test(Index::class);
+        $componente->call('verCodigoBarras', $unidad->id);
+
+        $this->assertSame($unidad->codigo_interno, $componente->get('unidadBarras.codigo_interno'));
+        $this->assertStringContainsString('<svg', $componente->get('svgBarras'));
+        $this->assertStringContainsString('<rect', $componente->get('svgBarras'));
+
+        // El listado muestra el botón que llama al método, con su código.
+        $this->actingAs($this->admin())
+            ->get('/inventario/unidades')
+            ->assertOk()
+            ->assertSee($unidad->codigo_interno);
+    }
 }

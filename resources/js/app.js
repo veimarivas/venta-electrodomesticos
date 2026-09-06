@@ -344,6 +344,7 @@ document.addEventListener('livewire:init', () => {
         'modal-eliminar-producto': 'modalEliminarProducto',
         'modal-item': 'modalItem',
         'modal-eliminar-item': 'modalEliminarItem',
+        'modal-barras': 'modalBarras',
         'modal-proveedor': 'modalProveedor',
         'modal-eliminar-proveedor': 'modalEliminarProveedor',
         'modal-compra': 'modalCompra',
