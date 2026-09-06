@@ -205,6 +205,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:compras.crear')
             ->name('compras.recepcionar');
 
+        // Pagos al proveedor: respaldos con boucher, varios por compra hasta
+        // completar el total. Ver requiere compras.ver; registrar y quitar,
+        // compras.crear.
+        Route::middleware('permission:compras.ver')->group(function () {
+            Route::get('/compras/{compra}/pagos', [CompraController::class, 'pagos'])
+                ->name('compras.pagos');
+        });
+        Route::middleware('permission:compras.crear')->group(function () {
+            Route::post('/compras/{compra}/pagos', [CompraController::class, 'guardarPago'])
+                ->name('compras.pagos.store');
+            Route::delete('/compras/{compra}/pagos/{pago}', [CompraController::class, 'borrarPago'])
+                ->name('compras.pagos.destroy');
+        });
+
         Route::middleware('permission:clientes.ver')->group(function () {
             Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
             Route::get('/clientes/{cliente}', [ClienteController::class, 'show'])->name('clientes.show');

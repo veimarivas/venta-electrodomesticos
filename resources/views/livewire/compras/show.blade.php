@@ -14,12 +14,12 @@
                         </span>
                         <div class="d-flex align-items-center gap-3">
                             <div class="compras-show-hero-avatar flex-shrink-0">
-                                <i class="{{ $compra->es_borrador ? 'ri-draft-line' : ($compra->esta_recepcionada ? 'ri-checkbox-circle-line' : 'ri-close-circle-line') }}"></i>
+                                <i class="{{ ($compra->es_borrador || $compra->es_pendiente) ? 'ri-draft-line' : ($compra->esta_recepcionada ? 'ri-checkbox-circle-line' : 'ri-close-circle-line') }}"></i>
                             </div>
                             <div class="min-w-0">
                                 <h4 class="text-white mb-1 d-flex align-items-center gap-2 flex-wrap">
                                     <span class="font-monospace">{{ $compra->codigo }}</span>
-                                    <span class="compra-estado {{ $compra->es_borrador ? 'compra-estado-borrador' : ($compra->esta_recepcionada ? 'compra-estado-recepcionada' : 'compra-estado-anulada') }}">
+                                    <span class="compra-estado {{ $compra->es_borrador ? 'compra-estado-borrador' : ($compra->es_pendiente ? 'compra-estado-pendiente' : ($compra->esta_recepcionada ? 'compra-estado-recepcionada' : 'compra-estado-anulada')) }}">
                                         <span class="compra-estado-dot"></span>
                                         {{ \App\Models\Compra::ESTADOS[$compra->estado] }}
                                     </span>
@@ -112,7 +112,13 @@
                     <div class="compras-show-kpi-body">
                         <small class="compras-show-kpi-label">Estado</small>
                         <h3 class="compras-show-kpi-value">{{ \App\Models\Compra::ESTADOS[$compra->estado] }}</h3>
-                        <small class="compras-show-kpi-caption">{{ $compra->es_borrador ? 'Pendiente de recepcionar' : 'Recepcionada el '.$compra->recepcionada_en?->format('d/m/Y') }}</small>
+                        <small class="compras-show-kpi-caption">
+                            @if ($compra->es_borrador || $compra->es_pendiente)
+                                Pendiente de verificar y recepcionar
+                            @else
+                                Recepcionada el {{ $compra->recepcionada_en?->format('d/m/Y') }}
+                            @endif
+                        </small>
                     </div>
                 </div>
             </div>
@@ -218,6 +224,12 @@
                 <h5 class="mb-0">Productos comprados</h5>
                 <span class="compras-show-seccion-badge">{{ $this->lineas->count() }}</span>
             </div>
+            @if ($compra->puede_recepcionarse)
+                <button type="button" class="btn btn-success btn-sm rounded-pill shadow-sm"
+                    wire:click="abrirRecepcion">
+                    <i class="ri-archive-2-line align-bottom me-1"></i> Verificar y recepcionar
+                </button>
+            @endif
         </div>
         <div class="compras-show-seccion-body">
             <div class="table-responsive">
@@ -279,6 +291,155 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    {{-- Verificación / recepción --}}
+    @if ($mostrarRecepcion)
+        <div class="compras-show-seccion mb-4">
+            <div class="compras-show-seccion-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="compras-show-seccion-icon">
+                        <i class="ri-clipboard-check-line"></i>
+                    </div>
+                    <h5 class="mb-0">Verificar mercadería</h5>
+                </div>
+            </div>
+            <div class="compras-show-seccion-body">
+                <p class="text-muted fs-13">
+                    Registra el serial de cada aparato (los productos que lo llevan) o marca
+                    como verificados los demás. Recién al terminar entran las unidades al stock
+                    y la compra pasa a <strong>Recepcionada</strong>.
+                </p>
+
+                @foreach ($this->lineas as $linea)
+                    <div class="compras-show-recepcion-linea mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h6 class="mb-0">{{ $linea->producto->nombre }}</h6>
+                            <span class="compras-show-cantidad-pill">{{ $linea->cantidad }}</span>
+                            @if ($linea->producto->tiene_serial)
+                                <span class="compras-show-status-badge compras-show-status-info">
+                                    <i class="ri-barcode-line me-1"></i>Lleva serial
+                                </span>
+                            @else
+                                <span class="compras-show-status-badge compras-show-status-warning">
+                                    <i class="ri-checkbox-line me-1"></i>Sin serial
+                                </span>
+                            @endif
+                        </div>
+
+                        @if ($linea->producto->tiene_serial)
+                            <div class="row g-2">
+                                @foreach ($seriales[$linea->id] ?? [] as $indice => $valor)
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control form-control-sm"
+                                            wire:model="seriales.{{ $linea->id }}.{{ $indice }}"
+                                            placeholder="Serial {{ $indice + 1 }}">
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                    wire:model="verificadas.{{ $linea->id }}" id="verif-{{ $linea->id }}">
+                                <label class="form-check-label" for="verif-{{ $linea->id }}">
+                                    Confirmo que llegaron las {{ $linea->cantidad }} unidades
+                                </label>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+
+                <div class="d-flex gap-2 justify-content-end mt-3">
+                    <button type="button" class="btn btn-light" wire:click="$set('mostrarRecepcion', false)">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" wire:click="recepcionar">
+                        <i class="ri-archive-2-line align-bottom me-1"></i> Recepcionar compra
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Pagos al proveedor --}}
+    <div class="compras-show-seccion mb-4">
+        <div class="compras-show-seccion-header">
+            <div class="d-flex align-items-center gap-2">
+                <div class="compras-show-seccion-icon">
+                    <i class="ri-bank-card-line"></i>
+                </div>
+                <h5 class="mb-0">Pagos al proveedor</h5>
+                <span class="compras-show-seccion-badge">{{ $compra->pagos->count() }}</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <span class="compras-show-status-badge {{ $compra->esta_pagada ? 'compras-show-status-success' : 'compras-show-status-warning' }}">
+                    Pagado Bs {{ number_format((float) $compra->total_pagado, 2) }}
+                    · Falta Bs {{ number_format((float) $compra->saldo_pendiente, 2) }}
+                </span>
+                @can('compras.crear')
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill"
+                        wire:click="abrirPago">
+                        <i class="ri-add-line align-bottom me-1"></i> Registrar pago
+                    </button>
+                @endcan
+            </div>
+        </div>
+        <div class="compras-show-seccion-body">
+            @if ($mostrarPago)
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Monto (Bs)</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control"
+                            wire:model="monto" placeholder="0.00">
+                        @error('monto') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" wire:model="fecha">
+                        @error('fecha') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Boucher (imagen)</label>
+                        <input type="file" accept="image/*" class="form-control" wire:model="boucher">
+                        @error('boucher') <small class="text-danger">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-success w-100"
+                            wire:click="guardarPago" wire:loading.attr="disabled">
+                            Guardar pago
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            @forelse ($compra->pagos as $pago)
+                <div class="compras-show-pago d-flex align-items-center gap-3">
+                    <span class="compras-show-pago-fecha">{{ $pago->fecha?->format('d/m/Y') }}</span>
+                    <span class="compras-show-pago-monto">Bs {{ number_format((float) $pago->monto, 2) }}</span>
+                    @if ($pago->imagen)
+                        <a href="{{ asset('storage/'.$pago->imagen) }}" target="_blank"
+                            class="compras-show-pago-boucher" title="Ver boucher">
+                            <i class="ri-image-2-line"></i> Boucher
+                        </a>
+                    @else
+                        <span class="text-muted fs-13">Sin boucher</span>
+                    @endif
+                    @if ($pago->notas)
+                        <small class="text-muted text-truncate">{{ $pago->notas }}</small>
+                    @endif
+                    <small class="text-muted ms-auto">Por {{ $pago->user?->name }}</small>
+                    @can('compras.crear')
+                        <button type="button" class="btn btn-sm btn-ghost-danger btn-icon rounded-circle"
+                            wire:click="eliminarPago({{ $pago->id }})" title="Quitar pago"
+                            onclick="return confirm('¿Quitar este pago y su boucher?')">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    @endcan
+                </div>
+            @empty
+                <p class="text-muted mb-0">Todavía no hay pagos registrados para esta compra.</p>
+            @endforelse
         </div>
     </div>
 

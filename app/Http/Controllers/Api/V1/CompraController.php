@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CompraResource;
+use App\Http\Resources\PagoCompraResource;
 use App\Http\Resources\UnidadResource;
 use App\Models\Compra;
+use App\Models\CompraDetalle;
+use App\Models\PagoCompra;
 use App\Support\RecepcionDeCompra;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use RuntimeException;
 
 /**
@@ -36,6 +41,7 @@ class CompraController extends Controller
         $compras = Compra::query()
             ->with(['proveedor', 'user'])
             ->withCount(['detalles', 'unidades'])
+            ->withSum('pagos as total_pagado', 'monto')
             ->buscar($datos['buscar'] ?? null)
             ->when(isset($datos['proveedor_id']), fn ($q) => $q->where('proveedor_id', $datos['proveedor_id']))
             ->when(isset($datos['estado']), fn ($q) => $q->where('estado', $datos['estado']))
@@ -58,9 +64,10 @@ class CompraController extends Controller
             'detalles' => fn ($d) => $d->with('producto')
                 ->withCount('unidades')
                 ->orderBy('id'),
+            'pagos.user',
         ]);
 
-        $compra->loadCount(['detalles', 'unidades']);
+        $compra->loadCount(['detalles', 'unidades'])->loadSum('pagos as total_pagado', 'monto');
 
         return (new CompraResource($compra))->conDetalle();
     }
@@ -92,33 +99,65 @@ class CompraController extends Controller
     }
 
     /**
-     * Recepciona una compra: genera las unidades físicas del almacén.
+     * Recepciona una compra: verifica cada línea y genera las unidades.
      *
-     * La compra debe estar en estado `borrador` y tener al menos una línea.
-     * La recepción es atómica: o se genera todo el lote o no se crea nada.
+     * La compra debe estar en estado `pendiente` (o un `borrador` viejo) y
+     * tener al menos una línea. La recepción es atómica: o se verifica TODO —
+     * seriales de los productos que los llevan y confirmación de los demás— y
+     * se genera el lote entero, o no se crea nada.
      *
-     * La app confirma antes de enviar: una compra recepcionada congela sus
-     * costos y no se puede deshacer sin anularla.
+     * Body:
+     *   lineas: [
+     *     { linea_id: 1, seriales: ["S1", "S2"] },   // producto con serial
+     *     { linea_id: 2, verificada: true },          // sin serial
+     *   ]
      */
     public function recepcionar(Request $request, Compra $compra): JsonResponse
     {
         abort_unless($request->user()?->can('compras.crear') ?? false, 403);
 
-        if (! $compra->es_borrador) {
+        if (! $compra->puede_recepcionarse) {
             return response()->json([
-                'message' => 'Solo se puede recepcionar una compra en estado borrador.',
+                'message' => 'Solo se puede recepcionar una compra pendiente.',
             ], 422);
         }
 
+        $datos = $request->validate([
+            'lineas' => ['required', 'array', 'min:1'],
+            'lineas.*.linea_id' => ['required', 'integer', Rule::exists('compra_detalles', 'id')],
+            'lineas.*.seriales' => ['nullable', 'array'],
+            'lineas.*.seriales.*' => ['string', 'max:100'],
+            'lineas.*.verificada' => ['nullable', 'boolean'],
+        ]);
+
+        // Solo líneas de ESTA compra: el componente es invocable y no debe
+        // poder tocar líneas de otra.
+        $idsDeLaCompra = $compra->detalles()->pluck('id')->all();
+
+        $verificacion = [];
+
+        foreach ($datos['lineas'] as $linea) {
+            if (! in_array($linea['linea_id'], $idsDeLaCompra, true)) {
+                return response()->json([
+                    'message' => 'Una de las líneas no pertenece a esta compra.',
+                ], 422);
+            }
+
+            $verificacion[$linea['linea_id']] = $linea['verificada'] ?? false
+                ? ['verificada' => true]
+                : ['seriales' => $linea['seriales'] ?? []];
+        }
+
         try {
-            $generadas = app(RecepcionDeCompra::class)->recepcionar($compra->fresh());
+            $generadas = app(RecepcionDeCompra::class)->recepcionar($compra->fresh(), $verificacion);
 
             $compra->refresh()->load([
                 'proveedor',
                 'user',
                 'detalles' => fn ($d) => $d->with('producto')->withCount('unidades'),
+                'pagos.user',
             ]);
-            $compra->loadCount(['detalles', 'unidades']);
+            $compra->loadCount(['detalles', 'unidades'])->loadSum('pagos as total_pagado', 'monto');
 
             return response()->json([
                 'message' => "Compra recepcionada. Se generaron {$generadas} unidades.",
@@ -129,5 +168,75 @@ class CompraController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    // ---- Pagos al proveedor ----------------------------------------------
+
+    /**
+     * Respaldo de pago: cada compra se paga en varios plazos y cada pago lleva
+     * su boucher. Se listan ordenados del más reciente al más antiguo.
+     */
+    public function pagos(Request $request, Compra $compra): AnonymousResourceCollection
+    {
+        abort_unless($request->user()?->can('compras.ver') ?? false, 403);
+
+        $pagos = $compra->pagos()
+            ->with('user')
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        return PagoCompraResource::collection($pagos);
+    }
+
+    /**
+     * Registra un pago al proveedor con su boucher. El monto puede ser parcial:
+     * varios pagos completan el total de la compra.
+     */
+    public function guardarPago(Request $request, Compra $compra): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.crear') ?? false, 403);
+
+        $datos = $request->validate([
+            'monto' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'fecha' => ['required', 'date'],
+            'imagen' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'notas' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $pago = $compra->pagos()->create([
+            'user_id' => $request->user()->id,
+            'monto' => $datos['monto'],
+            'fecha' => $datos['fecha'],
+            'imagen' => $request->hasFile('imagen')
+                ? $request->file('imagen')->store('comprobantes-compra', 'public')
+                : null,
+            'notas' => trim($datos['notas'] ?? '') !== '' ? trim($datos['notas']) : null,
+        ]);
+
+        return (new PagoCompraResource($pago->load('user')))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * Quita un pago mal registrado. Borra también su boucher: es un respaldo
+     * de ese pago concreto y no debe quedar huérfano.
+     */
+    public function borrarPago(Request $request, Compra $compra, PagoCompra $pago): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.crear') ?? false, 403);
+
+        if ($pago->compra_id !== $compra->id) {
+            return response()->json(['message' => 'El pago no pertenece a esta compra.'], 422);
+        }
+
+        if ($pago->imagen) {
+            Storage::disk('public')->delete($pago->imagen);
+        }
+
+        $pago->delete();
+
+        return response()->json(['message' => 'Pago eliminado.']);
     }
 }

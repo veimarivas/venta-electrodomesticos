@@ -38,7 +38,7 @@ class Index extends Component
 
     public string $direccionOrden = 'desc';
 
-    /** todos | borrador | recepcionada | anulada */
+    /** todos | borrador | pendiente | recepcionada | anulada */
     public string $filtroEstado = 'todos';
 
     // ---- Cabecera de la compra -------------------------------------------
@@ -779,8 +779,10 @@ class Index extends Component
                     'impuesto' => '0.00',
                     'flete' => '0.00',
                     'otros_gastos' => '0.00',
-                    // Nace ya recepcionada: las unidades se crean en el acto.
-                    'estado' => 'borrador',
+                    // Nace PENDIENTE: la mercadería se compró pero todavía no se
+                    // verificó. Las unidades NO entran al stock hasta que se
+                    // recepciona con los seriales o la confirmación de cada línea.
+                    'estado' => 'pendiente',
                 ]);
 
                 foreach ($datos['lineas'] as $linea) {
@@ -800,8 +802,8 @@ class Index extends Component
                     ]);
                 }
 
-                // Genera las unidades y deja la compra en 'recepcionada'.
-                app(RecepcionDeCompra::class)->recepcionar($compra->fresh());
+                // Ya NO se genera el inventario aquí: eso pasa al recepcionar,
+                // cuando la mercadería se verifica aparato por aparato.
 
                 return $compra->fresh();
             });
@@ -811,13 +813,11 @@ class Index extends Component
             return;
         }
 
-        $generadas = $compra->unidades()->count();
-
         $this->limpiarCabecera();
         $this->dispatch('cerrar-modal-compra');
-        $this->dispatch('toast', tipo: 'success', mensaje: "Compra {$compra->codigo} registrada: se generaron {$generadas} unidades en el inventario.");
+        $this->dispatch('toast', tipo: 'success', mensaje: "Compra {$compra->codigo} registrada en estado pendiente. Recuerda verificarla y recepcionarla cuando llegue.");
 
-        // Se abre su detalle: es donde se registran los seriales.
+        // Se abre su detalle: es donde se verifica y se recepciona.
         $this->abrirDetalle($compra->id);
     }
 
@@ -874,7 +874,7 @@ class Index extends Component
 
         // Una compra recepcionada no se borra: sus unidades ya están en el
         // almacén o vendidas, y quedarían sin origen.
-        if (! $compra->es_borrador) {
+        if ($compra->esta_recepcionada) {
             $this->dispatch('cerrar-modal-eliminar-compra');
             $this->dispatch('toast', tipo: 'error', mensaje: 'Una compra recepcionada no se puede eliminar.');
 
@@ -954,7 +954,7 @@ class Index extends Component
         return view('livewire.compras.index', [
             'compras' => $compras,
             'totalCompras' => Compra::count(),
-            'enBorrador' => Compra::where('estado', 'borrador')->count(),
+            'enPendiente' => Compra::whereIn('estado', ['borrador', 'pendiente'])->count(),
             'invertidoMes' => Compra::where('estado', 'recepcionada')
                 ->whereYear('fecha_compra', now()->year)
                 ->whereMonth('fecha_compra', now()->month)

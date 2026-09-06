@@ -35,6 +35,10 @@ class CompraDetalleResource extends JsonResource
             'subtotal' => (float) $this->subtotal,
             'precio_venta' => $precio,
 
+            // Si el producto lleva serial, la recepción tiene que registrar el
+            // de cada aparato; si no, basta confirmar la cantidad.
+            'tiene_serial' => (bool) $this->producto?->tiene_serial,
+
             // Margen por pieza con el costo ya prorrateado. Null mientras la
             // compra es un borrador: hasta recepcionar no hay costo real.
             'margen_unitario' => $costoReal > 0 ? round($precio - $costoReal, 2) : null,

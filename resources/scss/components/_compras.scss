@@ -377,6 +377,12 @@
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vz-warning) 22%, transparent);
     }
 
+    .compra-estado-pendiente {
+        color: var(--vz-info);
+        background: var(--vz-info-bg-subtle);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vz-info) 22%, transparent);
+    }
+
     .compra-estado-recepcionada {
         color: var(--vz-success);
         background: var(--vz-success-bg-subtle);
@@ -1207,5 +1213,38 @@
         color: var(--marca-apagado);
         font-size: .88rem;
         line-height: 1.6;
+    }
+
+    // Verificación / recepción
+    .compras-show-recepcion-linea {
+        padding: .9rem 1rem;
+        background: var(--vz-light);
+        border: 1px solid var(--vz-border-color);
+        border-radius: .6rem;
+    }
+
+    // Pagos al proveedor
+    .compras-show-pago {
+        padding: .7rem .9rem;
+        border: 1px solid var(--vz-border-color);
+        border-radius: .6rem;
+        margin-bottom: .5rem;
+    }
+
+    .compras-show-pago-fecha {
+        font-size: .8rem;
+        color: var(--marca-apagado);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .compras-show-pago-monto {
+        font-weight: 650;
+        font-size: .95rem;
+    }
+
+    .compras-show-pago-boucher {
+        font-size: .8rem;
+        color: var(--vz-success);
+        text-decoration: none;
     }
 }

@@ -72,7 +72,7 @@ class CompraCrudTest extends TestCase
 
     // ---- Cabecera ---------------------------------------------------------
 
-    public function test_registra_la_compra_y_genera_sus_unidades_de_una_vez(): void
+    public function test_registra_la_compra_en_pendiente_sin_generar_unidades(): void
     {
         [$componente, $producto] = $this->compraLista('1000', 4);
 
@@ -85,14 +85,11 @@ class CompraCrudTest extends TestCase
         $compra = Compra::first();
 
         $this->assertSame('COM-'.now()->format('Y').'-0001', $compra->codigo);
-        // No hay paso intermedio: nace recepcionada, con su inventario.
-        $this->assertSame('recepcionada', $compra->estado);
+        // Nace PENDIENTE y sin unidades: la mercadería se compró pero todavía
+        // no se verificó. El stock se genera al recepcionar.
+        $this->assertSame('pendiente', $compra->estado);
         $this->assertSame('1000.00', $compra->total);
-        $this->assertSame(4, Unidad::where('compra_id', $compra->id)->count());
-        $this->assertSame(
-            4,
-            Unidad::where('compra_id', $compra->id)->where('producto_id', $producto->id)->count()
-        );
+        $this->assertSame(0, Unidad::where('compra_id', $compra->id)->count());
     }
 
     public function test_al_registrar_se_abre_el_detalle_para_los_seriales(): void
@@ -238,7 +235,9 @@ class CompraCrudTest extends TestCase
 
         $compra = Compra::first();
 
-        $this->assertSame(20, Unidad::where('compra_id', $compra->id)->count());
+        // Sigue pendiente: las unidades se generan al recepcionar, no al
+        // registrar la orden.
+        $this->assertSame(0, Unidad::where('compra_id', $compra->id)->count());
 
         $lineaTv = $compra->detalles()->where('producto_id', $tv->id)->first();
         $lineaLav = $compra->detalles()->where('producto_id', $lavadora->id)->first();
@@ -249,12 +248,6 @@ class CompraCrudTest extends TestCase
         // Precio de venta = productos.precio_venta.
         $this->assertSame('4500.00', $lineaTv->precio_venta);
         $this->assertSame('2200.00', $lineaLav->precio_venta);
-
-        // Cada unidad carga su costo y su precio de lista.
-        $unidadTv = Unidad::where('compra_id', $compra->id)->where('producto_id', $tv->id)->first();
-        $this->assertSame('3500.00', $unidadTv->costo_unitario);
-        $this->assertSame('4500.00', $unidadTv->precio_venta);
-        $this->assertSame('en_stock', $unidadTv->estado);
     }
 
     public function test_quitar_un_producto_lo_saca_del_cuadre(): void
@@ -335,6 +328,12 @@ class CompraCrudTest extends TestCase
 
         $compra = Compra::first();
 
+        // La mercadería se verifica y recepciona: recién ahí existen unidades.
+        $linea = $compra->detalles()->first();
+        app(\App\Support\RecepcionDeCompra::class)->recepcionar($compra->fresh(), [
+            $linea->id => ['seriales' => ['SN-R1', 'SN-R2', 'SN-R3']],
+        ]);
+
         // Se vende una unidad de verdad: el ingreso realizado sale de
         // venta_detalles (lo realmente cobrado), no de unidades.precio_venta.
         $unidad = Unidad::where('compra_id', $compra->id)->first();
@@ -374,6 +373,13 @@ class CompraCrudTest extends TestCase
             ->assertHasNoErrors();
 
         $compra = Compra::first();
+
+        // Recepción: la mercadería se verifica y recién ahí se generan unidades.
+        $linea = $compra->detalles()->first();
+        app(\App\Support\RecepcionDeCompra::class)->recepcionar($compra->fresh(), [
+            $linea->id => ['seriales' => ['SN-A']],
+        ]);
+
         $unidad = Unidad::where('compra_id', $compra->id)->first();
         $servicio = app(\App\Support\RegistroDeVenta::class);
 
@@ -488,7 +494,15 @@ class CompraCrudTest extends TestCase
 
         $compra->update(['subtotal' => $costoTotal, 'total' => $costoTotal]);
 
-        app(\App\Support\RecepcionDeCompra::class)->recepcionar($compra->fresh());
+        // El producto de fábrica lleva serial: la recepción exige uno por
+        // unidad, como haría quien recibe la mercadería en el mostrador.
+        $linea = $compra->detalles()->first();
+
+        app(\App\Support\RecepcionDeCompra::class)->recepcionar($compra->fresh(), [
+            $linea->id => [
+                'seriales' => array_map(fn (int $i): string => 'SN-'.$linea->id.'-'.$i, range(1, $cantidad)),
+            ],
+        ]);
 
         return $compra->fresh();
     }
@@ -541,6 +555,10 @@ class CompraCrudTest extends TestCase
         $compra = $this->compraRecepcionada(2);
         $unidades = Unidad::where('compra_id', $compra->id)->orderBy('id')->get();
 
+        // Los seriales ya venían de la recepción: quedarse como estaban es la
+        // prueba de que el lote inválido no se guardó.
+        $serialesOriginales = $unidades->pluck('serial')->all();
+
         Livewire::actingAs($this->admin())
             ->test(Index::class)
             ->call('abrirDetalle', $compra->id)
@@ -551,14 +569,18 @@ class CompraCrudTest extends TestCase
             ->assertHasErrors('seriales');
 
         // Nada se guarda si el lote es inválido.
-        $this->assertNull($unidades[0]->fresh()->serial);
-        $this->assertNull($unidades[1]->fresh()->serial);
+        $this->assertSame(
+            $serialesOriginales,
+            $unidades->map(fn (Unidad $u) => $u->fresh()->serial)->all()
+        );
     }
 
     public function test_no_admite_un_serial_que_ya_usa_otra_unidad(): void
     {
         $compra = $this->compraRecepcionada(1);
         $unidad = Unidad::where('compra_id', $compra->id)->first();
+
+        $serialOriginal = $unidad->serial;
 
         Unidad::factory()->create(['serial' => 'YA-EXISTE']);
 
@@ -570,7 +592,7 @@ class CompraCrudTest extends TestCase
             ->call('guardarSeriales')
             ->assertHasErrors('seriales');
 
-        $this->assertNull($unidad->fresh()->serial);
+        $this->assertSame($serialOriginal, $unidad->fresh()->serial);
     }
 
     public function test_no_se_pueden_registrar_seriales_de_una_compra_en_borrador(): void

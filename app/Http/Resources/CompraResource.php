@@ -41,7 +41,11 @@ class CompraResource extends JsonResource
             'estado' => $this->estado,
             'estado_texto' => Compra::ESTADOS[$this->estado] ?? $this->estado,
             'es_borrador' => $this->es_borrador,
+            'es_pendiente' => $this->es_pendiente,
             'esta_recepcionada' => $this->esta_recepcionada,
+            // Hasta que no se verifica la mercadería no se pueden generar las
+            // unidades: solo un pendiente (o borrador viejo) es recepcionable.
+            'puede_recepcionarse' => $this->puede_recepcionarse,
             'recepcionada_en' => $this->recepcionada_en?->toIso8601String(),
 
             'proveedor' => $this->proveedor?->nombre,
@@ -60,13 +64,20 @@ class CompraResource extends JsonResource
             'moneda' => $this->moneda,
             'tipo_cambio' => (float) $this->tipo_cambio,
 
+            // Pago al proveedor: lo abonado, lo que falta y si quedó pagada.
+            // La suma llega por withSum('pagos as total_pagado').
+            'total_pagado' => (float) $this->total_pagado,
+            'saldo_pendiente' => (float) $this->saldo_pendiente,
+            'esta_pagada' => $this->esta_pagada,
+
             'lineas' => (int) $this->detalles_count,
-            // Unidades físicas que generó al recepcionarse. En un borrador es
-            // 0 porque todavía no existen: se crean al recibir la mercadería.
+            // Unidades físicas que generó al recepcionarse. En un pendiente es
+            // 0 porque todavía no existen: se crean al verificar la mercadería.
             'unidades' => (int) $this->unidades_count,
 
             'notas' => $this->when($this->detalle, fn () => $this->notas),
             'detalles' => CompraDetalleResource::collection($this->whenLoaded('detalles')),
+            'pagos' => PagoCompraResource::collection($this->whenLoaded('pagos')),
         ];
     }
 }

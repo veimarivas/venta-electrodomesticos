@@ -103,8 +103,8 @@
                 caption="{{ $proveedorContexto ? 'Historial con ' . $proveedorContexto->nombre : 'Total histórico' }}" />
         </div>
         <div class="col-xl-4 col-md-6">
-            <x-stat-card label="En borrador" value="{{ $enBorrador }}" icon="bx-edit"
-                color="warning" caption="Pendientes de recepcionar" />
+            <x-stat-card label="En pendiente" value="{{ $enPendiente }}" icon="bx-time"
+                color="info" caption="Pendientes de verificar y recepcionar" />
         </div>
         <div class="col-xl-4 col-md-6">
             <x-stat-card label="Invertido este mes" value="Bs {{ number_format((float) $invertidoMes, 2) }}"
@@ -221,7 +221,7 @@
                                 </td>
 
                                 <td class="text-center">
-                                    <span class="compra-estado {{ $unidad->estado === 'borrador' ? 'compra-estado-borrador' : ($unidad->estado === 'recepcionada' ? 'compra-estado-recepcionada' : 'compra-estado-anulada') }}">
+                                    <span class="compra-estado {{ $unidad->estado === 'borrador' ? 'compra-estado-borrador' : ($unidad->estado === 'pendiente' ? 'compra-estado-pendiente' : ($unidad->estado === 'recepcionada' ? 'compra-estado-recepcionada' : 'compra-estado-anulada')) }}">
                                         <span class="compra-estado-dot"></span>
                                         {{ \App\Models\Compra::ESTADOS[$unidad->estado] }}
                                     </span>
@@ -236,7 +236,7 @@
                                             <i class="ri-eye-line fs-16"></i>
                                         </a>
 
-                                        @if ($unidad->es_borrador)
+                                        @if ($unidad->puede_recepcionarse)
                                             @can('compras.eliminar')
                                                 <button type="button" class="btn btn-sm btn-ghost-danger btn-icon rounded-circle crud-accion-eliminar"
                                                     wire:click="confirmarEliminar({{ $unidad->id }})" title="Eliminar"

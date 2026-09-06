@@ -14,9 +14,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Cabecera de una compra al proveedor.
  *
- * Mientras está en 'borrador' se puede editar libremente. Al recepcionarla se
- * generan las unidades físicas y queda congelada: cambiarla después
- * falsearía el costo real de unidades que ya están en el almacén o vendidas.
+ * Nace en 'pendiente': la mercadería se compró pero todavía no se verificó, y
+ * sus unidades NO entran al stock hasta que se recepciona. Al recepcionarla se
+ * generan las unidades físicas (con sus seriales si el producto los lleva) y
+ * queda congelada: cambiarla después falsearía el costo real de unidades que
+ * ya están en el almacén o vendidas.
  */
 #[Fillable([
     'proveedor_id',
@@ -46,6 +48,7 @@ class Compra extends Model
     /** Estados de la compra y su etiqueta en español. */
     public const ESTADOS = [
         'borrador' => 'Borrador',
+        'pendiente' => 'Pendiente',
         'recepcionada' => 'Recepcionada',
         'anulada' => 'Anulada',
     ];
@@ -83,6 +86,15 @@ class Compra extends Model
     }
 
     /**
+     * Pagos hechos al proveedor por esta compra. Pueden ser varios hasta
+     * cubrir el total; cada uno lleva su boucher y su monto.
+     */
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(PagoCompra::class);
+    }
+
+    /**
      * Unidades físicas generadas por esta compra. La columna compra_id de
      * unidades está denormalizada justamente para que esta consulta sea directa.
      */
@@ -96,9 +108,59 @@ class Compra extends Model
         return Attribute::get(fn (): bool => $this->estado === 'borrador');
     }
 
+    protected function esPendiente(): Attribute
+    {
+        return Attribute::get(fn (): bool => $this->estado === 'pendiente');
+    }
+
     protected function estaRecepcionada(): Attribute
     {
         return Attribute::get(fn (): bool => $this->estado === 'recepcionada');
+    }
+
+    /**
+     * ¿Todavía se puede recepcionar? Solo lo que no se recibió ni se anuló:
+     * un borrador viejo entra igual.
+     */
+    protected function puedeRecepcionarse(): Attribute
+    {
+        return Attribute::get(fn (): bool => in_array($this->estado, ['borrador', 'pendiente'], true));
+    }
+
+    /**
+     * Cuánto se lleva pagado de esta compra. Prefiere la suma agregada que
+     * deja `withSum('pagos as total_pagado')`; si no se cargó, se consulta.
+     * El `array_key_exists` evita que strict mode reviente por el agregado
+     * ausente.
+     */
+    protected function totalPagado(): Attribute
+    {
+        return Attribute::get(function (): string {
+            if ($this->relationLoaded('pagos')) {
+                return (string) $this->pagos->sum('monto');
+            }
+
+            $agregado = array_key_exists('total_pagado', $this->attributes)
+                ? $this->attributes['total_pagado']
+                : $this->pagos()->sum('monto');
+
+            return (string) $agregado;
+        });
+    }
+
+    /** Lo que falta por pagar; negativo o cero significa pagada. */
+    protected function saldoPendiente(): Attribute
+    {
+        return Attribute::get(fn (): string => bcsub(
+            (string) $this->total,
+            (string) $this->total_pagado,
+            2
+        ));
+    }
+
+    protected function estaPagada(): Attribute
+    {
+        return Attribute::get(fn (): bool => bccomp($this->saldo_pendiente, '0', 2) <= 0);
     }
 
     /**
