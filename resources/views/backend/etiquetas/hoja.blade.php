@@ -89,7 +89,12 @@
         .etiqueta-codigo-svg {
             display: block;
             flex: 0 0 auto;
-            height: {{ ['pequena' => '7mm', 'mediana' => '11mm', 'grande' => '16mm'][$tamano] }};
+            /* El alto se fija en milímetros y NO se deja al flujo: un Code128
+               bajo se lee mal de pie y con el aparato en la mano, porque el
+               lector necesita cruzar todas las barras en una sola pasada.
+               Cuanto más altas las barras, más margen le damos al lector del
+               teléfono para acertar incluso con una impresión deficiente. */
+            height: {{ ['pequena' => '9mm', 'mediana' => '14mm', 'grande' => '19mm'][$tamano] }};
         }
 
         .etiqueta-codigo-svg svg {

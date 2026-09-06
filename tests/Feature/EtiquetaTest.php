@@ -116,6 +116,169 @@ class EtiquetaTest extends TestCase
         );
     }
 
+    public function test_el_codigo_generado_se_puede_decodificar(): void
+    {
+        // Regresión del día que la etiqueta se imprimía cortada: un Code128
+        // truncado no lo lee ningún lector. Aquí se decodifica el SVG final de
+        // verdad y se exige que dé EXACTAMENTE el código interno, checksum y
+        // patrón de parada incluidos.
+        $generador = app(GeneradorEtiquetas::class);
+
+        foreach (['P001-2608-0042', 'TVSAM55-2609-0007', 'ABC-123-0001'] as $codigo) {
+            foreach (['pequena', 'mediana', 'grande'] as $tamano) {
+                $decodificado = $this->decodificarCode128(
+                    $generador->codigoDeBarras($codigo, $tamano)
+                );
+
+                $this->assertSame(
+                    strtoupper($codigo),
+                    strtoupper($decodificado),
+                    "Fallo decodificando {$codigo} ({$tamano})"
+                );
+            }
+        }
+    }
+
+    /**
+     * Decodifica el patrón de barras de un SVG Code128 a mano.
+     *
+     * Extrae los <rect> (solo barras), reconstruye la secuencia de módulos
+     * barra/espacio, la recorre contra la tabla de Code128 y devuelve el texto.
+     * Verifica además el checksum y la terminación.
+     */
+    private function decodificarCode128(string $svg): string
+    {
+        preg_match_all('/<rect x="([\d.]+)"[^>]*width="([\d.]+)"/', $svg, $m, PREG_SET_ORDER);
+
+        $modulos = [];
+        $prev = 0.0;
+        $primero = true;
+
+        foreach ($m as $barra) {
+            $x = (float) $barra[1];
+            $w = (float) $barra[2];
+
+            if ($w <= 0.001) {
+                continue; // la librería cierra con rects de ancho 0
+            }
+
+            if ($primero) {
+                $modulos[] = $w;
+                $primero = false;
+            } else {
+                $hueco = $x - $prev;
+                if ($hueco > 0.001) {
+                    $modulos[] = $hueco;
+                }
+                $modulos[] = $w;
+            }
+
+            $prev = $x + $w;
+        }
+
+        $unidad = min($modulos);
+        $secuencia = array_map(fn ($v): int => (int) round($v / $unidad), $modulos);
+
+        // Tabla de patrones de Code128 (valores 0..106).
+        $patrones = [
+            [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],[1,3,1,2,2,2],
+            [1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],[2,2,1,3,1,2],[2,3,1,2,1,2],
+            [1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],[1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],
+            [2,2,3,2,1,1],[2,2,1,1,3,2],[2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],
+            [3,1,1,2,2,2],[3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],
+            [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3],[1,3,1,3,2,1],
+            [1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3],[2,3,1,1,1,3],[2,3,1,3,1,1],
+            [1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1],[1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],
+            [3,1,3,1,2,1],[2,1,1,3,3,1],[2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],
+            [3,1,1,1,2,3],[3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1],
+            [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2],[1,2,1,1,2,4],
+            [1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4],[1,1,2,4,1,2],[1,2,2,1,1,4],
+            [1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1],[2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],
+            [2,4,1,1,1,2],[1,3,4,1,1,1],[1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],
+            [1,2,4,1,1,2],[1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1],
+            [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],[1,1,4,1,1,3],
+            [1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],[1,1,4,1,3,1],[3,1,1,1,4,1],
+            [4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],[2,1,1,2,3,2],[2,3,3,1,1,1],
+        ];
+
+        $CSA = 101; $CSB = 100; $CSC = 99;
+        $START_A = 103; $START_B = 104; $START_C = 105; $STOP = 106;
+
+        $coincide = fn (array $a, array $b): bool => $a === $b;
+
+        // Recorrer la secuencia de módulos de 6 en 6 buscando símbolos.
+        $valores = [];
+        $i = 0;
+        $n = count($secuencia);
+
+        while ($i <= $n - 6) {
+            $ventana = array_slice($secuencia, $i, 6);
+            $encontrado = null;
+
+            foreach ($patrones as $valor => $patron) {
+                if ($coincide($ventana, $patron)) {
+                    $encontrado = $valor;
+                    break;
+                }
+            }
+
+            if ($encontrado === null) {
+                break;
+            }
+
+            $valores[] = $encontrado;
+            $i += 6;
+        }
+
+        $this->assertNotEmpty($valores, 'El SVG no produce ningún símbolo Code128.');
+        $this->assertContains($valores[0], [$START_A, $START_B, $START_C], 'No arranca con un START.');
+
+        // Verificar la terminación: el patrón de parada debe cerrar completo.
+        $indiceStop = array_search($STOP, $valores, true);
+        $this->assertNotFalse($indiceStop, 'Falta el patrón de parada.');
+        $this->assertGreaterThan(2, $indiceStop, 'El patrón de parada llega demasiado pronto.');
+
+        // El símbolo inmediatamente anterior al STOP es el checksum; se
+        // comprueba y NO se cuenta como dato. La norma pondera TAMBIÉN los
+        // códigos de cambio de conjunto (CODE A/B/C), como hace la librería.
+        $checksum = $valores[$indiceStop - 1];
+        $suma = $valores[0];
+
+        foreach (array_slice($valores, 1, $indiceStop - 2) as $posicion => $valor) {
+            $suma = ($suma + ($posicion + 1) * $valor) % 103;
+        }
+
+        $this->assertSame(
+            $suma,
+            $checksum,
+            'El checksum del Code128 no coincide: la etiqueta no es legible.'
+        );
+
+        // Decodificar datos (con cambio de conjunto A/B/C).
+        $texto = '';
+        $modo = $valores[0];
+
+        foreach (array_slice($valores, 1, $indiceStop - 2) as $valor) {
+            if (in_array($valor, [$CSA, $CSB, $CSC], true)) {
+                $modo = match ($valor) {
+                    $CSA => $START_A,
+                    $CSB => $START_B,
+                    default => $START_C,
+                };
+
+                continue;
+            }
+
+            if ($modo === $START_C) {
+                $texto .= str_pad((string) $valor, 2, '0', STR_PAD_LEFT);
+            } else {
+                $texto .= chr($valor + 32);
+            }
+        }
+
+        return $texto;
+    }
+
     // ---- Hoja de una compra -----------------------------------------------
 
     private function compraRecepcionada(int $cantidad = 3): Compra

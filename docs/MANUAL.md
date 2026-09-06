@@ -417,6 +417,14 @@ desaparecen los controles y el borde de guía.
 > **Para escanear con el teléfono, usa la mediana.** En la pequeña las barras
 > quedan al mínimo que admite la norma: se lee, pero cuesta. En la mediana las
 > barras son el doble de anchas y la lectura es inmediata.
+>
+> **Si una etiqueta no se lee, casi nunca es el código.** Las barras que genera
+> el sistema se comprueban decodificándose (un test las lee de vuelta), así que
+> un fallo suele ser de **impresión**: la impresora encogió la página (en el
+> diálogo de impresión, escala **100 %** y márgenes **ninguno**), o el adhesivo
+> salió a menor tamaño. Acerca la cámara hasta que todo el código quede dentro
+> del marco de puntería: la etiqueta es un código largo y de cerca no entra
+> entero.
 
 > Una compra registrada **no se puede editar**: sus unidades ya están en el
 > almacén, o vendidas, con un costo que dejaría de coincidir con lo pagado.
