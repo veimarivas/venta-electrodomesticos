@@ -453,6 +453,23 @@ class Index extends Component
         abort_unless(auth()->user()?->can($permiso) ?? false, 403);
     }
 
+    // ---- Código de barras ---------------------------------------------------
+
+    /** Unidad cuyo código de barras se está mostrando en el modal. */
+    public ?Unidad $unidadBarras = null;
+    public string $svgBarras = '';
+
+    public function verCodigoBarras(int $id): void
+    {
+        $this->autorizar('unidades.ver');
+
+        $unidad = Unidad::with('producto')->findOrFail($id);
+        $generador = app(\App\Support\GeneradorEtiquetas::class);
+        $this->unidadBarras = $unidad;
+        $this->svgBarras = $generador->codigoDeBarras($unidad->codigo_interno, 'mediana');
+        $this->dispatch('abrir-modal-barras');
+    }
+
     public function limpiarFormulario(): void
     {
         $this->reset([...self::CAMPOS, 'itemId', 'codigoActual']);

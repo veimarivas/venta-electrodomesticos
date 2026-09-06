@@ -117,12 +117,6 @@
             gap: 1mm;
         }
 
-        .etiqueta-precio {
-            font-size: {{ $tamano === 'pequena' ? '3.2mm' : '4.4mm' }};
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
         .etiqueta-serial {
             font-size: 2mm;
             color: #6b778a;
@@ -246,7 +240,6 @@
                                 S/N {{ $unidad->serial }}
                             @endif
                         </span>
-                        <span class="etiqueta-precio">Bs {{ number_format((float) $unidad->precio_venta, 2) }}</span>
                     </div>
                 </div>
             </div>

@@ -310,8 +310,18 @@
         {{-- ===================== Tabs de estado ===================== --}}
         @if ($estadosConUnidades->isNotEmpty())
             <div class="px-4 pt-3">
+                @php
+                    // Los dos estados principales van primero y separados del
+                    // resto: el almacén pregunta «¿qué tengo en stock?» y
+                    // «¿qué se vendió?», no «¿cuántos hay por estado?».
+                    $principales = ['en_stock', 'vendido'];
+                    $secundarios = collect($estados)->keys()
+                        ->reject(fn ($v) => in_array($v, $principales, true))
+                        ->all();
+                @endphp
+
                 <ul class="nav nav-tabs nav-tabs-estado" role="tablist">
-                    @foreach ($estados as $valor => $etiqueta)
+                    @foreach ($principales as $valor)
                         @if ($estadosConUnidades->has($valor))
                             <li class="nav-item" role="presentation">
                                 <button type="button"
@@ -320,12 +330,33 @@
                                     role="tab"
                                     aria-selected="{{ $estadoFiltro === $valor ? 'true' : 'false' }}">
                                     <span class="unidad-estado-dot tab-estado-dot tab-estado-{{ $valor }}"></span>
-                                    {{ $etiqueta }}
+                                    {{ $estados[$valor] }}
                                     <span class="tab-estado-badge">{{ $estadosConUnidades[$valor] }}</span>
                                 </button>
                             </li>
                         @endif
                     @endforeach
+
+                    @if (collect($secundarios)->first(fn ($v) => $estadosConUnidades->has($v)))
+                        <li class="nav-item nav-item-divisor" role="presentation" aria-hidden="true">
+                            <span class="nav-divisor"></span>
+                        </li>
+                        @foreach ($secundarios as $valor)
+                            @if ($estadosConUnidades->has($valor))
+                                <li class="nav-item" role="presentation">
+                                    <button type="button"
+                                        class="nav-link {{ $estadoFiltro === $valor ? 'active' : '' }}"
+                                        wire:click="$set('estadoFiltro', '{{ $valor }}')"
+                                        role="tab"
+                                        aria-selected="{{ $estadoFiltro === $valor ? 'true' : 'false' }}">
+                                        <span class="unidad-estado-dot tab-estado-dot tab-estado-{{ $valor }}"></span>
+                                        {{ $estados[$valor] }}
+                                        <span class="tab-estado-badge">{{ $estadosConUnidades[$valor] }}</span>
+                                    </button>
+                                </li>
+                            @endif
+                        @endforeach
+                    @endif
                 </ul>
             </div>
         @endif
@@ -470,6 +501,11 @@
                                                     title="Imprimir etiqueta" aria-label="Imprimir la etiqueta de {{ $unidad->codigo_interno }}">
                                                     <i class="ri-price-tag-3-line fs-16"></i>
                                                 </a>
+                                                <button type="button" class="btn btn-sm btn-ghost-info btn-icon rounded-circle"
+                                                    wire:click="verCodigoBarras({{ $unidad->id }})" title="Ver código de barras"
+                                                    aria-label="Ver código de barras de {{ $unidad->codigo_interno }}">
+                                                    <i class="ri-barcode-line fs-16"></i>
+                                                </button>
                                             @endcan
                                             @can('unidades.editar')
                                                 <button type="button" class="btn btn-sm btn-ghost-primary btn-icon rounded-circle crud-accion-editar"
@@ -830,6 +866,43 @@
                         </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Modal código de barras ===================== --}}
+    <div class="modal fade" id="modalBarras" tabindex="-1" aria-hidden="true" wire:ignore.self data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0">
+                <div class="modal-header p-4 pb-0">
+                    <div>
+                        <h5 class="modal-title">Código de barras</h5>
+                        @if ($unidadBarras)
+                            <small class="text-muted">{{ $unidadBarras->codigo_interno }}</small>
+                        @endif
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    @if ($svgBarras)
+                        <div class="bg-white p-3 rounded-3 mb-3 d-inline-block border">
+                            <div style="width: 200px">
+                                {!! $svgBarras !!}
+                            </div>
+                        </div>
+                    @endif
+                    @if ($unidadBarras)
+                        <div class="fs-13 text-muted">
+                            <div class="fw-semibold text-dark">{{ $unidadBarras->producto->nombre ?? '' }}</div>
+                            @if ($unidadBarras->serial)
+                                <div>S/N: {{ $unidadBarras->serial }}</div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+                <div class="modal-footer p-3">
+                    <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>

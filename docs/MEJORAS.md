@@ -296,6 +296,16 @@ delante—; la edición y la recepción, en cambio, ya trabajan desde el mostrad
 
 **Lo que queda:** nada de esta pieza.
 
+## Inventario: etiquetas y estado (2026-09-06)
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Etiquetas sin precio** | La hoja de etiquetas imprimible ya no muestra el precio de venta: la etiqueta va pegada al aparato en el almacén y el precio no debe ir en la caja. |
+| ✅ | **Modal de código de barras** | Botón de código de barras en cada fila de unidades: abre un modal con el SVG Code128 del código interno (el mismo de la etiqueta impresa), sin imprimir. También disponible en la app Flutter (botón *Ver código*). |
+| ✅ | **Tabs separados En stock / Vendidos** | En el inventario de unidades, los tabs *En stock* y *Vendido* van primero y separados con un divisor del resto de estados (Reservado, Devuelto, Dañado, En taller, Perdido). En la app Flutter, los chips de estado siguen el mismo orden. |
+
+**Lo que queda:** nada de esta pieza.
+
 ## Fase 3 — Cuando la tienda crezca
 
 Nada de esto hace falta hoy, y adelantarlo costaría más de lo que ahorra.

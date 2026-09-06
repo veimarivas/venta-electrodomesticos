@@ -2979,6 +2979,21 @@
             color: #254970;
         }
 
+        // Separador visual entre los dos estados principales (En stock /
+        // Vendido) y los estados secundarios del inventario.
+        .nav-item-divisor {
+            display: inline-flex;
+            align-items: center;
+            margin: 0 .6rem;
+        }
+
+        .nav-divisor {
+            display: block;
+            width: 1px;
+            height: 1.4rem;
+            background: var(--vz-border-color);
+        }
+
         // Colores por estado en los tabs
         .tab-estado-en_stock { background: var(--vz-success); }
         .tab-estado-reservado { background: var(--vz-info); }
