@@ -174,6 +174,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Compras' => null, 'Órdenes de compra' => null],
     ])->middleware('permission:compras.ver')->name('compras.index');
 
+    // La ruta estática va ANTES que /compras/{compra}: si no, Laravel tomaría
+    // «pagos» como el id de una compra y respondería 404.
+    Route::view('/compras/pagos', 'backend.compras.pagos', [
+        'title' => 'Pagos a proveedores',
+        'breadcrumbs' => ['Inicio' => null, 'Compras' => null, 'Pagos a proveedores' => null],
+    ])->middleware('permission:compras.ver')->name('compras.pagos');
+
     Route::get('/compras/{compra}', function (\App\Models\Compra $compra) {
         return view('backend.compras.show', [
             'title' => 'Compra '.$compra->codigo,

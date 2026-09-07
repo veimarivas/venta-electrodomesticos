@@ -16,13 +16,13 @@ use RuntimeException;
  * con el costo REAL que le corresponde (landed cost), no con el precio de
  * lista del proveedor.
  *
- * La recepción exige verificar cada línea: para los productos con serial se
- * entrega el serial de cada aparato; para los que no lo llevan basta
- * confirmar la cantidad. Solo cuando TODAS las líneas están verificadas se
- * generan las unidades —y entran al stock— y la compra pasa a «recepcionada».
+ * La recepción puede ser **por lotes**: si una línea traía 11 aparatos y solo
+ * llegaron 7, se verifican 7 (sus seriales o su cantidad) y la compra sigue
+ * pendiente hasta que se verifiquen los 4 restantes. Una vez que TODAS las
+ * líneas están completas, la compra pasa a «recepcionada».
  *
- * Todo ocurre dentro de una transacción: o se genera el lote completo y la
- * compra queda recepcionada, o no se crea nada.
+ * Todo ocurre dentro de una transacción: o se genera el lote de esta tanda y
+ * la compra avanza, o no se crea nada.
  */
 class RecepcionDeCompra
 {
@@ -32,10 +32,12 @@ class RecepcionDeCompra
     ) {}
 
     /**
-     * @param  array<int, array{seriales?: string[]}|array{verificada?: bool}>  $verificacion
+     * @param  array<int, array{seriales?: string[]}|array{cantidad_verificada?: int}>  $verificacion
      *        Verificación por id de línea: `['seriales' => [...]]` para
-     *        productos con serial, `['verificada' => true]` para los demás.
-     * @return int Cuántas unidades se generaron
+     *        productos con serial, `['cantidad_verificada' => N]` para los
+     *        demás. Puede ser parcial; las líneas omitidas no se tocan en esta
+     *        tanda.
+     * @return int Cuántas unidades se generaron en esta tanda
      */
     public function recepcionar(Compra $compra, array $verificacion = []): int
     {
@@ -43,7 +45,7 @@ class RecepcionDeCompra
             throw new RuntimeException('Solo se puede recepcionar una compra pendiente o en borrador.');
         }
 
-        $lineas = $compra->detalles()->with('producto')->orderBy('id')->get();
+        $lineas = $compra->detalles()->with('producto')->withCount('unidades')->orderBy('id')->get();
 
         if ($lineas->isEmpty()) {
             throw new RuntimeException('La compra no tiene líneas que recepcionar.');
@@ -60,7 +62,7 @@ class RecepcionDeCompra
                         fn (int $i): string => 'AUTO-'.$linea->id.'-'.$i,
                         range(1, max($linea->cantidad, 1))
                     )]
-                    : ['verificada' => true];
+                    : ['cantidad_verificada' => $linea->cantidad];
             }
         }
 
@@ -76,63 +78,114 @@ class RecepcionDeCompra
             $gastoPorLinea = ProrrateoDeGastos::repartir($gastos, $pesos);
 
             $generadas = 0;
+            $completa = true;
 
             foreach ($lineas as $indice => $linea) {
-                $seriales = $linea->producto->tiene_serial
-                    ? ($verificacion[$linea->id]['seriales'] ?? [])
-                    : [];
+                $dato = $verificacion[$linea->id] ?? null;
+                $yaCreadas = (int) $linea->unidades_count;
 
-                $generadas += $this->generarUnidades($compra, $linea, $gastoPorLinea[$indice], $seriales);
+                if ($linea->producto->tiene_serial) {
+                    $seriales = array_values(array_filter(
+                        array_map(fn ($s) => trim((string) $s), $dato['seriales'] ?? [])
+                    ));
+                    $porCrear = count($seriales);
+                } else {
+                    $seriales = [];
+                    $porCrear = (int) ($dato['cantidad_verificada'] ?? 0);
+                }
+
+                if ($porCrear > 0) {
+                    $generadas += $this->generarUnidades(
+                        $compra,
+                        $linea,
+                        $gastoPorLinea[$indice],
+                        $seriales,
+                        $yaCreadas,
+                        $porCrear,
+                    );
+                }
+
+                if ($yaCreadas + $porCrear < $linea->cantidad) {
+                    $completa = false;
+                }
             }
 
-            $compra->update([
-                'estado' => 'recepcionada',
-                'recepcionada_en' => now(),
-            ]);
+            // Solo cuando TODAS las líneas están completas la compra pasa a
+            // recepcionada. Con una verificación parcial sigue pendiente.
+            if ($completa) {
+                $compra->update([
+                    'estado' => 'recepcionada',
+                    'recepcionada_en' => now(),
+                ]);
+            }
 
             return $generadas;
         });
     }
 
     /**
-     * Comprueba que la verificación cubra todas las líneas y que los seriales
-     * sean los que corresponden: ni faltan, ni se repiten, ni ya existen.
+     * Comprueba que la verificación sea válida: los seriales son los que
+     * corresponden (ni faltan los de esta tanda, ni se repiten, ni ya existen),
+     * y la cantidad marcada no supera lo que falta por recibir.
      *
      * @param  \Illuminate\Support\Collection<int, CompraDetalle>  $lineas
-     * @param  array<int, array{seriales?: string[]}|array{verificada?: bool}>  $verificacion
+     * @param  array<int, array{seriales?: string[]}|array{cantidad_verificada?: int}>  $verificacion
      */
     private function validarVerificacion(Compra $compra, $lineas, array $verificacion): void
     {
         $serialesDeLaCompra = [];
+        $algoVerificado = false;
 
         foreach ($lineas as $linea) {
             $dato = $verificacion[$linea->id] ?? null;
+            $yaCreadas = (int) $linea->unidades_count;
+            $restantes = $linea->cantidad - $yaCreadas;
 
-            if ($dato === null) {
-                throw new RuntimeException("Falta verificar la línea de «{$linea->producto->nombre}».");
-            }
-
-            if (! $linea->producto->tiene_serial) {
+            // Línea ya completa: no se vuelve a verificar.
+            if ($restantes <= 0) {
                 continue;
             }
 
-            $seriales = array_values(array_filter(
-                array_map(fn ($s) => trim((string) $s), $dato['seriales'] ?? [])
-            ));
+            if ($linea->producto->tiene_serial) {
+                $seriales = array_values(array_filter(
+                    array_map(fn ($s) => trim((string) $s), $dato['seriales'] ?? [])
+                ));
 
-            if (count($seriales) !== $linea->cantidad) {
-                throw new RuntimeException(
-                    "«{$linea->producto->nombre}» requiere {$linea->cantidad} seriales "
-                    .'y se registraron '.count($seriales).'.'
-                );
-            }
-
-            foreach ($seriales as $serial) {
-                if (in_array($serial, $serialesDeLaCompra, true)) {
-                    throw new RuntimeException("El serial «{$serial}» está repetido dentro de la compra.");
+                if ($seriales !== [] && count($seriales) > $restantes) {
+                    throw new RuntimeException(
+                        "«{$linea->producto->nombre}» ya recibió {$yaCreadas} de {$linea->cantidad}; "
+                        .'quedan '.$restantes.' por verificar y se registraron '.count($seriales).'.'
+                    );
                 }
-                $serialesDeLaCompra[] = $serial;
+
+                foreach ($seriales as $serial) {
+                    if (in_array($serial, $serialesDeLaCompra, true)) {
+                        throw new RuntimeException("El serial «{$serial}» está repetido dentro de la compra.");
+                    }
+                    $serialesDeLaCompra[] = $serial;
+                }
+
+                if ($seriales !== []) {
+                    $algoVerificado = true;
+                }
+            } else {
+                $cantidad = (int) ($dato['cantidad_verificada'] ?? 0);
+
+                if ($cantidad < 0 || $cantidad > $restantes) {
+                    throw new RuntimeException(
+                        "«{$linea->producto->nombre}» quedan {$restantes} unidades por verificar "
+                        .'y se marcaron '.$cantidad.'.'
+                    );
+                }
+
+                if ($cantidad > 0) {
+                    $algoVerificado = true;
+                }
             }
+        }
+
+        if (! $algoVerificado) {
+            throw new RuntimeException('Marca cuántas unidades de cada producto llegaron.');
         }
 
         if ($serialesDeLaCompra !== [] && Unidad::whereIn('serial', $serialesDeLaCompra)->exists()) {
@@ -142,12 +195,16 @@ class RecepcionDeCompra
 
     /**
      * Crea las unidades de una línea repartiendo entre ellas el gasto que le
-     * tocó. El reparto vuelve a ser exacto: si a la línea le corresponden 100
-     * centavos y tiene 3 unidades, una carga 34 y las otras 33.
+     * tocó. El reparto vuelve a ser exacto y se hace sobre el lote COMPLETO de
+     * la línea: cada tanda consume las siguientes porciones en orden, así la
+     * suma de los costos de todas las unidades —las de hoy y las de mañana—
+     * coincide al centavo con lo facturado.
      *
-     * @param  string[]  $seriales  Seriales de los productos que lo llevan.
+     * @param  string[]  $seriales  Seriales de esta tanda (productos que lo llevan).
+     * @param  int  $desde  Cuántas unidades de la línea ya se recibieron antes.
+     * @param  int  $porCrear  Cuántas se reciben en esta tanda.
      */
-    private function generarUnidades(Compra $compra, CompraDetalle $linea, int $gastoDeLinea, array $seriales = []): int
+    private function generarUnidades(Compra $compra, CompraDetalle $linea, int $gastoDeLinea, array $seriales = [], int $desde = 0, int $porCrear = 1): int
     {
         $piezas = max($linea->cantidad, 1);
 
@@ -171,16 +228,18 @@ class RecepcionDeCompra
             ),
         ]);
 
-        for ($unidad = 0; $unidad < $linea->cantidad; $unidad++) {
+        for ($tanda = 0; $tanda < $porCrear; $tanda++) {
+            $indice = $desde + $tanda;
+
             $fisica = $this->generador->crearCon([
                 'producto_id' => $linea->producto_id,
                 'compra_id' => $compra->id,
                 'compra_detalle_id' => $linea->id,
-                'costo_unitario' => ProrrateoDeGastos::aDecimal($costoPorUnidad[$unidad] + $gastoPorUnidad[$unidad]),
+                'costo_unitario' => ProrrateoDeGastos::aDecimal($costoPorUnidad[$indice] + $gastoPorUnidad[$indice]),
                 'precio_venta' => $linea->precio_venta,
                 // El serial del fabricante solo existe en productos que lo
                 // llevan; el código interno lo genera el sistema.
-                'serial' => $seriales[$unidad] ?? null,
+                'serial' => $seriales[$tanda] ?? null,
                 'estado' => 'en_stock',
                 'ingresado_en' => now(),
             ]);
@@ -191,7 +250,7 @@ class RecepcionDeCompra
             $this->kardex->entrada($fisica, $compra, "Compra {$compra->codigo}");
         }
 
-        return $linea->cantidad;
+        return $porCrear;
     }
 
     /**

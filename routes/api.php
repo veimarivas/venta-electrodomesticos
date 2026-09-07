@@ -197,6 +197,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:proveedores.eliminar')->name('proveedores.destroy');
 
         Route::middleware('permission:compras.ver')->group(function () {
+            // La ruta estática va ANTES que `/compras/{compra}`: si no, Laravel
+            // tomaría «pagos» como el id de una compra y respondería 404.
+            Route::get('/compras/pagos', [CompraController::class, 'historialPagos'])
+                ->name('compras.pagos.historial');
             Route::get('/compras', [CompraController::class, 'index'])->name('compras.index');
             Route::get('/compras/{compra}', [CompraController::class, 'show'])->name('compras.show');
             Route::get('/compras/{compra}/unidades', [CompraController::class, 'unidades'])

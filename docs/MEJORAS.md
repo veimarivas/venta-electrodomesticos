@@ -305,6 +305,18 @@ características tal como se registraron.
 
 ---
 
+## Recepción por tandas, escáner de seriales y pagos (2026-09-06)
+
+Tres piezas que el mostrador pedía a la vez:
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Recepción parcial** | La mercadería puede llegar por tandas: se marca cuántas unidades llegaron (o los seriales de las que llegaron) y la compra **sigue pendiente** hasta completar el lote. El costo se reparte sobre el lote completo, así la suma sigue cuadrando al centavo al terminar. Una compra con unidades ya generadas no se puede eliminar. |
+| ✅ | **Escáner de serial** | En la verificación de mercadería de la app, cada campo de serial tiene su botón de cámara: lee el código del fabricante y lo deja en el campo, sin teclearlo. |
+| ✅ | **Pagos a proveedores** | *Compras → Pagos a proveedores* (y una pestaña «Pagos» en la app): el historial de `compra_pagos` con filtros por **hoy / semana / mes / todas** y el total del período. La API `GET /compras/pagos` lo alimenta con su permiso `compras.ver`. |
+
+---
+
 ## Indicador de serial en la app (2026-09-06)
 
 | | Qué | Nota |

@@ -682,10 +682,21 @@ Y en **Compras**, otras dos:
 
 El **registro** de compras sigue siendo cosa del panel: se hace con las facturas
 delante. Desde el teléfono, en la ficha de una compra en borrador aparece el
-botón **Recepcionar**, que genera las unidades del almacén y congela los costos
-(un diálogo de confirmación advierte que es irreversible), y el botón **Editar**
-para corregir la orden —proveedor, fecha, factura, total y líneas— mientras
-todavía no se verificó ni tiene pagos.
+botón **Verificar mercadería**, que registra lo que llegó y genera las unidades
+del almacén, y el botón **Editar** para corregir la orden —proveedor, fecha,
+factura, total y líneas— mientras todavía no se verificó ni tiene pagos.
+
+**La mercadería puede llegar por tandas.** Si la compra traía 11 aparatos y hoy
+solo entraron 7, se registran los 7 (sus seriales, o «cuántas llegaron» para los
+que no llevan serial) y la compra **sigue pendiente** hasta que se verifican los
+4 restantes. Cada línea muestra «Recibidas 7 · 4 pendientes» y, al terminar el
+lote, la compra queda recepcionada. El costo de cada aparato se reparte sobre el
+lote completo, así que la suma sigue cuadrando al centavo aunque llegue en varias
+partes.
+
+Para los productos **con serial**, cada campo tiene su **botón de cámara**: se
+apunta al código de barras del fabricante y el serial queda escrito solo, sin
+teclearlo.
 
 ### Vender desde el teléfono
 

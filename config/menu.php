@@ -84,6 +84,7 @@ return [
         'children' => [
             ['label' => 'Proveedores', 'route' => 'proveedores.index', 'active' => 'proveedores*', 'permission' => 'proveedores.ver'],
             ['label' => 'Órdenes de compra', 'route' => 'compras.index', 'active' => 'compras*', 'permission' => 'compras.ver'],
+            ['label' => 'Pagos a proveedores', 'route' => 'compras.pagos', 'active' => 'compras/pagos*', 'permission' => 'compras.ver'],
         ],
     ],
 

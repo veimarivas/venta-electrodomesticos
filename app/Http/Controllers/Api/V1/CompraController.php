@@ -311,9 +311,9 @@ class CompraController extends Controller
     {
         abort_unless($request->user()?->can('compras.eliminar') ?? false, 403);
 
-        if (! $compra->puede_recepcionarse) {
+        if (! $compra->puede_recepcionarse || $compra->unidades()->exists()) {
             return response()->json([
-                'message' => 'Una compra recepcionada o anulada no se puede eliminar.',
+                'message' => 'Una compra recepcionada, anulada o con unidades ya generadas no se puede eliminar.',
             ], 422);
         }
 
@@ -347,11 +347,11 @@ class CompraController extends Controller
         }
 
         $datos = $request->validate([
-            'lineas' => ['required', 'array', 'min:1'],
+            'lineas' => ['required', 'array', 'min:1', 'max:50'],
             'lineas.*.linea_id' => ['required', 'integer', Rule::exists('compra_detalles', 'id')],
             'lineas.*.seriales' => ['nullable', 'array'],
             'lineas.*.seriales.*' => ['string', 'max:100'],
-            'lineas.*.verificada' => ['nullable', 'boolean'],
+            'lineas.*.cantidad_verificada' => ['nullable', 'integer', 'min:1', 'max:9999'],
         ]);
 
         // Solo líneas de ESTA compra: el componente es invocable y no debe
@@ -367,8 +367,11 @@ class CompraController extends Controller
                 ], 422);
             }
 
-            $verificacion[$linea['linea_id']] = $linea['verificada'] ?? false
-                ? ['verificada' => true]
+            // La recepción puede ser parcial: para los productos sin serial se
+            // marca cuántas unidades llegaron (si no se manda la cantidad, 0);
+            // para los que llevan serial, los seriales de esta tanda.
+            $verificacion[$linea['linea_id']] = array_key_exists('cantidad_verificada', $linea)
+                ? ['cantidad_verificada' => (int) $linea['cantidad_verificada']]
                 : ['seriales' => $linea['seriales'] ?? []];
         }
 
@@ -395,6 +398,71 @@ class CompraController extends Controller
     }
 
     // ---- Pagos al proveedor ----------------------------------------------
+
+    /**
+     * Historial de pagos a proveedores de TODAS las compras, con filtros por
+     * período. Es el reporte «¿cuánto salió este mes?»: cada pago con su
+     * compra, su proveedor y quién lo registró.
+     */
+    public function historialPagos(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can('compras.ver') ?? false, 403);
+
+        $datos = $request->validate([
+            'rango' => ['nullable', 'in:hoy,semana,mes'],
+            'desde' => ['nullable', 'date'],
+            'hasta' => ['nullable', 'date'],
+            'buscar' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $termino = trim($datos['buscar'] ?? '');
+
+        $pagos = PagoCompra::query()
+            ->with(['compra.proveedor', 'user'])
+            ->when(isset($datos['desde']), fn ($q) => $q->whereDate('fecha', '>=', $datos['desde']))
+            ->when(isset($datos['hasta']), fn ($q) => $q->whereDate('fecha', '<=', $datos['hasta']))
+            ->when(isset($datos['rango']), fn ($q) => $q->whereDate('fecha', '>=', $this->inicioDeRango($datos['rango'])))
+            ->when($termino !== '', fn ($q) => $q->whereHas('compra', function ($compra) use ($termino) {
+                $compra->where('codigo', 'like', "%{$termino}%")
+                    ->orWhere('numero_factura', 'like', "%{$termino}%")
+                    ->orWhereHas('proveedor', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
+            }))
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'data' => $pagos->map(fn (PagoCompra $p): array => [
+                'id' => $p->id,
+                'monto' => (float) $p->monto,
+                'fecha' => $p->fecha?->toDateString(),
+                'compra_id' => $p->compra_id,
+                'compra_codigo' => $p->compra?->codigo,
+                'proveedor' => $p->compra?->proveedor?->nombre,
+                'registrado_por' => $p->user?->name,
+                'imagen_url' => $p->imagen
+                    ? Storage::disk('public')->url($p->imagen)
+                    : null,
+                'notas' => $p->notas,
+            ])->values(),
+            'meta' => [
+                'total' => (float) $pagos->sum(fn (PagoCompra $p) => (float) $p->monto),
+                'cantidad' => $pagos->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Primer día del rango elegido, para filtrar `compra_pagos.fecha`.
+     */
+    private function inicioDeRango(string $rango): string
+    {
+        return match ($rango) {
+            'hoy' => now()->startOfDay()->toDateString(),
+            'semana' => now()->startOfWeek()->toDateString(),
+            'mes' => now()->startOfMonth()->toDateString(),
+        };
+    }
 
     /**
      * Respaldo de pago: cada compra se paga en varios plazos y cada pago lleva

@@ -93,7 +93,7 @@ class ComprasApiTest extends TestCase
                     ),
                 ];
             } else {
-                $verificacion[$linea->id] = ['verificada' => true];
+                $verificacion[$linea->id] = ['cantidad_verificada' => $linea->cantidad];
             }
         }
 
@@ -375,6 +375,30 @@ class ComprasApiTest extends TestCase
         $this->assertDatabaseHas('compras', ['id' => $compra->id, 'deleted_at' => null]);
     }
 
+    public function test_la_api_no_elimina_una_compra_parcialmente_recepcionada(): void
+    {
+        // La compra sigue pendiente, pero sus unidades ya están en el almacén:
+        // borrarla las dejaría huérfanas.
+        $compra = $this->compraPendiente(cantidad: 5);
+
+        $linea = $compra->detalles()->first();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'cantidad_verificada' => 3],
+            ],
+        ])->assertOk();
+
+        $this->assertSame('pendiente', $compra->refresh()->estado);
+
+        $this->deleteJson("/api/v1/compras/{$compra->id}")->assertStatus(422);
+
+        $this->assertDatabaseHas('compras', ['id' => $compra->id, 'deleted_at' => null]);
+        $this->assertSame(3, $compra->unidades()->count());
+    }
+
     public function test_la_api_permite_recepcionar_compras_pendientes(): void
     {
         $compra = $this->compraPendiente();
@@ -385,7 +409,7 @@ class ComprasApiTest extends TestCase
 
         $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
             'lineas' => [
-                ['linea_id' => $linea->id, 'verificada' => true],
+                ['linea_id' => $linea->id, 'cantidad_verificada' => $linea->cantidad],
             ],
         ])
             ->assertOk()
@@ -429,7 +453,7 @@ class ComprasApiTest extends TestCase
         // Se manda una línea que no existe: nada debe recepcionarse.
         $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
             'lineas' => [
-                ['linea_id' => 999999, 'verificada' => true],
+                ['linea_id' => 999999, 'cantidad_verificada' => 1],
             ],
         ])->assertStatus(422);
 
@@ -437,8 +461,11 @@ class ComprasApiTest extends TestCase
         $this->assertEquals('pendiente', $compra->estado);
     }
 
-    public function test_la_api_rechaza_seriales_de_menos(): void
+    public function test_la_recepcion_puede_ser_parcial(): void
     {
+        // La mercadería puede llegar por tandas: 3 aparatos pedidos, hoy solo
+        // entra 1. Se registran sus seriales y la compra sigue pendiente hasta
+        // completar el lote.
         $compra = $this->compraPendiente(cantidad: 3, tieneSerial: true);
 
         $linea = $compra->detalles()->first();
@@ -449,10 +476,101 @@ class ComprasApiTest extends TestCase
             'lineas' => [
                 ['linea_id' => $linea->id, 'seriales' => ['SN-A1']],
             ],
-        ])->assertStatus(422);
+        ])->assertOk();
 
         $compra->refresh();
         $this->assertEquals('pendiente', $compra->estado);
+        $this->assertSame(1, $compra->unidades()->count());
+        $this->assertSame('SN-A1', $compra->unidades()->first()->serial);
+
+        // La segunda tanda completa el lote y recién ahí la compra se
+        // recepciona.
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'seriales' => ['SN-A2', 'SN-A3']],
+            ],
+        ])->assertOk();
+
+        $compra->refresh();
+        $this->assertEquals('recepcionada', $compra->estado);
+        $this->assertSame(3, $compra->unidades()->count());
+    }
+
+    public function test_la_recepcion_parcial_rechaza_mas_seriales_de_los_que_faltan(): void
+    {
+        $compra = $this->compraPendiente(cantidad: 3, tieneSerial: true);
+
+        $linea = $compra->detalles()->first();
+
+        Sanctum::actingAs($this->admin());
+
+        // Hoy entra 1 de 3.
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'seriales' => ['SN-A1']],
+            ],
+        ])->assertOk();
+
+        // Quedan 2 por verificar: mandar 3 de una vez es imposible.
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'seriales' => ['SN-B1', 'SN-B2', 'SN-B3']],
+            ],
+        ])->assertStatus(422);
+
+        $compra->refresh();
+        $this->assertSame(1, $compra->unidades()->count());
+    }
+
+    public function test_la_recepcion_parcial_de_cantidad(): void
+    {
+        // Producto sin serial: 11 pedidos, hoy entran 7. La compra queda
+        // pendiente con 4 por llegar, y los 7 ya están en el stock.
+        $compra = $this->compraPendiente(cantidad: 11);
+
+        $linea = $compra->detalles()->first();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'cantidad_verificada' => 7],
+            ],
+        ])->assertOk();
+
+        $compra->refresh();
+        $this->assertEquals('pendiente', $compra->estado);
+        $this->assertSame(7, $compra->unidades()->count());
+
+        // Llegan los 4 restantes: se recepciona.
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'cantidad_verificada' => 4],
+            ],
+        ])->assertOk();
+
+        $compra->refresh();
+        $this->assertEquals('recepcionada', $compra->estado);
+        $this->assertSame(11, $compra->unidades()->count());
+    }
+
+    public function test_la_recepcion_parcial_no_pasa_de_lo_pedido(): void
+    {
+        $compra = $this->compraPendiente(cantidad: 5);
+
+        $linea = $compra->detalles()->first();
+
+        Sanctum::actingAs($this->admin());
+
+        // Marcar más unidades de las pedidas es imposible.
+        $this->postJson("/api/v1/compras/{$compra->id}/recepcionar", [
+            'lineas' => [
+                ['linea_id' => $linea->id, 'cantidad_verificada' => 9],
+            ],
+        ])->assertStatus(422);
+
+        $compra->refresh();
+        $this->assertSame(0, $compra->unidades()->count());
     }
 
     public function test_la_api_rechaza_recepcionar_compra_no_pendiente(): void
@@ -685,5 +803,62 @@ class ComprasApiTest extends TestCase
         Sanctum::actingAs($usuario);
 
         $this->getJson("/api/v1/compras/{$compra->id}/pagos")->assertForbidden();
+        $this->getJson('/api/v1/compras/pagos')->assertForbidden();
+    }
+
+    // ---- Historial de pagos -----------------------------------------------
+
+    public function test_el_historial_de_pagos_filtra_por_rango(): void
+    {
+        $hoy = $this->compraPendiente();
+        $hoy->pagos()->create([
+            'user_id' => $this->admin()->id,
+            'monto' => 1500,
+            'fecha' => now()->toDateString(),
+        ]);
+
+        $mesPasado = $this->compraPendiente();
+        $mesPasado->pagos()->create([
+            'user_id' => $this->admin()->id,
+            'monto' => 2000,
+            'fecha' => now()->subMonths(2)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($this->admin());
+
+        $deHoy = $this->getJson('/api/v1/compras/pagos?rango=hoy')->assertOk();
+        $this->assertCount(1, $deHoy->json('data'));
+        $this->assertEquals(1500, $deHoy->json('data.0.monto'));
+        $this->assertEquals(1500, $deHoy->json('meta.total'));
+
+        // El rango «mes» también trae el de hoy.
+        $delMes = $this->getJson('/api/v1/compras/pagos?rango=mes')->assertOk();
+        $this->assertCount(1, $delMes->json('data'));
+
+        // Sin filtro, los dos.
+        $todos = $this->getJson('/api/v1/compras/pagos')->assertOk();
+        $this->assertCount(2, $todos->json('data'));
+        $this->assertEquals(3500, $todos->json('meta.total'));
+    }
+
+    public function test_el_historial_puede_buscar_por_compra_o_proveedor(): void
+    {
+        $proveedor = Proveedor::factory()->create(['nombre' => 'Importadora Alfa']);
+        $compra = $this->compraPendiente($proveedor);
+        $compra->pagos()->create([
+            'user_id' => $this->admin()->id,
+            'monto' => 500,
+            'fecha' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($this->admin());
+
+        $porProveedor = $this->getJson('/api/v1/compras/pagos?buscar=alfa')->assertOk();
+        $this->assertCount(1, $porProveedor->json('data'));
+        $this->assertSame('Importadora Alfa', $porProveedor->json('data.0.proveedor'));
+        $this->assertSame($compra->codigo, $porProveedor->json('data.0.compra_codigo'));
+
+        $porCodigo = $this->getJson('/api/v1/compras/pagos?buscar='.$compra->codigo)->assertOk();
+        $this->assertCount(1, $porCodigo->json('data'));
     }
 }
