@@ -8,29 +8,38 @@
 @php
     $disponibles = (int) $producto->disponibles;
     $tono = $disponibles === 0
-        ? ['badge' => 'bg-danger', 'texto' => 'Agotado']
+        ? ['clase' => 'vitrina-stock-agotado', 'texto' => 'Agotado']
         : ($producto->stock_minimo > 0 && $disponibles <= $producto->stock_minimo
-            ? ['badge' => 'bg-warning text-dark', 'texto' => 'Bajo mínimo']
-            : ['badge' => 'bg-success', 'texto' => $disponibles.' en stock']);
+            ? ['clase' => 'vitrina-stock-bajo', 'texto' => 'Bajo mínimo']
+            : ['clase' => 'vitrina-stock-ok', 'texto' => $disponibles.' en stock']);
 @endphp
 <div class="col-6 col-md-4 col-lg-3 col-xxl-2">
-    <div class="card h-100">
-        <div style="aspect-ratio: 4/3; overflow: hidden; background: #f1f5f9; display: flex; align-items: center; justify-content: center;">
+    <div class="vitrina-producto h-100">
+        <div class="vitrina-producto-imagen">
             @if ($producto->imagen)
-                <img src="{{ asset('storage/'.$producto->imagen) }}" alt="{{ $producto->nombre }}"
-                    style="width: 100%; height: 100%; object-fit: cover;" loading="lazy">
+                <img src="{{ asset('storage/'.$producto->imagen) }}" alt="{{ $producto->nombre }}" loading="lazy">
             @else
-                <i class="ri-image-line fs-1" style="color: #94a3b8;"></i>
+                <div class="vitrina-producto-placeholder">
+                    <i class="ri-image-line" style="font-size: 2rem;"></i>
+                </div>
             @endif
+            @can('unidades.ver')
+                <div class="vitrina-producto-overlay">
+                    <span>Ver unidades</span>
+                </div>
+            @endcan
         </div>
-        <div class="card-body p-3">
-            <div class="fw-semibold text-truncate" title="{{ $producto->nombre }}">{{ $producto->nombre }}</div>
-            <small class="text-muted d-block text-truncate">{{ $producto->marca?->nombre ?? '' }}</small>
-            <div class="fw-semibold mt-2">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</div>
-            <span class="badge {{ $tono['badge'] }}">{{ $tono['texto'] }}</span>
+        <div class="vitrina-producto-body">
+            <div class="vitrina-producto-nombre" title="{{ $producto->nombre }}">{{ $producto->nombre }}</div>
+            <div class="vitrina-producto-marca">{{ $producto->marca?->nombre ?? '' }}</div>
+            <div class="vitrina-producto-precio">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</div>
+            <div class="vitrina-producto-stock {{ $tono['clase'] }}">
+                <span class="vitrina-producto-stock-dot"></span>
+                {{ $tono['texto'] }}
+            </div>
         </div>
         @can('unidades.ver')
-            <a href="{{ route('search.producto', $producto) }}" class="stretched-link"
+            <a href="{{ route('search.producto', $producto) }}" class="vitrina-producto-link"
                 aria-label="Ver unidades de {{ $producto->nombre }}"></a>
         @endcan
     </div>

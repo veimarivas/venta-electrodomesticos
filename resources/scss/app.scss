@@ -32,6 +32,7 @@
 @use 'components/ventas';
 @use 'components/caja';
 @use 'components/reportes';
+@use 'components/vitrina';
 
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
 @use 'flatpickr/dist/flatpickr.min.css';
