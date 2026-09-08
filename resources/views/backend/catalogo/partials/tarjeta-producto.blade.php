@@ -22,9 +22,7 @@
             @if ($producto->imagen)
                 <img src="{{ asset('storage/'.$producto->imagen) }}" alt="{{ $producto->nombre }}" loading="lazy">
             @else
-                <div class="vitrina-producto-placeholder">
-                    <i class="ri-image-line"></i>
-                </div>
+                <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="{{ $producto->nombre }}" class="vitrina-producto-sin-imagen" loading="lazy">
             @endif
 
             {{-- Franja de agotado sobre la imagen --}}
