@@ -499,7 +499,7 @@ class Index extends Component
             : null;
 
         $unidades = Unidad::query()
-            ->with('producto')
+            ->with('producto.marca')
             ->with('compra.proveedor')
             ->with('ventaDetalle.venta')
             ->when($this->productoFiltro, fn ($q) => $q->where('producto_id', $this->productoFiltro))
