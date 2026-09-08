@@ -1,18 +1,17 @@
 <div class="creditos-modulo">
 
     {{-- ===================== Encabezado del módulo ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
+    <div class="card border-0 shadow-sm overflow-hidden mb-4 creditos-encabezado">
         <div class="card-body p-0">
-            <div class="p-4 crud-hero">
-                <div class="crud-hero-glow" aria-hidden="true"></div>
+            <div class="p-4 creditos-hero">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
-                        <span class="badge text-white mb-3 crud-chip">
+                        <span class="badge text-white mb-3 creditos-chip">
                             <i class="ri-hand-coin-line me-1"></i> Finanzas · Créditos
                         </span>
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-md flex-shrink-0">
-                                <span class="avatar-title crud-tile text-white rounded-3 fs-3">
+                                <span class="avatar-title bg-white bg-opacity-25 text-white rounded-3 fs-3">
                                     <i class="ri-wallet-3-line"></i>
                                 </span>
                             </div>
@@ -30,7 +29,7 @@
     </div>
 
     {{-- ===================== Indicadores ===================== --}}
-    <div class="row g-3 mb-4 crud-kpis">
+    <div class="row g-3 mb-4 creditos-kpis">
         <div class="col-xl-3 col-md-6">
             <x-stat-card label="En la calle" icon="bx-wallet" color="primary"
                 value="Bs {{ number_format($this->carteraEnCentavos / 100, 2, ',', '.') }}"
@@ -52,27 +51,37 @@
         </div>
     </div>
 
-    {{-- ===================== Tabla de créditos ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-transparent py-3">
+    {{-- ===================== Listado ===================== --}}
+    <div class="card border-0 shadow-sm creditos-listado">
+        <div class="card-header bg-transparent py-3 creditos-toolbar">
             <div class="row g-3 align-items-center">
                 <div class="col-md-4">
                     <h5 class="card-title mb-0 d-flex align-items-center gap-2">
                         Cartera
                         <span class="spinner-border spinner-border-sm text-primary" role="status" wire:loading.delay>
-                            <span class="visually-hidden">Cargando..</span>
+                            <span class="visually-hidden">Cargando...</span>
                         </span>
                     </h5>
-                    <small class="text-muted fs-13">{{ $creditos->total() }}
-                        {{ $creditos->total() === 1 ? 'crédito' : 'créditos' }}</small>
+                    <small class="text-muted fs-13">
+                        {{ $creditos->total() }}
+                        {{ $creditos->total() === 1 ? 'crédito encontrado' : 'créditos encontrados' }}
+                    </small>
                 </div>
 
                 <div class="col-md-8">
                     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
                         <div class="search-box flex-grow-1" style="max-width: 20rem">
-                            <input type="text" class="form-control" placeholder="Cliente o número de venta.."
+                            <input type="text" class="form-control creditos-busqueda"
+                                placeholder="Cliente o número de venta.."
                                 wire:model.live.debounce.400ms="buscar">
                             <i class="ri-search-line search-icon"></i>
+                            @if ($buscar !== '')
+                                <button type="button"
+                                    class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y me-1 p-1"
+                                    wire:click="$set('buscar', '')" title="Limpiar búsqueda">
+                                    <i class="ri-close-circle-fill fs-16"></i>
+                                </button>
+                            @endif
                         </div>
 
                         <select class="form-select" style="max-width: 13rem" wire:model.live="filtro">
@@ -90,7 +99,7 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tabla-crud"
+                <table class="table table-hover align-middle mb-0 tabla-creditos"
                     wire:loading.class="opacity-50" wire:target="buscar, filtro">
                     <thead>
                         <tr class="text-uppercase fs-11 text-muted">
@@ -117,7 +126,7 @@
                                     <small class="text-muted d-block">{{ $credito->cliente?->codigo }}</small>
                                 </td>
                                 <td>
-                                    <span class="unidad-codigo">{{ $credito->venta?->codigo }}</span>
+                                    <span class="credito-codigo">{{ $credito->venta?->codigo }}</span>
                                     <small class="text-muted d-block mt-1">
                                         {{ $credito->numero_cuotas }}
                                         {{ $credito->numero_cuotas === 1 ? 'cuota' : 'cuotas' }}
@@ -142,20 +151,20 @@
                                 </td>
                                 <td class="pe-4">
                                     @if ($credito->estado === 'anulado')
-                                        <span class="unidad-estado unidad-estado-danado">
-                                            <span class="unidad-estado-dot"></span> Anulado
+                                        <span class="credito-estado credito-estado-anulado">
+                                            <span class="credito-estado-dot"></span> Anulado
                                         </span>
                                     @elseif ($credito->estado === 'pagado')
-                                        <span class="unidad-estado unidad-estado-stock">
-                                            <span class="unidad-estado-dot"></span> Pagado
+                                        <span class="credito-estado credito-estado-pagado">
+                                            <span class="credito-estado-dot"></span> Pagado
                                         </span>
                                     @elseif ($credito->esta_en_mora)
-                                        <span class="unidad-estado unidad-estado-reservado">
-                                            <span class="unidad-estado-dot"></span> Vencido
+                                        <span class="credito-estado credito-estado-vencido">
+                                            <span class="credito-estado-dot"></span> Vencido
                                         </span>
                                     @else
-                                        <span class="unidad-estado unidad-estado-garantia">
-                                            <span class="unidad-estado-dot"></span> Al día
+                                        <span class="credito-estado credito-estado-al-dia">
+                                            <span class="credito-estado-dot"></span> Al día
                                         </span>
                                     @endif
                                 </td>

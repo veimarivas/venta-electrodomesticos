@@ -1,18 +1,17 @@
 <div class="caja-modulo">
 
     {{-- ===================== Encabezado del módulo ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
+    <div class="card border-0 shadow-sm overflow-hidden mb-4 caja-encabezado">
         <div class="card-body p-0">
-            <div class="p-4 crud-hero">
-                <div class="crud-hero-glow" aria-hidden="true"></div>
+            <div class="p-4 caja-hero">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
-                        <span class="badge text-white mb-3 crud-chip">
+                        <span class="badge text-white mb-3 caja-chip">
                             <i class="ri-safe-2-line me-1"></i> Finanzas · Caja
                         </span>
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-md flex-shrink-0">
-                                <span class="avatar-title crud-tile text-white rounded-3 fs-3">
+                                <span class="avatar-title bg-white bg-opacity-25 text-white rounded-3 fs-3">
                                     <i class="ri-money-dollar-circle-line"></i>
                                 </span>
                             </div>
@@ -31,16 +30,15 @@
 
     {{-- ===================== Estado del turno ===================== --}}
     @if ($abierta)
-        <div class="card border-0 shadow-sm overflow-hidden mb-4 caja-turno-card">
+        <div class="card border-0 shadow-sm caja-turno-card mb-4">
             <div class="card-body p-0">
-                <div class="caja-turno-hero">
-                    <div class="crud-hero-glow" aria-hidden="true"></div>
-                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                <div class="caja-turno-hero caja-turno-hero--abierta">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 position-relative" style="z-index: 1">
                         <div class="min-w-0">
                             <span class="caja-turno-estado">
                                 <span class="caja-latido"></span> Caja abierta
                             </span>
-                            <h4 class="caja-turno-titulo mt-2 mb-1">
+                            <h4 class="caja-turno-titulo mt-3 mb-1">
                                 Bs {{ number_format((float) $abierta->monto_inicial, 2, ',', '.') }}
                                 <small class="fs-14 fw-normal" style="color: rgba(255,255,255,.7)">de fondo</small>
                             </h4>
@@ -51,13 +49,13 @@
                         </div>
 
                         @if ($puedeGestionar)
-                            <button type="button" class="btn btn-light crud-nueva-hero" wire:click="confirmarCierre">
+                            <button type="button" class="btn caja-nueva-hero" wire:click="confirmarCierre">
                                 <i class="ri-safe-2-line align-bottom me-1"></i> Cerrar y cuadrar
                             </button>
                         @endif
                     </div>
 
-                    <div class="row g-3 mt-3">
+                    <div class="row g-3 mt-3 position-relative" style="z-index: 1">
                         <div class="col-sm-6 col-lg-3">
                             <div class="caja-dato">
                                 <span class="caja-dato-label">Ventas del turno</span>
@@ -76,7 +74,7 @@
                     </div>
 
                     @if ($sueltas > 0)
-                        <div class="alert alert-warning alert-borderless mt-3 mb-0 fs-13">
+                        <div class="alert alert-warning alert-borderless mt-3 mb-0 fs-13 position-relative" style="z-index: 1">
                             <i class="ri-alert-line align-bottom me-1"></i>
                             Hay <strong>{{ $sueltas }}</strong>
                             {{ $sueltas === 1 ? 'venta en efectivo' : 'ventas en efectivo' }}
@@ -88,19 +86,19 @@
             </div>
         </div>
     @else
-        <div class="card border-0 shadow-sm overflow-hidden mb-4 caja-turno-card caja-turno--cerrada">
+        <div class="card border-0 shadow-sm caja-turno-card mb-4">
             <div class="card-body p-0">
                 <div class="caja-turno-hero caja-turno-hero--cerrada">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 1">
                         <div>
-                            <h5 class="mb-1">No hay ninguna caja abierta</h5>
+                            <h5 class="mb-1 text-white">No hay ninguna caja abierta</h5>
                             <p class="mb-0 fs-13" style="color: rgba(255,255,255,.6)">
                                 Las ventas se registran igual, pero no entran en ningún cuadre.
                             </p>
                         </div>
 
                         @if ($puedeGestionar)
-                            <button type="button" class="btn btn-light crud-nueva-hero"
+                            <button type="button" class="btn caja-nueva-hero"
                                 data-bs-toggle="modal" data-bs-target="#modalAbrirCaja">
                                 <i class="ri-inbox-unarchive-line align-bottom me-1"></i> Abrir caja
                             </button>
@@ -113,14 +111,14 @@
 
     {{-- ===================== Histórico de cierres ===================== --}}
     @if ($puedeVer)
-        <div class="card border-0 shadow-sm overflow-hidden">
-            <div class="card-header bg-transparent py-3">
+        <div class="card border-0 shadow-sm caja-listado">
+            <div class="card-header bg-transparent py-3 caja-toolbar">
                 <h5 class="card-title mb-0">Cierres anteriores</h5>
             </div>
 
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 tabla-crud">
+                    <table class="table table-hover align-middle mb-0 tabla-caja">
                         <thead>
                             <tr class="text-uppercase fs-11 text-muted">
                                 <th class="ps-4">Turno</th>
@@ -154,17 +152,17 @@
                                     </td>
                                     <td class="text-end pe-4">
                                         @if ($caja->cuadra)
-                                            <span class="unidad-estado unidad-estado-stock">
-                                                <span class="unidad-estado-dot"></span> Cuadra
+                                            <span class="caja-estado caja-estado-cuadra">
+                                                <span class="caja-estado-dot"></span> Cuadra
                                             </span>
                                         @elseif ($caja->falta)
-                                            <span class="unidad-estado unidad-estado-reservado">
-                                                <span class="unidad-estado-dot"></span>
+                                            <span class="caja-estado caja-estado-falta">
+                                                <span class="caja-estado-dot"></span>
                                                 Faltan {{ number_format(abs((float) $caja->diferencia), 2, ',', '.') }}
                                             </span>
                                         @else
-                                            <span class="unidad-estado unidad-estado-garantia">
-                                                <span class="unidad-estado-dot"></span>
+                                            <span class="caja-estado caja-estado-sobra">
+                                                <span class="caja-estado-dot"></span>
                                                 Sobran {{ number_format((float) $caja->diferencia, 2, ',', '.') }}
                                             </span>
                                         @endif

@@ -1,35 +1,121 @@
 // -----------------------------------------------------------------------------
 // Caja: el turno abierto y el histórico de cierres
+// Estilo consistente con personas-modulo
 // -----------------------------------------------------------------------------
 
 .caja-modulo {
 
-    // ---- Hero del turno ----
+    .caja-hero {
+        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        &::before {
+            width: 22rem;
+            height: 22rem;
+            top: -9rem;
+            right: -5rem;
+            background: radial-gradient(circle, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 68%);
+        }
+
+        &::after {
+            width: 16rem;
+            height: 16rem;
+            bottom: -8rem;
+            left: 30%;
+            border: 1.6rem solid rgba(255, 255, 255, .07);
+        }
+
+        h4 { font-weight: 650; letter-spacing: -.02em; }
+        .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .2); }
+    }
+
+    .caja-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: .34rem .75rem;
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #fff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 2rem;
+        backdrop-filter: blur(6px);
+    }
+
+    .caja-encabezado { border-radius: 1rem; }
+
+    // ---- Tarjeta del turno ----
     .caja-turno-card {
-        border-radius: .75rem;
+        border-radius: 1rem;
+        overflow: hidden;
     }
 
     .caja-turno-hero {
         padding: 1.5rem;
-        background: linear-gradient(135deg, #4f46e5, #6366f1);
-        border-radius: .75rem;
         position: relative;
         overflow: hidden;
+
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        &::before {
+            width: 18rem;
+            height: 18rem;
+            top: -8rem;
+            right: -4rem;
+            background: radial-gradient(circle, rgba(255, 255, 255, .12) 0%, rgba(255, 255, 255, 0) 68%);
+        }
+
+        &::after {
+            width: 12rem;
+            height: 12rem;
+            bottom: -6rem;
+            left: 25%;
+            border: 1.2rem solid rgba(255, 255, 255, .06);
+        }
+    }
+
+    .caja-turno-hero--abierta {
+        background: linear-gradient(112deg, #26375f 0%, #10b981 58%, color-mix(in srgb, #10b981 72%, #06b6d4) 100%);
     }
 
     .caja-turno-hero--cerrada {
-        background: linear-gradient(135deg, #374151, #4b5563);
+        background: linear-gradient(112deg, #374151 0%, #6b7280 58%, color-mix(in srgb, #6b7280 72%, #9ca3af) 100%);
     }
 
     .caja-turno-estado {
         display: inline-flex;
         align-items: center;
         gap: .45rem;
-        font-size: .72rem;
-        font-weight: 700;
-        letter-spacing: .09em;
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .06em;
         text-transform: uppercase;
         color: rgba(255, 255, 255, .9);
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 2rem;
+        padding: .34rem .75rem;
+        backdrop-filter: blur(6px);
     }
 
     // Punto que late: la caja está abierta AHORA.
@@ -37,49 +123,99 @@
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: #1baf7a;
-        box-shadow: 0 0 0 0 rgba(27, 175, 122, .5);
+        background: #fff;
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, .5);
         animation: caja-latido 2s infinite;
     }
 
     .caja-turno-titulo {
-        font-weight: 700;
+        font-weight: 650;
         letter-spacing: -.02em;
         color: #fff;
+    }
+
+    .caja-nueva-hero {
+        border-radius: .65rem;
+        font-weight: 600;
+        padding-inline: 1.1rem;
+        box-shadow: 0 .6rem 1.6rem rgba(10, 24, 43, .28);
+        background: rgba(255, 255, 255, .2);
+        border: 1px solid rgba(255, 255, 255, .3);
+        color: #fff;
+        backdrop-filter: blur(6px);
+
+        &:hover {
+            background: rgba(255, 255, 255, .3);
+            transform: translateY(-1px);
+        }
     }
 
     // ---- Datos del turno ----
     .caja-dato {
         padding: .75rem .9rem;
-        border-radius: .5rem;
+        border-radius: .6rem;
         background: rgba(255, 255, 255, .12);
         border: 1px solid rgba(255, 255, 255, .15);
     }
 
     .caja-dato-label {
         display: block;
-        font-size: .7rem;
-        letter-spacing: .07em;
+        font-size: .68rem;
+        letter-spacing: .06em;
         text-transform: uppercase;
         color: rgba(255, 255, 255, .6);
+        font-weight: 600;
     }
 
     .caja-dato-valor {
         display: block;
         margin-top: .15rem;
         font-size: 1.15rem;
-        font-weight: 700;
+        font-weight: 650;
         color: #fff;
         font-variant-numeric: tabular-nums;
     }
 
-    // Los importes se leen en columna.
-    .caja-num {
-        font-variant-numeric: tabular-nums;
+    // ---- Histórico de cierres ----
+    .caja-listado {
+        overflow: hidden;
+        border-radius: 1rem;
+        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
     }
 
-    // ---- Histórico de cierres: pills ----
-    .unidad-estado {
+    .caja-toolbar {
+        padding-inline: 1.5rem;
+        border-bottom: 1px solid var(--vz-border-color);
+        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+    }
+
+    .tabla-caja {
+        transition: opacity 0.15s ease-in-out;
+
+        thead th {
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            background-color: var(--vz-light);
+            border-bottom: 0;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+        }
+
+        tbody tr {
+            transition: background-color .16s ease-out, box-shadow .16s ease-out;
+            &:hover {
+                box-shadow: inset 2px 0 0 var(--vz-primary);
+                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+            }
+        }
+    }
+
+    // Pills de diferencia
+    .caja-estado {
         display: inline-flex;
         align-items: center;
         gap: .4rem;
@@ -91,35 +227,40 @@
         white-space: nowrap;
     }
 
-    .unidad-estado-dot {
+    .caja-estado-dot {
         width: .45rem;
         height: .45rem;
         border-radius: 50%;
     }
 
-    .unidad-estado-stock {
+    .caja-estado-cuadra {
         color: #10b981;
         background: rgba(16, 185, 129, .12);
-        .unidad-estado-dot { background: #10b981; }
+        .caja-estado-dot { background: #10b981; }
     }
 
-    .unidad-estado-reservado {
+    .caja-estado-falta {
+        color: #ef4444;
+        background: rgba(239, 68, 68, .12);
+        .caja-estado-dot { background: #ef4444; }
+    }
+
+    .caja-estado-sobra {
         color: #f59e0b;
         background: rgba(245, 158, 11, .12);
-        .unidad-estado-dot { background: #f59e0b; }
+        .caja-estado-dot { background: #f59e0b; }
     }
 
-    .unidad-estado-garantia {
-        color: #6366f1;
-        background: rgba(99, 102, 241, .12);
-        .unidad-estado-dot { background: #6366f1; }
+    // Los importes se leen en columna.
+    .caja-num {
+        font-variant-numeric: tabular-nums;
     }
 }
 
 @keyframes caja-latido {
-    0% { box-shadow: 0 0 0 0 rgba(27, 175, 122, .5); }
-    70% { box-shadow: 0 0 0 .5rem rgba(27, 175, 122, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(27, 175, 122, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .5); }
+    70% { box-shadow: 0 0 0 .5rem rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

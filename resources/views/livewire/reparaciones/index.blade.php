@@ -1,30 +1,17 @@
-<div class="items-modulo">
-
-    @php
-        $pillEstado = [
-            'recibida' => 'rep-estado-recibida',
-            'en_reparacion' => 'rep-estado-en-reparacion',
-            'esperando_repuesto' => 'rep-estado-esperando',
-            'lista' => 'rep-estado-lista',
-            'entregada' => 'rep-estado-entregada',
-            'irreparable' => 'rep-estado-irreparable',
-            'cancelada' => 'rep-estado-cancelada',
-        ];
-    @endphp
+<div class="reparaciones-modulo">
 
     {{-- ===================== Encabezado del módulo ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
+    <div class="card border-0 shadow-sm overflow-hidden mb-4 reparaciones-encabezado">
         <div class="card-body p-0">
-            <div class="p-4 crud-hero">
-                <div class="crud-hero-glow" aria-hidden="true"></div>
+            <div class="p-4 reparaciones-hero">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
-                        <span class="badge text-white mb-3 crud-chip">
+                        <span class="badge text-white mb-3 reparaciones-chip">
                             <i class="ri-tools-line me-1"></i> Servicio Técnico
                         </span>
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-md flex-shrink-0">
-                                <span class="avatar-title crud-tile text-white rounded-3 fs-3">
+                                <span class="avatar-title bg-white bg-opacity-25 text-white rounded-3 fs-3">
                                     <i class="ri-wrench-line"></i>
                                 </span>
                             </div>
@@ -40,7 +27,7 @@
                     <div class="col-lg-4">
                         <div class="d-flex flex-wrap justify-content-lg-end">
                             @if ($puedeRecibir)
-                                <button type="button" class="btn btn-light crud-nueva-hero" wire:click="abrirRecepcion">
+                                <button type="button" class="btn btn-light reparaciones-nueva-hero" wire:click="abrirRecepcion">
                                     <i class="ri-add-line align-bottom me-1"></i> Recibir aparato
                                 </button>
                             @endif
@@ -52,7 +39,7 @@
     </div>
 
     {{-- ===================== Indicadores ===================== --}}
-    <div class="row g-3 mb-4 crud-kpis">
+    <div class="row g-3 mb-4 reparaciones-kpis">
         <div class="col-xl-3 col-md-6">
             <x-stat-card label="En el taller" icon="bx-wrench" color="primary" value="{{ $this->enTaller }}"
                 caption="Órdenes sin cerrar" />
@@ -71,27 +58,37 @@
         </div>
     </div>
 
-    {{-- ===================== Tabla de órdenes ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-transparent py-3">
+    {{-- ===================== Listado ===================== --}}
+    <div class="card border-0 shadow-sm reparaciones-listado">
+        <div class="card-header bg-transparent py-3 reparaciones-toolbar">
             <div class="row g-3 align-items-center">
                 <div class="col-md-4">
                     <h5 class="card-title mb-0 d-flex align-items-center gap-2">
                         Órdenes de taller
                         <span class="spinner-border spinner-border-sm text-primary" role="status" wire:loading.delay>
-                            <span class="visually-hidden">Cargando..</span>
+                            <span class="visually-hidden">Cargando...</span>
                         </span>
                     </h5>
-                    <small class="text-muted fs-13">{{ $reparaciones->total() }}
-                        {{ $reparaciones->total() === 1 ? 'orden' : 'órdenes' }}</small>
+                    <small class="text-muted fs-13">
+                        {{ $reparaciones->total() }}
+                        {{ $reparaciones->total() === 1 ? 'orden encontrada' : 'órdenes encontradas' }}
+                    </small>
                 </div>
 
                 <div class="col-md-8">
                     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
                         <div class="search-box flex-grow-1" style="max-width: 18rem">
-                            <input type="text" class="form-control" placeholder="Orden, serial o cliente.."
+                            <input type="text" class="form-control reparaciones-busqueda"
+                                placeholder="Orden, serial o cliente.."
                                 wire:model.live.debounce.400ms="buscar">
                             <i class="ri-search-line search-icon"></i>
+                            @if ($buscar !== '')
+                                <button type="button"
+                                    class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y me-1 p-1"
+                                    wire:click="$set('buscar', '')" title="Limpiar búsqueda">
+                                    <i class="ri-close-circle-fill fs-16"></i>
+                                </button>
+                            @endif
                         </div>
 
                         <select class="form-select" style="max-width: 12rem" wire:model.live="filtro">
@@ -109,7 +106,7 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tabla-crud"
+                <table class="table table-hover align-middle mb-0 tabla-reparaciones"
                     wire:loading.class="opacity-50" wire:target="buscar, filtro">
                     <thead>
                         <tr class="text-uppercase fs-11 text-muted">
@@ -223,26 +220,26 @@
                                 <td class="text-end pe-4">
                                     <div class="d-inline-flex gap-1">
                                         @if ($puedeAtender && in_array($orden->estado, ['recibida', 'en_reparacion', 'esperando_repuesto'], true))
-                                            <button type="button" class="btn btn-sm btn-ghost-info btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-info"
                                                 title="Diagnóstico" wire:click="abrirDiagnostico({{ $orden->id }})">
                                                 <i class="ri-stethoscope-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-ghost-warning btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-warning"
                                                 title="Esperando repuesto" wire:click="abrirEspera({{ $orden->id }})">
                                                 <i class="ri-time-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-ghost-success btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-success"
                                                 title="Ya está lista" wire:click="abrirCierre({{ $orden->id }})">
                                                 <i class="ri-check-double-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-secondary"
                                                 title="No tiene arreglo" wire:click="abrirIrreparable({{ $orden->id }})">
                                                 <i class="ri-close-circle-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-ghost-danger btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-danger"
                                                 title="Cancelar" wire:click="abrirCancelacion({{ $orden->id }})">
                                                 <i class="ri-delete-bin-line fs-16"></i>
-                                                </button>
+                                            </button>
                                         @endif
 
                                         @if (($puedeRecibir || $puedeAtender) && in_array($orden->estado, ['lista', 'irreparable'], true))

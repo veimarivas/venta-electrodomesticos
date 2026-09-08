@@ -1,6 +1,133 @@
+// -----------------------------------------------------------------------------
+// Reparaciones: servicio técnico
+// Estilo consistente con personas-modulo
+// -----------------------------------------------------------------------------
+
 .reparaciones-modulo {
-    // ===================== Estados de reparación =====================
-    .unidad-estado {
+
+    .reparaciones-hero {
+        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+
+        &::before,
+        &::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        &::before {
+            width: 22rem;
+            height: 22rem;
+            top: -9rem;
+            right: -5rem;
+            background: radial-gradient(circle, rgba(255, 255, 255, .18) 0%, rgba(255, 255, 255, 0) 68%);
+        }
+
+        &::after {
+            width: 16rem;
+            height: 16rem;
+            bottom: -8rem;
+            left: 30%;
+            border: 1.6rem solid rgba(255, 255, 255, .07);
+        }
+
+        h4 { font-weight: 650; letter-spacing: -.02em; }
+        .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .2); }
+    }
+
+    .reparaciones-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: .34rem .75rem;
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #fff;
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .22);
+        border-radius: 2rem;
+        backdrop-filter: blur(6px);
+    }
+
+    .reparaciones-nueva-hero {
+        border-radius: .65rem;
+        font-weight: 600;
+        padding-inline: 1.1rem;
+        box-shadow: 0 .6rem 1.6rem rgba(10, 24, 43, .28);
+        &:hover { transform: translateY(-1px); }
+    }
+
+    .reparaciones-encabezado { border-radius: 1rem; }
+
+    .reparaciones-kpis {
+        .card {
+            border-radius: 1rem;
+            border-color: var(--vz-border-color);
+        }
+    }
+
+    .reparaciones-listado {
+        overflow: hidden;
+        border-radius: 1rem;
+        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
+    }
+
+    .reparaciones-toolbar {
+        padding-inline: 1.5rem;
+        border-bottom: 1px solid var(--vz-border-color);
+        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+    }
+
+    .reparaciones-busqueda {
+        min-height: 2.65rem;
+        border-color: transparent;
+        border-radius: .6rem;
+        background: var(--vz-light);
+        &:focus {
+            border-color: rgba(var(--vz-primary-rgb), .28);
+            background: var(--marca-superficie);
+            box-shadow: 0 0 0 .2rem rgba(var(--vz-primary-rgb), .10);
+        }
+    }
+
+    .tabla-reparaciones {
+        transition: opacity 0.15s ease-in-out;
+
+        thead th {
+            letter-spacing: 0.04em;
+            font-weight: 600;
+            background-color: var(--vz-light);
+            border-bottom: 0;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+        }
+
+        tbody tr {
+            transition: background-color .16s ease-out, box-shadow .16s ease-out;
+            &:hover {
+                box-shadow: inset 2px 0 0 var(--vz-primary);
+                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+            }
+        }
+
+        a {
+            text-decoration: none;
+            &:hover { text-decoration: underline; }
+        }
+    }
+
+    // Pills de estado
+    .rep-estado {
         display: inline-flex;
         align-items: center;
         gap: .4rem;
@@ -12,67 +139,85 @@
         white-space: nowrap;
     }
 
-    .unidad-estado-dot {
+    .rep-estado-dot {
         width: .45rem;
         height: .45rem;
         border-radius: 50%;
     }
 
-    .unidad-estado-recibida {
+    .rep-estado-recibida {
         color: #0ea5e9;
         background: rgba(14, 165, 233, .12);
-        .unidad-estado-dot { background: #0ea5e9; }
+        .rep-estado-dot { background: #0ea5e9; }
     }
 
-    .unidad-estado-en-reparacion {
+    .rep-estado-en-reparacion {
         color: #6366f1;
         background: rgba(99, 102, 241, .12);
-        .unidad-estado-dot { background: #6366f1; }
+        .rep-estado-dot { background: #6366f1; }
     }
 
-    .unidad-estado-esperando {
+    .rep-estado-esperando {
         color: #f59e0b;
         background: rgba(245, 158, 11, .12);
-        .unidad-estado-dot { background: #f59e0b; }
+        .rep-estado-dot { background: #f59e0b; }
     }
 
-    .unidad-estado-lista {
+    .rep-estado-lista {
         color: #10b981;
         background: rgba(16, 185, 129, .12);
-        .unidad-estado-dot { background: #10b981; }
+        .rep-estado-dot { background: #10b981; }
     }
 
-    .unidad-estado-entregada {
+    .rep-estado-entregada {
         color: #059669;
         background: rgba(5, 150, 105, .12);
-        .unidad-estado-dot { background: #059669; }
+        .rep-estado-dot { background: #059669; }
     }
 
-    .unidad-estado-irreparable {
+    .rep-estado-irreparable {
         color: #6b7280;
         background: rgba(107, 114, 128, .12);
-        .unidad-estado-dot { background: #6b7280; }
+        .rep-estado-dot { background: #6b7280; }
     }
 
-    .unidad-estado-cancelada {
+    .rep-estado-cancelada {
         color: #ef4444;
         background: rgba(239, 68, 68, .12);
-        .unidad-estado-dot { background: #ef4444; }
+        .rep-estado-dot { background: #ef4444; }
     }
 
-    // ===================== Botones ghost en acciones =====================
-    .btn-ghost-info { color: #0ea5e9; background: transparent; border: none; }
-    .btn-ghost-info:hover { background: rgba(14, 165, 233, .08); color: #0284c7; }
+    // Botones de acciones
+    .btn-accion {
+        width: 2.2rem;
+        height: 2.2rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: .5rem;
+        border: 1px solid var(--vz-border-color);
+        background: var(--marca-superficie);
+        color: var(--vz-secondary-color);
+        transition: all .18s ease-out;
 
-    .btn-ghost-warning { color: #f59e0b; background: transparent; border: none; }
-    .btn-ghost-warning:hover { background: rgba(245, 158, 11, .08); color: #d97706; }
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 .3rem .7rem rgba(10, 24, 43, .08);
+        }
+    }
 
-    .btn-ghost-success { color: #10b981; background: transparent; border: none; }
-    .btn-ghost-success:hover { background: rgba(16, 185, 129, .08); color: #059669; }
+    .btn-accion-info { color: #0ea5e9; border-color: rgba(14, 165, 233, .25); }
+    .btn-accion-info:hover { background: rgba(14, 165, 233, .08); color: #0284c7; }
 
-    .btn-ghost-secondary { color: #6b7280; background: transparent; border: none; }
-    .btn-ghost-secondary:hover { background: rgba(107, 114, 128, .08); color: #4b5563; }
+    .btn-accion-success { color: #10b981; border-color: rgba(16, 185, 129, .25); }
+    .btn-accion-success:hover { background: rgba(16, 185, 129, .08); color: #059669; }
 
-    .btn-ghost-danger { color: #ef4444; background: transparent; border: none; }
-    .btn-ghost-danger:hover { background: rgba(239, 68, 68, .08); color: #dc2626; }
+    .btn-accion-warning { color: #f59e0b; border-color: rgba(245, 158, 11, .25); }
+    .btn-accion-warning:hover { background: rgba(245, 158, 11, .08); color: #d97706; }
+
+    .btn-accion-secondary { color: #6b7280; border-color: rgba(107, 114, 128, .25); }
+    .btn-accion-secondary:hover { background: rgba(107, 114, 128, .08); color: #4b5563; }
+
+    .btn-accion-danger { color: #ef4444; border-color: rgba(239, 68, 68, .25); }
+    .btn-accion-danger:hover { background: rgba(239, 68, 68, .08); color: #dc2626; }
 }

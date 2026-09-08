@@ -1,18 +1,17 @@
 <div class="entregas-modulo">
 
     {{-- ===================== Encabezado del módulo ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
+    <div class="card border-0 shadow-sm overflow-hidden mb-4 entregas-encabezado">
         <div class="card-body p-0">
-            <div class="p-4 crud-hero">
-                <div class="crud-hero-glow" aria-hidden="true"></div>
+            <div class="p-4 entregas-hero">
                 <div class="row align-items-center g-4">
                     <div class="col-lg-8">
-                        <span class="badge text-white mb-3 crud-chip">
-                            <i class="ri-truck-line me-1"></i) Logística · Entregas
+                        <span class="badge text-white mb-3 entregas-chip">
+                            <i class="ri-truck-line me-1"></i> Logística · Entregas
                         </span>
                         <div class="d-flex align-items-center gap-3">
                             <div class="avatar-md flex-shrink-0">
-                                <span class="avatar-title crud-tile text-white rounded-3 fs-3">
+                                <span class="avatar-title bg-white bg-opacity-25 text-white rounded-3 fs-3">
                                     <i class="ri-road-map-line"></i>
                                 </span>
                             </div>
@@ -30,7 +29,7 @@
     </div>
 
     {{-- ===================== Indicadores ===================== --}}
-    <div class="row g-3 mb-4 crud-kpis">
+    <div class="row g-3 mb-4 entregas-kpis">
         <div class="col-xl-3 col-md-6">
             <x-stat-card label="Para hoy" icon="bx-calendar-check" color="primary" value="{{ $this->paraHoy }}"
                 caption="Programadas para el día" />
@@ -49,27 +48,37 @@
         </div>
     </div>
 
-    {{-- ===================== Tabla de entregas ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden">
-        <div class="card-header bg-transparent py-3">
+    {{-- ===================== Listado ===================== --}}
+    <div class="card border-0 shadow-sm entregas-listado">
+        <div class="card-header bg-transparent py-3 entregas-toolbar">
             <div class="row g-3 align-items-center">
                 <div class="col-md-4">
                     <h5 class="card-title mb-0 d-flex align-items-center gap-2">
                         Entregas
                         <span class="spinner-border spinner-border-sm text-primary" role="status" wire:loading.delay>
-                            <span class="visually-hidden">Cargando..</span>
+                            <span class="visually-hidden">Cargando...</span>
                         </span>
                     </h5>
-                    <small class="text-muted fs-13">{{ $entregas->total() }}
-                        {{ $entregas->total() === 1 ? 'entrega' : 'entregas' }}</small>
+                    <small class="text-muted fs-13">
+                        {{ $entregas->total() }}
+                        {{ $entregas->total() === 1 ? 'entrega encontrada' : 'entregas encontradas' }}
+                    </small>
                 </div>
 
                 <div class="col-md-8">
                     <div class="d-flex flex-wrap gap-2 justify-content-md-end">
                         <div class="search-box flex-grow-1" style="max-width: 20rem">
-                            <input type="text" class="form-control" placeholder="Dirección, cliente o venta.."
+                            <input type="text" class="form-control entregas-busqueda"
+                                placeholder="Dirección, cliente o venta.."
                                 wire:model.live.debounce.400ms="buscar">
                             <i class="ri-search-line search-icon"></i>
+                            @if ($buscar !== '')
+                                <button type="button"
+                                    class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y me-1 p-1"
+                                    wire:click="$set('buscar', '')" title="Limpiar búsqueda">
+                                    <i class="ri-close-circle-fill fs-16"></i>
+                                </button>
+                            @endif
                         </div>
 
                         <select class="form-select" style="max-width: 13rem" wire:model.live="filtro">
@@ -88,7 +97,7 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 tabla-crud"
+                <table class="table table-hover align-middle mb-0 tabla-entregas"
                     wire:loading.class="opacity-50" wire:target="buscar, filtro">
                     <thead>
                         <tr class="text-uppercase fs-11 text-muted">
@@ -148,30 +157,34 @@
 
                                 <td>
                                     @if ($entrega->estado === 'entregada')
-                                        <span class="unidad-estado unidad-estado-stock">
-                                            <span class="unidad-estado-dot"></span> Entregada
+                                        <span class="entrega-estado entrega-estado-entregada">
+                                            <span class="entrega-estado-dot"></span> Entregada
                                         </span>
                                         <small class="text-muted d-block">
                                             Recibió {{ $entrega->recibida_por }}
                                         </small>
                                     @elseif ($entrega->estado === 'cancelada')
-                                        <span class="unidad-estado unidad-estado-danado">
-                                            <span class="unidad-estado-dot"></span> Cancelada
+                                        <span class="entrega-estado entrega-estado-cancelada">
+                                            <span class="entrega-estado-dot"></span> Cancelada
                                         </span>
                                     @elseif ($entrega->estado === 'fallida')
-                                        <span class="unidad-estado unidad-estado-perdido">
-                                            <span class="unidad-estado-dot"></span> No se pudo
+                                        <span class="entrega-estado entrega-estado-fallida">
+                                            <span class="entrega-estado-dot"></span> No se pudo
                                         </span>
                                         <small class="text-muted d-block text-truncate" style="max-width: 14rem">
                                             {{ $entrega->motivo_fallo }}
                                         </small>
                                     @elseif ($entrega->esta_atrasada)
-                                        <span class="unidad-estado unidad-estado-reservado">
-                                            <span class="unidad-estado-dot"></span> Atrasada
+                                        <span class="entrega-estado entrega-estado-atrasada">
+                                            <span class="entrega-estado-dot"></span> Atrasada
+                                        </span>
+                                    @elseif ($entrega->estado === 'en_ruta')
+                                        <span class="entrega-estado entrega-estado-en-ruta">
+                                            <span class="entrega-estado-dot"></span> En ruta
                                         </span>
                                     @else
-                                        <span class="unidad-estado unidad-estado-garantia">
-                                            <span class="unidad-estado-dot"></span> {{ $estados[$entrega->estado] }}
+                                        <span class="entrega-estado entrega-estado-pendiente">
+                                            <span class="entrega-estado-dot"></span> {{ $estados[$entrega->estado] }}
                                         </span>
                                     @endif
                                 </td>
@@ -180,28 +193,28 @@
                                     @if ($puedeGestionar && $entrega->esta_abierta)
                                         <div class="d-inline-flex gap-1">
                                             @if ($entrega->estado !== 'en_ruta')
-                                                <button type="button" class="btn btn-sm btn-ghost-info btn-icon rounded-circle"
+                                                <button type="button" class="btn btn-accion btn-accion-info"
                                                     title="Despachar" wire:click="abrirDespacho({{ $entrega->id }})">
                                                     <i class="ri-truck-line fs-16"></i>
                                                 </button>
                                             @endif
 
-                                            <button type="button" class="btn btn-sm btn-ghost-success btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-success"
                                                 title="Confirmar entrega" wire:click="abrirConfirmacion({{ $entrega->id }})">
                                                 <i class="ri-check-double-line fs-16"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-sm btn-ghost-warning btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-warning"
                                                 title="No se pudo entregar" wire:click="abrirFallo({{ $entrega->id }})">
                                                 <i class="ri-close-circle-line fs-16"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-sm btn-ghost-info btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-info"
                                                 title="Reprogramar" wire:click="abrirReprogramacion({{ $entrega->id }})">
                                                 <i class="ri-calendar-event-line fs-16"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-sm btn-ghost-danger btn-icon rounded-circle"
+                                            <button type="button" class="btn btn-accion btn-accion-danger"
                                                 title="Cancelar" wire:click="abrirCancelacion({{ $entrega->id }})">
                                                 <i class="ri-delete-bin-line fs-16"></i>
                                             </button>
