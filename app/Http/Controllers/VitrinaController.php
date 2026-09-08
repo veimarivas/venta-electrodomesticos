@@ -23,6 +23,7 @@ class VitrinaController extends Controller
             'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Vitrina' => null],
             'recomendados' => $datos['recomendados'],
             'categorias' => $datos['categorias'],
+            'hayVentas' => $datos['recomendados']->isNotEmpty(),
         ]);
     }
 }

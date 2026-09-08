@@ -1,217 +1,136 @@
-// -----------------------------------------------------------------------------
-// Módulo de vitrina — Catálogo de productos
-// -----------------------------------------------------------------------------
-// Vista de exhibición: categorías con sus productos, más una sección de
-// recomendados. El diseño prioriza la elegancia y la legibilidad, usando la
-// paleta de marca para crear una experiencia visual coherente.
-// -----------------------------------------------------------------------------
+// =============================================================================
+// Vitrina — Catálogo de productos
+// Diseño profesional, elegante y amigable
+// =============================================================================
 
 .vitrina-modulo {
 
-    // =========================================================================
-    // Hero principal de la vitrina
-    // =========================================================================
+    // ── Hero ──────────────────────────────────────────────────────────────────
     .vitrina-hero {
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
         position: relative;
+        border-radius: 1rem;
         overflow: hidden;
-        isolation: isolate;
-        border-radius: .85rem;
-
-        // Textura decorativa: destellos suaves que dan profundidad.
-        &::before,
+        background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        padding: 2rem 2.25rem;
+        min-height: 8rem;
+    }
+    .vitrina-hero-bg {
+        position: absolute; inset: 0; pointer-events: none;
+        background:
+            radial-gradient(ellipse 60% 50% at 85% 20%, rgba(99, 102, 241, .1) 0%, transparent 70%),
+            radial-gradient(ellipse 40% 60% at 10% 80%, rgba(197, 161, 98, .06) 0%, transparent 70%);
         &::after {
             content: '';
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        &::before {
-            width: 28rem;
-            height: 28rem;
-            top: -12rem;
-            right: -8rem;
-            background: radial-gradient(circle, rgba(197, 161, 98, .12) 0%, rgba(197, 161, 98, 0) 65%);
-        }
-
-        &::after {
-            width: 18rem;
-            height: 18rem;
-            bottom: -10rem;
-            left: 25%;
-            border: 2rem solid rgba(255, 255, 255, .04);
-        }
-
-        h2 {
-            font-weight: 700;
-            letter-spacing: -.025em;
-            color: #fff !important;
-            font-size: 1.65rem;
-        }
-
-        p {
-            color: rgba(255, 255, 255, .65) !important;
-            font-size: .88rem;
+            position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+            background-size: 1.25rem 1.25rem;
         }
     }
-
-    // Rejilla sutil de puntos en la banda superior.
-    .vitrina-hero-glow {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: -1;
-        background-image: radial-gradient(rgba(255, 255, 255, .06) 1px, transparent 1.5px);
-        background-size: 1.15rem 1.15rem;
-        mask-image: radial-gradient(65% 95% at 82% 0%, black 0%, transparent 100%);
-        -webkit-mask-image: radial-gradient(65% 95% at 82% 0%, black 0%, transparent 100%);
-        opacity: .5;
+    .vitrina-hero-content {
+        position: relative; z-index: 1;
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 2rem;
+    }
+    .vitrina-hero-chip {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .3rem .75rem; border-radius: 2rem;
+        background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+        color: rgba(255,255,255,.7); font-size: .72rem; font-weight: 600;
+        letter-spacing: .03em; text-transform: uppercase;
+        margin-bottom: .75rem;
+        i { font-size: .85rem; }
+    }
+    .vitrina-hero-titulo {
+        color: #fff; font-size: 1.75rem; font-weight: 700;
+        letter-spacing: -.03em; margin: 0 0 .35rem; line-height: 1.2;
+    }
+    .vitrina-hero-subtitulo {
+        color: rgba(255,255,255,.55); font-size: .88rem; margin: 0; line-height: 1.5;
+        max-width: 28rem;
+    }
+    .vitrina-hero-acciones { flex-shrink: 0; display: flex; gap: .75rem; }
+    .vitrina-hero-stat {
+        text-align: center; padding: .75rem 1.25rem; border-radius: .75rem;
+        background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .vitrina-hero-stat-valor {
+        display: block; color: #fff; font-size: 1.5rem; font-weight: 700;
+        letter-spacing: -.02em; line-height: 1.2;
+    }
+    .vitrina-hero-stat-label {
+        display: block; color: rgba(255,255,255,.5); font-size: .7rem;
+        font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+        margin-top: .15rem;
     }
 
-    // Icono principal del hero: tile de vidrio.
-    .vitrina-hero-tile {
-        background: rgba(255, 255, 255, .12);
-        border: 1px solid rgba(255, 255, 255, .2);
-        box-shadow: 0 .75rem 2rem rgba(10, 24, 43, .3), inset 0 1px 0 rgba(255, 255, 255, .25);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-
-    // =========================================================================
-    // Sección de recomendados
-    // =========================================================================
-    .vitrina-recomendados {
-        border: 0;
+    // ── Secciones (recomendados y categorías) ──────────────────────────────────
+    .vitrina-seccion {
+        background: #fff;
+        border: 1px solid #f1f5f9;
         border-radius: .85rem;
         overflow: hidden;
-        background: var(--marca-superficie);
-        box-shadow: 0 .15rem .6rem rgba(10, 24, 43, .04), 0 0 0 1px var(--marca-linea);
-        transition: box-shadow .25s ease-out;
-
+        box-shadow: 0 .15rem .5rem rgba(0,0,0,.04);
+        transition: box-shadow .2s, transform .2s;
         &:hover {
-            box-shadow: 0 .4rem 1.2rem rgba(10, 24, 43, .07), 0 0 0 1px transparent;
+            box-shadow: 0 .4rem 1rem rgba(0,0,0,.06);
         }
     }
-
-    .vitrina-recomendados-header {
-        padding: 1.25rem 1.5rem;
-        background: linear-gradient(135deg, rgba(197, 161, 98, .06) 0%, rgba(197, 161, 98, .02) 100%);
-        border-bottom: 1px solid var(--marca-linea);
-        display: flex;
-        align-items: center;
-        gap: .75rem;
-
-        .vitrina-recomendados-icon {
-            display: grid;
-            place-items: center;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: .6rem;
-            background: linear-gradient(135deg, #c5a162, #d8bb85);
-            color: #382919;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-            box-shadow: 0 .3rem .8rem rgba(197, 161, 98, .25);
-        }
-
-        h4 {
-            font-weight: 650;
-            letter-spacing: -.02em;
-            color: var(--marca-tinta);
-            font-size: 1rem;
-            margin-bottom: 0;
-        }
-
-        .vitrina-recomendados-sub {
-            font-size: .78rem;
-            color: var(--marca-apagado);
-            margin-bottom: 0;
-        }
+    .vitrina-seccion-header {
+        display: flex; align-items: center; gap: .75rem;
+        padding: 1.15rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
     }
-
-    // =========================================================================
-    // Secciones de categoría
-    // =========================================================================
-    .vitrina-categoria {
-        border: 0;
-        border-radius: .85rem;
-        overflow: hidden;
-        background: var(--marca-superficie);
-        box-shadow: 0 .15rem .6rem rgba(10, 24, 43, .04), 0 0 0 1px var(--marca-linea);
-        transition: box-shadow .25s ease-out, transform .25s ease-out;
-
-        &:hover {
-            box-shadow: 0 .5rem 1.5rem rgba(10, 24, 43, .07), 0 0 0 1px transparent;
-        }
+    .vitrina-seccion-icono {
+        width: 2.25rem; height: 2.25rem; border-radius: .55rem;
+        display: grid; place-items: center; font-size: 1rem; flex-shrink: 0;
     }
-
-    .vitrina-categoria-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid var(--marca-linea);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        background: var(--marca-suave);
+    .vitrina-seccion-icono--recomendados {
+        background: rgba(245,158,11,.1); color: #d97706;
     }
-
-    .vitrina-categoria-titulo {
-        display: flex;
-        align-items: center;
-        gap: .65rem;
-
-        h4 {
-            font-weight: 650;
-            letter-spacing: -.015em;
-            color: var(--marca-tinta);
-            font-size: 1rem;
-            margin-bottom: 0;
-        }
-
-        .vitrina-categoria-contador {
-            display: inline-flex;
-            align-items: center;
-            gap: .3rem;
-            padding: .15rem .6rem;
-            font-size: .7rem;
-            font-weight: 600;
-            color: var(--marca-azul);
-            background: rgba(37, 73, 112, .07);
-            border-radius: 2rem;
-            box-shadow: inset 0 0 0 1px rgba(37, 73, 112, .15);
-            white-space: nowrap;
-        }
+    .vitrina-seccion-icono--categoria {
+        background: rgba(99,102,241,.08); color: #6366f1;
     }
-
-    .vitrina-categoria-body {
-        padding: 1.25rem;
+    .vitrina-seccion-titulo {
+        margin: 0; color: #111827; font-size: 1rem; font-weight: 600;
+        letter-spacing: -.01em;
     }
+    .vitrina-seccion-subtitulo {
+        margin: .1rem 0 0; color: #9ca3af; font-size: .75rem;
+    }
+    .vitrina-seccion-badge {
+        margin-left: auto;
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 1.5rem; height: 1.5rem; padding: 0 .4rem;
+        border-radius: 2rem; background: #f3f4f6;
+        color: #6b7280; font-size: .72rem; font-weight: 700;
+    }
+    .vitrina-seccion-body { padding: 1.25rem; }
 
-    // =========================================================================
-    // Tarjeta de producto
-    // =========================================================================
+    // ── Tarjeta de producto ────────────────────────────────────────────────────
     .vitrina-producto {
-        border: 1px solid var(--marca-linea);
+        position: relative;
+        border: 1px solid #f1f5f9;
         border-radius: .75rem;
         overflow: hidden;
-        background: var(--marca-superficie);
+        background: #fff;
         transition: transform .22s ease-out, box-shadow .22s ease-out, border-color .22s ease-out;
-        position: relative;
 
         &:hover {
             transform: translateY(-4px);
-            box-shadow: 0 .75rem 2rem rgba(10, 24, 43, .1);
+            box-shadow: 0 .75rem 2rem rgba(0,0,0,.08);
             border-color: transparent;
 
             .vitrina-producto-imagen img {
                 transform: scale(1.04);
             }
+            .vitrina-producto-overlay { opacity: 1; }
+        }
 
-            .vitrina-producto-overlay {
-                opacity: 1;
-            }
+        // Estado agotado: borde sutil rojo
+        &--agotado {
+            border-color: rgba(239,68,68,.15);
+            &:hover { border-color: transparent; }
         }
     }
 
@@ -219,7 +138,7 @@
         position: relative;
         aspect-ratio: 4 / 3;
         overflow: hidden;
-        background: var(--marca-suave);
+        background: #f9fafb;
 
         img {
             width: 100%;
@@ -227,221 +146,159 @@
             object-fit: cover;
             transition: transform .35s ease-out;
         }
+    }
+    .vitrina-producto-placeholder {
+        display: grid; place-items: center;
+        width: 100%; height: 100%;
+        color: #d1d5db; font-size: 2rem;
+    }
 
-        .vitrina-producto-placeholder {
-            display: grid;
-            place-items: center;
-            width: 100%;
-            height: 100%;
-            color: var(--marca-apagado);
-            opacity: .4;
+    // Franja de agotado diagonal sobre la imagen
+    .vitrina-producto-agotado-franja {
+        position: absolute; top: 0; left: 0; right: 0;
+        display: flex; align-items: center; justify-content: center; gap: .35rem;
+        padding: .35rem .75rem;
+        background: rgba(239,68,68,.92);
+        color: #fff;
+        font-size: .68rem; font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        z-index: 3;
+        backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        i { font-size: .75rem; }
+    }
+
+    // Badge de unidades en esquina
+    .vitrina-producto-unidades-badge {
+        position: absolute; top: .5rem; right: .5rem;
+        display: inline-flex; align-items: center; gap: .2rem;
+        padding: .2rem .45rem; border-radius: .35rem;
+        background: rgba(16,185,129,.9);
+        color: #fff;
+        font-size: .65rem; font-weight: 700;
+        z-index: 2;
+        backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        i { font-size: .7rem; }
+
+        &--bajo {
+            background: rgba(245,158,11,.9);
+        }
+        &--agotado {
+            background: rgba(239,68,68,.9);
         }
     }
 
-    // Overlay sutil al hacer hover: invita a explorar.
+    // Overlay de hover
     .vitrina-producto-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, transparent 40%, rgba(10, 24, 43, .45) 100%);
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, transparent 40%, rgba(15, 23, 42, .5) 100%);
         opacity: 0;
         transition: opacity .25s ease-out;
         pointer-events: none;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
+        display: flex; align-items: flex-end; justify-content: center;
         padding-bottom: .75rem;
-
-        span {
-            font-size: .72rem;
-            font-weight: 600;
-            color: #fff;
-            letter-spacing: .04em;
-            text-transform: uppercase;
-            background: rgba(255, 255, 255, .15);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            padding: .3rem .85rem;
-            border-radius: 2rem;
-            border: 1px solid rgba(255, 255, 255, .2);
-        }
-    }
-
-    .vitrina-producto-body {
-        padding: .85rem 1rem;
-
-        .vitrina-producto-nombre {
-            font-weight: 600;
-            font-size: .85rem;
-            color: var(--marca-tinta);
-            letter-spacing: -.01em;
-            line-height: 1.35;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: .2rem;
-        }
-
-        .vitrina-producto-marca {
-            font-size: .75rem;
-            color: var(--marca-apagado);
-            margin-bottom: .55rem;
-        }
-
-        .vitrina-producto-precio {
-            font-weight: 700;
-            font-size: .95rem;
-            color: var(--marca-azul);
-            letter-spacing: -.01em;
-        }
-
-        .vitrina-producto-stock {
-            display: inline-flex;
-            align-items: center;
-            gap: .3rem;
-            margin-top: .5rem;
-            padding: .18rem .55rem;
-            font-size: .68rem;
-            font-weight: 600;
-            border-radius: 2rem;
-            white-space: nowrap;
-        }
-
-        .vitrina-producto-stock-dot {
-            width: .4rem;
-            height: .4rem;
-            border-radius: 50%;
-            background: currentColor;
-            box-shadow: 0 0 0 .18rem color-mix(in srgb, currentColor 20%, transparent);
-        }
-
-        // Estados de stock
-        .vitrina-stock-ok {
-            color: #16a34a;
-            background: rgba(22, 163, 74, .08);
-            box-shadow: inset 0 0 0 1px rgba(22, 163, 74, .18);
-        }
-
-        .vitrina-stock-bajo {
-            color: #d97706;
-            background: rgba(217, 119, 6, .08);
-            box-shadow: inset 0 0 0 1px rgba(217, 119, 6, .18);
-        }
-
-        .vitrina-stock-agotado {
-            color: #dc2626;
-            background: rgba(220, 38, 38, .08);
-            box-shadow: inset 0 0 0 1px rgba(220, 38, 38, .18);
-        }
-    }
-
-    // Enlace transparente que cubre toda la tarjeta.
-    .vitrina-producto-link {
-        position: absolute;
-        inset: 0;
         z-index: 2;
+        span {
+            font-size: .72rem; font-weight: 600;
+            color: #fff; letter-spacing: .04em; text-transform: uppercase;
+            background: rgba(255,255,255,.15);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            padding: .3rem .85rem; border-radius: 2rem;
+            border: 1px solid rgba(255,255,255,.2);
+        }
     }
 
-    // =========================================================================
-    // Estado vacío
-    // =========================================================================
-    .vitrina-empty {
-        text-align: center;
-        padding: 3rem 1.5rem;
+    .vitrina-producto-body { padding: .85rem 1rem; }
+    .vitrina-producto-nombre {
+        font-weight: 600; font-size: .85rem; color: #1f2937;
+        letter-spacing: -.01em; line-height: 1.35;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden; margin-bottom: .2rem;
+    }
+    .vitrina-producto-marca {
+        font-size: .75rem; color: #9ca3af; margin-bottom: .5rem;
+    }
+    .vitrina-producto-precio {
+        font-weight: 700; font-size: .95rem; color: #6366f1;
+        letter-spacing: -.01em;
     }
 
-    .vitrina-empty-icon {
-        display: grid;
-        place-items: center;
-        width: 5rem;
-        height: 5rem;
-        margin: 0 auto 1rem;
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(37, 73, 112, .06), rgba(87, 146, 191, .06));
-        box-shadow: inset 0 0 0 1px rgba(37, 73, 112, .1);
-        color: var(--marca-azul);
-        font-size: 1.6rem;
+    .vitrina-producto-stock {
+        display: inline-flex; align-items: center; gap: .3rem;
+        margin-top: .5rem; padding: .18rem .55rem;
+        font-size: .68rem; font-weight: 600;
+        border-radius: 2rem; white-space: nowrap;
+    }
+    .vitrina-producto-stock-dot {
+        width: .4rem; height: .4rem; border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 0 .18rem color-mix(in srgb, currentColor 20%, transparent);
+    }
+    .vitrina-stock-ok { color: #059669; background: rgba(5,150,105,.08); box-shadow: inset 0 0 0 1px rgba(5,150,105,.15); }
+    .vitrina-stock-bajo { color: #d97706; background: rgba(217,119,6,.08); box-shadow: inset 0 0 0 1px rgba(217,119,6,.15); }
+    .vitrina-stock-agotado { color: #dc2626; background: rgba(220,38,38,.08); box-shadow: inset 0 0 0 1px rgba(220,38,38,.15); }
+
+    // Enlace transparente que cubre toda la tarjeta
+    .vitrina-producto-link {
+        position: absolute; inset: 0; z-index: 4;
     }
 
-    .vitrina-empty-texto {
-        color: var(--marca-apagado);
-        font-size: .88rem;
-        margin-bottom: 0;
+    // ── Estado vacío ──────────────────────────────────────────────────────────
+    .vitrina-vacio {
+        text-align: center; padding: 4rem 1.5rem;
+        background: #fff; border: 1px solid #f1f5f9; border-radius: .85rem;
+    }
+    .vitrina-vacio-icono {
+        width: 4rem; height: 4rem; border-radius: 50%;
+        display: grid; place-items: center; margin: 0 auto 1rem;
+        background: #f3f4f6; color: #9ca3af; font-size: 1.5rem;
+    }
+    .vitrina-vacio h5 {
+        color: #374151; font-size: 1rem; font-weight: 600; margin: 0 0 .35rem;
+    }
+    .vitrina-vacio p {
+        color: #9ca3af; font-size: .85rem; margin: 0;
     }
 
-    // =========================================================================
-    // Responsive
-    // =========================================================================
+    // ── Responsive ────────────────────────────────────────────────────────────
+    @media (max-width: 991.98px) {
+        .vitrina-hero-content { flex-direction: column; }
+        .vitrina-hero-acciones { align-self: stretch; }
+        .vitrina-hero-stat { flex: 1; text-align: center; }
+    }
     @media (max-width: 767.98px) {
-        .vitrina-hero {
-            border-radius: .65rem;
-
-            h2 { font-size: 1.3rem; }
-        }
-
-        .vitrina-recomendados-header,
-        .vitrina-categoria-header {
-            padding: 1rem 1.15rem;
-        }
-
-        .vitrina-categoria-body {
-            padding: 1rem;
-        }
-
-        .vitrina-producto-body {
-            padding: .75rem .85rem;
-
-            .vitrina-producto-nombre { font-size: .8rem; }
-            .vitrina-producto-precio { font-size: .88rem; }
-        }
+        .vitrina-hero { padding: 1.5rem; border-radius: .75rem; }
+        .vitrina-hero-titulo { font-size: 1.4rem; }
+        .vitrina-seccion-header { padding: 1rem 1.15rem; }
+        .vitrina-seccion-body { padding: 1rem; }
     }
-
     @media (max-width: 575.98px) {
-        .vitrina-hero {
-            h2 { font-size: 1.15rem; }
-            p { font-size: .8rem; }
-        }
-
-        .vitrina-producto-overlay span {
-            font-size: .65rem;
-            padding: .25rem .65rem;
-        }
+        .vitrina-hero-titulo { font-size: 1.25rem; }
+        .vitrina-hero-subtitulo { font-size: .8rem; }
+        .vitrina-producto-nombre { font-size: .8rem; }
+        .vitrina-producto-precio { font-size: .88rem; }
+        .vitrina-producto-overlay span { font-size: .65rem; padding: .25rem .65rem; }
     }
 }
 
-// Modo oscuro
+// ── Modo oscuro ─────────────────────────────────────────────────────────────
 [data-bs-theme="dark"] .vitrina-modulo {
-    .vitrina-recomendados,
-    .vitrina-categoria {
-        box-shadow: 0 .15rem .6rem rgba(0, 0, 0, .2), 0 0 0 1px rgba(255, 255, 255, .06);
-
-        &:hover {
-            box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .3), 0 0 0 1px rgba(255, 255, 255, .08);
-        }
+    .vitrina-seccion {
+        background: rgba(255,255,255,.03);
+        border-color: rgba(255,255,255,.06);
+        box-shadow: 0 .15rem .5rem rgba(0,0,0,.15);
+        &:hover { box-shadow: 0 .4rem 1rem rgba(0,0,0,.2); }
     }
-
-    .vitrina-producto {
-        box-shadow: 0 .15rem .5rem rgba(0, 0, 0, .2), 0 0 0 1px rgba(255, 255, 255, .06);
-
-        &:hover {
-            box-shadow: 0 .75rem 2rem rgba(0, 0, 0, .35), 0 0 0 1px rgba(255, 255, 255, .1);
-        }
-    }
-
-    .vitrina-recomendados-header {
-        background: linear-gradient(135deg, rgba(197, 161, 98, .08) 0%, rgba(197, 161, 98, .03) 100%);
-    }
-
-    .vitrina-categoria-header {
-        background: rgba(255, 255, 255, .03);
-    }
-
-    .vitrina-producto-overlay {
-        background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .5) 100%);
-    }
-
-    .vitrina-empty-icon {
-        background: linear-gradient(135deg, rgba(75, 127, 184, .1), rgba(75, 127, 184, .05));
-        box-shadow: inset 0 0 0 1px rgba(75, 127, 184, .15);
-    }
+    .vitrina-seccion-header { background: rgba(255,255,255,.02); border-color: rgba(255,255,255,.06); }
+    .vitrina-seccion-badge { background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); }
+    .vitrina-producto { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.06); }
+    .vitrina-producto-imagen { background: rgba(255,255,255,.05); }
+    .vitrina-producto-nombre { color: #e5e7eb; }
+    .vitrina-producto-marca { color: rgba(255,255,255,.4); }
+    .vitrina-producto-precio { color: #818cf8; }
+    .vitrina-producto-overlay { background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.6) 100%); }
+    .vitrina-vacio { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.06); }
+    .vitrina-vacio-icono { background: rgba(255,255,255,.06); color: rgba(255,255,255,.3); }
+    .vitrina-vacio h5 { color: #e5e7eb; }
+    .vitrina-vacio p { color: rgba(255,255,255,.4); }
 }
