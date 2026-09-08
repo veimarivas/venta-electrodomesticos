@@ -1,6 +1,58 @@
-<div class="reparaciones-modulo">
+<div class="items-modulo">
 
-    <div class="row g-3 mb-4">
+    @php
+        $pillEstado = [
+            'recibida' => 'rep-estado-recibida',
+            'en_reparacion' => 'rep-estado-en-reparacion',
+            'esperando_repuesto' => 'rep-estado-esperando',
+            'lista' => 'rep-estado-lista',
+            'entregada' => 'rep-estado-entregada',
+            'irreparable' => 'rep-estado-irreparable',
+            'cancelada' => 'rep-estado-cancelada',
+        ];
+    @endphp
+
+    {{-- ===================== Encabezado del módulo ===================== --}}
+    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
+        <div class="card-body p-0">
+            <div class="p-4 crud-hero">
+                <div class="crud-hero-glow" aria-hidden="true"></div>
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="badge text-white mb-3 crud-chip">
+                            <i class="ri-tools-line me-1"></i> Servicio Técnico
+                        </span>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-md flex-shrink-0">
+                                <span class="avatar-title crud-tile text-white rounded-3 fs-3">
+                                    <i class="ri-wrench-line"></i>
+                                </span>
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-white mb-1">Órdenes de taller</h4>
+                                <p class="text-white-50 mb-0">
+                                    Recepción, diagnóstico y entrega de aparatos en reparación.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="d-flex flex-wrap justify-content-lg-end">
+                            @if ($puedeRecibir)
+                                <button type="button" class="btn btn-light crud-nueva-hero" wire:click="abrirRecepcion">
+                                    <i class="ri-add-line align-bottom me-1"></i> Recibir aparato
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Indicadores ===================== --}}
+    <div class="row g-3 mb-4 crud-kpis">
         <div class="col-xl-3 col-md-6">
             <x-stat-card label="En el taller" icon="bx-wrench" color="primary" value="{{ $this->enTaller }}"
                 caption="Órdenes sin cerrar" />
@@ -19,7 +71,8 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    {{-- ===================== Tabla de órdenes ===================== --}}
+    <div class="card border-0 shadow-sm overflow-hidden">
         <div class="card-header bg-transparent py-3">
             <div class="row g-3 align-items-center">
                 <div class="col-md-4">
@@ -49,12 +102,6 @@
                             <option value="cerradas">Cerradas</option>
                             <option value="todas">Todas</option>
                         </select>
-
-                        @if ($puedeRecibir)
-                            <button type="button" class="btn btn-primary" wire:click="abrirRecepcion">
-                                <i class="ri-add-line align-bottom me-1"></i> Recibir aparato
-                            </button>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -62,9 +109,10 @@
 
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 tabla-crud"
+                    wire:loading.class="opacity-50" wire:target="buscar, filtro">
                     <thead>
-                        <tr>
+                        <tr class="text-uppercase fs-11 text-muted">
                             <th class="ps-4">Orden</th>
                             <th>Aparato</th>
                             <th>Falla</th>
@@ -79,8 +127,8 @@
                         @forelse ($reparaciones as $orden)
                             <tr wire:key="orden-{{ $orden->id }}">
                                 <td class="ps-4">
-                                    <span class="fw-semibold d-block">{{ $orden->codigo }}</span>
-                                    <small class="text-muted d-block">
+                                    <span class="unidad-codigo">{{ $orden->codigo }}</span>
+                                    <small class="text-muted d-block mt-1">
                                         {{ $orden->cliente?->persona?->nombre_completo ?? 'Sin cliente' }}
                                     </small>
                                     <small class="text-muted">
@@ -92,18 +140,27 @@
                                 </td>
 
                                 <td>
-                                    <span class="d-block">{{ $orden->unidad?->producto?->nombre ?? '—' }}</span>
-                                    <small class="text-muted font-monospace">
-                                        {{ $orden->unidad?->serial ?: $orden->unidad?->codigo_interno }}
-                                    </small>
-                                    @if ($orden->en_garantia)
-                                        {{-- La cobertura se congeló al recibirla: cambiar
-                                             después los meses del producto no la mueve. --}}
-                                        <span class="badge bg-info-subtle text-info d-block mt-1"
-                                            style="width: fit-content">
-                                            <i class="ri-shield-check-line align-bottom"></i> En garantía
-                                        </span>
-                                    @endif
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="unidad-imagen-mini">
+                                            @if ($orden->unidad?->producto?->imagen)
+                                                <img src="{{ asset('storage/'.$orden->unidad->producto->imagen) }}" alt="{{ $orden->unidad->producto->nombre }}">
+                                            @else
+                                                <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="Aparato" class="unidad-imagen-mini-sin">
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="d-block text-truncate" style="max-width: 12rem">{{ $orden->unidad?->producto?->nombre ?? '—' }}</span>
+                                            <small class="text-muted font-monospace">
+                                                {{ $orden->unidad?->serial ?: $orden->unidad?->codigo_interno }}
+                                            </small>
+                                            @if ($orden->en_garantia)
+                                                <span class="badge bg-info-subtle text-info d-block mt-1"
+                                                    style="width: fit-content">
+                                                    <i class="ri-shield-check-line align-bottom"></i> Garantía
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td style="max-width: 16rem">
@@ -121,23 +178,34 @@
 
                                 <td>
                                     @if ($orden->estado === 'entregada')
-                                        <span class="badge bg-success-subtle text-success">Entregada</span>
+                                        <span class="unidad-estado unidad-estado-vendido">
+                                            <span class="unidad-estado-dot"></span> Entregada
+                                        </span>
                                         <small class="text-muted d-block">A {{ $orden->entregada_a }}</small>
                                     @elseif ($orden->estado === 'irreparable')
-                                        <span class="badge bg-dark-subtle text-dark">Sin arreglo</span>
+                                        <span class="unidad-estado unidad-estado-perdido">
+                                            <span class="unidad-estado-dot"></span> Sin arreglo
+                                        </span>
                                     @elseif ($orden->estado === 'cancelada')
-                                        <span class="badge bg-secondary-subtle text-secondary">Cancelada</span>
+                                        <span class="unidad-estado unidad-estado-danado">
+                                            <span class="unidad-estado-dot"></span> Cancelada
+                                        </span>
                                     @elseif ($orden->esta_lista)
-                                        <span class="badge bg-success-subtle text-success">Lista</span>
+                                        <span class="unidad-estado unidad-estado-stock">
+                                            <span class="unidad-estado-dot"></span> Lista
+                                        </span>
                                     @elseif ($orden->esta_atrasada)
-                                        <span class="badge bg-danger-subtle text-danger">Atrasada</span>
+                                        <span class="unidad-estado unidad-estado-reservado">
+                                            <span class="unidad-estado-dot"></span> Atrasada
+                                        </span>
                                     @else
-                                        <span
-                                            class="badge bg-primary-subtle text-primary">{{ $estados[$orden->estado] }}</span>
+                                        <span class="unidad-estado unidad-estado-garantia">
+                                            <span class="unidad-estado-dot"></span> {{ $estados[$orden->estado] }}
+                                        </span>
                                     @endif
 
                                     @if ($orden->esta_abierta)
-                                        <small class="text-muted d-block">
+                                        <small class="text-muted d-block mt-1">
                                             {{ $orden->dias_en_taller }}
                                             {{ $orden->dias_en_taller === 1 ? 'día' : 'días' }} en taller
                                         </small>
@@ -148,40 +216,39 @@
                                     @if ($orden->en_garantia)
                                         <span class="text-muted">Sin costo</span>
                                     @else
-                                        Bs {{ number_format((float) $orden->costo, 2, ',', '.') }}
+                                        <span class="fw-semibold">Bs {{ number_format((float) $orden->costo, 2, ',', '.') }}</span>
                                     @endif
                                 </td>
 
                                 <td class="text-end pe-4">
-                                    <div class="d-flex gap-1 justify-content-end">
+                                    <div class="d-inline-flex gap-1">
                                         @if ($puedeAtender && in_array($orden->estado, ['recibida', 'en_reparacion', 'esperando_repuesto'], true))
-                                            <button type="button" class="btn btn-sm btn-light" title="Diagnóstico"
-                                                wire:click="abrirDiagnostico({{ $orden->id }})">
-                                                <i class="ri-stethoscope-line"></i>
+                                            <button type="button" class="btn btn-sm btn-ghost-info btn-icon rounded-circle"
+                                                title="Diagnóstico" wire:click="abrirDiagnostico({{ $orden->id }})">
+                                                <i class="ri-stethoscope-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-light" title="Esperando repuesto"
-                                                wire:click="abrirEspera({{ $orden->id }})">
-                                                <i class="ri-time-line"></i>
+                                            <button type="button" class="btn btn-sm btn-ghost-warning btn-icon rounded-circle"
+                                                title="Esperando repuesto" wire:click="abrirEspera({{ $orden->id }})">
+                                                <i class="ri-time-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-light" title="Ya está lista"
-                                                wire:click="abrirCierre({{ $orden->id }})">
-                                                <i class="ri-check-double-line"></i>
+                                            <button type="button" class="btn btn-sm btn-ghost-success btn-icon rounded-circle"
+                                                title="Ya está lista" wire:click="abrirCierre({{ $orden->id }})">
+                                                <i class="ri-check-double-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-light" title="No tiene arreglo"
-                                                wire:click="abrirIrreparable({{ $orden->id }})">
-                                                <i class="ri-close-circle-line"></i>
+                                            <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon rounded-circle"
+                                                title="No tiene arreglo" wire:click="abrirIrreparable({{ $orden->id }})">
+                                                <i class="ri-close-circle-line fs-16"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-light text-danger"
+                                            <button type="button" class="btn btn-sm btn-ghost-danger btn-icon rounded-circle"
                                                 title="Cancelar" wire:click="abrirCancelacion({{ $orden->id }})">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
+                                                <i class="ri-delete-bin-line fs-16"></i>
+                                                </button>
                                         @endif
 
                                         @if (($puedeRecibir || $puedeAtender) && in_array($orden->estado, ['lista', 'irreparable'], true))
                                             <button type="button" class="btn btn-sm btn-success"
-                                                title="El cliente se lo lleva"
-                                                wire:click="abrirEntrega({{ $orden->id }})">
-                                                <i class="ri-hand-heart-line"></i> Entregar
+                                                title="El cliente se lo lleva" wire:click="abrirEntrega({{ $orden->id }})">
+                                                <i class="ri-hand-heart-line align-bottom me-1"></i> Entregar
                                             </button>
                                         @endif
                                     </div>
@@ -222,8 +289,6 @@
                             <label for="buscar-unidad" class="form-label">Serial o código del aparato</label>
                             <input type="text" id="buscar-unidad" class="form-control" wire:model.live.debounce.400ms="buscarUnidad"
                                 placeholder="Escanea o teclea el serial..">
-                            {{-- Por serial y no por producto: el taller trabaja
-                                 sobre un aparato concreto, no sobre un modelo. --}}
                             <small class="text-muted">El sistema busca entre los aparatos que ya conoce.</small>
                             @error('unidadId')
                                 <div class="text-danger fs-12 mt-1">{{ $message }}</div>
@@ -235,13 +300,21 @@
                                 <button type="button" class="list-group-item list-group-item-action px-0"
                                     wire:key="unidad-{{ $unidad->id }}"
                                     wire:click="elegirUnidad({{ $unidad->id }})">
-                                    <span class="d-block fw-semibold">{{ $unidad->producto?->nombre }}</span>
-                                    <small class="text-muted font-monospace">
-                                        {{ $unidad->serial ?: $unidad->codigo_interno }}
-                                    </small>
-                                    <small class="text-muted">
-                                        · {{ \App\Models\Unidad::ESTADOS[$unidad->estado] ?? $unidad->estado }}
-                                    </small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="unidad-imagen-mini">
+                                            @if ($unidad->producto?->imagen)
+                                                <img src="{{ asset('storage/'.$unidad->producto->imagen) }}" alt="{{ $unidad->producto->nombre }}">
+                                            @else
+                                                <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="Aparato" class="unidad-imagen-mini-sin">
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="d-block fw-semibold">{{ $unidad->producto?->nombre }}</span>
+                                            <small class="text-muted font-monospace">
+                                                {{ $unidad->serial ?: $unidad->codigo_interno }}
+                                            </small>
+                                        </div>
+                                    </div>
                                 </button>
                             @empty
                                 @if (mb_strlen(trim($buscarUnidad)) >= 2)
@@ -253,25 +326,32 @@
                         </div>
                     @else
                         <div class="alert alert-light border d-flex align-items-start justify-content-between gap-3">
-                            <div class="min-w-0">
-                                <span class="fw-semibold d-block">{{ $this->unidadElegida->producto?->nombre }}</span>
-                                <small class="text-muted font-monospace d-block">
-                                    {{ $this->unidadElegida->serial ?: $this->unidadElegida->codigo_interno }}
-                                </small>
-                                @if ($this->unidadElegida->en_garantia)
-                                    <span class="badge bg-info-subtle text-info mt-1">
-                                        <i class="ri-shield-check-line align-bottom"></i>
-                                        En garantía hasta
-                                        {{ $this->unidadElegida->garantia_hasta->format('d/m/Y') }}
-                                    </span>
-                                @elseif ($this->unidadElegida->garantia_hasta)
-                                    <span class="badge bg-warning-subtle text-warning mt-1">
-                                        Garantía vencida el
-                                        {{ $this->unidadElegida->garantia_hasta->format('d/m/Y') }}
-                                    </span>
-                                @else
-                                    <span class="badge bg-light text-body mt-1">Este producto no lleva garantía</span>
-                                @endif
+                            <div class="d-flex align-items-center gap-2 min-w-0">
+                                <div class="unidad-imagen-mini">
+                                    @if ($this->unidadElegida->producto?->imagen)
+                                        <img src="{{ asset('storage/'.$this->unidadElegida->producto->imagen) }}" alt="{{ $this->unidadElegida->producto->nombre }}">
+                                    @else
+                                        <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="Aparato" class="unidad-imagen-mini-sin">
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="fw-semibold d-block">{{ $this->unidadElegida->producto?->nombre }}</span>
+                                    <small class="text-muted font-monospace d-block">
+                                        {{ $this->unidadElegida->serial ?: $this->unidadElegida->codigo_interno }}
+                                    </small>
+                                    @if ($this->unidadElegida->en_garantia)
+                                        <span class="badge bg-info-subtle text-info mt-1">
+                                            <i class="ri-shield-check-line align-bottom"></i>
+                                            En garantía hasta {{ $this->unidadElegida->garantia_hasta->format('d/m/Y') }}
+                                        </span>
+                                    @elseif ($this->unidadElegida->garantia_hasta)
+                                        <span class="badge bg-warning-subtle text-warning mt-1">
+                                            Garantía vencida el {{ $this->unidadElegida->garantia_hasta->format('d/m/Y') }}
+                                        </span>
+                                    @else
+                                        <span class="badge bg-light text-body mt-1">Este producto no lleva garantía</span>
+                                    @endif
+                                </div>
                             </div>
                             <button type="button" class="btn btn-sm btn-light" wire:click="quitarUnidad">
                                 Cambiar
@@ -320,8 +400,6 @@
                                         @disabled($this->unidadElegida->en_garantia)>
                                 </div>
                                 @if ($this->unidadElegida->en_garantia)
-                                    {{-- En garantía no se cobra, y el campo no deja
-                                         escribir un importe que contradiga eso. --}}
                                     <small class="text-muted">En garantía no se cobra.</small>
                                 @endif
                             </div>
@@ -482,7 +560,6 @@
                     @error('motivo')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
-                    {{-- Sin arreglo no se cobra mano de obra que no arregló nada. --}}
                     <small class="text-muted d-block mt-2">
                         El costo se pone en cero y el aparato queda esperando a que el cliente lo recoja.
                     </small>

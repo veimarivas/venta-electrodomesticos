@@ -1,0 +1,78 @@
+.reparaciones-modulo {
+    // ===================== Estados de reparación =====================
+    .unidad-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .3rem .65rem;
+        font-size: .72rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 2rem;
+        white-space: nowrap;
+    }
+
+    .unidad-estado-dot {
+        width: .45rem;
+        height: .45rem;
+        border-radius: 50%;
+    }
+
+    .unidad-estado-recibida {
+        color: #0ea5e9;
+        background: rgba(14, 165, 233, .12);
+        .unidad-estado-dot { background: #0ea5e9; }
+    }
+
+    .unidad-estado-en-reparacion {
+        color: #6366f1;
+        background: rgba(99, 102, 241, .12);
+        .unidad-estado-dot { background: #6366f1; }
+    }
+
+    .unidad-estado-esperando {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, .12);
+        .unidad-estado-dot { background: #f59e0b; }
+    }
+
+    .unidad-estado-lista {
+        color: #10b981;
+        background: rgba(16, 185, 129, .12);
+        .unidad-estado-dot { background: #10b981; }
+    }
+
+    .unidad-estado-entregada {
+        color: #059669;
+        background: rgba(5, 150, 105, .12);
+        .unidad-estado-dot { background: #059669; }
+    }
+
+    .unidad-estado-irreparable {
+        color: #6b7280;
+        background: rgba(107, 114, 128, .12);
+        .unidad-estado-dot { background: #6b7280; }
+    }
+
+    .unidad-estado-cancelada {
+        color: #ef4444;
+        background: rgba(239, 68, 68, .12);
+        .unidad-estado-dot { background: #ef4444; }
+    }
+
+    // ===================== Botones ghost en acciones =====================
+    .btn-ghost-info { color: #0ea5e9; background: transparent; border: none; }
+    .btn-ghost-info:hover { background: rgba(14, 165, 233, .08); color: #0284c7; }
+
+    .btn-ghost-warning { color: #f59e0b; background: transparent; border: none; }
+    .btn-ghost-warning:hover { background: rgba(245, 158, 11, .08); color: #d97706; }
+
+    .btn-ghost-success { color: #10b981; background: transparent; border: none; }
+    .btn-ghost-success:hover { background: rgba(16, 185, 129, .08); color: #059669; }
+
+    .btn-ghost-secondary { color: #6b7280; background: transparent; border: none; }
+    .btn-ghost-secondary:hover { background: rgba(107, 114, 128, .08); color: #4b5563; }
+
+    .btn-ghost-danger { color: #ef4444; background: transparent; border: none; }
+    .btn-ghost-danger:hover { background: rgba(239, 68, 68, .08); color: #dc2626; }
+}
