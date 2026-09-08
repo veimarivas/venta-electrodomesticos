@@ -29,10 +29,151 @@
     @endphp
 
     {{--
-        Los indicadores van primero: son la foto del período. Después las
-        Últimas ventas y Más vendidos —lo que hay que mirar— y al final
-        Bajo mínimo —lo que hay que hacer—.
+        Orden del dashboard:
+        1. Bajo mínimo — lo que hay que hacer HOY (reponer)
+        2. Últimas ventas + Más vendidos — la actividad reciente
+        3. KPIs y stats — los números del período
     --}}
+
+    {{-- ===================== Bajo mínimo (con imagen) ===================== --}}
+    <div class="card dash-card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="card-title mb-0">
+                    <span class="dash-card-header-icono dash-card-header-icono--almacen"><i class="ri-alert-line"></i></span>
+                    Bajo mínimo
+                </h5>
+                <small class="text-muted fs-13">Lo que toca reponer: {{ $bajoMinimo->count() }} {{ $bajoMinimo->count() === 1 ? 'producto' : 'productos' }}</small>
+            </div>
+            @can('stock.ver')
+                <a href="{{ route('stock.index') }}" class="dash-ver-todas">
+                    Ver stock <i class="ri-arrow-right-line"></i>
+                </a>
+            @endcan
+        </div>
+        <div class="card-body">
+            @forelse ($bajoMinimo as $producto)
+                <div class="dash-alerta-con-imagen" wire:key="minimo-{{ $producto->id }}">
+                    @if ($producto->imagen)
+                        <img src="{{ asset('storage/'.$producto->imagen) }}"
+                             alt="{{ $producto->nombre }}"
+                             class="dash-alerta-imagen"
+                             loading="lazy"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                        <div class="dash-alerta-imagen-placeholder" style="display:none;">
+                            <i class="ri-image-line"></i>
+                        </div>
+                    @else
+                        <div class="dash-alerta-imagen-placeholder">
+                            <i class="ri-image-line"></i>
+                        </div>
+                    @endif
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
+                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
+                    </div>
+                    <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
+                        {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
+                    </span>
+                </div>
+            @empty
+                <p class="dash-alerta-ok mb-0">
+                    <i class="ri-checkbox-circle-line"></i>
+                    Todo el catálogo está por encima de su mínimo.
+                </p>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- ===================== Últimas ventas + Más vendidos ===================== --}}
+    @php
+        $columnasDeVentas = $puedeVerVentas && $puedeVerReportes ? 'col-xl-7' : 'col-12';
+        $columnasDeTop = $puedeVerVentas && $puedeVerReportes ? 'col-xl-5' : 'col-12';
+    @endphp
+
+    <div class="row g-4 mb-4">
+        @if ($puedeVerVentas)
+        <div class="{{ $columnasDeVentas }}">
+            <div class="card dash-card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title mb-0">Últimas ventas</h5>
+                        <small class="text-muted fs-13">Se actualizan solas al registrarse una</small>
+                    </div>
+                    @if ($puedeVerVentas)
+                        <a href="{{ route('ventas.index') }}" class="dash-ver-todas">
+                            Ver todas <i class="ri-arrow-right-line"></i>
+                        </a>
+                    @endif
+                </div>
+
+                <div class="card-body p-0 dash-ventas-lista">
+                    @foreach ($enVivo as $venta)
+                        <div class="dash-venta esta-nueva" wire:key="vivo-{{ $venta['id'] }}">
+                            <span class="dash-venta-icono dash-venta-icono--vivo"><i class="ri-shopping-bag-3-line"></i></span>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="dash-venta-codigo">{{ $venta['codigo'] }}</div>
+                                <small class="dash-venta-meta">
+                                    {{ $venta['hora'] }} · {{ $venta['vendedor'] }} · {{ $venta['cliente'] }}
+                                </small>
+                            </div>
+                            <span class="dash-venta-monto">
+                                Bs {{ number_format($venta['total'], 2, ',', '.') }}
+                            </span>
+                        </div>
+                    @endforeach
+
+                    @forelse ($this->ultimasVentas as $venta)
+                        <div class="dash-venta" wire:key="venta-{{ $venta->id }}">
+                            <span class="dash-venta-icono dash-venta-icono--normal"><i class="ri-bill-line"></i></span>
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="dash-venta-codigo">{{ $venta->codigo }}</div>
+                                <small class="dash-venta-meta">
+                                    {{ $venta->vendida_en->format('d/m H:i') }}
+                                    · {{ $venta->user?->name }}
+                                    · {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}
+                                </small>
+                            </div>
+                            <span class="dash-venta-monto">
+                                Bs {{ number_format((float) $venta->total, 2, ',', '.') }}
+                            </span>
+                        </div>
+                    @empty
+                        @if ($enVivo === [])
+                            <div class="text-center text-muted py-5">
+                                <i class="ri-bill-line fs-1 d-block mb-2 opacity-50"></i>
+                                Todavía no hay ventas registradas.
+                            </div>
+                        @endif
+                    @endforelse
+                </div>
+            </div>
+        </div>
+        @endif
+
+        @if ($puedeVerReportes)
+        <div class="{{ $columnasDeTop }}">
+            <div class="card dash-card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <span class="dash-card-header-icono dash-card-header-icono--top"><i class="ri-trophy-line"></i></span>
+                        Más vendidos
+                    </h5>
+                    <small class="text-muted fs-13">{{ ucfirst(now()->translatedFormat('F')) }}, por ingreso</small>
+                </div>
+                <div class="card-body">
+                    <x-viz.barras :filas="$this->topProductos->map(fn ($p) => [
+                        'nombre' => $p->nombre,
+                        'valor' => (float) $p->ingreso,
+                        'meta' => $p->unidades.' '.($p->unidades == 1 ? 'unidad' : 'unidades'),
+                    ])->all()" vacio="Sin ventas este mes." />
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    {{-- ===================== Stats / KPIs ===================== --}}
     @if ($puedeVerReportes)
 
     {{-- ===================== KPIs ===================== --}}
@@ -240,153 +381,6 @@
                     </ul>
                 </div>
             </div>
-        </div>
-    </div>
-
-    {{-- ===================== Últimas ventas + Más vendidos ===================== --}}
-    {{--
-        Ahora van ANTES de Bajo mínimo: son la actividad reciente de la tienda,
-        y conviene verlas primero para contexto antes de la lista de reposición.
-    --}}
-    @php
-        $columnasDeVentas = $puedeVerVentas && $puedeVerReportes ? 'col-xl-7' : 'col-12';
-        $columnasDeTop = $puedeVerVentas && $puedeVerReportes ? 'col-xl-5' : 'col-12';
-    @endphp
-
-    <div class="row g-4 mb-4">
-        @if ($puedeVerVentas)
-        <div class="{{ $columnasDeVentas }}">
-            <div class="card dash-card h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div>
-                        <h5 class="card-title mb-0">Últimas ventas</h5>
-                        <small class="text-muted fs-13">Se actualizan solas al registrarse una</small>
-                    </div>
-                    @if ($puedeVerVentas)
-                        <a href="{{ route('ventas.index') }}" class="dash-ver-todas">
-                            Ver todas <i class="ri-arrow-right-line"></i>
-                        </a>
-                    @endif
-                </div>
-
-                <div class="card-body p-0 dash-ventas-lista">
-                    @foreach ($enVivo as $venta)
-                        <div class="dash-venta esta-nueva" wire:key="vivo-{{ $venta['id'] }}">
-                            <span class="dash-venta-icono dash-venta-icono--vivo"><i class="ri-shopping-bag-3-line"></i></span>
-                            <div class="min-w-0 flex-grow-1">
-                                <div class="dash-venta-codigo">{{ $venta['codigo'] }}</div>
-                                <small class="dash-venta-meta">
-                                    {{ $venta['hora'] }} · {{ $venta['vendedor'] }} · {{ $venta['cliente'] }}
-                                </small>
-                            </div>
-                            <span class="dash-venta-monto">
-                                Bs {{ number_format($venta['total'], 2, ',', '.') }}
-                            </span>
-                        </div>
-                    @endforeach
-
-                    @forelse ($this->ultimasVentas as $venta)
-                        <div class="dash-venta" wire:key="venta-{{ $venta->id }}">
-                            <span class="dash-venta-icono dash-venta-icono--normal"><i class="ri-bill-line"></i></span>
-                            <div class="min-w-0 flex-grow-1">
-                                <div class="dash-venta-codigo">{{ $venta->codigo }}</div>
-                                <small class="dash-venta-meta">
-                                    {{ $venta->vendida_en->format('d/m H:i') }}
-                                    · {{ $venta->user?->name }}
-                                    · {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}
-                                </small>
-                            </div>
-                            <span class="dash-venta-monto">
-                                Bs {{ number_format((float) $venta->total, 2, ',', '.') }}
-                            </span>
-                        </div>
-                    @empty
-                        @if ($enVivo === [])
-                            <div class="text-center text-muted py-5">
-                                <i class="ri-bill-line fs-1 d-block mb-2 opacity-50"></i>
-                                Todavía no hay ventas registradas.
-                            </div>
-                        @endif
-                    @endforelse
-                </div>
-            </div>
-        </div>
-        @endif
-
-        @if ($puedeVerReportes)
-        <div class="{{ $columnasDeTop }}">
-            <div class="card dash-card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="dash-card-header-icono dash-card-header-icono--top"><i class="ri-trophy-line"></i></span>
-                        Más vendidos
-                    </h5>
-                    <small class="text-muted fs-13">{{ ucfirst(now()->translatedFormat('F')) }}, por ingreso</small>
-                </div>
-                <div class="card-body">
-                    <x-viz.barras :filas="$this->topProductos->map(fn ($p) => [
-                        'nombre' => $p->nombre,
-                        'valor' => (float) $p->ingreso,
-                        'meta' => $p->unidades.' '.($p->unidades == 1 ? 'unidad' : 'unidades'),
-                    ])->all()" vacio="Sin ventas este mes." />
-                </div>
-            </div>
-        </div>
-        @endif
-    </div>
-
-    {{-- ===================== Bajo mínimo (con imagen) ===================== --}}
-    {{--
-        Bajo mínimo va al final: es la acción del día —reponer— pero el
-        contexto de las ventas y el ranking ayudan a priorizar.
-        Ahora incluye la imagen del producto para identificación visual rápida.
-    --}}
-    <div class="card dash-card mb-4">
-        <div class="card-header d-flex align-items-center justify-content-between">
-            <div>
-                <h5 class="card-title mb-0">
-                    <span class="dash-card-header-icono dash-card-header-icono--almacen"><i class="ri-alert-line"></i></span>
-                    Bajo mínimo
-                </h5>
-                <small class="text-muted fs-13">Lo que toca reponer: {{ $bajoMinimo->count() }} {{ $bajoMinimo->count() === 1 ? 'producto' : 'productos' }}</small>
-            </div>
-            @can('stock.ver')
-                <a href="{{ route('stock.index') }}" class="dash-ver-todas">
-                    Ver stock <i class="ri-arrow-right-line"></i>
-                </a>
-            @endcan
-        </div>
-        <div class="card-body">
-            @forelse ($bajoMinimo as $producto)
-                <div class="dash-alerta-con-imagen" wire:key="minimo-{{ $producto->id }}">
-                    @if ($producto->imagen)
-                        <img src="{{ asset('storage/'.$producto->imagen) }}"
-                             alt="{{ $producto->nombre }}"
-                             class="dash-alerta-imagen"
-                             loading="lazy"
-                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                        <div class="dash-alerta-imagen-placeholder" style="display:none;">
-                            <i class="ri-image-line"></i>
-                        </div>
-                    @else
-                        <div class="dash-alerta-imagen-placeholder">
-                            <i class="ri-image-line"></i>
-                        </div>
-                    @endif
-                    <div class="min-w-0 flex-grow-1">
-                        <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
-                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
-                    </div>
-                    <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
-                        {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
-                    </span>
-                </div>
-            @empty
-                <p class="dash-alerta-ok mb-0">
-                    <i class="ri-checkbox-circle-line"></i>
-                    Todo el catálogo está por encima de su mínimo.
-                </p>
-            @endforelse
         </div>
     </div>
 </div>
