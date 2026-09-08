@@ -1,0 +1,63 @@
+// -----------------------------------------------------------------------------
+// Créditos: cartera y seguimiento de mora
+// -----------------------------------------------------------------------------
+
+.creditos-modulo {
+
+    // ---- Pills de estado ----
+    .unidad-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .3rem .65rem;
+        font-size: .72rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 2rem;
+        white-space: nowrap;
+    }
+
+    .unidad-estado-dot {
+        width: .45rem;
+        height: .45rem;
+        border-radius: 50%;
+    }
+
+    .unidad-estado-stock {
+        color: #10b981;
+        background: rgba(16, 185, 129, .12);
+        .unidad-estado-dot { background: #10b981; }
+    }
+
+    .unidad-estado-reservado {
+        color: #ef4444;
+        background: rgba(239, 68, 68, .12);
+        .unidad-estado-dot { background: #ef4444; }
+    }
+
+    .unidad-estado-garantia {
+        color: #6366f1;
+        background: rgba(99, 102, 241, .12);
+        .unidad-estado-dot { background: #6366f1; }
+    }
+
+    .unidad-estado-danado {
+        color: #6b7280;
+        background: rgba(107, 114, 128, .12);
+        .unidad-estado-dot { background: #6b7280; }
+    }
+
+    // ---- Código de venta ----
+    .unidad-codigo {
+        display: inline-flex;
+        align-items: center;
+        padding: .34rem .68rem;
+        border-radius: .55rem;
+        color: #254970;
+        background: rgba(37, 73, 112, .08);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, #254970 22%, transparent);
+        font-size: .8rem;
+        font-weight: 600;
+        font-family: var(--vz-font-family-monospace, monospace);
+    }
+}

@@ -1,23 +1,24 @@
 // -----------------------------------------------------------------------------
 // Caja: el turno abierto y el histórico de cierres
 // -----------------------------------------------------------------------------
-// La pantalla se mira de pie y de reojo: lo primero que hay que ver es si la
-// caja está abierta o cerrada, y eso se resuelve con la forma de la tarjeta
-// antes que con el texto.
-// -----------------------------------------------------------------------------
 
 .caja-modulo {
 
-    // ---- Tarjeta del turno ----
-    .caja-turno {
-        border: 1px solid var(--marca-linea);
-        border-left: 3px solid var(--marca-azul);
+    // ---- Hero del turno ----
+    .caja-turno-card {
+        border-radius: .75rem;
     }
 
-    // Sin caja abierta la tarjeta se apaga: no es un error, es un estado.
-    .caja-turno--cerrada {
-        border-left-color: var(--marca-linea);
-        background: var(--marca-suave);
+    .caja-turno-hero {
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        border-radius: .75rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .caja-turno-hero--cerrada {
+        background: linear-gradient(135deg, #374151, #4b5563);
     }
 
     .caja-turno-estado {
@@ -28,10 +29,10 @@
         font-weight: 700;
         letter-spacing: .09em;
         text-transform: uppercase;
-        color: var(--marca-azul-texto);
+        color: rgba(255, 255, 255, .9);
     }
 
-    // Punto que late: la caja está abierta AHORA, no es un dato histórico.
+    // Punto que late: la caja está abierta AHORA.
     .caja-latido {
         width: 7px;
         height: 7px;
@@ -44,14 +45,15 @@
     .caja-turno-titulo {
         font-weight: 700;
         letter-spacing: -.02em;
-        color: var(--marca-tinta);
+        color: #fff;
     }
 
     // ---- Datos del turno ----
     .caja-dato {
         padding: .75rem .9rem;
         border-radius: .5rem;
-        background: var(--marca-suave);
+        background: rgba(255, 255, 255, .12);
+        border: 1px solid rgba(255, 255, 255, .15);
     }
 
     .caja-dato-label {
@@ -59,7 +61,7 @@
         font-size: .7rem;
         letter-spacing: .07em;
         text-transform: uppercase;
-        color: var(--marca-apagado);
+        color: rgba(255, 255, 255, .6);
     }
 
     .caja-dato-valor {
@@ -67,14 +69,50 @@
         margin-top: .15rem;
         font-size: 1.15rem;
         font-weight: 700;
-        color: var(--marca-tinta);
+        color: #fff;
         font-variant-numeric: tabular-nums;
     }
 
-    // Los importes se leen en columna: sin cifras de ancho fijo hay que
-    // detenerse en cada fila para comparar.
+    // Los importes se leen en columna.
     .caja-num {
         font-variant-numeric: tabular-nums;
+    }
+
+    // ---- Histórico de cierres: pills ----
+    .unidad-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .3rem .65rem;
+        font-size: .72rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 2rem;
+        white-space: nowrap;
+    }
+
+    .unidad-estado-dot {
+        width: .45rem;
+        height: .45rem;
+        border-radius: 50%;
+    }
+
+    .unidad-estado-stock {
+        color: #10b981;
+        background: rgba(16, 185, 129, .12);
+        .unidad-estado-dot { background: #10b981; }
+    }
+
+    .unidad-estado-reservado {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, .12);
+        .unidad-estado-dot { background: #f59e0b; }
+    }
+
+    .unidad-estado-garantia {
+        color: #6366f1;
+        background: rgba(99, 102, 241, .12);
+        .unidad-estado-dot { background: #6366f1; }
     }
 }
 
