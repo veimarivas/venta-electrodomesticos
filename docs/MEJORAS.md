@@ -335,6 +335,16 @@ Tres piezas que el mostrador pedía a la vez:
 
 **Lo que queda:** nada de esta pieza.
 
+## Dashboard: mejoras de diseño y UX (2026-09-07)
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Imágenes en Bajo mínimo** | El dashboard del panel web y la app Flutter ahora muestran la imagen del producto en la sección de bajo mínimo, facilitando la identificación visual rápida. |
+| ✅ | **Reorganización del dashboard** | Últimas ventas y Más vendidos ahora están en la parte superior, debajo de los KPIs, antes de Bajo mínimo. Esto mejora la jerarquía visual: primero la actividad reciente, luego lo que hay que reponer. |
+| ✅ | **API de stock bajo con imagen** | El endpoint `GET /api/v1/inventario/stock-bajo` ahora incluye la URL de la imagen del producto para la app móvil. |
+
+**Lo que queda:** nada de esta pieza.
+
 ## Fase 3 — Cuando la tienda crezca
 
 Nada de esto hace falta hoy, y adelantarlo costaría más de lo que ahorra.

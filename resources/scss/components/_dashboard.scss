@@ -311,6 +311,40 @@
     &:last-child { border-bottom: 0; }
 }
 
+// Variante con imagen del producto
+.dash-alerta-con-imagen {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--marca-linea);
+
+    &:last-child { border-bottom: 0; }
+}
+
+.dash-alerta-imagen {
+    width: 44px;
+    height: 44px;
+    border-radius: .5rem;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--marca-fondo, #f5f7fa);
+    border: 1px solid var(--marca-linea);
+}
+
+.dash-alerta-imagen-placeholder {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: .5rem;
+    flex-shrink: 0;
+    background: var(--marca-fondo, #f5f7fa);
+    border: 1px solid var(--marca-linea);
+    color: var(--marca-apagado);
+    font-size: 1.1rem;
+}
+
 .dash-alerta-nombre {
     color: var(--marca-tinta);
     font-size: .84rem;

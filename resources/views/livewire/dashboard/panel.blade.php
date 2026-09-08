@@ -28,56 +28,10 @@
         $bajoMinimo = $this->bajoMinimo;
     @endphp
 
-    {{-- ===================== Bajo mínimo ===================== --}}
-    {{-- Va ANTES de los indicadores a propósito: lo que falta reponer es la
-         acción del día —hacer compras—, y enterrarlo bajo la caja del mes hacía
-         que se leyera al final. Es la misma alerta para quien no puede ver
-         reportes: el stock bajo es información de quien atiende. --}}
-    <div class="card dash-card mb-4">
-        <div class="card-header d-flex align-items-center justify-content-between">
-            <div>
-                <h5 class="card-title mb-0">
-                    <span class="dash-card-header-icono dash-card-header-icono--almacen"><i class="ri-alert-line"></i></span>
-                    Bajo mínimo
-                </h5>
-                <small class="text-muted fs-13">Lo que toca reponer: {{ $bajoMinimo->count() }} {{ $bajoMinimo->count() === 1 ? 'producto' : 'productos' }}</small>
-            </div>
-            @can('stock.ver')
-                <a href="{{ route('stock.index') }}" class="dash-ver-todas">
-                    Ver stock <i class="ri-arrow-right-line"></i>
-                </a>
-            @endcan
-        </div>
-        <div class="card-body">
-            @forelse ($bajoMinimo as $producto)
-                <div class="dash-alerta" wire:key="minimo-{{ $producto->id }}">
-                    <div class="min-w-0">
-                        <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
-                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
-                    </div>
-                    <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
-                        {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
-                    </span>
-                </div>
-            @empty
-                <p class="dash-alerta-ok mb-0">
-                    <i class="ri-checkbox-circle-line"></i>
-                    Todo el catálogo está por encima de su mínimo.
-                </p>
-            @endforelse
-        </div>
-    </div>
-
     {{--
-        Todo lo que sigue son importes, y van tras `reportes.ver` igual que su
-        equivalente en la API (GET /api/v1/dashboard/*). Sin esa comprobación,
-        un vendedor -que NO tiene ese permiso- veía la caja del día en el panel
-        aunque la app se la negara: la misma cuenta enseñaba cosas distintas
-        según por dónde entrase.
-
-        No se corta el acceso al dashboard entero, que es la pantalla de
-        aterrizaje: quien no puede ver reportes sigue viendo el almacén y el
-        stock bajo, que sí es información suya.
+        Los indicadores van primero: son la foto del período. Después las
+        Últimas ventas y Más vendidos —lo que hay que mirar— y al final
+        Bajo mínimo —lo que hay que hacer—.
     --}}
     @if ($puedeVerReportes)
 
@@ -144,12 +98,6 @@
     </div>
 
     {{-- ===================== Ticket promedio y margen ===================== --}}
-    {{--
-        Van en su propia fila y no entre los KPI de arriba: aquellos son
-        ACUMULADOS —cuánto entró— y estos dos son RATIOS —cómo de bien entró—.
-        Mezclarlos haría leer «Bs 45.000» y «Bs 1.250» como cifras del mismo
-        tipo, cuando una es la caja del mes y la otra lo que deja una venta.
-    --}}
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
             <div class="card dash-kpi h-100">
@@ -159,8 +107,6 @@
                             <span class="dash-kpi-label">Ticket promedio · mes</span>
                             <span class="dash-kpi-valor">Bs {{ number_format($mes['ticket'], 2, ',', '.') }}</span>
                             <span class="dash-kpi-nota">
-                                {{-- Sin ventas no hay promedio que dar: enseñar «Bs 0,00»
-                                     sin decir esto se lee como «se vende a cero». --}}
                                 @if ($mes['ventas'] === 0)
                                     Sin ventas todavía este mes
                                 @else
@@ -211,10 +157,9 @@
             </div>
         </div>
     </div>
-
-    {{-- ===================== Cifra del día + evolución ===================== --}}
     @endif
 
+    {{-- ===================== Cifra del día + evolución + Almacén ===================== --}}
     <div class="row g-4 mb-4">
         @if ($puedeVerReportes)
         <div class="col-xl-8">
@@ -262,12 +207,8 @@
                 </div>
             </div>
         </div>
-
         @endif
 
-        {{-- ===================== Estado del almacén ===================== --}}
-        {{-- Ocupa la fila entera cuando no hay indicadores al lado: media fila
-             vacía se lee como que algo no cargó. --}}
         <div class="{{ $puedeVerReportes ? 'col-xl-4' : 'col-12' }}">
             <div class="card dash-card h-100">
                 <div class="card-header">
@@ -304,21 +245,15 @@
 
     {{-- ===================== Últimas ventas + Más vendidos ===================== --}}
     {{--
-        Las dos tarjetas llevan importes y cada una va tras SU permiso: la lista
-        de ventas tras `ventas.ver`, el ranking tras `reportes.ver`. Antes solo
-        estaba condicionado el enlace «Ver todas», así que quien no podía entrar
-        al listado veía igualmente los totales de las últimas ventas en el
-        panel.
-
-        Cuando una de las dos se oculta, la otra ocupa el ancho entero en vez de
-        dejar media fila vacía.
+        Ahora van ANTES de Bajo mínimo: son la actividad reciente de la tienda,
+        y conviene verlas primero para contexto antes de la lista de reposición.
     --}}
     @php
         $columnasDeVentas = $puedeVerVentas && $puedeVerReportes ? 'col-xl-7' : 'col-12';
         $columnasDeTop = $puedeVerVentas && $puedeVerReportes ? 'col-xl-5' : 'col-12';
     @endphp
 
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
         @if ($puedeVerVentas)
         <div class="{{ $columnasDeVentas }}">
             <div class="card dash-card h-100">
@@ -376,10 +311,8 @@
                 </div>
             </div>
         </div>
-
         @endif
 
-        {{-- ===================== Más vendidos del mes ===================== --}}
         @if ($puedeVerReportes)
         <div class="{{ $columnasDeTop }}">
             <div class="card dash-card h-100">
@@ -400,5 +333,60 @@
             </div>
         </div>
         @endif
+    </div>
+
+    {{-- ===================== Bajo mínimo (con imagen) ===================== --}}
+    {{--
+        Bajo mínimo va al final: es la acción del día —reponer— pero el
+        contexto de las ventas y el ranking ayudan a priorizar.
+        Ahora incluye la imagen del producto para identificación visual rápida.
+    --}}
+    <div class="card dash-card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <h5 class="card-title mb-0">
+                    <span class="dash-card-header-icono dash-card-header-icono--almacen"><i class="ri-alert-line"></i></span>
+                    Bajo mínimo
+                </h5>
+                <small class="text-muted fs-13">Lo que toca reponer: {{ $bajoMinimo->count() }} {{ $bajoMinimo->count() === 1 ? 'producto' : 'productos' }}</small>
+            </div>
+            @can('stock.ver')
+                <a href="{{ route('stock.index') }}" class="dash-ver-todas">
+                    Ver stock <i class="ri-arrow-right-line"></i>
+                </a>
+            @endcan
+        </div>
+        <div class="card-body">
+            @forelse ($bajoMinimo as $producto)
+                <div class="dash-alerta-con-imagen" wire:key="minimo-{{ $producto->id }}">
+                    @if ($producto->imagen)
+                        <img src="{{ asset('storage/'.$producto->imagen) }}"
+                             alt="{{ $producto->nombre }}"
+                             class="dash-alerta-imagen"
+                             loading="lazy"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                        <div class="dash-alerta-imagen-placeholder" style="display:none;">
+                            <i class="ri-image-line"></i>
+                        </div>
+                    @else
+                        <div class="dash-alerta-imagen-placeholder">
+                            <i class="ri-image-line"></i>
+                        </div>
+                    @endif
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
+                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
+                    </div>
+                    <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
+                        {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
+                    </span>
+                </div>
+            @empty
+                <p class="dash-alerta-ok mb-0">
+                    <i class="ri-checkbox-circle-line"></i>
+                    Todo el catálogo está por encima de su mínimo.
+                </p>
+            @endforelse
+        </div>
     </div>
 </div>

@@ -72,6 +72,7 @@ class ReporteController extends Controller
                     'id' => $p->id,
                     'nombre' => $p->nombre,
                     'marca' => $p->marca?->nombre,
+                    'imagen' => $p->imagen ? asset('storage/'.$p->imagen) : null,
                     'disponibles' => (int) $p->disponibles,
                     'stock_minimo' => (int) $p->stock_minimo,
                     'agotado' => (int) $p->disponibles === 0,

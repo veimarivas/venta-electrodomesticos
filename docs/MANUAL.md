@@ -902,9 +902,11 @@ Tocar el aviso abre la ficha del producto.
 - Lo reciben quienes pueden **ver el stock**. El aviso no lleva importes, solo
   cuántas unidades quedan.
 
-> El listado de bajo mínimo sigue estando en el panel y en el resumen de la app.
-> El aviso no lo sustituye: el listado responde «¿qué está bajo?» y el aviso
-> «acaba de pasar esto».
+> El listado de bajo mínimo en el panel web y la app ahora muestra la **imagen
+> del producto** para identificación visual rápida. Las Últimas ventas y Más
+> vendidos están en la parte superior del dashboard, debajo de los indicadores
+> del período, para ver primero la actividad reciente antes de la lista de
+> reposición.
 
 ---
 
