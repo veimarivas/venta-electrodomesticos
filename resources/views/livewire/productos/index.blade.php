@@ -258,7 +258,7 @@
                                             <img src="{{ asset('storage/' . $producto->imagen) }}"
                                                 alt="{{ $producto->nombre }}">
                                         @else
-                                            <span class="avatar-title"><i class="ri-image-line"></i></span>
+                                            <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="{{ $producto->nombre }}" class="crud-imagen-sin">
                                         @endif
                                     </div>
                                 </td>
