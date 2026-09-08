@@ -1,5 +1,5 @@
 @props([
-    'filas' => [],       // [['nombre'=>, 'valor'=>, 'meta'=>?, 'formato'=>?], ...]
+    'filas' => [],       // [['nombre'=>, 'valor'=>, 'meta'=>?, 'formato'=>?, 'url'=>?], ...]
     'formato' => 'Bs ',
     'vacio' => 'Sin datos en este período.',
 ])
@@ -15,7 +15,11 @@
     @forelse ($filas as $fila)
         @php $ancho = max((float) $fila['valor'] / $maximo * 100, 1.5); @endphp
 
-        <div class="viz-barra-fila">
+        @if (! empty($fila['url']))
+            <a href="{{ $fila['url'] }}" class="viz-barra-fila viz-barra-enlace">
+        @else
+            <div class="viz-barra-fila">
+        @endif
             <span class="viz-barra-nombre">{{ $fila['nombre'] }}</span>
             {{-- Valor en la punta: es la etiqueta directa que hace que el
                  tooltip refuerce en vez de esconder el dato. --}}
@@ -36,7 +40,11 @@
             @if (! empty($fila['meta']))
                 <small class="viz-barra-meta">{{ $fila['meta'] }}</small>
             @endif
-        </div>
+        @if (! empty($fila['url']))
+            </a>
+        @else
+            </div>
+        @endif
     @empty
         <p class="text-muted text-center py-4 mb-0">{{ $vacio }}</p>
     @endforelse

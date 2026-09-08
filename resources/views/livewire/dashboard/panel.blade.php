@@ -53,7 +53,11 @@
         </div>
         <div class="card-body">
             @forelse ($bajoMinimo as $producto)
-                <div class="dash-alerta-con-imagen" wire:key="minimo-{{ $producto->id }}">
+                @can('unidades.ver')
+                    <a href="{{ route('dashboard.producto', $producto->id) }}" class="dash-alerta-con-imagen dash-alerta-enlace" wire:key="minimo-{{ $producto->id }}">
+                @else
+                    <div class="dash-alerta-con-imagen" wire:key="minimo-{{ $producto->id }}">
+                @endcan
                     @if ($producto->imagen)
                         <img src="{{ asset('storage/'.$producto->imagen) }}"
                              alt="{{ $producto->nombre }}"
@@ -75,7 +79,11 @@
                     <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
                         {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
                     </span>
-                </div>
+                @can('unidades.ver')
+                    </a>
+                @else
+                    </div>
+                @endcan
             @empty
                 <p class="dash-alerta-ok mb-0">
                     <i class="ri-checkbox-circle-line"></i>
@@ -109,7 +117,11 @@
 
                 <div class="card-body p-0 dash-ventas-lista">
                     @foreach ($enVivo as $venta)
-                        <div class="dash-venta esta-nueva" wire:key="vivo-{{ $venta['id'] }}">
+                        @can('ventas.ver')
+                            <a href="{{ route('ventas.show', $venta['id']) }}" class="dash-venta esta-nueva dash-venta-enlace" wire:key="vivo-{{ $venta['id'] }}">
+                        @else
+                            <div class="dash-venta esta-nueva" wire:key="vivo-{{ $venta['id'] }}">
+                        @endcan
                             <span class="dash-venta-icono dash-venta-icono--vivo"><i class="ri-shopping-bag-3-line"></i></span>
                             <div class="min-w-0 flex-grow-1">
                                 <div class="dash-venta-codigo">{{ $venta['codigo'] }}</div>
@@ -120,11 +132,19 @@
                             <span class="dash-venta-monto">
                                 Bs {{ number_format($venta['total'], 2, ',', '.') }}
                             </span>
-                        </div>
+                        @can('ventas.ver')
+                            </a>
+                        @else
+                            </div>
+                        @endcan
                     @endforeach
 
                     @forelse ($this->ultimasVentas as $venta)
-                        <div class="dash-venta" wire:key="venta-{{ $venta->id }}">
+                        @can('ventas.ver')
+                            <a href="{{ route('ventas.show', $venta->id) }}" class="dash-venta dash-venta-enlace" wire:key="venta-{{ $venta->id }}">
+                        @else
+                            <div class="dash-venta" wire:key="venta-{{ $venta->id }}">
+                        @endcan
                             <span class="dash-venta-icono dash-venta-icono--normal"><i class="ri-bill-line"></i></span>
                             <div class="min-w-0 flex-grow-1">
                                 <div class="dash-venta-codigo">{{ $venta->codigo }}</div>
@@ -137,7 +157,11 @@
                             <span class="dash-venta-monto">
                                 Bs {{ number_format((float) $venta->total, 2, ',', '.') }}
                             </span>
-                        </div>
+                        @can('ventas.ver')
+                            </a>
+                        @else
+                            </div>
+                        @endcan
                     @empty
                         @if ($enVivo === [])
                             <div class="text-center text-muted py-5">
@@ -166,6 +190,7 @@
                         'nombre' => $p->nombre,
                         'valor' => (float) $p->ingreso,
                         'meta' => $p->unidades.' '.($p->unidades == 1 ? 'unidad' : 'unidades'),
+                        'url' => $puedeVerUnidades ? route('dashboard.producto', $p->id) : null,
                     ])->all()" vacio="Sin ventas este mes." />
                 </div>
             </div>

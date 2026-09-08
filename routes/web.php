@@ -39,6 +39,15 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/buscar/producto/{producto}', [SearchController::class, 'producto'])
         ->whereNumber('producto')->name('search.producto');
 
+    // Salto desde el dashboard al inventario de un producto específico.
+    Route::get('/dashboard/producto/{producto}', function (\App\Models\Producto $producto) {
+        abort_unless(auth()->user()?->can('unidades.ver'), 403);
+
+        session()->put('producto_activo', $producto->id);
+
+        return redirect()->route('inventario.unidades.index');
+    })->whereNumber('producto')->middleware('auth', 'active')->name('dashboard.producto');
+
     Route::get('/perfil', [ProfileController::class, 'edit'])->name('profile.edit');
 
     // Cada CRUD vive dentro de su componente Livewire, por eso una sola ruta.

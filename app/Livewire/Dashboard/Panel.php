@@ -136,6 +136,7 @@ class Panel extends Component
             'puedeVerReportes' => auth()->user()?->can('reportes.ver') ?? false,
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeVerVentas' => auth()->user()?->can('ventas.ver') ?? false,
+            'puedeVerUnidades' => auth()->user()?->can('unidades.ver') ?? false,
             'unidadesEnStock' => Unidad::disponibles()->count(),
         ]);
     }

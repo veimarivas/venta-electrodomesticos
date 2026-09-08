@@ -393,6 +393,58 @@
     font-weight: 500;
 }
 
+// Estilos para enlaces clickeables en el dashboard
+.dash-alerta-enlace {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color .16s ease-out, transform .12s ease-out;
+
+    &:hover {
+        background: rgba(37, 73, 112, .04);
+        border-radius: .5rem;
+        margin: 0 -.5rem;
+        padding-left: .5rem;
+        padding-right: .5rem;
+    }
+
+    &:active {
+        transform: scale(.99);
+    }
+}
+
+.dash-venta-enlace {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .75rem 1.25rem;
+    border-bottom: 1px solid var(--marca-linea);
+    transition: background-color .16s ease-out;
+
+    &:last-child { border-bottom: 0; }
+    &:hover { background: rgba(37, 73, 112, .04); }
+    &:active { background: rgba(37, 73, 112, .07); }
+}
+
+.viz-barra-enlace {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .4rem .5rem;
+    margin: 0 -.5rem;
+    border-radius: .375rem;
+    transition: background-color .16s ease-out;
+
+    &:hover { background: rgba(37, 73, 112, .04); }
+    &:active { background: rgba(37, 73, 112, .07); }
+}
+
 // -----------------------------------------------------------------------------
 // Lista de últimas ventas
 // -----------------------------------------------------------------------------
