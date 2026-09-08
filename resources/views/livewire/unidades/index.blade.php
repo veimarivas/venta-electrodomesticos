@@ -85,9 +85,7 @@
                                     @if ($producto->imagen)
                                         <img src="{{ asset('storage/'.$producto->imagen) }}" alt="{{ $producto->nombre }}">
                                     @else
-                                        <span class="producto-ficha-imagen-placeholder">
-                                            <i class="ri-box-3-line"></i>
-                                        </span>
+                                        <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="{{ $producto->nombre }}" class="producto-ficha-imagen-sin">
                                     @endif
                                 </div>
                                 <div class="min-w-0">
@@ -443,12 +441,21 @@
                                 </td>
 
                                 <td>
-                                    <h6 class="mb-0">{{ $unidad->producto->nombre ?? '—' }}</h6>
-                                    @if ($unidad->producto)
-                                        <small class="text-muted">
-
-                                        </small>
-                                    @endif
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="unidad-imagen-mini">
+                                            @if ($unidad->producto?->imagen)
+                                                <img src="{{ asset('storage/'.$unidad->producto->imagen) }}" alt="{{ $unidad->producto->nombre }}">
+                                            @else
+                                                <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="{{ $unidad->producto->nombre ?? 'Producto' }}" class="unidad-imagen-mini-sin">
+                                            @endif
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h6 class="mb-0 text-truncate" style="max-width: 14rem">{{ $unidad->producto->nombre ?? '—' }}</h6>
+                                            @if ($unidad->producto?->marca)
+                                                <small class="text-muted">{{ $unidad->producto->marca->nombre }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td>

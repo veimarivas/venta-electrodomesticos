@@ -2664,6 +2664,28 @@
         font-family: var(--vz-font-family-monospace, monospace);
     }
 
+    // Imagen mini del producto en la tabla de unidades
+    .unidad-imagen-mini {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: .4rem;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: #f3f4f6;
+        border: 1px solid #e5e7eb;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+    .unidad-imagen-mini-sin {
+        object-fit: contain !important;
+        opacity: .6;
+        padding: .2rem;
+    }
+
     // Estado como pill con punto, mismo lenguaje que el resto del catálogo.
     .unidad-estado {
         display: inline-flex;
@@ -3009,6 +3031,7 @@
     .producto-ficha-header { position: relative; padding: 1.5rem 1.75rem; background: linear-gradient(135deg, var(--marca-suave), var(--marca-superficie)); border-bottom: 1px solid var(--marca-linea); overflow: hidden; }
     .producto-ficha-header-glow { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(18rem 10rem at 100% -3rem, rgba(37, 73, 112,.06), transparent 60%), radial-gradient(12rem 8rem at -2rem 100%, rgba(197, 161, 98,.04), transparent 70%); }
     .producto-ficha-imagen { width: 5rem; height: 5rem; border-radius: .75rem; border: 1px solid #e9edf2; background: var(--marca-superficie); box-shadow: 0 .35rem 1rem rgba(10, 24, 43,.06); overflow: hidden; flex-shrink: 0; transition: transform .2s, box-shadow .2s; img { width: 100%; height: 100%; object-fit: contain; padding: .35rem; } &:hover { transform: scale(1.04); box-shadow: 0 .5rem 1.5rem rgba(10, 24, 43,.1); } }
+    .producto-ficha-imagen-sin { opacity: .65; padding: .5rem !important; }
     .producto-ficha-imagen-placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: #a7b1bf; font-size: 1.6rem; background: var(--marca-suave); }
     .producto-ficha-ruta { display: inline-flex; align-items: center; gap: .35rem; color: var(--marca-apagado); font-size: .72rem; font-weight: 500; letter-spacing: .02em; margin-bottom: .35rem; i { color: #254970; font-size: .8rem; } }
     .producto-ficha-nombre { color: var(--marca-tinta); font-weight: 700; letter-spacing: -.02em; line-height: 1.25; margin-bottom: .5rem; }
