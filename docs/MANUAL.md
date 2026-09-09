@@ -597,10 +597,10 @@ personas, compras y avisos), **vender desde el mostrador** escaneando la
 etiqueta del aparato, y **mantener los datos**: catálogo, personal y clientes se
 registran y se editan desde el teléfono.
 
-Se queda solo en el panel web: **registrar órdenes de compra**, que se hacen con
-las facturas delante. La papelera de productos y categorías (restaurar lo
-archivado) ya está en la app, y la de clientes vive en la ficha del propio
-cliente.
+Se queda solo en el panel web: **la papelera de clientes** (restaurar lo
+archivado se hace desde la ficha del propio cliente). Las órdenes de compra,
+en cambio, ya se registran desde el teléfono con las facturas delante (§5 y
+§10).
 
 ### Mi perfil
 
@@ -670,21 +670,26 @@ cuenta puede ver:
 - **Clientes** — búsqueda por código, nombre o carnet, cuánto ha comprado cada
   uno y sus últimas compras, con enlace al detalle de cada venta.
 
-Y en **Compras**, otras dos:
+Y en **Compras**, tres:
 
 - **Órdenes** — búsqueda por código, factura o proveedor, y filtro por estado
-  (*Borradores · Recepcionadas · Anuladas*). Al abrir una se ve el desglose de
-  importes, **cuánto de flete y gastos se reparte entre los aparatos**, y cada
-  línea con su costo real, su precio de venta y su margen por pieza. Si ya está
-  recepcionada, se pueden desplegar los aparatos que entraron con ella.
+  (*Pendientes · Recepcionadas · Anuladas*). Al abrir una se ve el desglose de
+  importes, **cuánto de flete y gastos se reparte entre los aparatos**, cada
+  línea con su costo real, su precio de venta y su margen por pieza, los pagos
+  hechos al proveedor y, si ya está recepcionada, los aparatos que entraron con
+  ella.
+- **Pagos** — el historial de pagos a proveedores, con filtros de
+  *hoy / semana / mes / todas* y el total del período.
 - **Proveedores** — a quién llamar, cuánto se le ha comprado y sus últimas
   órdenes. Tocar uno filtra las órdenes por él.
 
-El **registro** de compras sigue siendo cosa del panel: se hace con las facturas
-delante. Desde el teléfono, en la ficha de una compra en borrador aparece el
-botón **Verificar mercadería**, que registra lo que llegó y genera las unidades
-del almacén, y el botón **Editar** para corregir la orden —proveedor, fecha,
-factura, total y líneas— mientras todavía no se verificó ni tiene pagos.
+El **registro** de compras también se hace desde el teléfono: en *Compras →
+Órdenes*, el botón **+** abre el alta con proveedor, fecha, factura, total y
+líneas, con el cuadre al centavo del panel. En la ficha de una compra en
+borrador aparece además el botón **Verificar mercadería**, que registra lo que
+llegó y genera las unidades del almacén, y el botón **Editar** para corregir la
+orden —proveedor, fecha, factura, total y líneas— mientras todavía no se
+verificó ni tiene pagos.
 
 **La mercadería puede llegar por tandas.** Si la compra traía 11 aparatos y hoy
 solo entraron 7, se registran los 7 (sus seriales, o «cuántas llegaron» para los
@@ -822,8 +827,11 @@ menú de los tres puntos permite editarlo o eliminarlo.
 > caso es **desactivarlo**, editándolo y apagando el interruptor «Activo»: sale
 > del listado y conserva todo su historial.
 
-El **registro de órdenes de compra** sigue en el panel: se hace con las facturas
-delante y su recepción genera las unidades del almacén.
+El **registro de órdenes de compra** también está en la app: en *Compras →
+Órdenes* el botón **+** abre el alta con proveedor, fecha, factura, total y
+líneas (el cuadre al centavo del panel), y desde la ficha de cada orden se
+editan las pendientes, se verifica la mercadería y se registran los **pagos al
+proveedor** con su boucher.
 
 ### Personal y clientes desde el teléfono
 

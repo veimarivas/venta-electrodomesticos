@@ -283,8 +283,9 @@ tres:
 | ✅ | **Editar especificaciones del producto** | El formulario del teléfono pasó de conservarlas a editarlas: una fila por característica, mismo formato «clave: valor» que guarda la base. El backend ya lo soportaba. |
 | ✅ | **Papelera desde la app** | Chip «Papelera» en los listados de productos y categorías: lista los archivados (`solo_eliminados`) y los restaura con `POST /…/restaurar` (`productos.editar` / `categorias.editar`). |
 
-El alta de una compra sigue siendo cosa del panel —se hace con las facturas
-delante—; la edición y la recepción, en cambio, ya trabajan desde el mostrador.
+El alta de una compra también trabaja desde el teléfono (v1.6.0): la orden se
+registra con su proveedor y sus líneas, con el cuadre al centavo del panel; la
+edición, la recepción y los pagos completan el módulo desde el mostrador.
 
 ---
 
