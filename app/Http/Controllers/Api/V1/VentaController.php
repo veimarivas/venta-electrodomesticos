@@ -34,7 +34,7 @@ class VentaController extends Controller
         ]);
 
         $ventas = Venta::query()
-            ->with(['cliente.persona', 'user'])
+            ->with(['cliente.persona', 'user', 'detalles.producto.marca'])
             ->withCount('detalles')
             ->buscar($datos['buscar'] ?? null)
             ->when(isset($datos['desde']), fn ($q) => $q->whereDate('vendida_en', '>=', $datos['desde']))

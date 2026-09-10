@@ -36,6 +36,7 @@ class Vitrina
         $recomendados = Producto::query()
             ->with(['categoria', 'marca'])
             ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
+            ->withCount(['unidades as vendidas' => fn ($q) => $q->where('estado', 'vendido')])
             ->whereIn('id', $ordenDeIds)
             ->get()
             // `whereIn` no promete el orden del ranking: se reordena aquí.
@@ -50,6 +51,7 @@ class Vitrina
             ->with(['productos' => fn ($q) => $q->activos()
                 ->with(['categoria', 'marca'])
                 ->withCount(['unidades as disponibles' => fn ($u) => $u->disponibles()])
+                ->withCount(['unidades as vendidas' => fn ($u) => $u->where('estado', 'vendido')])
                 ->orderBy('nombre')])
             ->orderBy('nombre')
             ->get()

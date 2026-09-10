@@ -65,6 +65,11 @@ class ProductoResource extends JsonResource
             'agotado' => $disponibles === 0,
             'bajo_minimo' => $this->stock_minimo > 0 && $disponibles < $this->stock_minimo,
 
+            // Cuántos aparatos de este modelo se han vendido. Va siempre: en el
+            // inventario es lo que se ve junto al stock, y en el catálogo no
+            // estorba (0 en un producto que nunca salió).
+            'vendidos' => (int) $this->vendidas,
+
             // ---- Solo en la ficha ------------------------------------------
             'descripcion' => $this->when($this->detalle, fn () => $this->descripcion),
             'especificaciones' => $this->when(

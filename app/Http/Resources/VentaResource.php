@@ -56,6 +56,19 @@ class VentaResource extends JsonResource
             ]),
 
             'detalles' => VentaDetalleResource::collection($this->whenLoaded('detalles')),
+
+            // Qué se vendió, para el listado de la app: nombre y marca de cada
+            // producto, en el orden en que se cargó la caja. La marca viaja
+            // porque es lo que distingue dos aparatos con el mismo nombre.
+            'productos_resumen' => $this->relationLoaded('detalles')
+                ? $this->detalles
+                    ->map(fn ($d) => [
+                        'producto' => $d->producto?->nombre,
+                        'marca' => $d->producto?->marca?->nombre,
+                        'cantidad' => 1,
+                    ])
+                    ->values()
+                : [],
         ];
     }
 }

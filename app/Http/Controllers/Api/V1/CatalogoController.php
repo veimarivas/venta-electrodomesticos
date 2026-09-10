@@ -225,6 +225,8 @@ class CatalogoController extends Controller
             ->with(['categoria', 'marca'])
             // Unidades listas para vender: solo las que están `en_stock`. Las
             // reservadas, vendidas o dañadas no cuentan como existencias.
-            ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()]);
+            ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
+            // Y las vendidas, para el inventario: cuánto salió de cada modelo.
+            ->withCount(['unidades as vendidas' => fn ($q) => $q->where('estado', 'vendido')]);
     }
 }

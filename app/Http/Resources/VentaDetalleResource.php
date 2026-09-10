@@ -22,8 +22,18 @@ class VentaDetalleResource extends JsonResource
         return [
             'id' => $this->id,
             'producto' => $this->producto?->nombre,
-            'codigo_interno' => $this->unidad?->codigo_interno,
-            'serial' => $this->unidad?->serial,
+            // La unidad puede no estar cargada en el listado de ventas (solo se
+            // pide el producto con su marca); en la ficha sí viaja. El closure
+            // evita tocar la relación si no vino: accederla lanzaría un
+            // LazyLoadingViolation.
+            'codigo_interno' => $this->when(
+                $this->relationLoaded('unidad'),
+                fn () => $this->unidad?->codigo_interno
+            ),
+            'serial' => $this->when(
+                $this->relationLoaded('unidad'),
+                fn () => $this->unidad?->serial
+            ),
             'precio_unitario' => (float) $this->precio_unitario,
             'descuento' => (float) $this->descuento,
             'importe' => (float) $this->precio_unitario - (float) $this->descuento,

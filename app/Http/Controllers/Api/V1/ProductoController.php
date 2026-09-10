@@ -75,6 +75,7 @@ class ProductoController extends Controller
         return Producto::query()
             ->with(['categoria', 'marca', 'especificaciones'])
             ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
+            ->withCount(['unidades as vendidas' => fn ($q) => $q->where('estado', 'vendido')])
             ->findOrFail($id);
     }
 
