@@ -71,7 +71,7 @@ class Index extends Component
      * La compra se guarda de una sola vez —cabecera, líneas y unidades— así
      * que las líneas no existen en base mientras se está armando el formulario.
      *
-     * @var array<int, array{producto_id: int, cantidad: string, costo_total: string}>
+     * @var array<int, array{producto_id: int, cantidad: string, costo_unitario: string}>
      */
     public array $lineas = [];
 
@@ -135,7 +135,7 @@ class Index extends Component
             'lineas' => ['required', 'array', 'min:1'],
             'lineas.*.producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
             'lineas.*.cantidad' => ['required', 'integer', 'min:1', 'max:9999'],
-            'lineas.*.costo_total' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            'lineas.*.costo_unitario' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
         ];
     }
 
@@ -154,8 +154,8 @@ class Index extends Component
             'lineas.min' => 'Agrega al menos un producto a la compra.',
             'lineas.*.cantidad.required' => 'Indica cuántas unidades se compraron.',
             'lineas.*.cantidad.min' => 'La cantidad debe ser al menos 1.',
-            'lineas.*.costo_total.required' => 'Indica cuánto se pagó por este producto.',
-            'lineas.*.costo_total.min' => 'Lo pagado por el producto debe ser mayor a cero.',
+            'lineas.*.costo_unitario.required' => 'Indica el costo unitario de este producto.',
+            'lineas.*.costo_unitario.min' => 'El costo unitario debe ser mayor a cero.',
         ];
     }
 
@@ -171,7 +171,7 @@ class Index extends Component
             'total_pagado' => 'total pagado',
             'lineas' => 'productos',
             'lineas.*.cantidad' => 'cantidad',
-            'lineas.*.costo_total' => 'pagado por el producto',
+            'lineas.*.costo_unitario' => 'costo unitario',
         ];
     }
 
@@ -180,6 +180,12 @@ class Index extends Component
         // Las líneas llegan como "lineas.0.cantidad", que no está en la lista
         // pero sí tiene regla con comodín.
         if (in_array($campo, self::CAMPOS_CABECERA, true) || str_starts_with($campo, 'lineas.')) {
+            // Actualizar total_pagado automáticamente cuando cambian las líneas
+            if (str_starts_with($campo, 'lineas.')) {
+                // Invalidar las propiedades computadas para que se recalcule el total
+                unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
+                $this->total_pagado = ProrrateoDeGastos::aDecimal($this->asignadoEnCentavos);
+            }
             $this->validateOnly($campo, $this->rules());
         }
     }
@@ -246,40 +252,47 @@ class Index extends Component
     public function asignadoEnCentavos(): int
     {
         return collect($this->lineas)->sum(function (array $linea): int {
-            $importe = $linea['costo_total'] ?? '';
+            $costoUnitario = $linea['costo_unitario'] ?? '';
+            $cantidad = $linea['cantidad'] ?? '1';
 
-            return is_numeric($importe) ? ProrrateoDeGastos::aCentavos($importe) : 0;
+            if (! is_numeric($costoUnitario) || ! is_numeric($cantidad)) {
+                return 0;
+            }
+
+            $costoUnitarioCentavos = ProrrateoDeGastos::aCentavos($costoUnitario);
+            $cantidadEntera = (int) $cantidad;
+
+            return $costoUnitarioCentavos * $cantidadEntera;
         });
     }
 
-    /** Total pagado de la cabecera, en centavos. */
+    /** Total pagado de la cabecera, en centavos (calculado automáticamente). */
     #[Computed]
     public function pagadoEnCentavos(): int
     {
-        return is_numeric($this->total_pagado)
-            ? ProrrateoDeGastos::aCentavos($this->total_pagado)
-            : 0;
+        return $this->asignadoEnCentavos;
     }
 
     /**
      * Lo que falta por repartir entre los productos. Negativo significa que se
-     * asignó de más.
+     * asignó de más. Ahora siempre es 0 porque el total pagado se calcula
+     * a partir de los productos.
      */
     #[Computed]
     public function saldoEnCentavos(): int
     {
-        return $this->pagadoEnCentavos - $this->asignadoEnCentavos;
+        return 0;
     }
 
     /**
-     * ¿El detalle cuadra con el total pagado? Tiene que ser exacto: una compra
-     * cuyo detalle no suma lo pagado deja un costo que nadie carga, y el
-     * inventario dejaría de valer lo que realmente costó.
+     * ¿El detalle cuadra con el total pagado? Ahora siempre cuadra porque el
+     * total pagado se calcula a partir de los productos. Solo necesita que
+     * haya al menos un producto y que los costos unitarios sean válidos.
      */
     #[Computed]
     public function cuadra(): bool
     {
-        return $this->lineas !== [] && $this->pagadoEnCentavos > 0 && $this->saldoEnCentavos === 0;
+        return $this->lineas !== [] && $this->pagadoEnCentavos > 0;
     }
 
     /** ¿Se puede registrar ya la compra? */
@@ -683,8 +696,8 @@ class Index extends Component
 
     /**
      * Agrega el producto elegido en el selector como una línea nueva.
-     * La cantidad arranca en 1 y el importe vacío: son los dos datos que hay
-     * que copiar de la factura.
+     * La cantidad arranca en 1 y el costo unitario vacío: son los dos datos
+     * que hay que copiar de la factura.
      */
     public function agregarLinea(int $productoId): void
     {
@@ -701,8 +714,11 @@ class Index extends Component
         $this->lineas[] = [
             'producto_id' => $producto->id,
             'cantidad' => '1',
-            'costo_total' => '',
+            'costo_unitario' => '',
         ];
+
+        // Invalidar las propiedades computadas para que se recalcule el total
+        unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
 
         // Los filtros del selector se limpian para buscar el siguiente producto
         // desde cero, que es lo que se hace al copiar una factura.
@@ -718,6 +734,12 @@ class Index extends Component
         // inputs y el usuario ve importes en la fila equivocada.
         $this->lineas = array_values($this->lineas);
 
+        // Invalidar las propiedades computadas para que se recalcule el total
+        unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
+
+        // Recalcular total_pagado
+        $this->total_pagado = ProrrateoDeGastos::aDecimal($this->asignadoEnCentavos);
+
         $this->resetValidation('lineas');
     }
 
@@ -729,6 +751,30 @@ class Index extends Component
     private function precioDeVentaDe(Producto $producto): string
     {
         return (string) $producto->precio_venta;
+    }
+
+    /**
+     * Abre el modal de confirmación antes de registrar la compra. Ahí se ve
+     * el detalle completo de lo que se va a crear y se confirma en el último
+     * paso; solo al confirmar se ejecuta guardar().
+     */
+    public function abrirConfirmacion(): void
+    {
+        $this->autorizar('compras.crear');
+
+        // El botón solo se habilita cuando la compra es válida, pero un
+        // componente Livewire es un endpoint invocable: se revalida aquí.
+        if (! $this->compraValida) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Completa los datos y los costos unitarios antes de confirmar.');
+
+            return;
+        }
+
+        // Calcular total_pagado para que el detalle muestre el importe correcto.
+        unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
+        $this->total_pagado = ProrrateoDeGastos::aDecimal($this->asignadoEnCentavos);
+
+        $this->dispatch('abrir-modal-confirmar-compra');
     }
 
     /**
@@ -747,6 +793,10 @@ class Index extends Component
         if ($this->proveedorForzado !== null) {
             $this->proveedor_id = (string) $this->proveedorForzado;
         }
+
+        // Calcular total_pagado a partir de las líneas antes de validar
+        unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
+        $this->total_pagado = ProrrateoDeGastos::aDecimal($this->asignadoEnCentavos);
 
         $datos = $this->validate($this->rules());
 
@@ -788,16 +838,15 @@ class Index extends Component
                 foreach ($datos['lineas'] as $linea) {
                     $producto = $productos[$linea['producto_id']];
                     $cantidad = (int) $linea['cantidad'];
-                    $pagado = ProrrateoDeGastos::aCentavos($linea['costo_total']);
+                    $costoUnitarioCentavos = ProrrateoDeGastos::aCentavos($linea['costo_unitario']);
+                    $subtotalCentavos = $costoUnitarioCentavos * $cantidad;
 
                     CompraDetalle::create([
                         'compra_id' => $compra->id,
                         'producto_id' => $producto->id,
                         'cantidad' => $cantidad,
-                        // Promedio, solo de referencia: el reparto exacto al
-                        // centavo lo hace RecepcionDeCompra sobre cada unidad.
-                        'costo_unitario' => ProrrateoDeGastos::aDecimal(intdiv($pagado, $cantidad)),
-                        'subtotal' => ProrrateoDeGastos::aDecimal($pagado),
+                        'costo_unitario' => $linea['costo_unitario'],
+                        'subtotal' => ProrrateoDeGastos::aDecimal($subtotalCentavos),
                         'precio_venta' => $this->precioDeVentaDe($producto),
                     ]);
                 }
@@ -814,6 +863,7 @@ class Index extends Component
         }
 
         $this->limpiarCabecera();
+        $this->dispatch('cerrar-modal-confirmar-compra');
         $this->dispatch('cerrar-modal-compra');
         $this->dispatch('toast', tipo: 'success', mensaje: "Compra {$compra->codigo} registrada en estado pendiente. Recuerda verificarla y recepcionarla cuando llegue.");
 
@@ -919,6 +969,9 @@ class Index extends Component
             ...self::CAMPOS_CABECERA,
             'compraId', 'buscarProducto', 'categoriaLinea', 'marcaLinea',
         ]);
+
+        // Invalidar las propiedades computadas
+        unset($this->asignadoEnCentavos, $this->pagadoEnCentavos, $this->cuadra, $this->compraValida, $this->formularioValido);
 
         // Si se llegó con ?proveedor=, el contexto forzado debe sobrevivir
         // a cada apertura del modal y al registro exitoso.

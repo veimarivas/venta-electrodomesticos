@@ -58,6 +58,7 @@ class CompraCrudTest extends TestCase
     private function compraLista(string $totalPagado = '1000', int $cantidad = 4): array
     {
         $producto = Producto::factory()->create(['activo' => true]);
+        $costoUnitario = (string) ($totalPagado / $cantidad);
 
         $componente = Livewire::actingAs($this->admin())
             ->test(Index::class)
@@ -65,7 +66,7 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => $totalPagado]))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', (string) $cantidad)
-            ->set('lineas.0.costo_total', $totalPagado);
+            ->set('lineas.0.costo_unitario', $costoUnitario);
 
         return [$componente, $producto];
     }
@@ -153,7 +154,7 @@ class CompraCrudTest extends TestCase
 
     // ---- Cuadre con el total pagado ---------------------------------------
 
-    public function test_no_se_registra_si_el_detalle_no_suma_el_total_pagado(): void
+    public function test_no_se_registra_si_el_costo_unitario_es_invalido(): void
     {
         $producto = Producto::factory()->create(['activo' => true]);
 
@@ -163,17 +164,17 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '1000']))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', '2')
-            // Falta asignar 200: dejaría un costo que no carga nadie.
-            ->set('lineas.0.costo_total', '800')
+            // Costo unitario vacío: no se puede calcular el total.
+            ->set('lineas.0.costo_unitario', '')
             ->assertSet('cuadra', false)
             ->assertSet('compraValida', false)
             ->call('guardar')
-            ->assertHasErrors('total_pagado');
+            ->assertHasErrors('lineas.0.costo_unitario');
 
         $this->assertSame(0, Compra::count());
     }
 
-    public function test_no_se_puede_asignar_mas_que_el_total_pagado(): void
+    public function test_el_total_pagado_se_calcula_automaticamente(): void
     {
         $producto = Producto::factory()->create(['activo' => true]);
 
@@ -183,16 +184,18 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '1000']))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', '2')
-            ->set('lineas.0.costo_total', '1200')
-            ->assertSet('saldoEnCentavos', -20000)
-            ->assertSet('cuadra', false)
+            ->set('lineas.0.costo_unitario', '600')
+            // Total pagado = 600 * 2 = 1200
+            ->assertSet('total_pagado', '1200.00')
+            ->assertSet('cuadra', true)
             ->call('guardar')
-            ->assertHasErrors('total_pagado');
+            ->assertHasNoErrors();
 
-        $this->assertSame(0, Compra::count());
+        $compra = Compra::first();
+        $this->assertSame('1200.00', $compra->total);
     }
 
-    public function test_el_saldo_pendiente_se_calcula_en_vivo(): void
+    public function test_el_total_pagado_se_actualiza_al_agregar_productos(): void
     {
         $tv = Producto::factory()->create(['activo' => true]);
         $lavadora = Producto::factory()->create(['activo' => true]);
@@ -203,14 +206,15 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '50000']))
             ->call('agregarLinea', $tv->id)
             ->set('lineas.0.cantidad', '10')
-            ->set('lineas.0.costo_total', '35000')
-            // Con una sola línea todavía faltan 15.000.
-            ->assertSet('saldoEnCentavos', 1500000)
-            ->assertSet('cuadra', false)
+            ->set('lineas.0.costo_unitario', '3500')
+            // Total pagado = 3500 * 10 = 35000
+            ->assertSet('total_pagado', '35000.00')
+            ->assertSet('cuadra', true)
             ->call('agregarLinea', $lavadora->id)
             ->set('lineas.1.cantidad', '10')
-            ->set('lineas.1.costo_total', '15000')
-            ->assertSet('saldoEnCentavos', 0)
+            ->set('lineas.1.costo_unitario', '1500')
+            // Total pagado = 35000 + (1500 * 10) = 50000
+            ->assertSet('total_pagado', '50000.00')
             ->assertSet('cuadra', true);
     }
 
@@ -226,10 +230,10 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '50000']))
             ->call('agregarLinea', $tv->id)
             ->set('lineas.0.cantidad', '10')
-            ->set('lineas.0.costo_total', '35000')
+            ->set('lineas.0.costo_unitario', '3500')
             ->call('agregarLinea', $lavadora->id)
             ->set('lineas.1.cantidad', '10')
-            ->set('lineas.1.costo_total', '15000')
+            ->set('lineas.1.costo_unitario', '1500')
             ->call('guardar')
             ->assertHasNoErrors();
 
@@ -260,7 +264,7 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '1000']))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', '2')
-            ->set('lineas.0.costo_total', '1000')
+            ->set('lineas.0.costo_unitario', '500')
             ->assertSet('cuadra', true)
             ->call('quitarLinea', 0)
             ->assertCount('lineas', 0)
@@ -322,7 +326,7 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '3300']))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', '3')
-            ->set('lineas.0.costo_total', '3300')
+            ->set('lineas.0.costo_unitario', '1100')
             ->call('guardar')
             ->assertHasNoErrors();
 
@@ -368,7 +372,7 @@ class CompraCrudTest extends TestCase
             ->set($this->cabeceraValida(['total_pagado' => '1100']))
             ->call('agregarLinea', $producto->id)
             ->set('lineas.0.cantidad', '1')
-            ->set('lineas.0.costo_total', '1100')
+            ->set('lineas.0.costo_unitario', '1100')
             ->call('guardar')
             ->assertHasNoErrors();
 

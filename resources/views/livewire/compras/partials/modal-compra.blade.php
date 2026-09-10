@@ -22,7 +22,7 @@
                 <button type="button" class="btn-close modal-crud-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
 
-            <form wire:submit="guardar" autocomplete="off">
+            <form wire:submit="abrirConfirmacion" autocomplete="off">
                 <div class="modal-body modal-crud-body p-4">
 
                     {{-- ---------- 1. Datos de la compra ---------- --}}
@@ -98,19 +98,15 @@
 
                         <div class="col-md-3">
                             <label for="c-total" class="form-label">
-                                Total pagado <span class="text-danger">*</span>
+                                Total pagado <span class="text-muted fw-normal fs-12">(calculado)</span>
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-end-0">Bs</span>
                                 <input type="number" step="0.01" min="0.01" id="c-total"
-                                    wire:model.live.debounce.500ms="total_pagado"
-                                    class="form-control border-start-0 ps-0 @error('total_pagado') is-invalid @enderror"
-                                    placeholder="0.00">
-                                @error('total_pagado')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                    value="{{ $this->total_pagado }}"
+                                    class="form-control border-start-0 ps-0 bg-light" readonly>
                             </div>
-                            <div class="form-text">Lo que se pagó al proveedor por todo.</div>
+                            <div class="form-text">Se calcula automáticamente según los productos.</div>
                         </div>
                     </div>
 
@@ -207,8 +203,8 @@
                                     <tr class="text-uppercase fs-11 text-muted">
                                         <th scope="col">Producto</th>
                                         <th scope="col" style="width: 7rem">Unidades</th>
-                                        <th scope="col" style="width: 10rem">Pagado</th>
-                                        <th scope="col" class="text-end" style="width: 9rem">Costo unitario</th>
+                                        <th scope="col" style="width: 10rem">Costo unitario</th>
+                                        <th scope="col" class="text-end" style="width: 9rem">Total</th>
                                         <th scope="col" class="text-end" style="width: 9rem">Precio venta</th>
                                         <th scope="col" style="width: 3rem"></th>
                                     </tr>
@@ -218,7 +214,8 @@
                                         @php
                                             $p = $this->productosDeLineas[$linea['producto_id']] ?? null;
                                             $cant = (int) ($linea['cantidad'] ?? 0);
-                                            $pagado = is_numeric($linea['costo_total'] ?? '') ? (float) $linea['costo_total'] : 0;
+                                            $costoUnitario = is_numeric($linea['costo_unitario'] ?? '') ? (float) $linea['costo_unitario'] : 0;
+                                            $totalLinea = $costoUnitario * $cant;
                                         @endphp
                                         <tr wire:key="linea-{{ $indice }}-{{ $linea['producto_id'] }}">
                                             <td>
@@ -239,17 +236,17 @@
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-light">Bs</span>
                                                     <input type="number" step="0.01" min="0.01"
-                                                        wire:model.live.debounce.500ms="lineas.{{ $indice }}.costo_total"
-                                                        class="form-control @error('lineas.'.$indice.'.costo_total') is-invalid @enderror"
+                                                        wire:model.live.debounce.500ms="lineas.{{ $indice }}.costo_unitario"
+                                                        class="form-control @error('lineas.'.$indice.'.costo_unitario') is-invalid @enderror"
                                                         placeholder="0.00"
-                                                        aria-label="Total pagado por {{ $p?->nombre }}">
+                                                        aria-label="Costo unitario de {{ $p?->nombre }}">
                                                 </div>
                                             </td>
 
                                             <td class="text-end font-monospace fs-13">
-                                                {{-- Calculado: lo pagado ÷ unidades. No se teclea. --}}
-                                                @if ($cant > 0 && $pagado > 0)
-                                                    Bs {{ number_format($pagado / $cant, 2, ',', '.') }}
+                                                {{-- Calculado: costo unitario × unidades. No se teclea. --}}
+                                                @if ($cant > 0 && $costoUnitario > 0)
+                                                    Bs {{ number_format($totalLinea, 2, ',', '.') }}
                                                 @else
                                                     <span class="text-muted">—</span>
                                                 @endif
@@ -275,40 +272,26 @@
                         </div>
                     @endif
 
-                    {{-- ---------- 4. Cuadre en vivo ---------- --}}
+                    {{-- ---------- 4. Resumen en vivo ---------- --}}
                     @php
                         $asignado = $this->asignadoEnCentavos / 100;
-                        $pagadoTotal = $this->pagadoEnCentavos / 100;
-                        $saldo = $this->saldoEnCentavos / 100;
                     @endphp
 
-                    <div class="compra-cuadre mt-3 {{ $this->cuadra ? 'compra-cuadre-ok' : ($this->saldoEnCentavos < 0 ? 'compra-cuadre-error' : '') }}">
+                    <div class="compra-cuadre mt-3 compra-cuadre-ok">
                         <div class="compra-cuadre-dato">
                             <span>Total pagado</span>
-                            <strong>Bs {{ number_format($pagadoTotal, 2, ',', '.') }}</strong>
-                        </div>
-                        <div class="compra-cuadre-dato">
-                            <span>Asignado a productos</span>
                             <strong>Bs {{ number_format($asignado, 2, ',', '.') }}</strong>
                         </div>
-                        <div class="compra-cuadre-dato compra-cuadre-saldo">
-                            <span>
-                                @if ($this->saldoEnCentavos < 0)
-                                    Excedido en
-                                @else
-                                    Falta por asignar
-                                @endif
-                            </span>
-                            <strong>Bs {{ number_format(abs($saldo), 2, ',', '.') }}</strong>
+                        <div class="compra-cuadre-dato">
+                            <span>Productos</span>
+                            <strong>{{ count($lineas) }}</strong>
+                        </div>
+                        <div class="compra-cuadre-dato">
+                            <span>Unidades</span>
+                            <strong>{{ collect($lineas)->sum(fn ($l) => (int) ($l['cantidad'] ?? 0)) }}</strong>
                         </div>
                         <div class="compra-cuadre-estado">
-                            @if ($this->cuadra)
-                                <i class="ri-checkbox-circle-fill"></i> El detalle cuadra
-                            @elseif ($this->saldoEnCentavos < 0)
-                                <i class="ri-error-warning-fill"></i> Lo asignado supera el total pagado
-                            @else
-                                <i class="ri-information-line"></i> El detalle debe sumar el total pagado
-                            @endif
+                            <i class="ri-checkbox-circle-fill"></i> Total calculado automáticamente
                         </div>
                     </div>
 
@@ -357,15 +340,9 @@
 
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-light modal-cancelar" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-success modal-guardar" @disabled(! $this->compraValida)
-                                wire:loading.attr="disabled" wire:target="guardar">
-                                <span wire:loading.remove wire:target="guardar">
-                                    <i class="ri-save-line align-bottom me-1"></i> Registrar compra
-                                </span>
-                                <span wire:loading wire:target="guardar">
-                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                    Registrando y generando unidades...
-                                </span>
+                            <button type="button" class="btn btn-success modal-guardar" @disabled(! $this->compraValida)
+                                wire:click="abrirConfirmacion">
+                                <i class="ri-checkbox-circle-line align-bottom me-1"></i> Registrar compra
                             </button>
                         </div>
                     </div>

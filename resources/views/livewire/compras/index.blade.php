@@ -296,6 +296,7 @@
     </div>
 
     @include('livewire.compras.partials.modal-compra')
+    @include('livewire.compras.partials.modal-confirmar-compra')
     @include('livewire.compras.partials.modal-seriales')
     @include('livewire.compras.partials.modal-eliminar')
 </div>

@@ -348,6 +348,7 @@ document.addEventListener('livewire:init', () => {
         'modal-proveedor': 'modalProveedor',
         'modal-eliminar-proveedor': 'modalEliminarProveedor',
         'modal-compra': 'modalCompra',
+        'modal-confirmar-compra': 'modalConfirmarCompra',
         'modal-seriales-compra': 'modalSerialesCompra',
         'modal-eliminar-compra': 'modalEliminarCompra',
         'modal-cargo': 'modalCargo',

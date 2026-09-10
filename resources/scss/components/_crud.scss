@@ -2113,6 +2113,210 @@
     }
 
     // -------------------------------------------------------------------------
+    // Modal de confirmación de compra
+    // -------------------------------------------------------------------------
+    // Resumen del detalle capturado antes de guardar: tarjetas de cabecera,
+    // tabla sin desborde horizontal (el nombre se trunca) y total destacado.
+    .modal-confirmar-compra {
+        .confirmar-resumen {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .75rem;
+
+            .confirmar-resumen-item {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+                min-width: 0;
+                padding: .8rem .9rem;
+                border: 1px solid var(--marca-linea);
+                border-radius: .7rem;
+                background: var(--marca-superficie);
+            }
+
+            .confirmar-resumen-icono {
+                display: grid;
+                place-items: center;
+                flex-shrink: 0;
+                width: 2.25rem;
+                height: 2.25rem;
+                border-radius: .55rem;
+                color: #254970;
+                background: rgba(37, 73, 112, .08);
+                font-size: 1.05rem;
+            }
+
+            .confirmar-resumen-etiqueta {
+                display: block;
+                color: #8a93a2;
+                font-size: .68rem;
+                font-weight: 600;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+            }
+
+            .confirmar-resumen-valor {
+                display: block;
+                color: var(--vz-heading-color);
+                font-size: .9rem;
+            }
+        }
+
+        .confirmar-lineas {
+            overflow: hidden;
+            border: 1px solid var(--marca-linea);
+            border-radius: .8rem;
+
+            .confirmar-lineas-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: .75rem;
+                padding: .65rem 1rem;
+                border-bottom: 1px solid var(--marca-linea);
+                background: rgba(37, 73, 112, .045);
+            }
+
+            .confirmar-lineas-title {
+                color: var(--vz-heading-color);
+                font-size: .78rem;
+                font-weight: 700;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+            }
+
+            .confirmar-lineas-count {
+                color: #8a93a2;
+                font-size: .78rem;
+            }
+        }
+
+        .confirmar-tabla-wrap {
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .confirmar-tabla {
+            width: 100%;
+            table-layout: fixed;
+            margin: 0;
+
+            thead th {
+                padding-top: .7rem;
+                padding-bottom: .7rem;
+                border-bottom: 1px solid var(--marca-linea);
+                color: #8a93a2;
+                font-size: .68rem;
+                font-weight: 700;
+                letter-spacing: .06em;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            tbody td {
+                padding-top: .7rem;
+                padding-bottom: .7rem;
+                border-color: var(--marca-linea);
+                font-size: .86rem;
+            }
+
+            .confirmar-col-producto { width: auto; }
+            .confirmar-col-unidades { width: 4.5rem; }
+            .confirmar-col-costo { width: 9rem; }
+            .confirmar-col-total { width: 9.5rem; }
+        }
+
+        .confirmar-producto {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            min-width: 0;
+
+            .confirmar-producto-thumb {
+                display: grid;
+                place-items: center;
+                flex-shrink: 0;
+                width: 2.25rem;
+                height: 2.25rem;
+                overflow: hidden;
+                border: 1px solid var(--marca-linea);
+                border-radius: .5rem;
+                color: #b3bdc9;
+                background: var(--marca-superficie);
+                font-size: 1rem;
+
+                img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+            }
+
+            .fw-semibold { color: var(--vz-heading-color); font-size: .86rem; }
+            small { font-size: .76rem; }
+        }
+
+        .confirmar-unidades-badge {
+            padding: .3rem .6rem;
+            border-radius: .45rem;
+            color: #254970;
+            background: rgba(37, 73, 112, .09);
+            font-weight: 700;
+        }
+
+        .confirmar-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: .9rem 1.1rem;
+            border-top: 2px solid var(--marca-linea);
+            background: rgba(37, 73, 112, .045);
+
+            .confirmar-total-etiqueta {
+                color: var(--vz-heading-color);
+                font-size: .82rem;
+                font-weight: 700;
+                letter-spacing: .04em;
+                text-transform: uppercase;
+            }
+
+            .confirmar-total-monto {
+                color: var(--vz-success);
+                font-size: 1.3rem;
+                font-weight: 700;
+            }
+        }
+
+        .confirmar-notas {
+            padding: .8rem 1rem;
+            border-left: 3px solid #254970;
+            border-radius: .5rem;
+            background: rgba(37, 73, 112, .05);
+
+            .confirmar-notas-title {
+                display: block;
+                margin-bottom: .25rem;
+                color: #254970;
+                font-size: .72rem;
+                font-weight: 700;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+            }
+
+            p { color: var(--vz-body-color); font-size: .86rem; }
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .modal-confirmar-compra {
+            .confirmar-resumen { grid-template-columns: 1fr; }
+            .confirmar-lineas-head { flex-direction: column; align-items: flex-start; gap: .25rem; }
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Captura de seriales
     // -------------------------------------------------------------------------
     // Una fila por unidad: código interno fijo a la izquierda (lo generó el
