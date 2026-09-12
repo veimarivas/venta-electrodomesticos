@@ -466,7 +466,7 @@ class Index extends Component
         $unidad = Unidad::with('producto')->findOrFail($id);
         $generador = app(\App\Support\GeneradorEtiquetas::class);
         $this->unidadBarras = $unidad;
-        $this->svgBarras = $generador->codigoDeBarras($unidad->codigo_interno, 'mediana');
+        $this->svgBarras = $generador->cuadroQr($unidad->codigo_interno, 'mediana');
         $this->dispatch('abrir-modal-barras');
     }
 

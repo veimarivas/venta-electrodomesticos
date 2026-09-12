@@ -3,13 +3,16 @@
 namespace App\Support;
 
 use Milon\Barcode\DNS1D;
+use Milon\Barcode\DNS2D;
 
 /**
- * Genera los códigos de barras de las etiquetas de inventario.
+ * Genera los códigos de las etiquetas de inventario.
  *
- * Se usa Code128, que admite letras, números y guiones: es lo que necesita el
- * formato de código interno ({AAMM}-{correlativo}). Los formatos EAN o
- * UPC solo aceptan dígitos y no servirían.
+ * El código interno ({producto}-{AAMM}-{correlativo}) lleva letras, números y
+ * guiones, así que no valen EAN ni UPC. Se emite un **QR**: la cámara de un
+ * teléfono lo lee a cualquier orientación y a mucha menos resolución que un
+ * Code128 del mismo largo, que era lo que no se lograba leer. El Code128 queda
+ * disponible por si algún lector láser de mano lo necesita.
  */
 class GeneradorEtiquetas
 {
@@ -31,7 +34,16 @@ class GeneradorEtiquetas
      */
     private const ZONA_MUDA = 10;
 
-    public function __construct(private readonly DNS1D $generador) {}
+    /**
+     * Zona de silencio del QR, en módulos. La norma pide 4: sin ella la cámara
+     * no distingue dónde empieza la matriz.
+     */
+    private const ZONA_MUDA_QR = 4;
+
+    public function __construct(
+        private readonly DNS1D $generador,
+        private readonly DNS2D $qr,
+    ) {}
 
     /**
      * SVG del código de barras, listo para incrustar en el HTML.
@@ -97,6 +109,64 @@ class GeneradorEtiquetas
         // difumine los bordes de las barras finas al escalar.
         $cabecera = sprintf(
             '<svg viewBox="%s" preserveAspectRatio="none" shape-rendering="crispEdges" '
+                .'version="1.1" xmlns="http://www.w3.org/2000/svg">',
+            $viewBox
+        );
+
+        return $cabecera.substr($svg, $fin + 1);
+    }
+
+    /**
+     * SVG del QR de la etiqueta, listo para incrustar en el HTML.
+     *
+     * Es el código que se usa hoy: el teléfono lo lee en cualquier orientación
+     * y con mucha menos resolución que el Code128 del mismo dato.
+     *
+     * La librería devuelve el QR con prólogo XML, medidas en píxeles y sin
+     * `viewBox` —igual que el Code128—, y sin la zona de silencio que exige la
+     * norma. Se reescribe la cabecera con un `viewBox` cuadrado que incluye
+     * esos 4 módulos de margen, y SIN `preserveAspectRatio="none"`: deformar un
+     * QR lo vuelve ilegible, así que el contenedor lo mantiene cuadrado.
+     */
+    public function cuadroQr(string $codigo, string $tamano = 'mediana'): string
+    {
+        $config = self::TAMANOS[$tamano] ?? self::TAMANOS['mediana'];
+
+        // Módulo del QR en píxeles del SVG crudo: se mantiene pequeño porque
+        // el tamaño final lo pone la etiqueta en milímetros.
+        $modulo = max(2, $config['ancho'] * 2);
+
+        $svg = $this->qr->getBarcodeSVG($codigo, 'QRCODE', $modulo, $modulo, 'black');
+
+        $inicio = strpos($svg, '<svg');
+
+        if ($inicio === false) {
+            return '';
+        }
+
+        $svg = substr($svg, $inicio);
+        $fin = strpos($svg, '>');
+
+        if ($fin === false
+            || ! preg_match('/width="(\d+(?:\.\d+)?)"/', $svg, $ancho)
+            || ! preg_match('/height="(\d+(?:\.\d+)?)"/', $svg, $alto)) {
+            return $svg;
+        }
+
+        $anchoPx = (float) $ancho[1];
+        $altoPx = (float) $alto[1];
+        $muda = $modulo * self::ZONA_MUDA_QR;
+
+        $viewBox = sprintf(
+            '%s %s %s %s',
+            -$muda,
+            -$muda,
+            $anchoPx + 2 * $muda,
+            $altoPx + 2 * $muda
+        );
+
+        $cabecera = sprintf(
+            '<svg viewBox="%s" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" '
                 .'version="1.1" xmlns="http://www.w3.org/2000/svg">',
             $viewBox
         );

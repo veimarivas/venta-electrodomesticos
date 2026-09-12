@@ -879,13 +879,14 @@
 
     {{-- ===================== Modal código de barras ===================== --}}
     <style>
-        /* El SVG llega sin alto propio (su tamaño lo pone la hoja de
-           etiquetas). Aquí se le da uno fijo para que el código se vea
-           completo y legible en el modal. */
+        /* El QR es cuadrado: se muestra cuadrado y sin deformar. */
         #modalBarras svg {
             display: block;
             width: 100%;
-            height: 60px;
+            max-width: 240px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
         }
     </style>
     <div class="modal fade" id="modalBarras" tabindex="-1" aria-hidden="true" wire:ignore.self data-bs-backdrop="static">

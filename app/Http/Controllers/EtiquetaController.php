@@ -83,7 +83,7 @@ class EtiquetaController extends Controller
 
         $etiquetas = $unidades->flatMap(fn (Unidad $unidad) => array_fill(0, $copias, [
             'unidad' => $unidad,
-            'svg' => $generador->codigoDeBarras($unidad->codigo_interno, $tamano),
+            'svg' => $generador->cuadroQr($unidad->codigo_interno, $tamano),
         ]));
 
         return view('backend.etiquetas.hoja', [

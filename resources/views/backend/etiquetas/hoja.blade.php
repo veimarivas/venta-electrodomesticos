@@ -50,13 +50,43 @@
             padding: 2mm;
             border: 1px dashed #c7ced8;
             border-radius: 1mm;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
             overflow: hidden;
             /* Una etiqueta nunca debe partirse entre dos páginas */
             break-inside: avoid;
             page-break-inside: avoid;
+        }
+
+        /*
+            QR a la izquierda, datos a la derecha. El QR va cuadrado y con su
+            zona de silencio dentro del viewBox (ver GeneradorEtiquetas): es lo
+            que la cámara del teléfono lee con más tolerancia que un Code128
+            denso. Nunca se deforma: `preserveAspectRatio` no es `none`.
+        */
+        .etiqueta-cuerpo {
+            display: flex;
+            align-items: center;
+            gap: 2mm;
+            height: 100%;
+        }
+
+        .etiqueta-qr {
+            flex: 0 0 auto;
+            width: {{ ['pequena' => '16mm', 'mediana' => '22mm', 'grande' => '32mm'][$tamano] }};
+            height: {{ ['pequena' => '16mm', 'mediana' => '22mm', 'grande' => '32mm'][$tamano] }};
+        }
+
+        .etiqueta-qr svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .etiqueta-datos {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1mm;
         }
 
         .etiqueta-producto {
@@ -75,46 +105,11 @@
             color: #6b778a;
         }
 
-        /*
-            El alto del código se fija en milímetros, no se deja al flujo: un
-            Code128 bajo se lee mal de pie y con el aparato en la mano, porque
-            el lector necesita cruzar todas las barras en una sola pasada.
-
-            El ancho es el 100% de la etiqueta a propósito. El SVG lleva
-            viewBox (ver GeneradorEtiquetas), así que ESCALA: cuanto más ancho,
-            más gruesa la barra fina y más fácil la lectura. Las zonas mudas
-            que exige la norma ya van dentro del viewBox, así que el código
-            nunca queda pegado al borde aunque ocupe todo el ancho.
-        */
-        .etiqueta-codigo-svg {
-            display: block;
-            flex: 0 0 auto;
-            /* El alto se fija en milímetros y NO se deja al flujo: un Code128
-               bajo se lee mal de pie y con el aparato en la mano, porque el
-               lector necesita cruzar todas las barras en una sola pasada.
-               Cuanto más altas las barras, más margen le damos al lector del
-               teléfono para acertar incluso con una impresión deficiente. */
-            height: {{ ['pequena' => '9mm', 'mediana' => '14mm', 'grande' => '19mm'][$tamano] }};
-        }
-
-        .etiqueta-codigo-svg svg {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
         .etiqueta-codigo-texto {
-            text-align: center;
             font-family: ui-monospace, "Consolas", monospace;
             font-size: {{ $tamano === 'pequena' ? '2.2mm' : '2.8mm' }};
             letter-spacing: .02em;
-        }
-
-        .etiqueta-pie {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 1mm;
+            word-break: break-all;
         }
 
         .etiqueta-serial {
@@ -222,24 +217,17 @@
             @php $unidad = $etiqueta['unidad']; @endphp
 
             <div class="etiqueta">
-                <div>
-                    <div class="etiqueta-producto">{{ $unidad->producto->nombre }}</div>
+                <div class="etiqueta-cuerpo">
+                    <div class="etiqueta-qr">
+                        {!! $etiqueta['svg'] !!}
+                    </div>
 
-                </div>
-
-                <div class="etiqueta-codigo-svg">
-                    {!! $etiqueta['svg'] !!}
-                </div>
-
-                <div>
-                    <div class="etiqueta-codigo-texto">{{ $unidad->codigo_interno }}</div>
-
-                    <div class="etiqueta-pie">
-                        <span class="etiqueta-serial">
-                            @if ($unidad->serial)
-                                S/N {{ $unidad->serial }}
-                            @endif
-                        </span>
+                    <div class="etiqueta-datos">
+                        <div class="etiqueta-producto">{{ $unidad->producto->nombre }}</div>
+                        <div class="etiqueta-codigo-texto">{{ $unidad->codigo_interno }}</div>
+                        @if ($unidad->serial)
+                            <div class="etiqueta-serial">S/N {{ $unidad->serial }}</div>
+                        @endif
                     </div>
                 </div>
             </div>

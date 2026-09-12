@@ -44,6 +44,42 @@ class EtiquetaTest extends TestCase
         $this->assertStringContainsString('<rect', $svg);
     }
 
+    public function test_genera_un_qr_incrustable_en_html(): void
+    {
+        $svg = app(GeneradorEtiquetas::class)->cuadroQr('P001-2609-0001');
+
+        $this->assertStringStartsWith('<svg', $svg);
+        $this->assertStringNotContainsString('<?xml', $svg);
+        $this->assertStringNotContainsString('DOCTYPE', $svg);
+        $this->assertStringContainsString('<rect', $svg);
+    }
+
+    public function test_el_qr_es_cuadrado_y_no_se_deforma(): void
+    {
+        $svg = app(GeneradorEtiquetas::class)->cuadroQr('P001-2609-0001', 'mediana');
+
+        preg_match('/viewBox="(-?[\d.]+) (-?[\d.]+) ([\d.]+) ([\d.]+)"/', $svg, $caja);
+
+        $this->assertNotEmpty($caja, 'El QR debe traer un viewBox medible.');
+        // Deformar un QR lo vuelve ilegible: el viewBox debe ser cuadrado y NO
+        // puede llevar `preserveAspectRatio="none"`.
+        $this->assertSame((float) $caja[3], (float) $caja[4], 'El viewBox del QR debe ser cuadrado.');
+        $this->assertStringNotContainsString('preserveAspectRatio="none"', $svg);
+        $this->assertStringContainsString('preserveAspectRatio="xMidYMid meet"', $svg);
+    }
+
+    public function test_el_qr_reserva_su_zona_de_silencio(): void
+    {
+        $svg = app(GeneradorEtiquetas::class)->cuadroQr('P001-2609-0001', 'mediana');
+
+        preg_match('/viewBox="(-?[\d.]+) /', $svg, $origen);
+
+        // La norma del QR pide 4 módulos de margen antes de la matriz: el
+        // viewBox tiene que empezar antes del 0.
+        $this->assertNotEmpty($origen);
+        $this->assertLessThan(0.0, (float) $origen[1]);
+    }
+
     public function test_el_codigo_de_barras_admite_letras_y_guiones(): void
     {
         // Code128 es obligatorio: el formato {SKU}-{AAMM}-{correlativo} tiene
