@@ -203,7 +203,12 @@
             justify-content: center;
             padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1.5rem, 5vw, 3.5rem);
             padding-bottom: max(clamp(1.75rem, 5vw, 3.5rem), env(safe-area-inset-bottom));
-            background: #fff;
+            /* Blanco con dos tintes de marca muy suaves en las esquinas: el
+               panel deja de ser una pared blanca y se conecta con la banda. */
+            background:
+                radial-gradient(120% 80% at 100% 0%, rgba(37, 73, 112, .045), transparent 55%),
+                radial-gradient(90% 70% at 0% 100%, rgba(197, 161, 98, .055), transparent 60%),
+                #fff;
         }
 
         .auth-card { width: min(100%, 26rem); }
@@ -438,6 +443,59 @@
             .auth-card .btn-success,
             .auth-card .form-control,
             .auth-campo > i:first-child { transition: none; }
+        }
+
+        /* ---------------------------------------------------------------
+           Movimiento de la banda de marca
+           ---------------------------------------------------------------
+           El halo de oro respira y el anillo se abre y se cierra muy despacio:
+           es ambiente, no una animación que se mire. Si distrae, está mal.
+           Los tiempos son largos (16 s y 22 s) justo para que no se perciba
+           como movimiento sino como vida.
+           --------------------------------------------------------------- */
+        @keyframes auth-halo {
+            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .9; }
+            50%      { transform: translate3d(2.5rem, -1.5rem, 0) scale(1.12); opacity: 1; }
+        }
+
+        @keyframes auth-anillo {
+            0%, 100% { transform: scale(1); opacity: .82; }
+            50%      { transform: scale(1.06); opacity: 1; }
+        }
+
+        @keyframes auth-showcase-rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .auth-showcase::after  { animation: auth-halo 16s ease-in-out infinite; }
+            .auth-showcase::before { animation: auth-anillo 22s ease-in-out infinite; }
+        }
+
+        /* La banda se arma por capas al abrir: logo, distintivo, titular y
+           puntos. Solo en las dos columnas grandes, que es donde se ve. */
+        @media (min-width: 62rem) and (prefers-reduced-motion: no-preference) {
+            .auth-logo            { animation: auth-showcase-rise .6s ease-out both; }
+            .auth-eyebrow         { animation: auth-showcase-rise .55s ease-out .1s both; }
+            .auth-showcase h1     { animation: auth-showcase-rise .6s ease-out .18s both; }
+            .auth-showcase p      { animation: auth-showcase-rise .6s ease-out .26s both; }
+            .auth-points li       { animation: auth-showcase-rise .5s ease-out both; }
+            .auth-points li:nth-child(1) { animation-delay: .34s; }
+            .auth-points li:nth-child(2) { animation-delay: .42s; }
+            .auth-points li:nth-child(3) { animation-delay: .5s; }
+            .auth-showcase-footer { animation: auth-showcase-rise .6s ease-out .5s both; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-showcase::after,
+            .auth-showcase::before,
+            .auth-logo,
+            .auth-eyebrow,
+            .auth-showcase h1,
+            .auth-showcase p,
+            .auth-points li,
+            .auth-showcase-footer { animation: none; }
         }
 
         @keyframes auth-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }

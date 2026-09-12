@@ -1,0 +1,1262 @@
+// =============================================================================
+// Tienda pública — escaparate del catálogo
+// -----------------------------------------------------------------------------
+// Primera pantalla para quien llega sin sesión: no lleva menú lateral ni tablas,
+// lleva una vidriera. Sale de los tokens de la marca (`_marca.scss`) y de la
+// escala del sistema (`_sistema.scss`), así que se lee como la misma casa que el
+// panel, pero con otro aire: más ancho, más claro y más fotográfico.
+//
+// Toda la superficie visible de la tienda empieza por `.tienda-` para no
+// pisar los estilos de Velzon del panel, que comparten hoja.
+// =============================================================================
+
+.tienda-body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--marca-fondo);
+    color: var(--marca-tinta);
+    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.tienda-main { min-height: 60vh; }
+
+.tienda-pagina {
+    padding-top: 2rem;
+    padding-bottom: 3.5rem;
+}
+
+// ---- Botones -----------------------------------------------------------------
+
+.tienda-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    padding: .7rem 1.35rem;
+    border: 1px solid transparent;
+    border-radius: var(--radio-md);
+    font-size: .88rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--trans-rapida), border-color var(--trans-rapida),
+        color var(--trans-rapida), box-shadow var(--trans-rapida), transform var(--trans-rapida);
+
+    i { font-size: 1.05rem; }
+
+    &:hover { transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+}
+
+.tienda-btn-primary {
+    background: linear-gradient(135deg, var(--marca-azul), var(--marca-azul-hondo));
+    color: #fff;
+    box-shadow: 0 .4rem 1rem rgba(37, 73, 112, .25);
+
+    &:hover { box-shadow: 0 .6rem 1.4rem rgba(37, 73, 112, .32); color: #fff; }
+}
+
+.tienda-btn-ghost {
+    border-color: rgba(255, 255, 255, .28);
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+
+    &:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+}
+
+// ---- Barra superior ----------------------------------------------------------
+
+.tienda-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: var(--marca-superficie);
+    border-bottom: 1px solid var(--marca-linea);
+    box-shadow: var(--sombra-xs);
+}
+
+.tienda-nav-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    min-height: 4rem;
+}
+
+.tienda-logo {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    img {
+        height: 2.5rem;
+        width: auto;
+        display: block;
+    }
+}
+
+.tienda-nav-menu {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.tienda-nav-link {
+    padding: .45rem .85rem;
+    border-radius: var(--radio-sm);
+    color: var(--marca-apagado);
+    font-size: .88rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--trans-rapida), color var(--trans-rapida);
+
+    &:hover { color: var(--marca-tinta); background: var(--marca-suave); }
+
+    &.is-active {
+        color: var(--marca-azul);
+        background: rgba(37, 73, 112, .08);
+    }
+}
+
+.tienda-nav-actions { flex-shrink: 0; }
+
+// ---- Portada ----------------------------------------------------------------
+
+.tienda-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 3.5rem 0 3.25rem;
+    color: #fff;
+    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+}
+
+.tienda-hero-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+
+    background:
+        radial-gradient(ellipse 55% 55% at 88% 12%, rgba(87, 146, 191, .22) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 60% at 5% 95%, rgba(197, 161, 98, .16) 0%, transparent 70%);
+
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(255, 255, 255, .06) 1px, transparent 1.4px);
+        background-size: 1.3rem 1.3rem;
+        mask-image: radial-gradient(70% 100% at 85% 0%, black 0%, transparent 100%);
+        -webkit-mask-image: radial-gradient(70% 100% at 85% 0%, black 0%, transparent 100%);
+        opacity: .55;
+    }
+}
+
+.tienda-hero-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 48rem;
+}
+
+.tienda-hero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .32rem .8rem;
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: var(--radio-pill);
+    background: rgba(255, 255, 255, .08);
+    color: var(--marca-crema);
+    font-size: .72rem;
+    font-weight: 650;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+
+    i { color: var(--marca-oro-claro); font-size: .9rem; }
+}
+
+.tienda-hero-titulo {
+    margin: 1.1rem 0 .85rem;
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.035em;
+    color: #fff;
+    text-wrap: balance;
+
+    span { color: var(--marca-oro-claro); }
+}
+
+.tienda-hero-sub {
+    margin: 0 0 1.75rem;
+    max-width: 34rem;
+    color: rgba(255, 255, 255, .68);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.tienda-buscador {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    max-width: 42rem;
+    padding: .45rem .45rem .45rem 1.1rem;
+    background: #fff;
+    border-radius: var(--radio-pill);
+    box-shadow: var(--sombra-lg);
+
+    .tienda-buscador-icono {
+        color: var(--marca-apagado);
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        padding: .6rem 0;
+        font-size: .95rem;
+        color: var(--marca-tinta);
+
+        &::placeholder { color: #a7b1bf; }
+    }
+
+    .tienda-btn {
+        flex-shrink: 0;
+        border-radius: var(--radio-pill);
+        padding: .8rem 1.5rem;
+    }
+}
+
+.tienda-hero-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.25rem;
+    margin-top: 2rem;
+}
+
+.tienda-hero-stat {
+    strong {
+        display: block;
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        line-height: 1.1;
+        color: #fff;
+    }
+
+    span {
+        display: block;
+        margin-top: .15rem;
+        color: rgba(255, 255, 255, .58);
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+    }
+}
+
+// ---- Filtros ----------------------------------------------------------------
+
+.tienda-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.15rem;
+    margin-top: 1.75rem;
+    background: var(--marca-superficie);
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-sm);
+}
+
+.tienda-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    min-width: 0;
+}
+
+.tienda-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: .4rem .85rem;
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-pill);
+    background: var(--marca-superficie);
+    color: var(--marca-apagado);
+    font-size: .8rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color var(--trans-rapida), background-color var(--trans-rapida), color var(--trans-rapida);
+
+    &:hover { border-color: color-mix(in srgb, var(--marca-azul) 40%, var(--marca-linea)); color: var(--marca-azul); }
+
+    &.is-activa {
+        border-color: var(--marca-azul);
+        background: var(--marca-azul);
+        color: #fff;
+    }
+}
+
+.tienda-filtros-form {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    flex-shrink: 0;
+}
+
+.tienda-select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .45rem .72rem;
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-md);
+    background: var(--marca-suave);
+
+    i { color: var(--marca-apagado); font-size: 1rem; }
+
+    select {
+        border: 0;
+        background: transparent;
+        color: var(--marca-tinta);
+        font-size: .84rem;
+        font-weight: 600;
+        padding-right: 1rem;
+        cursor: pointer;
+        outline: 0;
+    }
+}
+
+.tienda-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+    user-select: none;
+
+    input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+    .tienda-switch-track {
+        position: relative;
+        width: 2.5rem;
+        height: 1.4rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-linea);
+        transition: background-color var(--trans-media);
+        flex-shrink: 0;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: .18rem;
+            left: .18rem;
+            width: 1.04rem;
+            height: 1.04rem;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: var(--sombra-xs);
+            transition: transform var(--trans-media);
+        }
+    }
+
+    input:checked + .tienda-switch-track {
+        background: var(--marca-azul);
+
+        &::after { transform: translateX(1.1rem); }
+    }
+
+    input:focus-visible + .tienda-switch-track { box-shadow: var(--anillo-foco); }
+
+    .tienda-switch-texto {
+        font-size: .84rem;
+        font-weight: 600;
+        color: var(--marca-tinta);
+    }
+}
+
+.tienda-limpiar {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .45rem .7rem;
+    border-radius: var(--radio-md);
+    color: var(--marca-apagado);
+    font-size: .82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color var(--trans-rapida), color var(--trans-rapida);
+
+    &:hover { background: rgba(227, 73, 72, .08); color: var(--estado-error); }
+}
+
+// ---- Resultados -------------------------------------------------------------
+
+.tienda-resultados-cabecera {
+    margin: 2rem 0 1.25rem;
+
+    .tienda-resultados-titulo {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        color: var(--marca-tinta);
+    }
+
+    .tienda-resultados-sub {
+        margin: .2rem 0 0;
+        color: var(--marca-apagado);
+        font-size: .86rem;
+    }
+}
+
+// ---- Rejilla de productos ---------------------------------------------------
+
+.tienda-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+    gap: 1rem;
+}
+
+.tienda-card {
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-md);
+    background: var(--marca-superficie);
+    overflow: hidden;
+    transition: transform var(--trans-media), box-shadow var(--trans-media), border-color var(--trans-media);
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--sombra-lg);
+        border-color: color-mix(in srgb, var(--marca-azul) 22%, var(--marca-linea));
+
+        .tienda-card-media img { transform: scale(1.05); }
+    }
+
+    &.is-agotado .tienda-card-media img { filter: grayscale(.4); opacity: .85; }
+}
+
+.tienda-card-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.tienda-card-media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: .75rem;
+        transition: transform .35s ease-out;
+    }
+}
+
+.tienda-card-sin-imagen { opacity: .55; }
+
+.tienda-card-badge {
+    position: absolute;
+    top: .55rem;
+    left: .55rem;
+    display: inline-flex;
+    align-items: center;
+    padding: .22rem .55rem;
+    border-radius: var(--radio-pill);
+    background: var(--estado-ok);
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .18);
+
+    &--bajo { background: var(--estado-alerta); }
+}
+
+.tienda-card-franja {
+    position: absolute;
+    top: .55rem;
+    left: .55rem;
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .6rem;
+    border-radius: var(--radio-pill);
+    background: var(--estado-error);
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    z-index: 2;
+    box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .18);
+}
+
+.tienda-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: .85rem .95rem 1rem;
+}
+
+.tienda-card-marca {
+    font-size: .7rem;
+    font-weight: 650;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--marca-apagado);
+    margin-bottom: .25rem;
+    min-height: 1em;
+}
+
+.tienda-card-nombre {
+    margin: 0 0 .6rem;
+    font-size: .86rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -.01em;
+    color: var(--marca-tinta);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.tienda-card-pie {
+    margin-top: auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+}
+
+.tienda-card-precio {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--marca-azul);
+    font-variant-numeric: tabular-nums;
+}
+
+.tienda-card-stock {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--marca-apagado);
+
+    .is-agotado & { color: var(--estado-error); }
+}
+
+// ---- Secciones --------------------------------------------------------------
+
+.tienda-seccion {
+    margin-top: 2.25rem;
+}
+
+.tienda-seccion--plana { margin-top: 2.75rem; }
+
+.tienda-seccion-header {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.tienda-seccion-icono {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+    border-radius: var(--radio-sm);
+    background: rgba(37, 73, 112, .1);
+    color: var(--marca-azul);
+    font-size: 1.1rem;
+
+    &--destacado {
+        background: rgba(197, 161, 98, .16);
+        color: var(--marca-oro-hondo);
+    }
+}
+
+.tienda-seccion-texto { flex: 1; min-width: 0; }
+
+.tienda-seccion-titulo {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: var(--marca-tinta);
+}
+
+.tienda-seccion-sub {
+    margin: .1rem 0 0;
+    font-size: .82rem;
+    color: var(--marca-apagado);
+}
+
+.tienda-seccion-ver {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    flex-shrink: 0;
+    color: var(--marca-azul);
+    font-size: .84rem;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover { color: var(--marca-azul-hondo); }
+    i { transition: transform var(--trans-rapida); }
+    &:hover i { transform: translateX(3px); }
+}
+
+// ---- Ficha de producto ------------------------------------------------------
+
+.tienda-migas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem;
+    margin-bottom: 1.5rem;
+    font-size: .84rem;
+
+    a { color: var(--marca-apagado); text-decoration: none; }
+    a:hover { color: var(--marca-azul); }
+    .tienda-migas-sep { color: color-mix(in srgb, var(--marca-apagado) 55%, transparent); }
+    .tienda-migas-actual {
+        color: var(--marca-tinta);
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 20rem;
+    }
+}
+
+.tienda-ficha {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.tienda-ficha-imagen {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+    background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+    box-shadow: var(--sombra-sm);
+    overflow: hidden;
+
+    img { width: 100%; height: 100%; object-fit: contain; }
+}
+
+.tienda-ficha-sin-imagen { opacity: .5; }
+
+.tienda-ficha-info { padding-top: .25rem; }
+
+.tienda-ficha-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .65rem;
+
+    .tienda-ficha-marca {
+        font-size: .74rem;
+        font-weight: 700;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--marca-azul);
+    }
+
+    .tienda-ficha-categoria {
+        padding: .2rem .6rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        color: var(--marca-apagado);
+        font-size: .72rem;
+        font-weight: 600;
+    }
+}
+
+.tienda-ficha-titulo {
+    margin: 0;
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -.03em;
+    color: var(--marca-tinta);
+}
+
+.tienda-ficha-modelo {
+    margin: .35rem 0 0;
+    color: var(--marca-apagado);
+    font-size: .88rem;
+}
+
+.tienda-ficha-precio {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.15rem 0;
+    padding-bottom: 1.15rem;
+    border-bottom: 1px solid var(--marca-linea);
+}
+
+.tienda-ficha-precio-valor {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    color: var(--marca-azul);
+    font-variant-numeric: tabular-nums;
+}
+
+.tienda-ficha-disponibilidad {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .35rem .75rem;
+    border-radius: var(--radio-pill);
+    font-size: .8rem;
+    font-weight: 650;
+
+    .tienda-ficha-punto {
+        width: .45rem;
+        height: .45rem;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 0 .18rem color-mix(in srgb, currentColor 20%, transparent);
+    }
+
+    &.is-ok { color: var(--estado-ok); background: var(--estado-ok-suave); }
+    &.is-bajo { color: var(--estado-alerta-texto); background: var(--estado-alerta-suave); }
+    &.is-agotado { color: var(--estado-error); background: var(--estado-error-suave); }
+}
+
+.tienda-ficha-descripcion {
+    margin: 0 0 1.25rem;
+    color: color-mix(in srgb, var(--marca-tinta) 78%, transparent);
+    font-size: .92rem;
+    line-height: 1.7;
+}
+
+.tienda-ficha-datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .75rem;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    list-style: none;
+
+    li {
+        padding: .75rem .85rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        background: var(--marca-suave);
+    }
+
+    .tienda-ficha-dato-etiqueta {
+        display: block;
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 650;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: .2rem;
+    }
+
+    .tienda-ficha-dato-valor {
+        display: block;
+        color: var(--marca-tinta);
+        font-size: .88rem;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.tienda-ficha-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .85rem;
+}
+
+.tienda-ficha-nota {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    color: var(--marca-apagado);
+    font-size: .82rem;
+    font-weight: 600;
+
+    i { color: var(--marca-oro-hondo); font-size: 1rem; }
+}
+
+.tienda-specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: .5rem .75rem;
+    margin: 0;
+    padding: 1.25rem;
+    list-style: none;
+    background: var(--marca-superficie);
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+}
+
+.tienda-spec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .55rem .75rem;
+    border-radius: var(--radio-sm);
+    background: var(--marca-suave);
+
+    .tienda-spec-clave {
+        color: var(--marca-apagado);
+        font-size: .82rem;
+        font-weight: 500;
+    }
+
+    .tienda-spec-valor {
+        color: var(--marca-tinta);
+        font-size: .84rem;
+        font-weight: 650;
+        text-align: right;
+    }
+}
+
+// ---- Estado vacío -----------------------------------------------------------
+
+.tienda-vacio {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    margin-top: 2rem;
+    background: var(--marca-superficie);
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+
+    .tienda-vacio-icono {
+        display: grid;
+        place-items: center;
+        width: 4.5rem;
+        height: 4.5rem;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        background: rgba(37, 73, 112, .08);
+        border: 1px solid rgba(37, 73, 112, .12);
+        color: var(--marca-azul);
+        font-size: 1.6rem;
+    }
+
+    h5 {
+        margin: 0 0 .35rem;
+        color: var(--marca-tinta);
+        font-size: 1.05rem;
+        font-weight: 650;
+    }
+
+    p {
+        margin: 0 0 1.25rem;
+        color: var(--marca-apagado);
+        font-size: .88rem;
+    }
+}
+
+// ---- Paginación -------------------------------------------------------------
+
+.tienda-paginacion {
+    display: flex;
+    justify-content: center;
+    margin-top: 2.25rem;
+
+    p, .small { display: none; } // el recuento ya se ve en la cabecera
+    nav { width: 100%; }
+
+    .pagination {
+        justify-content: center;
+        gap: .25rem;
+        margin: 0;
+    }
+
+    .page-link {
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        color: var(--marca-tinta);
+        font-size: .85rem;
+        font-weight: 600;
+        padding: .45rem .75rem;
+
+        &:hover { background: rgba(37, 73, 112, .06); color: var(--marca-azul); }
+    }
+
+    .page-item.active .page-link {
+        background: var(--marca-azul);
+        border-color: var(--marca-azul);
+        color: #fff;
+    }
+
+    .page-item.disabled .page-link { opacity: .45; }
+}
+
+// ---- Pie --------------------------------------------------------------------
+
+.tienda-footer {
+    margin-top: 3rem;
+    padding: 2.5rem 0 1.5rem;
+    background: #0a182b;
+    color: rgba(255, 255, 255, .68);
+}
+
+.tienda-footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.tienda-footer-brand {
+    max-width: 24rem;
+
+    img {
+        height: 2.25rem;
+        width: auto;
+        margin-bottom: .75rem;
+    }
+
+    p {
+        margin: 0;
+        font-size: .86rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, .55);
+    }
+}
+
+.tienda-footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+
+    a {
+        color: rgba(255, 255, 255, .7);
+        font-size: .86rem;
+        font-weight: 500;
+        text-decoration: none;
+
+        &:hover { color: var(--marca-oro-claro); }
+    }
+}
+
+.tienda-footer-bottom {
+    padding-top: 1.25rem;
+    color: rgba(255, 255, 255, .42);
+    font-size: .78rem;
+}
+
+// ---- Responsive -------------------------------------------------------------
+
+@media (max-width: 991.98px) {
+    .tienda-ficha {
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+    }
+
+    .tienda-ficha-imagen { aspect-ratio: 4 / 3; }
+}
+
+@media (max-width: 767.98px) {
+    .tienda-hero { padding: 2.5rem 0 2.25rem; }
+    .tienda-nav-menu { display: none; }
+    .tienda-filtros { flex-direction: column; align-items: stretch; }
+    .tienda-filtros-form { flex-wrap: wrap; }
+    .tienda-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+
+@media (max-width: 575.98px) {
+    .tienda-buscador {
+        flex-wrap: wrap;
+        border-radius: var(--radio-lg);
+        padding: .75rem;
+
+        input { flex-basis: 100%; padding: .5rem .25rem; }
+        .tienda-btn { width: 100%; border-radius: var(--radio-md); }
+    }
+
+    .tienda-hero-stats { gap: 1.5rem; }
+    .tienda-card-pie { flex-direction: column; align-items: flex-start; gap: .15rem; }
+}
+
+// =============================================================================
+// Movimiento y micro-interacciones
+// =============================================================================
+// Tesis: la portada se presenta UNA vez. La banda entra por capas —chip, título,
+// buscador y cifras— y el primer estante de productos llega en cascada; a partir
+// de ahí el movimiento solo responde a lo que el usuario hace (hover, foco,
+// filtros). No se repite en cada sección ni se reinterpreta el scroll como una
+// animación sin sentido.
+//
+// Todo se mueve con `transform` y `opacity` —lo que no obliga a recalcular la
+// página—, con una sola curva de llegada (easeOutQuint). El revelado al bajar se
+// liga al scroll solo donde el navegador lo soporta; donde no, se ve directo.
+// =============================================================================
+
+.tienda-body {
+    --t-ease: cubic-bezier(.16, 1, .3, 1);
+    --t-rapida: .18s;
+    --t-media: .32s;
+    --t-larga: .6s;
+}
+
+@keyframes tienda-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes tienda-card-in {
+    from { opacity: 0; transform: translateY(16px) scale(.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes tienda-section-in {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes tienda-drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-2.5%, 2%, 0) scale(1.08); }
+}
+
+@keyframes tienda-shine {
+    from { left: -140%; }
+    to   { left: 140%; }
+}
+
+// ---- Entrada de la portada --------------------------------------------------
+// Un solo momento con autoría: la banda se arma por capas. Los tiempos suman
+// poco más de medio segundo, lo que se tarda en leer el titular.
+
+@media (prefers-reduced-motion: no-preference) {
+    .tienda-hero-bg { animation: tienda-drift 18s ease-in-out infinite alternate; }
+
+    .tienda-hero-chip   { animation: tienda-rise .5s var(--t-ease) both; }
+    .tienda-hero-titulo { animation: tienda-rise .6s var(--t-ease) .08s both; }
+    .tienda-hero-sub    { animation: tienda-rise .6s var(--t-ease) .16s both; }
+    .tienda-buscador    { animation: tienda-rise .6s var(--t-ease) .24s both; }
+    .tienda-hero-stats  { animation: tienda-rise .6s var(--t-ease) .32s both; }
+
+    // El estante que aparece junto a la portada llega en cascada. Solo ese:
+    // las demás secciones se revelan al bajar, cuando de verdad se miran.
+    .tienda-grid--entrada > .tienda-card {
+        animation: tienda-card-in .55s var(--t-ease) both;
+    }
+
+    @for $i from 1 through 10 {
+        .tienda-grid--entrada > .tienda-card:nth-child(#{$i}) {
+            animation-delay: #{0.035s * $i};
+        }
+    }
+
+    .tienda-grid--entrada > .tienda-card:nth-child(n + 11) {
+        animation-delay: .35s;
+    }
+
+    // Ficha de producto: la imagen y el texto llegan con un desfase mínimo,
+    // como si la ficha se abriera en vez de aparecer entera de golpe.
+    .tienda-ficha-media { animation: tienda-rise .6s var(--t-ease) both; }
+    .tienda-ficha-info  { animation: tienda-rise .6s var(--t-ease) .1s both; }
+
+    .tienda-resultados-cabecera { animation: tienda-rise .5s var(--t-ease) both; }
+}
+
+// ---- Revelado ligado al scroll (mejora progresiva) --------------------------
+// Donde el navegador entiende las líneas de tiempo de scroll, cada sección entra
+// al asomar por abajo. Donde no, se ve directamente: el contenido nunca depende
+// de que la animación corra.
+
+@supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+        .tienda-seccion {
+            animation: tienda-section-in linear both;
+            animation-timeline: view();
+            animation-range: entry 6% cover 24%;
+        }
+    }
+}
+
+// ---- Micro-interacciones ----------------------------------------------------
+
+// Enlaces de la barra: subrayado que se dibuja desde la izquierda.
+.tienda-nav-link {
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: .85rem;
+        right: .85rem;
+        bottom: .18rem;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--marca-azul);
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform .28s var(--t-ease);
+    }
+
+    &:hover::after,
+    &.is-active::after { transform: scaleX(1); }
+}
+
+// El buscador de la portada se enciende con un halo dorado al enfocarlo: es el
+// único acento de marca del bloque y confirma dónde se escribe.
+.tienda-buscador {
+    transition: box-shadow var(--t-media) var(--t-ease), transform var(--t-media) var(--t-ease);
+
+    &:focus-within {
+        box-shadow: var(--sombra-lg), 0 0 0 .25rem rgba(197, 161, 98, .28);
+    }
+}
+
+// El botón principal pasa un brillo corto cuando el puntero lo roza. Una sola
+// pasada, no un bucle.
+.tienda-btn-primary {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -140%;
+        width: 55%;
+        background: linear-gradient(115deg, transparent, rgba(255, 255, 255, .38), transparent);
+        transform: skewX(-18deg);
+        pointer-events: none;
+    }
+
+    &:hover::after { animation: tienda-shine .7s var(--t-ease); }
+}
+
+// Tarjeta: al pasar por encima se levanta (ya estaba), la foto crece y aparece
+// una invitación a abrir la ficha. Tres señales para la misma acción.
+.tienda-card {
+    &:hover .tienda-card-media::after { opacity: 1; }
+    &:hover .tienda-card-cta { opacity: 1; transform: translate(-50%, 0); }
+    &:hover .tienda-card-precio { color: var(--marca-azul-hondo); }
+}
+
+.tienda-card-media {
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 45%, rgba(10, 24, 43, .5));
+        opacity: 0;
+        transition: opacity var(--t-media) var(--t-ease);
+        pointer-events: none;
+    }
+}
+
+.tienda-card-cta {
+    position: absolute;
+    left: 50%;
+    bottom: .8rem;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .35rem .85rem;
+    border-radius: var(--radio-pill);
+    background: rgba(255, 255, 255, .94);
+    color: var(--marca-azul);
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, 10px);
+    transition: opacity var(--t-media) var(--t-ease), transform var(--t-media) var(--t-ease);
+    pointer-events: none;
+    box-shadow: 0 .3rem .8rem rgba(10, 24, 43, .25);
+}
+
+.tienda-card-precio { transition: color var(--t-media) var(--t-ease); }
+
+// Las características de la ficha son una lista: la fila cambia de fondo al
+// pasar por encima para seguir la lectura.
+.tienda-spec {
+    transition: background-color var(--t-rapida);
+
+    &:hover { background: color-mix(in srgb, var(--marca-azul) 6%, transparent); }
+}
+
+// ---- Movimiento reducido ----------------------------------------------------
+// Se conserva la retroalimentación (color, sombra, subrayado) y se quita el
+// desplazamiento.
+
+@media (prefers-reduced-motion: reduce) {
+    .tienda-btn,
+    .tienda-card,
+    .tienda-chip,
+    .tienda-switch-track,
+    .tienda-card-media img { transition: none; }
+
+    .tienda-hero-bg,
+    .tienda-hero-chip,
+    .tienda-hero-titulo,
+    .tienda-hero-sub,
+    .tienda-buscador,
+    .tienda-hero-stats,
+    .tienda-grid--entrada > .tienda-card,
+    .tienda-ficha-media,
+    .tienda-ficha-info,
+    .tienda-resultados-cabecera,
+    .tienda-seccion,
+    .tienda-btn-primary::after { animation: none; }
+
+    .tienda-nav-link::after,
+    .tienda-card-media::after,
+    .tienda-card-cta,
+    .tienda-card-precio { transition: none; }
+
+    .tienda-btn:hover,
+    .tienda-card:hover { transform: none; }
+
+    // La invitación de la tarjeta se queda visible: el enlace sigue siendo el
+    // mismo, solo que sin el deslizamiento.
+    .tienda-card-cta { opacity: 1; transform: translate(-50%, 0); }
+}

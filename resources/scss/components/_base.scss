@@ -1,0 +1,325 @@
+// -----------------------------------------------------------------------------
+// Capa base: pule los componentes que Velzon ya trae
+// -----------------------------------------------------------------------------
+// Va importada ANTES de los módulos (`_crud`, `_dashboard`, `_sidebar`…): así
+// corrige los valores por defecto de la plantilla, pero cualquier pantalla que
+// ya tenga su propio estilo —el POS, el dashboard, las tablas de catálogo—
+// sigue mandando. Sin esta capa, dos módulos redefinen el mismo botón de dos
+// formas distintas y el panel deja de parecer un solo sistema.
+//
+// Regla de oro: solo se toca radio, borde, sombra, color, transición y foco.
+// Nada de padding ni márgenes que muevan la maqueta de Velzon.
+//
+// Todos los colores salen de `--marca-*` o `--estado-*`, así que el modo oscuro
+// funciona sin reglas paralelas. Un literal aquí obligaría a escribir el mismo
+// bloque dos veces y a acordarse de los dos.
+// -----------------------------------------------------------------------------
+
+// ---- Base del documento -----------------------------------------------------
+
+body {
+    background: var(--marca-fondo);
+    color: var(--marca-tinta);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+// Los títulos del panel van apretados de interletrado —es lo que le da su
+// aire compacto—; el cuerpo se queda sin tocar, que a tamaño pequeño perjudica
+// la lectura.
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    color: var(--marca-tinta);
+    letter-spacing: -.02em;
+}
+
+a {
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+    text-underline-offset: .15em;
+    transition: color var(--trans-rapida);
+
+    &:hover { text-decoration-color: currentColor; }
+}
+
+// ---- Foco visible -----------------------------------------------------------
+// Por teclado SIEMPRE se ve dónde está el usuario. `:focus-visible` no pinta
+// nada al hacer clic con el ratón, que es lo que evita el halo en cada pulsación.
+// Los campos quedan fuera: ya tienen su propio anillo de foco.
+
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+[role="button"]:focus-visible {
+    outline: 2px solid var(--marca-azul);
+    outline-offset: 2px;
+}
+
+// ---- Barras de desplazamiento ----------------------------------------------
+// Finas y con el pulgar dentro del riel: la de por defecto del navegador es una
+// franja gris que corta el aire de las tarjetas.
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37, 73, 112, .32) transparent;
+}
+
+::-webkit-scrollbar { width: .6rem; height: .6rem; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: var(--radio-pill);
+    background: rgba(37, 73, 112, .28);
+    background-clip: content-box;
+
+    &:hover { background: rgba(37, 73, 112, .45); background-clip: content-box; }
+}
+
+[data-bs-theme="dark"] {
+    &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); background-clip: content-box; }
+}
+
+// ---- Tarjetas ---------------------------------------------------------------
+
+.card {
+    --vz-card-border-color: var(--marca-linea);
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+    background: var(--marca-superficie);
+    box-shadow: var(--sombra-sm);
+    transition: box-shadow var(--trans-media), border-color var(--trans-media);
+
+    .card-header {
+        border-bottom: 1px solid var(--marca-linea);
+        background: transparent;
+    }
+
+    .card-footer {
+        border-top: 1px solid var(--marca-linea);
+        background: transparent;
+    }
+
+    .card-title {
+        color: var(--marca-tinta);
+        font-weight: 650;
+        letter-spacing: -.01em;
+    }
+}
+
+// ---- Botones ----------------------------------------------------------------
+// Radio y peso comunes, foco con anillo y una elevación mínima al pasar por
+// encima. El movimiento es corto a propósito: un botón que salta distrae de la
+// tarea, que es lo que el usuario vino a hacer.
+
+.btn {
+    border-radius: var(--radio-md);
+    font-weight: 600;
+    letter-spacing: .005em;
+    transition: background-color var(--trans-rapida), border-color var(--trans-rapida),
+        color var(--trans-rapida), box-shadow var(--trans-rapida), transform var(--trans-rapida);
+
+    &:not(:disabled):not(.disabled):active { transform: translateY(0); }
+
+    &:focus-visible { box-shadow: var(--anillo-foco); }
+
+    &:disabled, &.disabled { box-shadow: none; }
+}
+
+.btn-sm { border-radius: var(--radio-sm); }
+.btn-lg { border-radius: var(--radio-md); }
+
+// El hover que sube no aplica a botones de icono sueltos —en una barra de
+// herramientas se desalinearían entre ellos—.
+.btn:not(.btn-icon):not(:disabled):not(.disabled):hover { transform: translateY(-1px); }
+
+.btn-primary { box-shadow: 0 .35rem .9rem rgba(37, 73, 112, .22); }
+.btn-success { box-shadow: 0 .35rem .9rem rgba(27, 175, 122, .22); }
+.btn-danger  { box-shadow: 0 .35rem .9rem rgba(227, 73, 72, .22); }
+
+.btn-primary:not(:disabled):not(.disabled):hover { box-shadow: 0 .5rem 1.2rem rgba(37, 73, 112, .28); }
+.btn-success:not(:disabled):not(.disabled):hover { box-shadow: 0 .5rem 1.2rem rgba(27, 175, 122, .28); }
+.btn-danger:not(:disabled):not(.disabled):hover  { box-shadow: 0 .5rem 1.2rem rgba(227, 73, 72, .28); }
+
+// ---- Campos -----------------------------------------------------------------
+
+.form-label {
+    color: color-mix(in srgb, var(--marca-tinta) 82%, var(--marca-apagado));
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.form-control,
+.form-select {
+    border-color: var(--marca-linea);
+    border-radius: var(--radio-md);
+    background-color: var(--marca-superficie);
+    color: var(--marca-tinta);
+    transition: border-color var(--trans-rapida), box-shadow var(--trans-rapida), background-color var(--trans-rapida);
+
+    &::placeholder { color: #a7b1bf; }
+
+    &:focus {
+        border-color: var(--marca-azul);
+        background-color: var(--marca-superficie);
+        box-shadow: var(--anillo-foco);
+    }
+
+    &:disabled, &[readonly] { background-color: var(--marca-suave); }
+}
+
+.input-group-text {
+    border-color: var(--marca-linea);
+    border-radius: var(--radio-md);
+    background-color: var(--marca-suave);
+    color: var(--marca-apagado);
+}
+
+.form-check-input {
+    border-color: color-mix(in srgb, var(--marca-apagado) 45%, transparent);
+
+    &:checked { background-color: var(--marca-azul); border-color: var(--marca-azul); }
+    &:focus { box-shadow: var(--anillo-foco); }
+}
+
+// ---- Insignias --------------------------------------------------------------
+
+.badge {
+    border-radius: var(--radio-pill);
+    font-weight: 600;
+    letter-spacing: .01em;
+}
+
+// ---- Tablas -----------------------------------------------------------------
+// Cabecera recesiva y filas que se leen de un vistazo: el encabezado ordena, el
+// dato manda.
+
+.table {
+    --vz-table-border-color: var(--marca-linea);
+    color: var(--marca-tinta);
+
+    > thead th {
+        border-bottom: 1px solid var(--marca-linea);
+        background: var(--marca-suave);
+        color: var(--marca-apagado);
+        font-weight: 650;
+        font-size: .72rem;
+        letter-spacing: .04em;
+    }
+
+    > tbody td { border-bottom-color: var(--marca-linea); }
+
+    > tbody tr { transition: background-color var(--trans-media); }
+}
+
+.table-hover > tbody > tr:hover > * { background-color: rgba(37, 73, 112, .035); }
+
+// ---- Desplegables -----------------------------------------------------------
+
+.dropdown-menu {
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+    background: var(--marca-superficie);
+    box-shadow: var(--sombra-lg);
+    padding: .35rem;
+}
+
+.dropdown-item {
+    border-radius: var(--radio-sm);
+    transition: background-color var(--trans-rapida), color var(--trans-rapida);
+
+    &:hover, &:focus { background-color: rgba(37, 73, 112, .06); color: var(--marca-tinta); }
+    &.active, &:active { background-color: var(--marca-azul); color: #fff; }
+}
+
+.dropdown-header {
+    color: var(--marca-apagado);
+    font-size: .72rem;
+    font-weight: 650;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+// ---- Modales ----------------------------------------------------------------
+
+.modal-content {
+    border: 0;
+    border-radius: var(--radio-xl);
+    background: var(--marca-superficie);
+    box-shadow: var(--sombra-xl);
+    overflow: hidden;
+}
+
+.modal-header { border-bottom: 1px solid var(--marca-linea); }
+.modal-footer { border-top: 1px solid var(--marca-linea); }
+.modal-title { color: var(--marca-tinta); font-weight: 650; letter-spacing: -.01em; }
+
+// ---- Título de página y migas ----------------------------------------------
+
+// Solo se retoca el título y las migas: el `padding` y los márgenes negativos
+// que trae Velzon se dejan intactos, que de ahí sale el alto de la cabecera.
+.page-title-box {
+    h4 {
+        color: var(--marca-tinta);
+        font-weight: 700;
+        letter-spacing: -.02em;
+    }
+}
+
+.breadcrumb {
+    --vz-breadcrumb-divider-color: color-mix(in srgb, var(--marca-apagado) 60%, transparent);
+    font-size: .84rem;
+
+    .breadcrumb-item a {
+        color: var(--marca-apagado);
+        text-decoration: none;
+
+        &:hover { color: var(--marca-azul); }
+    }
+
+    .breadcrumb-item.active { color: var(--marca-tinta); font-weight: 600; }
+}
+
+// ---- Avisos -----------------------------------------------------------------
+
+.alert {
+    border: 0;
+    border-left: 3px solid currentColor;
+    border-radius: var(--radio-md);
+}
+
+// ---- Progreso, listas y paginación -----------------------------------------
+
+.progress {
+    border-radius: var(--radio-pill);
+    background-color: var(--marca-suave);
+}
+
+.list-group-item {
+    border-color: var(--marca-linea);
+    background: transparent;
+    color: var(--marca-tinta);
+}
+
+// ---- Brindis (toasts) -------------------------------------------------------
+
+.toast {
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
+    background: var(--marca-superficie);
+    box-shadow: var(--sombra-lg);
+}
+
+// ---- Movimiento reducido ----------------------------------------------------
+// Quien pide menos movimiento en su sistema no recibe ninguna transición de
+// esta capa. No es opcional: es accesibilidad.
+
+@media (prefers-reduced-motion: reduce) {
+    .btn,
+    .card,
+    a,
+    .dropdown-item,
+    .table > tbody tr {
+        transition: none;
+    }
+
+    .btn:not(.btn-icon):not(:disabled):not(.disabled):hover { transform: none; }
+}

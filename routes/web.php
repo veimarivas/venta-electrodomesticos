@@ -7,6 +7,7 @@ use App\Http\Controllers\OrdenReparacionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\VitrinaController;
 use App\Models\Proveedor;
 use Illuminate\Support\Facades\Route;
@@ -22,7 +23,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::redirect('/', '/dashboard');
+// Escaparate público. La raíz deja de mandar al panel: quien llega sin sesión
+// ve el catálogo, y el acceso del personal sigue en /login. El panel y la caja
+// no se tocan.
+Route::get('/', [StorefrontController::class, 'index'])->name('tienda.index');
+
+Route::get('/producto/{producto:slug}', [StorefrontController::class, 'producto'])
+    ->where('producto', '[A-Za-z0-9\-]+')
+    ->name('tienda.producto');
 
 Route::middleware(['auth', 'active'])->group(function () {
 

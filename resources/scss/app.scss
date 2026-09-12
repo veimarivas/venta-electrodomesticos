@@ -10,6 +10,12 @@
 // sobrescrituras de Velzon, que deben quedar por encima de su CSS compilado.
 @use 'components/marca';
 
+// La escala compartida y la capa que pule los componentes de Velzon van ANTES
+// de los módulos: así corrigen los valores por defecto de la plantilla, pero
+// cada pantalla que ya tiene su propio estilo conserva la última palabra.
+@use 'components/sistema';
+@use 'components/base';
+
 @use 'components/badges';
 @use 'components/tables';
 @use 'components/personas-v2';
@@ -36,6 +42,7 @@
 @use 'components/reparaciones';
 @use 'components/creditos';
 @use 'components/entregas';
+@use 'components/tienda-publica';
 
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
 @use 'flatpickr/dist/flatpickr.min.css';

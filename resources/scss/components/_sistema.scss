@@ -1,0 +1,69 @@
+// -----------------------------------------------------------------------------
+// Sistema de diseño — escala compartida
+// -----------------------------------------------------------------------------
+// La marca (colores) vive en `_marca.scss`. Aquí va todo lo que NO es color:
+// radios, sombras, movimiento, anillos de foco y estados. Es la escala que hace
+// que dos pantallas distintas se lean como el mismo producto, y la que deben
+// usar los componentes nuevos en vez de inventarse un `.65rem` o un `rgba`.
+//
+// Las sombras llevan el azul noche dentro. Una sombra negra sobre una superficie
+// azulada se lee sucia; la misma sombra teñida se lee como profundidad.
+//
+// En modo oscuro no se aclaran: se oscurecen y se suben de opacidad. Una sombra
+// tenue sobre un fondo negro simplemente no existe.
+// -----------------------------------------------------------------------------
+
+:root {
+    // ---- Radios -----------------------------------------------------------
+    --radio-xs: .4rem;      // chips, marcas de estado
+    --radio-sm: .55rem;     // botones pequeños, inputs compactos
+    --radio-md: .65rem;     // campos y botones
+    --radio-lg: .85rem;     // tarjetas y listados
+    --radio-xl: 1rem;       // modales, bandas y héroes
+    --radio-pill: 99px;
+
+    // ---- Sombras (tintadas de azul noche) ---------------------------------
+    --sombra-xs: 0 .1rem .3rem rgba(10, 24, 43, .05);
+    --sombra-sm: 0 .25rem .75rem rgba(10, 24, 43, .07);
+    --sombra-md: 0 .6rem 1.5rem rgba(10, 24, 43, .09);
+    --sombra-lg: 0 1rem 2.5rem rgba(10, 24, 43, .13);
+    --sombra-xl: 0 1.5rem 3.5rem rgba(10, 24, 43, .18);
+
+    // ---- Movimiento -------------------------------------------------------
+    --trans-rapida: .15s ease;
+    --trans-media: .22s cubic-bezier(.2, .7, .3, 1);
+
+    // ---- Foco -------------------------------------------------------------
+    --anillo-foco: 0 0 0 .2rem rgba(37, 73, 112, .26);
+    --anillo-foco-oro: 0 0 0 .2rem rgba(197, 161, 98, .32);
+
+    // ---- Estados (badges, alertas y gráficas) -----------------------------
+    // Los valores de color coinciden con `_viz.scss`: un estado se ve igual en
+    // una tabla, en una alerta y en una gráfica.
+    --estado-ok: #1baf7a;
+    --estado-ok-suave: rgba(27, 175, 122, .12);
+    --estado-alerta: #eda100;
+    --estado-alerta-suave: rgba(237, 161, 0, .14);
+    --estado-alerta-texto: #8a6b34;
+    --estado-error: #e34948;
+    --estado-error-suave: rgba(227, 73, 72, .12);
+    --estado-info: #2a78d6;
+    --estado-info-suave: rgba(42, 120, 214, .12);
+}
+
+[data-bs-theme="dark"] {
+    --sombra-xs: 0 .1rem .3rem rgba(0, 0, 0, .30);
+    --sombra-sm: 0 .25rem .75rem rgba(0, 0, 0, .35);
+    --sombra-md: 0 .6rem 1.5rem rgba(0, 0, 0, .40);
+    --sombra-lg: 0 1rem 2.5rem rgba(0, 0, 0, .45);
+    --sombra-xl: 0 1.5rem 3.5rem rgba(0, 0, 0, .50);
+
+    --anillo-foco: 0 0 0 .2rem rgba(75, 127, 184, .40);
+    --anillo-foco-oro: 0 0 0 .2rem rgba(216, 187, 133, .30);
+
+    --estado-ok-suave: rgba(27, 175, 122, .20);
+    --estado-alerta-suave: rgba(237, 161, 0, .22);
+    --estado-alerta-texto: #e0b866;
+    --estado-error-suave: rgba(227, 73, 72, .20);
+    --estado-info-suave: rgba(42, 120, 214, .20);
+}

@@ -158,6 +158,10 @@
             background: #eef1f6;
         }
 
+        .login-remember:has(.form-check-input:checked) {
+            background: rgba(37, 73, 112, .06);
+        }
+
         .login-remember .form-check-input {
             width: 1.15em;
             height: 1.15em;
@@ -287,6 +291,49 @@
 
         .login-alert-error i { color: #dc3545; }
 
+        /* ── Micro-interacciones ──────────────────────────────────── */
+        /* El campo enfocado enciende su etiqueta: confirma qué se está
+           editando sin añadir texto. `:has()` donde el navegador lo entiende;
+           donde no, la etiqueta se queda igual. */
+        .login-form .form-group:has(.form-control:focus) .form-label {
+            color: var(--auth-azul);
+        }
+
+        /* La alerta y el error entran deslizándose: aparecen después de enviar
+           y conviene que el ojo los note. */
+        @keyframes login-alert-in {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .login-alert,
+        .login-form .invalid-feedback {
+            animation: login-alert-in .3s ease-out both;
+        }
+
+        /* El botón pasa un brillo corto al pasar por encima: una sola pasada,
+           alineado con el de la tienda. */
+        @keyframes login-shine {
+            from { left: -140%; }
+            to   { left: 140%; }
+        }
+
+        .login-btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -140%;
+            width: 55%;
+            background: linear-gradient(115deg, transparent, rgba(255, 255, 255, .3), transparent);
+            transform: skewX(-18deg);
+            pointer-events: none;
+        }
+
+        .login-btn:hover::after {
+            animation: login-shine .7s ease-out;
+        }
+
         /* ── Stagger entrance ─────────────────────────────────────── */
         @keyframes login-fade-in {
             from { opacity: 0; transform: translateY(10px); }
@@ -307,7 +354,10 @@
             .login-form .form-group,
             .login-remember,
             .login-btn,
-            .login-secure { animation: none; }
+            .login-secure,
+            .login-alert,
+            .login-form .invalid-feedback,
+            .login-btn::after { animation: none; }
         }
     </style>
 
