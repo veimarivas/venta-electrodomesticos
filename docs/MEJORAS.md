@@ -13,6 +13,32 @@ todos los días y hoy sigue anotando aparte.
 
 ---
 
+## Ronda de mejoras (2026-09-12)
+
+Campaña que empezó con el lector de códigos y siguió con lo que estaba a medias
+en la app. Todo lo que no dependía de credenciales de terceros quedó hecho.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **El escáner no leía el código del sistema** | La etiqueta pasó de Code128 a **QR**: la cámara del teléfono lo lee en cualquier orientación y a menos resolución. En el panel y en el modal; la app muestra el QR y el POS acepta QR y Code128 (etiquetas viejas). |
+| ✅ | **Devolver un aparato desde el teléfono** | `POST /ventas/{id}/devolver` y botón en la ficha de la venta, con motivo. Las líneas devueltas se tachan. De paso se cableó el botón **Anular**, que estaba muerto. |
+| ✅ | **Movimientos de caja en el turno** | Ingresos y retiros: afectan el esperado del arqueo y se listan en el panel y en la app. |
+| ✅ | **Comprobantes para el cliente** | Estado de cuenta del crédito y orden de taller en PDF, desde el panel y desde la app (con visor de PDF). |
+| ✅ | **Handshake de versión app↔API** | La app avisa si el APK quedó atrás. `VENTAS_APP_MINIMA` se cambia sin tocar código. |
+| ✅ | **Buscador del panel: clientes y compras** | Y sugerencias en vivo en el topbar sin recargar. |
+| ✅ | **Etiqueta imprimible desde la app** | `GET /unidades/{id}/etiqueta` en PDF (QR en PNG para DomPDF). |
+| ✅ | **CI en GitHub Actions** | Los dos repos: suite de Laravel contra MariaDB y `analyze` + tests de Flutter. |
+| ✅ | **Tests de flujo de la app** | Cubren devolución/anulación y caja; destaparon y corrigieron un controlador liberado antes de tiempo. |
+| ✅ | **Cobro idempotente y cola sin conexión** | Reintentar no duplica; una venta cobrada sin señal se guarda en el teléfono y se envía al volver. |
+| ✅ | **Avisos al cliente listos** | Entrega en camino y reparación lista, por un canal configurable (`log` o `correo`); WhatsApp/SMS se añade en un solo sitio. |
+| ✅ | **Diagnóstico de push** | `php artisan push:revisar` dice qué falta para que FCM funcione. |
+
+Queda de esta ronda, y solo esto: **conectar las credenciales**. FCM necesita el
+`service-account.json` de Firebase y `google-services.json` en la app; los
+avisos por WhatsApp o SMS necesitan un proveedor. El código está esperando.
+
+---
+
 ## Fase 0 — Antes de construir nada
 
 Ninguna es una función nueva, y por eso van primero: construir encima de un
@@ -392,11 +418,12 @@ conflictos.
    fase 0 y no es trabajo de código: sin eso, todo lo demás es opcional.
 2. ~~La fase 1 entera~~ — hecha el 2026-08-30. El sistema ya cubre lo que la
    tienda hace todos los días, del cobro a la reparación.
-3. **A continuación** — la **fase 2**, que ahora es la que manda. Ha crecido con
-   lo que dejó cada pieza nueva: entregas y cuotas desde el teléfono. Son cinco
-   trabajos pequeños e independientes, y juntos son la diferencia entre «la app
-   sirve para vender» y «sirve para trabajar».
-4. **Antes de la fase 3, una decisión** — no un desarrollo: confirmar el régimen
+3. ~~La **fase 2**~~ — hecha el 2026-09-12 (ver la ronda de arriba). Entregas,
+   cuotas, reparaciones, compras y devoluciones desde el teléfono.
+4. **Lo que queda, y es decidir, no programar** — conectar **Firebase** (push) y
+   un proveedor de **WhatsApp/SMS** (avisos al cliente). El resto del código ya
+   está hecho. Compruébalo con `php artisan push:revisar`.
+5. **Antes de la fase 3, una decisión** — no un desarrollo: confirmar el régimen
    fiscal de la tienda. Es lo único que puede obligar a rehacer trabajo ya
    hecho, y averiguarlo es gratis.
 

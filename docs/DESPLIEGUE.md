@@ -375,6 +375,35 @@ una página `https://`, que el navegador bloquea como contenido mixto.
 > marca de «ya avisado» a propósito: el disparo son dos fechas exactas, así que
 > repetirlo el mismo día vuelve a avisar de lo mismo y al día siguiente ya no.
 
+### Avisos al cliente
+
+Los avisos que van **al cliente** —su entrega sale, su reparación está lista—
+salen por el canal que diga `AVISOS_CANAL` en el `.env`:
+
+| Canal | Qué hace |
+|---|---|
+| `log` (por defecto) | Deja el mensaje en el log. El sistema funciona sin contratar nada |
+| `correo` | Lo manda por Mail al correo del cliente |
+
+Para WhatsApp o SMS hay que añadir el canal en `App\Support\AvisosAlCliente`;
+los disparadores (despachar una entrega, marcar una reparación como lista) no se
+tocan. Sin proveedor configurado, los avisos quedan en el log: se puede leer el
+texto y a quién le tocaba antes de decidir el proveedor.
+
+### ¿Está el push funcionando?
+
+La falta de credenciales de Firebase **es invisible**: los avisos se guardan y se
+leen por API igual, así que nada se rompe y nadie nota que al teléfono no llega
+nada. Para comprobarlo:
+
+```bash
+php artisan push:revisar
+```
+
+Dice si está el paquete, si hay credenciales y cuántos teléfonos hay registrados.
+Para activarlo hacen falta `FIREBASE_CREDENTIALS` (el `service-account.json`) en
+este `.env` y `google-services.json` en la app.
+
 **Qué se guarda:** el volcado completo de la base, las imágenes que subió el
 usuario (`storage/app/public`) y el `.env`. El código no: vuelve del
 repositorio, y meterlo llevaría también la plantilla Velzon entera —cientos de

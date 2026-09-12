@@ -765,6 +765,80 @@ FIREBASE_PROJECT_ID=tu-proyecto
 
 ## 12. Lo que ya está implementado
 
+### Ronda 2026-09-12: escáner, app a la par y offline
+
+Salió de un informe de uso real: **el escáner leía «lo demás» pero no el código
+que imprime el sistema**. El caso terminó destapando una campaña.
+
+#### La etiqueta pasó de Code128 a QR
+
+El code128 del código interno (`P001-2609-0001`, ~200 módulos) es demasiado
+denso: MLKit no lo resuelve cuando cada barra fina cae por debajo de ~2 px, cosa
+que pasa con la cámara de un teléfono a distancia de mostrador. La solución no
+fue subir la resolución —ya estaba en 1080p— sino **cambiar el símbolo**: un QR
+del mismo dato se lee en cualquier orientación y a mucha menos resolución.
+
+- `GeneradorEtiquetas::cuadroQr()` arma el SVG con `viewBox` cuadrado y los 4
+  módulos de zona de silencio; `cuadroQrPng()` lo saca en PNG para el PDF, que
+  DomPDF no dibuja bien en SVG.
+- La hoja de etiquetas del panel se rediseñó a QR + datos; el modal de unidades
+  muestra el QR; la app muestra el QR de la unidad.
+- El POS acepta **QR y Code128** a propósito: así las etiquetas ya impresas con
+  el formato viejo siguen sirviendo mientras se reimprimen.
+
+> **Lo que se descartó por el camino.** El primer intento fue `autoZoom: true`:
+> MLKit acercaba la cámara solo, pero al ampliar un code128 tan denso empezó a
+> devolver lecturas falsas (un `P001-2609-0001` leído como `1881811111111`
+> EAN-13) y el estado de la cámara se degradaba tras unas cuantas lecturas. Se
+> quitó.
+
+#### Devolución desde el teléfono
+
+`POST /api/v1/ventas/{venta}/devolver` usa el mismo `RegistroDeVenta::devolver`
+del panel. En la app, cada aparato de una venta tiene su botón **Devolver** con
+motivo obligatorio; las líneas devueltas se tachan. De paso se cableó el botón
+**Anular**, que estaba sin destino.
+
+#### Movimientos de caja
+
+Retiros e ingresos que antes solo cabían en las notas del cierre. Ahora son una
+tabla `movimientos_caja` y entran en el esperado del arqueo: un retiro explica
+un cajón que no cuadra con las ventas, en vez de aparecer como faltante.
+
+#### Comprobantes para el cliente
+
+Estado de cuenta del crédito y orden de servicio técnico en PDF, generados al
+vuelo (`ComprobantesDeCliente`). El panel los imprime; la app los abre en un
+visor (`printing`), que también arregló el recibo de venta, que antes solo
+guardaba la ruta del archivo.
+
+#### Versión app↔API
+
+`GET /api/v1/version` devuelve `app_minima`; la app compara con su propia versión
+y avisa si quedó atrás. `VENTAS_APP_MINIMA` se cambia sin tocar código. Es la
+respuesta al desajuste que ya pasó una vez: un APK nuevo contra un backend viejo
+responde 404 en las rutas que faltan.
+
+#### Cobro idempotente y cola sin conexión
+
+`ventas.clave_idempotencia` (única) y el POS guardando la misma clave entre
+reintentos: si la respuesta se pierde por un corte de red, reintentar devuelve la
+venta que ya existía. Encima de eso, una **cola persistente** en el teléfono
+(almacenamiento seguro) guarda las ventas cobradas sin señal y las envía al
+volver la conexión. Si el servidor las rechaza, quedan con el mensaje para que el
+cajero decida; no reintentan solas.
+
+> **Cada venta pendiente recuerda de qué usuario es.** Solo ese cajero la
+> sincroniza: de lo contrario otro se llevaría la venta en su nombre.
+
+#### Avisos al cliente y diagnóstico de push
+
+`AvisosAlCliente` elige el transporte por `config/avisos.php`: hoy `log` y
+`correo`; WhatsApp/SMS se añade ahí sin tocar los disparadores (despachar una
+entrega, marcar una reparación lista). Y `php artisan push:revisar` dice qué
+falta para que FCM funcione, porque la falta de credenciales no rompe nada y por
+eso mismo nadie la nota.
+
 ### Estructura
 
 ```

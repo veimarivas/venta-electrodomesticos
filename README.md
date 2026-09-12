@@ -58,6 +58,9 @@ aplicación, así que los números cuadran igual que en producción.
 php artisan test
 ```
 
+> El **CI** corre esta misma suite en cada push (`.github/workflows/tests.yml`),
+> contra MariaDB y compilando los assets.
+
 ## Herramientas de operación
 
 ```bash
@@ -70,6 +73,12 @@ administrador. Para empezar a probar de cero.
 php artisan usuario:acceso correo@ejemplo.com
 ```
 Dice por qué una cuenta no puede entrar, y con `--reset` le devuelve el acceso.
+
+```bash
+php artisan push:revisar
+```
+Dice qué falta para que las notificaciones push lleguen al teléfono (paquete,
+credenciales de Firebase y teléfonos registrados).
 
 ## Requisitos
 

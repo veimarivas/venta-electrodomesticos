@@ -1135,6 +1135,28 @@ está y por qué.
 Anúlala con el motivo. Los aparatos vuelven al stock y se pueden volver a
 vender.
 
+**Quiero devolver solo uno de los aparatos.**
+No hace falta anular la venta entera. En la ficha de la venta, cada aparato
+tiene su botón **Devolver**. El aparato vuelve al stock, la venta baja de
+importe y el histórico dice por qué. Funciona igual desde el panel y desde el
+teléfono. Hace falta el permiso de anular ventas.
+
+**La etiqueta se lee, pero antes no.**
+Ahora la etiqueta lleva un **código QR**. La cámara del teléfono lo lee en
+cualquier orientación y desde más lejos que el código de barras anterior. Las
+etiquetas viejas siguen funcionando: el lector acepta las dos.
+
+**No tengo señal y el cliente quiere pagar.**
+Cobra igual. Si no se puede enviar la venta, la app ofrece **guardarla en el
+teléfono**; el aparato sale del stock igual y la venta se envía sola cuando
+vuelve la conexión. En la pantalla de vender aparece el aviso con lo que quedó
+pendiente, y desde ahí se puede revisar o enviar a mano. No se pierde ni se
+duplica.
+
+**¿Cómo imprimo una etiqueta desde el teléfono?**
+En la ficha del aparato (*Inventario*), el botón de etiqueta abre el PDF listo
+para imprimir o compartir. Antes solo se podía desde el panel.
+
 **Me equivoqué en una compra ya registrada.**
 No se puede editar. Si el error es el estado de una unidad, se corrige con un
 ajuste en el Kardex; si es de importes, habla con el administrador.
