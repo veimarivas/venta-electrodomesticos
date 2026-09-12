@@ -37,6 +37,11 @@ class VentaDetalleResource extends JsonResource
             'precio_unitario' => (float) $this->precio_unitario,
             'descuento' => (float) $this->descuento,
             'importe' => (float) $this->precio_unitario - (float) $this->descuento,
+            // La app necesita saber si el aparato ya volvió —y por qué— para
+            // ofrecer (o no) el botón de devolver y marcarlo como devuelto.
+            'devuelto' => $this->estaDevuelto(),
+            'devuelto_en' => $this->devuelto_en?->toIso8601String(),
+            'motivo_devolucion' => $this->motivo_devolucion,
 
             $this->mergeWhen($verCostos, fn (): array => [
                 'costo_unitario' => (float) $this->costo_unitario,

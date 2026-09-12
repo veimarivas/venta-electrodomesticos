@@ -362,6 +362,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         Route::middleware('permission:ventas.anular')->group(function () {
             Route::post('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
+            // Devolver UN aparato suelto: misma acción que el panel, expuesta
+            // para el mostrador desde el teléfono.
+            Route::post('/ventas/{venta}/devolver', [VentaController::class, 'devolver'])->name('ventas.devolver');
         });
 
         // Entregas. La otra parte que escribe, y por la misma razón que el POS:

@@ -212,4 +212,148 @@ class VentasApiTest extends TestCase
         $this->getJson("/api/v1/ventas/{$venta->id}/recibo")
             ->assertUnauthorized();
     }
+
+    // ---- Devolver un aparato ------------------------------------------------
+
+    /**
+     * Venta con varias líneas, para poder devolver una sin anular el resto.
+     * Cada aparato vale un peso más que el anterior para distinguirlos.
+     */
+    private function venderVarios(int $cantidad): Venta
+    {
+        $lineas = [];
+
+        for ($i = 0; $i < $cantidad; $i++) {
+            $precio = 1000 + $i;
+
+            $unidad = Unidad::factory()->create([
+                'producto_id' => Producto::factory()->create([
+                    'precio_venta' => $precio,
+                ])->id,
+                'estado' => 'en_stock',
+                'costo_unitario' => $precio / 2,
+                'precio_venta' => $precio,
+            ]);
+
+            $lineas[] = [
+                'unidad_id' => $unidad->id,
+                'precio_unitario' => (string) $precio,
+                'descuento' => '0',
+            ];
+        }
+
+        return app(RegistroDeVenta::class)->registrar($lineas, [], $this->admin()->id);
+    }
+
+    public function test_devuelve_un_aparato_sin_anular_la_venta(): void
+    {
+        $venta = $this->venderVarios(2);
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $respuesta = $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+                'venta_detalle_id' => $detalle->id,
+                'motivo' => 'Vino con la pantalla rayada.',
+            ]);
+
+        $respuesta->assertOk()
+            ->assertJsonPath('data.estado', 'completada')
+            ->assertJsonStructure(['message', 'data']);
+
+        // La venta sigue viva pero con un aparato menos, y el devuelto queda
+        // registrado en la línea y en el acumulado de la cabecera.
+        $venta->refresh();
+        $this->assertSame('1000.00', $venta->total_devuelto);
+
+        $detalle->refresh();
+        $this->assertTrue($detalle->estaDevuelto());
+        $this->assertSame('Vino con la pantalla rayada.', $detalle->motivo_devolucion);
+        $this->assertSame('en_stock', $detalle->unidad()->first()->estado);
+    }
+
+    public function test_devolver_todos_los_aparatos_anula_la_venta(): void
+    {
+        $venta = $this->vender();
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+                'venta_detalle_id' => $detalle->id,
+                'motivo' => 'El cliente se arrepintió.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.estado', 'anulada');
+    }
+
+    public function test_no_permite_devolver_dos_veces_el_mismo_aparato(): void
+    {
+        $venta = $this->venderVarios(2);
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $cuerpo = [
+            'venta_detalle_id' => $detalle->id,
+            'motivo' => 'Primera devolución.',
+        ];
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", $cuerpo)
+            ->assertOk();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", $cuerpo)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Ese aparato ya se había devuelto.');
+    }
+
+    public function test_devolver_exige_motivo(): void
+    {
+        $venta = $this->venderVarios(2);
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+                'venta_detalle_id' => $detalle->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('motivo');
+    }
+
+    public function test_el_vendedor_no_puede_devolver(): void
+    {
+        $venta = $this->venderVarios(2);
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $this->actingAs($this->vendedor())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+                'venta_detalle_id' => $detalle->id,
+                'motivo' => 'No debería poder.',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_la_linea_a_devolver_debe_pertenecer_a_la_venta(): void
+    {
+        $venta = $this->venderVarios(2);
+        $ajena = $this->venderVarios(1);
+        $detalleAjeno = $ajena->fresh(['detalles'])->detalles->first();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+                'venta_detalle_id' => $detalleAjeno->id,
+                'motivo' => 'Línea de otra venta.',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Esa línea no pertenece a la venta.');
+    }
+
+    public function test_se_necesita_sesion_para_devolver(): void
+    {
+        $venta = $this->venderVarios(2);
+        $detalle = $venta->fresh(['detalles'])->detalles->first();
+
+        $this->postJson("/api/v1/ventas/{$venta->id}/devolver", [
+            'venta_detalle_id' => $detalle->id,
+            'motivo' => 'Sin sesión.',
+        ])->assertUnauthorized();
+    }
 }

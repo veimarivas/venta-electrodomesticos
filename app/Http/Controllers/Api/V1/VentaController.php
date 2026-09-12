@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VentaResource;
 use App\Models\Venta;
+use App\Models\VentaDetalle;
 use App\Support\RegistroDeVenta;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -53,7 +54,7 @@ class VentaController extends Controller
     public function show(Request $request, Venta $venta): VentaResource
     {
         return new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
         );
     }
 
@@ -84,7 +85,54 @@ class VentaController extends Controller
         return response()->json([
             'message' => "Venta anulada: {$devueltas} aparato(s) vuelve(n) al stock.",
             'data' => new VentaResource(
-                $venta->fresh()->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user'])
+                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+            ),
+        ]);
+    }
+
+    /**
+     * Devolver UN aparato de la venta sin anularla, desde el teléfono.
+     *
+     * Va con el permiso de anular: devolver una línea es una acción más pequeña
+     * que anular la venta entera, así que quien puede lo más puede lo menos. La
+     * lógica es la misma del panel (`RegistroDeVenta::devolver`): el aparato
+     * vuelve al stock, la venta recalcula sus importes y, si se devolvieron
+     * todos, queda anulada.
+     */
+    public function devolver(Request $request, Venta $venta): JsonResponse
+    {
+        $datos = $request->validate([
+            'venta_detalle_id' => ['required', 'integer'],
+            'motivo' => ['required', 'string', 'min:4', 'max:255'],
+        ]);
+
+        if ($venta->esta_anulada) {
+            return response()->json([
+                'message' => 'La venta está anulada: sus aparatos ya volvieron al stock.',
+            ], 422);
+        }
+
+        $detalle = VentaDetalle::query()
+            ->where('venta_id', $venta->id)
+            ->with(['venta', 'unidad'])
+            ->find($datos['venta_detalle_id']);
+
+        if ($detalle === null) {
+            return response()->json([
+                'message' => 'Esa línea no pertenece a la venta.',
+            ], 422);
+        }
+
+        try {
+            app(RegistroDeVenta::class)->devolver($detalle, $datos['motivo']);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message' => 'Aparato devuelto y de vuelta en el stock.',
+            'data' => new VentaResource(
+                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
             ),
         ]);
     }

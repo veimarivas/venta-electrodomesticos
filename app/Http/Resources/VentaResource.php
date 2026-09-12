@@ -38,6 +38,9 @@ class VentaResource extends JsonResource
             'subtotal' => (float) $this->subtotal,
             'descuento' => (float) $this->descuento,
             'total' => (float) $this->total,
+            // Acumulado de lo devuelto: el total ya es el neto, así que sin
+            // este dato la app no podría explicar cuánto se cobró en su día.
+            'total_devuelto' => (float) $this->total_devuelto,
             // Ni whenCounted con valor por defecto ni $this->detalles->count()
             // a secas: el segundo se evalúa siempre y dispara una consulta por
             // fila —o revienta con lazy loading deshabilitado. Se lee el conteo
