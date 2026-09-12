@@ -308,6 +308,80 @@ class PosApiTest extends TestCase
         $this->assertSame(1, Venta::count());
     }
 
+    // ---- Reintento sin duplicar (offline) ----------------------------------
+
+    public function test_reintentar_el_cobro_con_la_misma_clave_no_duplica(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $cuerpo = [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+            'metodo_pago' => 'efectivo',
+            'clave_idempotencia' => 'cobro-abc-123',
+        ];
+
+        $primera = $this->postJson('/api/v1/pos/cobrar', $cuerpo);
+        $primera->assertCreated();
+
+        // El cajero reintenta porque no vio la respuesta: el servidor devuelve
+        // la venta que ya existía, no registra otra.
+        $segunda = $this->postJson('/api/v1/pos/cobrar', $cuerpo);
+        $segunda->assertOk();
+        $this->assertSame($primera->json('data.id'), $segunda->json('data.id'));
+
+        $this->assertSame(1, Venta::count());
+        $this->assertSame(1, Venta::firstOrFail()->detalles()->count());
+    }
+
+    public function test_claves_distintas_son_ventas_distintas(): void
+    {
+        $una = $this->unidadEnStock();
+        $otra = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $una->id, 'precio' => 1500]],
+            'metodo_pago' => 'efectivo',
+            'clave_idempotencia' => 'cobro-1',
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $otra->id, 'precio' => 1500]],
+            'metodo_pago' => 'efectivo',
+            'clave_idempotencia' => 'cobro-2',
+        ])->assertCreated();
+
+        $this->assertSame(2, Venta::count());
+    }
+
+    public function test_la_misma_clave_con_otro_aparato_devuelve_la_venta_original(): void
+    {
+        // La clave manda: es el mismo cobro, aunque el carrito se haya armado
+        // de nuevo con otro aparato. La segunda unidad no se vende.
+        $una = $this->unidadEnStock();
+        $otra = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $una->id, 'precio' => 1500]],
+            'metodo_pago' => 'efectivo',
+            'clave_idempotencia' => 'misma-clave',
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $otra->id, 'precio' => 1500]],
+            'metodo_pago' => 'efectivo',
+            'clave_idempotencia' => 'misma-clave',
+        ])->assertOk();
+
+        $this->assertSame(1, Venta::count());
+        $this->assertSame('en_stock', $otra->fresh()->estado);
+    }
+
     public function test_no_se_puede_cobrar_con_un_metodo_que_el_mostrador_retiro(): void
     {
         $unidad = $this->unidadEnStock();

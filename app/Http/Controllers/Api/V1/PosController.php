@@ -9,6 +9,7 @@ use App\Models\Unidad;
 use App\Models\Venta;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RegistroDeVenta;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -215,7 +216,22 @@ class PosController extends Controller
             'monto_efectivo' => ['nullable', 'numeric', 'min:0'],
             'monto_qr' => ['nullable', 'numeric', 'min:0'],
             'comprobante' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // Clave que manda el teléfono para reintentar el cobro sin
+            // registrarlo dos veces si se pierde la respuesta.
+            'clave_idempotencia' => ['nullable', 'string', 'max:64'],
         ]);
+
+        $clave = $datos['clave_idempotencia'] ?? null;
+
+        // Si esa clave ya registró una venta, se devuelve la misma: el cajero
+        // reintentó porque no vio la respuesta, no porque quiera otra venta.
+        if ($clave !== null) {
+            $yaRegistrada = Venta::query()->where('clave_idempotencia', $clave)->first();
+
+            if ($yaRegistrada !== null) {
+                return $this->ventaExistente($yaRegistrada);
+            }
+        }
 
         $usaQr = in_array($datos['metodo_pago'], Venta::METODOS_CON_QR, true);
 
@@ -272,6 +288,7 @@ class PosController extends Controller
             $venta = app(RegistroDeVenta::class)->registrar(
                 lineas: $lineas,
                 cabecera: [
+                    'clave_idempotencia' => $clave,
                     'cliente_id' => $datos['cliente_id'] ?? null,
                     'metodo_pago' => $datos['metodo_pago'],
                     'notas' => trim($datos['notas'] ?? '') !== '' ? trim($datos['notas']) : null,
@@ -282,6 +299,20 @@ class PosController extends Controller
                 ],
                 userId: $request->user()->id,
             );
+        } catch (QueryException $e) {
+            // Dos reintentos simultáneos: el índice único frena al segundo y
+            // se devuelve la venta que sí quedó registrada.
+            if ($clave !== null && $this->esClaveDuplicada($e)) {
+                if ($comprobante !== null) {
+                    Storage::disk('public')->delete($comprobante);
+                }
+
+                return $this->ventaExistente(
+                    Venta::query()->where('clave_idempotencia', $clave)->firstOrFail()
+                );
+            }
+
+            throw $e;
         } catch (RuntimeException $e) {
             // El servicio distingue los casos de negocio (aparato ya vendido,
             // descuento no autorizado, cobro que no cuadra) de los fallos
@@ -319,5 +350,19 @@ class PosController extends Controller
             'descuento_maximo' => $tope,
             'precio_minimo' => round(max($precio - $tope, 0), 2),
         ];
+    }
+
+    /** Devuelve una venta ya registrada (reintento idempotente). */
+    private function ventaExistente(Venta $venta): JsonResponse
+    {
+        return (new VentaResource(
+            $venta->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user'])
+        ))->response()->setStatusCode(200);
+    }
+
+    private function esClaveDuplicada(QueryException $e): bool
+    {
+        return str_contains($e->getMessage(), 'clave_idempotencia')
+            || str_contains($e->getMessage(), 'Duplicate entry');
     }
 }

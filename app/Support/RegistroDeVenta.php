@@ -129,6 +129,9 @@ class RegistroDeVenta
 
                 $venta = $this->generador->crearCon([
                     ...$pago,
+                    // Clave del teléfono para reintentar sin duplicar. Nula en
+                    // las ventas del panel.
+                    'clave_idempotencia' => $cabecera['clave_idempotencia'] ?? null,
                     'cliente_id' => $cabecera['cliente_id'] ?? null,
                     'user_id' => $userId,
                     // Se ata al turno abierto, si lo hay. Nulo no es un error:

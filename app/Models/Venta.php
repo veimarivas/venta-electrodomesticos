@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
     'user_id',
     'caja_id',
     'codigo',
+    'clave_idempotencia',
     'vendida_en',
     'subtotal',
     'descuento',
