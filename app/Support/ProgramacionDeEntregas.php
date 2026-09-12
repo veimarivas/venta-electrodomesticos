@@ -31,6 +31,14 @@ use Throwable;
 class ProgramacionDeEntregas
 {
     /**
+     * Avisos al cliente (hoy: que su aparato sale). El canal se elige en
+     * `config/avisos.php`.
+     */
+    public function __construct(
+        private readonly AvisosAlCliente $avisos,
+    ) {}
+
+    /**
      * Programa la entrega de unas líneas concretas de una venta.
      *
      * @param  array<int, int>  $ventaDetalleIds
@@ -133,7 +141,29 @@ class ProgramacionDeEntregas
             'motivo_fallo' => null,
         ]);
 
-        return $entrega->refresh();
+        $this->avisarAlCliente($entrega->refresh());
+
+        return $entrega;
+    }
+
+    /**
+     * Avisa al cliente de que su aparato va en camino.
+     *
+     * Va al cliente —no al personal— y se manda al **despachar**, que es cuando
+     * la información sirve: antes de eso no hay hora cierta que darle.
+     */
+    private function avisarAlCliente(Entrega $entrega): void
+    {
+        $entrega->loadMissing('cliente.persona');
+
+        $cliente = $entrega->cliente?->persona;
+
+        $this->avisos->enviar(
+            $cliente?->celular,
+            $cliente?->correo,
+            'Su aparato salió en camino. Si no se encuentra disponible, se '
+                .'reprogramará la entrega.',
+        );
     }
 
     /**

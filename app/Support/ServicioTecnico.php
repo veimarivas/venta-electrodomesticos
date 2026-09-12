@@ -31,6 +31,7 @@ class ServicioTecnico
     public function __construct(
         private readonly GeneradorCodigoReparacion $generador,
         private readonly Kardex $kardex,
+        private readonly AvisosAlCliente $avisos,
     ) {}
 
     /**
@@ -165,7 +166,29 @@ class ServicioTecnico
             'lista_en' => now(),
         ]);
 
-        return $reparacion->refresh();
+        $this->avisarAlCliente($reparacion->refresh());
+
+        return $reparacion;
+    }
+
+    /**
+     * Avisa al cliente de que su aparato ya está listo.
+     *
+     * Antes había que llamarlo por teléfono; ahora el aviso sale solo al
+     * marcarlo como listo. Va al cliente y por el canal configurado.
+     */
+    private function avisarAlCliente(Reparacion $reparacion): void
+    {
+        $reparacion->loadMissing('cliente.persona');
+
+        $cliente = $reparacion->cliente?->persona;
+
+        $this->avisos->enviar(
+            $cliente?->celular,
+            $cliente?->correo,
+            "Su aparato de la orden {$reparacion->codigo} ya está listo para "
+                .'recoger en la tienda.',
+        );
     }
 
     /**
