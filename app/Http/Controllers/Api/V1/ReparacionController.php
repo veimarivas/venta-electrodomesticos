@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ReparacionResource;
 use App\Models\Reparacion;
 use App\Models\Unidad;
+use App\Support\ComprobantesDeCliente;
 use App\Support\ServicioTecnico;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use RuntimeException;
 
@@ -235,6 +237,22 @@ class ReparacionController extends Controller
             'data' => (new ReparacionResource($reparacion->fresh()->load([
                 'unidad.producto',
             ])))->conDetalle()->resolve($request),
+        ]);
+    }
+
+    /**
+     * Orden de servicio técnico en PDF, para dársela al cliente.
+     *
+     * Inline para que el visor del teléfono la abra directamente.
+     */
+    public function comprobante(Reparacion $reparacion): Response
+    {
+        $contenido = ComprobantesDeCliente::ordenDeReparacion($reparacion);
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Orden-'.$reparacion->codigo.'.pdf"',
+            'Content-Length' => (string) strlen($contenido),
         ]);
     }
 }

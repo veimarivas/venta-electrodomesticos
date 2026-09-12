@@ -219,6 +219,14 @@
 
                                 <td class="text-end pe-4">
                                     <div class="d-inline-flex gap-1">
+                                        {{-- El papel con el que el cliente vuelve:
+                                             se abre en otra pestaña para imprimirlo. --}}
+                                        <a href="{{ route('reparaciones.orden', $orden) }}" target="_blank"
+                                            rel="noopener" class="btn btn-accion btn-accion-secondary"
+                                            title="Imprimir orden">
+                                            <i class="ri-printer-line fs-16"></i>
+                                        </a>
+
                                         @if ($puedeAtender && in_array($orden->estado, ['recibida', 'en_reparacion', 'esperando_repuesto'], true))
                                             <button type="button" class="btn btn-accion btn-accion-info"
                                                 title="Diagnóstico" wire:click="abrirDiagnostico({{ $orden->id }})">

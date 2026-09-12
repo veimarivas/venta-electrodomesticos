@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EstadoCuentaController;
 use App\Http\Controllers\EtiquetaController;
+use App\Http\Controllers\OrdenReparacionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReciboController;
 use App\Http\Controllers\SearchController;
@@ -124,6 +126,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         ]);
     })->whereNumber('credito')->middleware('permission:creditos.ver')->name('creditos.show');
 
+    // Estado de cuenta del crédito en PDF: se entrega al cliente.
+    Route::get('/creditos/{credito}/estado-cuenta', EstadoCuentaController::class)
+        ->whereNumber('credito')
+        ->middleware('permission:creditos.ver')
+        ->name('creditos.estado-cuenta');
+
     Route::view('/entregas', 'backend.entregas.index', [
         'title' => 'Entregas',
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Entregas' => null],
@@ -214,6 +222,12 @@ Route::middleware(['auth', 'active'])->group(function () {
         'title' => 'Servicio técnico',
         'breadcrumbs' => ['Inicio' => null, 'Servicio técnico' => null],
     ])->middleware('permission:reparaciones.ver')->name('reparaciones.index');
+
+    // Orden de servicio técnico en PDF: es el papel con el que vuelve el cliente.
+    Route::get('/reparaciones/{reparacion}/orden', OrdenReparacionController::class)
+        ->whereNumber('reparacion')
+        ->middleware('permission:reparaciones.ver')
+        ->name('reparaciones.orden');
 
     Route::view('/inventario/kardex', 'backend.inventario.kardex', [
         'title' => 'Kardex',

@@ -395,6 +395,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // no está aquí — eso ocurre al cobrar la venta, con el plan delante.
         Route::middleware('permission:creditos.ver')->group(function () {
             Route::get('/creditos', [CreditoController::class, 'index'])->name('creditos.index');
+            Route::get('/creditos/{credito}/estado-cuenta', [CreditoController::class, 'estadoCuenta'])
+                ->name('creditos.estado-cuenta');
             Route::get('/creditos/{credito}', [CreditoController::class, 'show'])->name('creditos.show');
         });
 
@@ -417,9 +419,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // específico. El teléfono recibe aparatos y consulta el taller.
         Route::middleware('permission:reparaciones.ver')->group(function () {
             Route::get('/reparaciones', [ReparacionController::class, 'index'])->name('reparaciones.index');
-            Route::get('/reparaciones/{reparacion}', [ReparacionController::class, 'show'])->name('reparaciones.show');
+            // La estática va antes que la paramétrica: si no, «buscar-unidad»
+            // cae en el model binding de {reparacion} y responde 404.
             Route::get('/reparaciones/buscar-unidad', [ReparacionController::class, 'buscarUnidad'])
                 ->name('reparaciones.buscar-unidad');
+            Route::get('/reparaciones/{reparacion}/comprobante', [ReparacionController::class, 'comprobante'])
+                ->name('reparaciones.comprobante');
+            Route::get('/reparaciones/{reparacion}', [ReparacionController::class, 'show'])
+                ->whereNumber('reparacion')
+                ->name('reparaciones.show');
         });
 
         Route::post('/reparaciones', [ReparacionController::class, 'recibir'])

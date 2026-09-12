@@ -8,8 +8,10 @@ use App\Models\Credito;
 use App\Models\Cuota;
 use App\Models\PagoCredito;
 use App\Support\CobroDeCuota;
+use App\Support\ComprobantesDeCliente;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use RuntimeException;
 
@@ -111,6 +113,23 @@ class CreditoController extends Controller
             'cuotas',
             'pagos.cuota',
             'pagos.user',
+        ]);
+    }
+
+    /**
+     * Estado de cuenta del crédito en PDF, para entregárselo al cliente.
+     *
+     * Se devuelve inline para que el visor del teléfono lo abra directamente.
+     */
+    public function estadoCuenta(Credito $credito): Response
+    {
+        $contenido = ComprobantesDeCliente::estadoDeCuenta($credito);
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Estado-de-cuenta-'
+                .($credito->venta?->codigo ?? $credito->id).'.pdf"',
+            'Content-Length' => (string) strlen($contenido),
         ]);
     }
 }

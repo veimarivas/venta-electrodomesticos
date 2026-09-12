@@ -39,6 +39,13 @@
                             <i class="ri-hand-coin-line align-bottom me-1"></i> Registrar pago
                         </button>
                     @endif
+
+                    {{-- Estado de cuenta para el cliente: se abre en otra
+                         pestaña, así que se puede imprimir o mandar sin salir. --}}
+                    <a href="{{ route('creditos.estado-cuenta', $credito) }}" target="_blank"
+                        rel="noopener" class="btn btn-light">
+                        <i class="ri-printer-line align-bottom me-1"></i> Estado de cuenta
+                    </a>
                 </div>
             </div>
 
