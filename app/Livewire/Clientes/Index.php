@@ -196,6 +196,21 @@ class Index extends Component
         $this->resetPage();
     }
 
+    /**
+     * Permite llegar desde el buscador global ya filtrado: /clientes?buscar=CLI-0001.
+     *
+     * El resultado de clientes enlaza con su código —que es único—, así que el
+     * listado abre mostrando exactamente a esa persona.
+     */
+    public function mount(): void
+    {
+        $buscar = trim((string) request()->query('buscar', ''));
+
+        if ($buscar !== '') {
+            $this->buscar = $buscar;
+        }
+    }
+
     public function updatedFiltroEstado(): void
     {
         $this->resetPage();

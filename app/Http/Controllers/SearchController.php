@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Cliente;
+use App\Models\Compra;
 use App\Models\Producto;
 use App\Models\Unidad;
 use App\Models\Venta;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -80,9 +83,45 @@ class SearchController extends Controller
             ];
         }
 
+        if ($usuario?->can('clientes.ver')) {
+            $grupos['clientes'] = [
+                'titulo' => 'Clientes',
+                'icono' => 'ri-user-3-line',
+                'items' => $this->clientes($query),
+            ];
+        }
+
+        if ($usuario?->can('compras.ver')) {
+            $grupos['compras'] = [
+                'titulo' => 'Compras',
+                'icono' => 'ri-shopping-basket-2-line',
+                'items' => $this->compras($query),
+            ];
+        }
+
         // Un grupo vacío no aporta nada: se cae y así la página solo muestra
         // lo que de verdad encontró.
         return array_filter($grupos, fn (array $grupo) => $grupo['items'] !== []);
+    }
+
+    /**
+     * Sugerencias mientras se escribe, para el desplegable del topbar.
+     *
+     * Devuelve la misma forma que la página de resultados, pero pensada para
+     * pintarse al vuelo. Con menos de dos letras no busca: cada tecla
+     * dispararía una consulta a todos los módulos.
+     */
+    public function sugerencias(Request $request): JsonResponse
+    {
+        $query = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($query) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        return response()->json([
+            'data' => array_values($this->buscar($request, $query)),
+        ]);
     }
 
     /**
@@ -164,6 +203,60 @@ class SearchController extends Controller
                     .($venta->estado === 'anulada' ? ' · Anulada' : ''),
                 'url' => route('ventas.show', $venta),
                 'accion' => 'Ver la venta',
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function clientes(string $query): array
+    {
+        return Cliente::query()
+            ->with('persona')
+            ->buscar($query)
+            ->orderBy('codigo')
+            ->limit(self::POR_GRUPO)
+            ->get()
+            ->map(fn (Cliente $cliente) => [
+                'titulo' => $cliente->persona?->nombre_completo ?? $cliente->codigo,
+                'detalle' => implode(' · ', array_filter([
+                    $cliente->codigo,
+                    $cliente->persona?->carnet,
+                    $cliente->persona?->celular,
+                ])),
+                'nota' => null,
+                // El código es único: se llega al listado ya filtrado por él,
+                // que muestra exactamente a esa persona.
+                'url' => route('clientes.index', ['buscar' => $cliente->codigo]),
+                'accion' => 'Ver en clientes',
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function compras(string $query): array
+    {
+        return Compra::query()
+            ->with('proveedor')
+            ->buscar($query)
+            ->orderByDesc('fecha_compra')
+            ->orderByDesc('id')
+            ->limit(self::POR_GRUPO)
+            ->get()
+            ->map(fn (Compra $compra) => [
+                'titulo' => $compra->codigo,
+                'detalle' => implode(' · ', array_filter([
+                    $compra->proveedor?->nombre,
+                    $compra->fecha_compra?->format('d/m/Y'),
+                    $compra->numero_factura ? 'Fact. '.$compra->numero_factura : null,
+                ])),
+                'nota' => 'Bs '.number_format((float) $compra->total, 2, ',', '.')
+                    .' · '.(Compra::ESTADOS[$compra->estado] ?? $compra->estado),
+                'url' => route('compras.show', $compra),
+                'accion' => 'Ver la compra',
             ])
             ->all();
     }

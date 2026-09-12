@@ -99,9 +99,129 @@ const bindDatePickers = (root = document) => {
     });
 };
 
+/*
+|------------------------------------------------------------------------------
+| Buscador global: sugerencias mientras se escribe
+|------------------------------------------------------------------------------
+| El formulario del topbar sigue llevando a la página de resultados. Encima,
+| al escribir se piden sugerencias y se pintan en el desplegable que ya trae la
+| plantilla. Si la petición falla, no se rompe nada: queda el envío normal.
+*/
+const bindBuscadorGlobal = () => {
+    const input = document.getElementById('search-options');
+    const dropdown = document.getElementById('search-dropdown');
+
+    if (!input || !dropdown || input.dataset.sugerenciasEnlazadas === '1') {
+        return;
+    }
+
+    input.dataset.sugerenciasEnlazadas = '1';
+
+    const cuerpo = dropdown.querySelector('[data-simplebar]');
+    const accesos = cuerpo ? cuerpo.innerHTML : '';
+    const url = dropdown.dataset.urlSugerencias || '/buscar/sugerencias';
+
+    let temporizador = null;
+
+    const mostrar = () => {
+        dropdown.classList.add('show');
+        dropdown.style.display = 'block';
+    };
+
+    const ocultar = () => {
+        dropdown.classList.remove('show');
+        dropdown.style.display = '';
+    };
+
+    /** Escapa lo que viene de la base: nombres y códigos son texto libre. */
+    const escapar = (texto) => {
+        const div = document.createElement('div');
+        div.textContent = texto ?? '';
+
+        return div.innerHTML;
+    };
+
+    const pintar = (grupos) => {
+        if (!cuerpo) {
+            return;
+        }
+
+        const filas = grupos.flatMap((grupo) =>
+            grupo.items
+                .filter((item) => item.url)
+                .map((item) => `
+                    <a href="${escapar(item.url)}" class="dropdown-item notify-item">
+                        <span class="fw-semibold">${escapar(item.titulo)}</span>
+                        <small class="text-muted d-block">${escapar(item.detalle)}</small>
+                    </a>`)
+        );
+
+        cuerpo.innerHTML = filas.length === 0
+            ? '<div class="dropdown-header"><h6 class="text-muted mb-0 text-uppercase">Sin resultados</h6></div>'
+            : filas.join('');
+
+        mostrar();
+    };
+
+    const buscar = async (termino) => {
+        try {
+            const respuesta = await fetch(
+                `${url}?q=${encodeURIComponent(termino)}`,
+                { headers: { Accept: 'application/json' } },
+            );
+
+            if (!respuesta.ok) {
+                return;
+            }
+
+            const json = await respuesta.json();
+
+            // Otra tecla cambió el término mientras llegaba la respuesta.
+            if (input.value.trim() !== termino) {
+                return;
+            }
+
+            pintar(json.data || []);
+        } catch (_) {
+            // Sin red no se rompe: el formulario del topbar sigue funcionando.
+        }
+    };
+
+    input.addEventListener('input', () => {
+        const termino = input.value.trim();
+
+        window.clearTimeout(temporizador);
+
+        if (termino.length < 2) {
+            if (cuerpo) {
+                cuerpo.innerHTML = accesos;
+            }
+
+            ocultar();
+
+            return;
+        }
+
+        temporizador = window.setTimeout(() => buscar(termino), 250);
+    });
+
+    input.addEventListener('focus', () => {
+        if (input.value.trim().length >= 2 && cuerpo && cuerpo.innerHTML !== accesos) {
+            mostrar();
+        }
+    });
+
+    document.addEventListener('click', (evento) => {
+        if (!dropdown.contains(evento.target) && evento.target !== input) {
+            ocultar();
+        }
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     bindConfirmForms();
     bindDatePickers();
+    bindBuscadorGlobal();
 });
 
 /*
@@ -405,6 +525,7 @@ document.addEventListener('livewire:init', () => {
 document.addEventListener('livewire:navigated', () => {
     bindConfirmForms();
     bindDatePickers();
+    bindBuscadorGlobal();
 });
 
 /*

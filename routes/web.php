@@ -35,6 +35,11 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::get('/buscar', [SearchController::class, 'index'])->name('search');
 
+    // Sugerencias del topbar mientras se escribe. Estática antes que nada, para
+    // que no la confunda ninguna ruta con parámetro bajo /buscar.
+    Route::get('/buscar/sugerencias', [SearchController::class, 'sugerencias'])
+        ->name('search.sugerencias');
+
     // Salto desde un resultado al inventario del producto. Es una redirección
     // y no un enlace directo porque el filtro viaja por sesión, nunca en la
     // URL — misma regla que al entrar desde categorías.

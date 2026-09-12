@@ -37,17 +37,18 @@
                     </span>
                 </button>
 
-                <!-- Buscador global: productos, seriales, ventas -->
+                <!-- Buscador global: productos, seriales, ventas, clientes y compras -->
                 <form class="app-search d-none d-md-block" action="{{ route('search') }}" method="GET"
                     autocomplete="off">
                     <div class="position-relative">
-                        <input type="text" class="form-control" name="q" placeholder="Buscar producto, serial o venta..."
+                        <input type="text" class="form-control" name="q" placeholder="Buscar producto, serial, venta, cliente o compra..."
                             id="search-options" value="{{ request('q') }}">
                         <span class="mdi mdi-magnify search-widget-icon"></span>
                         <span class="mdi mdi-close-circle search-widget-icon search-widget-icon-close d-none"
                             id="search-close-options"></span>
                     </div>
-                    <div class="dropdown-menu dropdown-menu-lg" id="search-dropdown">
+                    <div class="dropdown-menu dropdown-menu-lg" id="search-dropdown"
+                        data-url-sugerencias="{{ route('search.sugerencias') }}">
                         <div data-simplebar style="max-height: 320px;">
                             <div class="dropdown-header">
                                 <h6 class="text-overflow text-muted mb-0 text-uppercase">Accesos rápidos</h6>

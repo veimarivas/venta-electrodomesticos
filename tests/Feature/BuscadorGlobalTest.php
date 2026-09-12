@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cliente;
+use App\Models\Compra;
+use App\Models\Persona;
 use App\Models\Producto;
+use App\Models\Proveedor;
 use App\Models\Unidad;
 use App\Models\User;
 use App\Models\Venta;
@@ -148,5 +152,74 @@ class BuscadorGlobalTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('search.producto', $producto))
             ->assertForbidden();
+    }
+
+    // ---- Clientes y compras ------------------------------------------------
+
+    public function test_encuentra_un_cliente_por_su_nombre(): void
+    {
+        $persona = Persona::factory()->create([
+            'nombres' => 'Marta',
+            'apellido_paterno' => 'Quispe',
+            'apellido_materno' => 'Rojas',
+        ]);
+        $cliente = Cliente::factory()->for($persona)->create(['codigo' => 'CLI-7777']);
+
+        $this->actingAs($this->admin())
+            ->get('/buscar?q='.urlencode('Quispe'))
+            ->assertOk()
+            ->assertSee('Clientes')
+            ->assertSee('Marta Quispe Rojas')
+            // El código es único: el resultado lleva al listado ya filtrado.
+            ->assertSee(route('clientes.index', ['buscar' => $cliente->codigo]), false);
+    }
+
+    public function test_encuentra_una_compra_por_su_codigo(): void
+    {
+        $proveedor = Proveedor::factory()->create(['nombre' => 'Distribuidora Andina']);
+        $compra = Compra::factory()->for($proveedor)->create([
+            'codigo' => 'COM-2026-9999',
+            'total' => 1500,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get('/buscar?q=COM-2026-9999')
+            ->assertOk()
+            ->assertSee('Compras')
+            ->assertSee($compra->codigo)
+            ->assertSee('Distribuidora Andina');
+    }
+
+    // ---- Sugerencias en vivo -----------------------------------------------
+
+    public function test_las_sugerencias_llegan_en_json(): void
+    {
+        Producto::factory()->create(['nombre' => 'Refrigerador No Frost']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/buscar/sugerencias?q=Refri')
+            ->assertOk()
+            ->assertJsonPath('data.0.titulo', 'Productos')
+            ->assertJsonPath('data.0.items.0.titulo', 'Refrigerador No Frost');
+    }
+
+    public function test_las_sugerencias_no_buscan_con_una_letra(): void
+    {
+        Producto::factory()->create(['nombre' => 'Refrigerador No Frost']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/buscar/sugerencias?q=R')
+            ->assertOk()
+            ->assertExactJson(['data' => []]);
+    }
+
+    public function test_las_sugerencias_respetan_los_permisos(): void
+    {
+        Unidad::factory()->create(['serial' => 'SN-SECRETO-1', 'precio_venta' => 500]);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson('/buscar/sugerencias?q=SN-SECRETO')
+            ->assertOk()
+            ->assertExactJson(['data' => []]);
     }
 }
