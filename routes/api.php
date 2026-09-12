@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\TrabajadorController;
 use App\Http\Controllers\Api\V1\UnidadController;
 use App\Http\Controllers\Api\V1\UsuarioController;
 use App\Http\Controllers\Api\V1\VentaController;
+use App\Http\Controllers\Api\V1\VersionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +42,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // ---- Público ----------------------------------------------------------
+    // La app la consulta al arrancar, antes de saber si el token sirve: un APK
+    // viejo tiene que poder enterarse de que quedó atrás.
+    Route::get('/version', [VersionController::class, 'show'])->name('version');
+
     // Límite más estrecho que el resto: es la puerta por la que se prueban
     // contraseñas, y aquí todavía no hay usuario al que atribuir el gasto.
     Route::post('/auth/login', [AuthController::class, 'login'])
