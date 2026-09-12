@@ -13,6 +13,38 @@ todos los días y hoy sigue anotando aparte.
 
 ---
 
+## Diseño y escaparate público (2026-09-12)
+
+Campaña de diseño sobre las dos caras del producto —el panel y la app— y una
+puerta pública al catálogo. No toca ninguna regla de negocio: es cómo se ve y
+cómo se llega a lo que ya existía.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Escaparate público del catálogo** | `GET /` deja de redirigir a `/dashboard` y muestra la tienda a quien no tiene sesión: recomendados, catálogo por categorías, buscador, filtros por categoría/marca/disponibilidad y ficha de producto con precio. Reutiliza `App\Support\Vitrina` y **nunca expone costos**. Test: `TiendaPublicaTest` (9). |
+| ✅ | **Sistema de diseño del panel** | `_sistema.scss` centraliza radios, sombras tintadas, movimiento y estados; `_base.scss` pule los componentes de Velzon (botones, tarjetas, campos, tablas, modales) por encima de la plantilla y por debajo de cada módulo. |
+| ✅ | **Vitrina y Stock alineados a la marca** | La Vitrina traía su propia paleta (slate/indigo); ahora usa el azul noche y el oro. Stock pierde el turquesa legado (`#0f766e`) y los acentos verdes del modo oscuro, y sus estados pasan a los tokens del sistema. |
+| ✅ | **Login con movimiento de marca** | La banda respira (halo y anillo muy lentos), el contenido entra por capas y el formulario gana micro-interacciones (etiqueta que se enciende, alerta que se desliza, brillo del botón). |
+| ✅ | **App Flutter: cabeceras de marca** | La `AppBar` de las pantallas de detalle pasa a azul noche con hilo dorado, y las cinco pestañas principales comparten la banda degradada (`EncabezadoDegradado` con `TabBar`). |
+
+Piezas de fondo que explican el resto:
+
+- **El sistema de diseño vive en dos archivos** (`_sistema.scss` y `_base.scss`)
+  en vez de repartirse en treinta. Un módulo nuevo hereda el acabado sin
+  escribir una sola regla.
+- **La app del teléfono gana una transición propia**: las fichas se abren con un
+  desvanecido y las pestañas cambian al instante (`router.dart`), y `Aparecer`
+  (en `core/widgets.dart`) da entrada a los bloques respetando «reducir
+  movimiento».
+- **Avisos se rediseñó** con tarjetas propias, chip por tipo y punto de no leído.
+
+**Lo que queda de esta pieza:** en la app, un buscador y una píldora de filtro
+compartidos (hoy hay una decena de copias), unificar las fichas de detalle sobre
+`Tarjeta` y rediseñar las pestañas de Administración (usuarios, roles y QR), que
+siguen con `ListTile` plano.
+
+---
+
 ## Ronda de mejoras (2026-09-12)
 
 Campaña que empezó con el lector de códigos y siguió con lo que estaba a medias

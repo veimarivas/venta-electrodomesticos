@@ -2,7 +2,9 @@
 
 Sistema de gestión para una tienda de electrodomésticos: catálogo, compras,
 inventario aparato por aparato, punto de venta y reportes. Panel web en Laravel
-y aplicación móvil en Flutter para el mostrador y el almacén.
+y aplicación móvil en Flutter para el mostrador y el almacén. La raíz publica
+además un **escaparate del catálogo** —productos, precios y disponibilidad—,
+abierto a quien no tiene sesión.
 
 ## Lo que lo distingue
 

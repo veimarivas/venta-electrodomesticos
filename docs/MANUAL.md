@@ -30,6 +30,11 @@ Y explica dos cosas que a primera vista sorprenden: las compras generan
 | Usuario | tu **nombre de usuario** (`jperezlopez`) **o** tu correo |
 | Contraseña | tu carnet, la primera vez |
 
+> **La dirección de la tienda muestra el catálogo al público.** Quien la abre
+> sin iniciar sesión ve la tienda —productos, precios y disponibilidad—, no el
+> panel. Para trabajar, inicia sesión desde el botón **Acceso**: al entrar pasas
+> al panel, igual que siempre.
+
 El menú lateral solo muestra lo que tu rol permite. Si echas en falta una
 sección, es permisos, no un fallo.
 

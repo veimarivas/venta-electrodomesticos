@@ -461,6 +461,8 @@ cachés (`php artisan optimize:clear`).
 - [ ] HTTPS con certificado válido.
 - [ ] Comprobar que el document root es `public/`: abrir
       `https://…/.env` debe dar 404.
+- [ ] Abrir `/` sin sesión: debe salir el **escaparate** con productos y precios,
+      no el panel. Y `/dashboard` sin sesión, debe seguir mandando al login.
 - [ ] Los tres procesos del §4 registrados como servicio, no lanzados a mano en
       una consola que se cierra al cerrar sesión.
 - [ ] Correr `php artisan backup:run` una vez y comprobar que el ZIP existe.

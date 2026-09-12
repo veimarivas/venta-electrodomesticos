@@ -500,6 +500,11 @@ Todo se resuelve con un `JOIN items ON items.purchase_id` — por eso vale la pe
 5. **Ventas (POS)** — buscar producto → seleccionar unidad disponible (por serial/código escaneado) → cobrar. Transacción atómica: crear `venta` + `venta_detalles`, marcar items como `sold`, registrar el movimiento de inventario y disparar el evento.
 6. **Reportes** — ventas por día/semana/mes, por vendedor, por categoría, top productos, rentabilidad por compra y por proveedor, stock bajo mínimo.
 7. **Dashboard en vivo** — contadores y últimas ventas actualizándose sin recargar.
+8. **Escaparate público** — `GET /` y `GET /producto/{slug}` (`App\Http\Controllers\StorefrontController`). Es la cara «de tienda» del catálogo, abierta a quien **no tiene sesión**.
+
+> **La raíz ya no manda al panel.** Antes `GET /` redirigía a `/dashboard`; ahora muestra el catálogo —los más vendidos y las categorías, la misma fuente que la Vitrina (`App\Support\Vitrina`)—, con buscador, filtros por categoría (incluidas subcategorías), marca y disponibilidad, y ficha de producto con precio, características y relacionados. El acceso del personal sigue en `/login`, y Fortify manda a `/dashboard` al entrar, así que para quien trabaja **nada cambia**.
+>
+> El escaparate **nunca expone costos ni ganancia**: solo `precio_venta` y unidades disponibles. Un producto archivado o de una categoría oculta responde 404 aunque alguien tenga el enlace guardado. Reutiliza `App\Support\Vitrina`, así que «qué es recomendado» se sigue tocando en un solo sitio; lo cubre `tests/Feature/TiendaPublicaTest.php`.
 
 ---
 
