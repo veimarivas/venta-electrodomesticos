@@ -123,6 +123,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // un ordenador cerca. Escanear la etiqueta abre su ficha con el kardex.
         Route::middleware('permission:unidades.ver')->group(function () {
             Route::get('/unidades', [UnidadController::class, 'index'])->name('unidades.index');
+            // Estática de facto antes que la paramétrica de dos segmentos.
+            Route::get('/unidades/{unidad}/etiqueta', [UnidadController::class, 'etiqueta'])
+                ->name('unidades.etiqueta');
             Route::get('/unidades/{unidad}', [UnidadController::class, 'show'])->name('unidades.show');
         });
 

@@ -175,6 +175,25 @@ class GeneradorEtiquetas
     }
 
     /**
+     * QR en PNG, como data URI, para incrustarlo en un PDF.
+     *
+     * DomPDF no dibuja bien el SVG del QR; en PNG sale nítido. Se genera con un
+     * módulo grande (8 px) y fondo blanco para que, al escalarlo en la etiqueta,
+     * las barras no se vean pixeladas. La zona de silencio la aporta el margen
+     * del contenedor en la vista.
+     */
+    public function cuadroQrPng(string $codigo, int $modulo = 8): string
+    {
+        $base64 = $this->qr->getBarcodePNG($codigo, 'QRCODE', $modulo, $modulo, [0, 0, 0], [255, 255, 255]);
+
+        if ($base64 === false) {
+            return '';
+        }
+
+        return 'data:image/png;base64,'.$base64;
+    }
+
+    /**
      * Nombre legible del tamaño, para el selector de la pantalla.
      *
      * @return array<string, string>

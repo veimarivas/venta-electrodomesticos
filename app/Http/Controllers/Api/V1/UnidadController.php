@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UnidadResource;
 use App\Models\Unidad;
 use App\Support\AjusteDeUnidad;
+use App\Support\EtiquetaPdf;
+use App\Support\GeneradorEtiquetas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -275,6 +278,30 @@ class UnidadController extends Controller
         return response()->json([
             'mensaje' => 'Serial registrado.',
             'data' => new UnidadResource($unidad->fresh()),
+        ]);
+    }
+
+    /**
+     * Etiqueta imprimible de la unidad, en PDF, con su QR.
+     *
+     * Se genera al vuelo desde el aparato: es una foto de cómo está ahora
+     * (producto, código, serial). El visor del teléfono la abre y desde ahí se
+     * imprime, sin tener que pasar por el panel.
+     */
+    public function etiqueta(Request $request, Unidad $unidad): Response
+    {
+        $tamano = $request->string('tamano', 'mediana')->toString();
+
+        if (! array_key_exists($tamano, GeneradorEtiquetas::TAMANOS)) {
+            $tamano = 'mediana';
+        }
+
+        $contenido = EtiquetaPdf::generar($unidad, $tamano);
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Etiqueta-'.$unidad->codigo_interno.'.pdf"',
+            'Content-Length' => (string) strlen($contenido),
         ]);
     }
 }
