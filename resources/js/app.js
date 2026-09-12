@@ -378,6 +378,7 @@ document.addEventListener('livewire:init', () => {
         'modal-cancelar-entrega': 'modalCancelarEntrega',
         'modal-abrir-caja': 'modalAbrirCaja',
         'modal-cerrar-caja': 'modalCerrarCaja',
+        'modal-movimiento-caja': 'modalMovimientoCaja',
         'modal-recibo': 'modalRecibo',
         'modal-cliente': 'modalCliente',
         'modal-archivar-cliente': 'modalArchivarCliente',

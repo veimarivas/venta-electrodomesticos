@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Caja;
+use App\Models\MovimientoCaja;
 use App\Models\PagoCredito;
 use App\Models\Venta;
 use Illuminate\Support\Facades\DB;
@@ -98,12 +99,84 @@ class ArqueoDeCaja
     }
 
     /**
-     * Lo que debería haber en el cajón: el fondo más el efectivo cobrado.
+     * Lo que debería haber en el cajón: el fondo, más el efectivo cobrado, más
+     * lo que entró o salió como movimiento suelto del turno.
      */
     public function esperadoEnCentavos(Caja $caja): int
     {
         return ProrrateoDeGastos::aCentavos($caja->monto_inicial)
-            + $this->efectivoCobradoEnCentavos($caja);
+            + $this->efectivoCobradoEnCentavos($caja)
+            + $this->movimientosNetosEnCentavos($caja);
+    }
+
+    /**
+     * Efecto de los movimientos del turno sobre el cajón: ingresos menos
+     * retiros.
+     *
+     * Un retiro para pagar un flete saca billetes del cajón; un ingreso los
+     * mete. Sin contarlos, el cierre saldría con un descuadre que no es un
+     * faltante sino una anotación que nadie vio.
+     */
+    public function movimientosNetosEnCentavos(Caja $caja): int
+    {
+        $ingresos = ProrrateoDeGastos::aCentavos(
+            $caja->movimientos()->ingresos()->sum('monto')
+        );
+
+        $retiros = ProrrateoDeGastos::aCentavos(
+            $caja->movimientos()->retiros()->sum('monto')
+        );
+
+        return $ingresos - $retiros;
+    }
+
+    /**
+     * Registra un ingreso o retiro de efectivo dentro del turno.
+     *
+     * Un retiro no puede sacar del cajón más de lo que debería haber ahora
+     * mismo: dejaría el esperado en negativo y el cierre empezaría con un
+     * faltante que no es tal. Un ingreso no tiene tope.
+     *
+     * @param  float|string  $monto
+     */
+    public function registrarMovimiento(
+        Caja $caja,
+        int $userId,
+        string $tipo,
+        float|string $monto,
+        string $motivo,
+    ): MovimientoCaja {
+        if (! $caja->esta_abierta) {
+            throw new RuntimeException('No se pueden mover fondos de un turno ya cerrado.');
+        }
+
+        if (! array_key_exists($tipo, MovimientoCaja::TIPOS)) {
+            throw new RuntimeException('Tipo de movimiento desconocido.');
+        }
+
+        $motivo = trim($motivo);
+
+        if ($motivo === '') {
+            throw new RuntimeException('Hay que decir para qué es el movimiento.');
+        }
+
+        $centavos = ProrrateoDeGastos::aCentavos($monto);
+
+        if ($centavos <= 0) {
+            throw new RuntimeException('El importe tiene que ser mayor que cero.');
+        }
+
+        if ($tipo === 'retiro' && $centavos > $this->esperadoEnCentavos($caja)) {
+            throw new RuntimeException('No se puede retirar más de lo que hay en el cajón.');
+        }
+
+        return MovimientoCaja::create([
+            'caja_id' => $caja->id,
+            'user_id' => $userId,
+            'tipo' => $tipo,
+            'monto' => ProrrateoDeGastos::aDecimal($centavos),
+            'motivo' => $motivo,
+        ]);
     }
 
     /**

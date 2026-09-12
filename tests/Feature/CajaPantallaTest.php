@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Livewire\Caja\Index;
 use App\Models\Caja;
+use App\Models\MovimientoCaja;
 use App\Models\User;
 use App\Support\ArqueoDeCaja;
 use Database\Seeders\RolePermissionSeeder;
@@ -190,5 +191,73 @@ class CajaPantallaTest extends TestCase
             ->assertForbidden();
 
         $this->assertSame(0, Caja::count());
+    }
+
+    // ---- Movimientos de efectivo -------------------------------------------
+
+    public function test_el_cajero_registra_un_retiro(): void
+    {
+        $cajero = $this->cajero();
+        $caja = app(ArqueoDeCaja::class)->abrir($cajero->id, 500);
+
+        Livewire::actingAs($cajero)
+            ->test(Index::class)
+            ->call('confirmarMovimiento', 'retiro')
+            ->assertSet('tipoMovimiento', 'retiro')
+            ->set('montoMovimiento', '150')
+            ->set('motivoMovimiento', 'Flete a la tienda')
+            ->call('registrarMovimiento')
+            ->assertHasNoErrors()
+            ->assertDispatched('cerrar-modal-movimiento-caja');
+
+        $movimiento = MovimientoCaja::first();
+        $this->assertSame('retiro', $movimiento->tipo);
+        $this->assertSame('150.00', $movimiento->monto);
+        $this->assertSame($caja->id, $movimiento->caja_id);
+        $this->assertSame($cajero->id, $movimiento->user_id);
+    }
+
+    public function test_el_movimiento_exige_motivo_en_la_pantalla(): void
+    {
+        $cajero = $this->cajero();
+        app(ArqueoDeCaja::class)->abrir($cajero->id, 100);
+
+        Livewire::actingAs($cajero)
+            ->test(Index::class)
+            ->call('confirmarMovimiento', 'ingreso')
+            ->set('montoMovimiento', '50')
+            ->set('motivoMovimiento', '')
+            ->call('registrarMovimiento')
+            ->assertHasErrors(['motivoMovimiento' => 'required']);
+
+        $this->assertSame(0, MovimientoCaja::count());
+    }
+
+    public function test_no_se_registra_un_movimiento_sin_caja_abierta(): void
+    {
+        Livewire::actingAs($this->cajero())
+            ->test(Index::class)
+            ->set('montoMovimiento', '50')
+            ->set('motivoMovimiento', 'Sin turno abierto')
+            ->call('registrarMovimiento')
+            ->assertDispatched(
+                'toast',
+                fn (string $evento, array $datos): bool => $datos['tipo'] === 'error'
+            );
+
+        $this->assertSame(0, MovimientoCaja::count());
+    }
+
+    public function test_quien_solo_ve_no_puede_registrar_movimientos(): void
+    {
+        $auditor = User::factory()->create(['is_active' => true]);
+        $auditor->givePermissionTo('caja.ver');
+
+        Livewire::actingAs($auditor)
+            ->test(Index::class)
+            ->call('confirmarMovimiento', 'ingreso')
+            ->assertForbidden();
+
+        $this->assertSame(0, MovimientoCaja::count());
     }
 }

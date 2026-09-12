@@ -349,4 +349,113 @@ class ArqueoDeCajaTest extends TestCase
 
         $this->assertSame(0, $this->arqueo()->ventasSueltas($caja));
     }
+
+    // ---- Movimientos de efectivo -------------------------------------------
+
+    public function test_un_ingreso_suma_al_esperado(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+
+        $this->arqueo()->registrarMovimiento(
+            $caja,
+            $cajero->id,
+            'ingreso',
+            300,
+            'Reposición de cambio'
+        );
+
+        // 200 de fondo + 300 que entraron al cajón.
+        $this->assertSame(50000, $this->arqueo()->esperadoEnCentavos($caja->fresh()));
+    }
+
+    public function test_un_retiro_resta_del_esperado(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+        $this->vender($cajero, 1000);
+
+        $this->arqueo()->registrarMovimiento(
+            $caja,
+            $cajero->id,
+            'retiro',
+            300,
+            'Flete a Santa Cruz'
+        );
+
+        // 200 + 1000 − 300.
+        $this->assertSame(90000, $this->arqueo()->esperadoEnCentavos($caja->fresh()));
+    }
+
+    public function test_un_retiro_no_puede_sacar_mas_de_lo_que_hay(): void
+    {
+        // Si sacara más, el esperado quedaría en negativo y el cierre abriría
+        // con un faltante que no es tal.
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('retirar más de lo que hay');
+
+        $this->arqueo()->registrarMovimiento($caja, $cajero->id, 'retiro', 300, 'Flete');
+    }
+
+    public function test_un_ingreso_no_tiene_tope(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 0);
+
+        $this->arqueo()->registrarMovimiento($caja, $cajero->id, 'ingreso', 5000, 'Reposición');
+
+        $this->assertSame(500000, $this->arqueo()->esperadoEnCentavos($caja->fresh()));
+    }
+
+    public function test_el_movimiento_exige_motivo(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('para qué es');
+
+        $this->arqueo()->registrarMovimiento($caja, $cajero->id, 'ingreso', 100, '   ');
+    }
+
+    public function test_el_movimiento_exige_un_importe_mayor_que_cero(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('mayor que cero');
+
+        $this->arqueo()->registrarMovimiento($caja, $cajero->id, 'ingreso', 0, 'Nada');
+    }
+
+    public function test_no_se_mueven_fondos_de_un_turno_cerrado(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+        $this->arqueo()->cerrar($caja, $cajero->id, 200);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('turno ya cerrado');
+
+        $this->arqueo()->registrarMovimiento($caja->fresh(), $cajero->id, 'ingreso', 100, 'Tarde');
+    }
+
+    public function test_el_cierre_incluye_los_movimientos(): void
+    {
+        $cajero = $this->cajero();
+        $caja = $this->arqueo()->abrir($cajero->id, 200);
+        $this->vender($cajero, 1000);
+        $this->arqueo()->registrarMovimiento($caja, $cajero->id, 'retiro', 300, 'Flete');
+
+        // 200 + 1000 − 300 = 900. Sin el retiro, contar 900 daría un faltante
+        // de 300 que en realidad se explica.
+        $cerrada = $this->arqueo()->cerrar($caja, $cajero->id, 900);
+
+        $this->assertTrue($cerrada->cuadra);
+        $this->assertSame('900.00', $cerrada->monto_esperado);
+    }
 }

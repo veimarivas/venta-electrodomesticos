@@ -71,6 +71,16 @@ class Caja extends Model
         return $this->hasMany(Venta::class);
     }
 
+    /**
+     * Ingresos y retiros de efectivo del turno.
+     *
+     * Se ordenan del más reciente al más antiguo para la lista del panel.
+     */
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(MovimientoCaja::class)->latest('id');
+    }
+
     protected function estaAbierta(): Attribute
     {
         return Attribute::get(fn (): bool => $this->estado === 'abierta');

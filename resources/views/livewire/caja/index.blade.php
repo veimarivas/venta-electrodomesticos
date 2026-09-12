@@ -49,9 +49,19 @@
                         </div>
 
                         @if ($puedeGestionar)
-                            <button type="button" class="btn caja-nueva-hero" wire:click="confirmarCierre">
-                                <i class="ri-safe-2-line align-bottom me-1"></i> Cerrar y cuadrar
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn caja-nueva-hero"
+                                    wire:click="confirmarMovimiento('ingreso')">
+                                    <i class="ri-add-circle-line align-bottom me-1"></i> Ingreso
+                                </button>
+                                <button type="button" class="btn caja-nueva-hero"
+                                    wire:click="confirmarMovimiento('retiro')">
+                                    <i class="ri-indeterminate-circle-line align-bottom me-1"></i> Retiro
+                                </button>
+                                <button type="button" class="btn caja-nueva-hero" wire:click="confirmarCierre">
+                                    <i class="ri-safe-2-line align-bottom me-1"></i> Cerrar y cuadrar
+                                </button>
+                            </div>
                         @endif
                     </div>
 
@@ -104,6 +114,59 @@
                             </button>
                         @endif
                     </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ===================== Movimientos del turno ===================== --}}
+    @if ($abierta && $movimientos->isNotEmpty())
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h5 class="card-title mb-0">Movimientos de efectivo</h5>
+                <span class="badge fs-12 {{ (float) $movimientosNeto >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                    Neto: {{ (float) $movimientosNeto >= 0 ? '+' : '−' }}
+                    Bs {{ number_format(abs((float) $movimientosNeto), 2, ',', '.') }}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr class="text-uppercase fs-11 text-muted">
+                                <th class="ps-4">Tipo</th>
+                                <th>Motivo</th>
+                                <th>Registró</th>
+                                <th class="text-end pe-4">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($movimientos as $mov)
+                                <tr wire:key="mov-{{ $mov->id }}">
+                                    <td class="ps-4">
+                                        @if ($mov->tipo === 'ingreso')
+                                            <span class="caja-estado caja-estado-cuadra">
+                                                <span class="caja-estado-dot"></span> Ingreso
+                                            </span>
+                                        @else
+                                            <span class="caja-estado caja-estado-falta">
+                                                <span class="caja-estado-dot"></span> Retiro
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $mov->motivo }}</td>
+                                    <td>
+                                        {{ $mov->user?->name ?? '—' }}
+                                        <small class="text-muted d-block">{{ $mov->created_at?->format('H:i') }}</small>
+                                    </td>
+                                    <td class="text-end pe-4 caja-num {{ $mov->tipo === 'retiro' ? 'text-danger' : 'text-success' }}">
+                                        {{ $mov->tipo === 'retiro' ? '−' : '+' }}
+                                        {{ number_format((float) $mov->monto, 2, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -271,6 +334,62 @@
                             wire:loading.attr="disabled" wire:target="cerrar">
                         <span wire:loading.remove wire:target="cerrar">Cerrar caja</span>
                         <span wire:loading wire:target="cerrar">Cuadrando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Movimiento de caja ===================== --}}
+    <div class="modal fade" id="modalMovimientoCaja" tabindex="-1" aria-hidden="true"
+         wire:ignore.self data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        {{ $tipoMovimiento === 'retiro' ? 'Retiro de caja' : 'Ingreso a caja' }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="monto-movimiento" class="form-label">Importe</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Bs</span>
+                            <input type="number" step="0.01" min="0.01" id="monto-movimiento"
+                                   class="form-control @error('montoMovimiento') is-invalid @enderror"
+                                   wire:model="montoMovimiento" placeholder="0.00" autofocus>
+                            @error('montoMovimiento')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="motivo-movimiento" class="form-label">¿Para qué es?</label>
+                        <input type="text" id="motivo-movimiento" maxlength="255"
+                               class="form-control @error('motivoMovimiento') is-invalid @enderror"
+                               wire:model="motivoMovimiento"
+                               placeholder="{{ $tipoMovimiento === 'retiro' ? 'Flete a Santa Cruz, pago al proveedor...' : 'Ingreso extraordinario, reposición...' }}">
+                        @error('motivoMovimiento')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <small class="text-muted d-block mt-2">
+                            Queda en el arqueo del turno: es lo que explica por qué el cajón
+                            no cuadra con las ventas.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button"
+                            class="btn {{ $tipoMovimiento === 'retiro' ? 'btn-danger' : 'btn-primary' }}"
+                            wire:click="registrarMovimiento" wire:loading.attr="disabled"
+                            wire:target="registrarMovimiento">
+                        <span wire:loading.remove wire:target="registrarMovimiento">
+                            {{ $tipoMovimiento === 'retiro' ? 'Registrar retiro' : 'Registrar ingreso' }}
+                        </span>
+                        <span wire:loading wire:target="registrarMovimiento">Guardando...</span>
                     </button>
                 </div>
             </div>
