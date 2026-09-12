@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CajaController;
 use App\Http\Controllers\Api\V1\CargoController;
 use App\Http\Controllers\Api\V1\CatalogoController;
 use App\Http\Controllers\Api\V1\CategoriaController;
@@ -365,6 +366,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Devolver UN aparato suelto: misma acción que el panel, expuesta
             // para el mostrador desde el teléfono.
             Route::post('/ventas/{venta}/devolver', [VentaController::class, 'devolver'])->name('ventas.devolver');
+        });
+
+        // Caja: el turno del mostrador desde el teléfono. Abrir, mover efectivo
+        // y cerrar son del cajero (`caja.gestionar`); el estado también lo ve
+        // quien supervisa (`caja.ver`), con el importe esperado incluido.
+        Route::get('/caja', [CajaController::class, 'show'])
+            ->middleware('permission:caja.gestionar|caja.ver')
+            ->name('caja.show');
+
+        Route::middleware('permission:caja.gestionar')->group(function () {
+            Route::post('/caja/abrir', [CajaController::class, 'abrir'])->name('caja.abrir');
+            Route::post('/caja/cerrar', [CajaController::class, 'cerrar'])->name('caja.cerrar');
+            Route::post('/caja/movimientos', [CajaController::class, 'movimiento'])->name('caja.movimientos');
         });
 
         // Entregas. La otra parte que escribe, y por la misma razón que el POS:
