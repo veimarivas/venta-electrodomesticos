@@ -115,7 +115,7 @@
                                 ])->all();
                             @endphp
                             <div class="reportes-chart-container chart-serie {{ empty($datosSerie) ? 'vacio' : '' }}">
-                                <canvas id="chart-serie-tiempo" data-colors='["--vz-success"]'></canvas>
+                                <canvas id="chart-serie-tiempo" data-colors='["--marca-azul"]'></canvas>
                                 @if (empty($datosSerie))
                                     <div class="reportes-chart-vacio">
                                         <i class="ri-line-chart-line d-block"></i>
@@ -180,7 +180,7 @@
                 <div class="card-body">
                     @php $datosTop = $this->topProductos->all(); @endphp
                     <div class="reportes-chart-container chart-barras {{ empty($datosTop) ? 'vacio' : '' }}">
-                        <canvas id="chart-top-productos" data-colors='["--vz-primary"]'></canvas>
+                        <canvas id="chart-top-productos" data-colors='["--marca-azul"]'></canvas>
                         @if (empty($datosTop))
                             <div class="reportes-chart-vacio">
                                 <i class="ri-bar-chart-box-line d-block"></i>
@@ -201,7 +201,7 @@
                 <div class="card-body">
                     @php $datosVendedor = $this->porVendedor->all(); @endphp
                     <div class="reportes-chart-container chart-barras {{ empty($datosVendedor) ? 'vacio' : '' }}">
-                        <canvas id="chart-por-vendedor" data-colors='["--vz-success"]'></canvas>
+                        <canvas id="chart-por-vendedor" data-colors='["--estado-ok"]'></canvas>
                         @if (empty($datosVendedor))
                             <div class="reportes-chart-vacio">
                                 <i class="ri-bar-chart-box-line d-block"></i>
@@ -228,7 +228,7 @@
                         ])->all();
                     @endphp
                     <div class="reportes-chart-container chart-doughnut {{ empty($datosMetodo) ? 'vacio' : '' }}">
-                        <canvas id="chart-por-metodo" data-colors='["--vz-primary", "--vz-success", "--vz-warning", "--vz-danger", "--vz-info"]'></canvas>
+                        <canvas id="chart-por-metodo" data-colors='["--marca-azul", "--estado-ok", "--marca-oro", "--estado-info", "--estado-alerta", "--estado-error"]'></canvas>
                         @if (empty($datosMetodo))
                             <div class="reportes-chart-vacio">
                                 <i class="ri-wallet-3-line d-block"></i>
@@ -253,7 +253,7 @@
                     <div class="card-body">
                         @php $datosProveedor = $this->porProveedor->all(); @endphp
                         <div class="reportes-chart-container chart-proveedor {{ empty($datosProveedor) ? 'vacio' : '' }}">
-                            <canvas id="chart-por-proveedor" data-colors='["--vz-success", "--vz-warning", "--vz-danger"]'></canvas>
+                            <canvas id="chart-por-proveedor" data-colors='["--estado-ok", "--estado-alerta", "--estado-error"]'></canvas>
                             @if (empty($datosProveedor))
                                 <div class="reportes-chart-vacio">
                                     <i class="ri-truck-line d-block"></i>

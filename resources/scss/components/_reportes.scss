@@ -1,32 +1,153 @@
 // -----------------------------------------------------------------------------
-// Gráficas Chart.js — Reportes
+// Reportes — tarjetas, contenedores de gráfica y estados
 // -----------------------------------------------------------------------------
-// Contenedores de las gráficas dinámicas. Sigue el patrón de Velzon
-// (charts-echarts.html): clase .e-charts con altura fija, data-colors
-// para la resolución de variables CSS del tema.
+// La página mezcla tarjetas Bootstrap con los canvas de Chart.js. Aquí se
+// alinean las tarjetas con el resto del panel (radio, borde y sombra de marca)
+// y se le da a cada gráfica una caja con altura estable y un estado vacío
+// legible. Los colores salen siempre de tokens, nunca a fuego.
 // -----------------------------------------------------------------------------
 
-// Altura base para los contenedores de gráfica, similar a .e-charts de Velzon.
-// Los canvas de Chart.js con maintainAspectRatio:false necesitan un padre con
-// altura definida para evitar el colapso.
+.reportes-modulo {
+
+    // ---- Tarjetas -----------------------------------------------------------
+    // Las utilidades de Bootstrap (`border-0`, `shadow-sm`, `bg-transparent`)
+    // traen `!important`, así que aquí se reafirman con la misma fuerza.
+    .card {
+        border-radius: var(--radio-lg);
+        background: var(--marca-superficie);
+        box-shadow: 0 0 0 1px var(--marca-linea), var(--sombra-sm) !important;
+    }
+
+    .card-header {
+        padding: 1rem 1.25rem;
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%) !important;
+        border-bottom: 1px solid var(--marca-linea);
+
+        h5,
+        .card-title {
+            color: var(--marca-tinta);
+            font-size: .95rem;
+            font-weight: 650;
+            letter-spacing: -.01em;
+        }
+
+        small { color: var(--marca-apagado); }
+    }
+
+    .card-body { padding: 1.25rem; }
+
+    // ---- Filtros de período -------------------------------------------------
+    .filtro-estado {
+        gap: .4rem;
+
+        .btn {
+            border-radius: var(--radio-pill);
+            font-size: .8rem;
+            font-weight: 600;
+            padding: .38rem .9rem;
+        }
+    }
+
+    .reportes-rango {
+        .form-control {
+            border-radius: var(--radio-sm);
+            border-color: var(--marca-linea);
+            background: var(--marca-suave);
+            color: var(--marca-tinta);
+            font-size: .82rem;
+
+            &:focus {
+                border-color: var(--marca-azul);
+                box-shadow: var(--anillo-foco);
+                background: var(--marca-superficie);
+            }
+        }
+    }
+
+    // ---- Panel en vivo ------------------------------------------------------
+    .reportes-evento {
+        display: flex;
+        align-items: flex-start;
+        gap: .75rem;
+        padding: .65rem 0;
+        border-bottom: 1px solid var(--marca-linea);
+
+        &:last-child { border-bottom: 0; }
+    }
+
+    .reportes-evento-punto {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: var(--radio-sm);
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+    }
+
+    // ---- Cifra protagonista y datos secundarios -----------------------------
+    .reportes-resumen {
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--marca-linea);
+    }
+
+    .reportes-resumen-dato {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+
+        span { color: var(--marca-apagado); font-size: .82rem; }
+        strong { color: var(--marca-tinta); font-size: .95rem; font-variant-numeric: tabular-nums; }
+    }
+
+    // ---- Punto «en vivo» ----------------------------------------------------
+    // Late mientras hay conexión por WebSocket. Vive dentro del módulo para
+    // ganarle en especificidad a la regla compartida de `_crud.scss` y para que
+    // el punto se mantenga claro sobre la banda oscura en los dos temas.
+    .reportes-latido {
+        display: inline-block;
+        width: .5rem;
+        height: .5rem;
+        border-radius: 50%;
+        background: var(--estado-ok);
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--estado-ok) 70%, transparent);
+        animation: reportes-latido 1.8s infinite;
+    }
+
+    .reportes-vivo .reportes-latido {
+        background: #fff;
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, .7);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .reportes-latido { animation: none; }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Contenedores de gráfica (Chart.js)
+// -----------------------------------------------------------------------------
+// Un padre con altura definida es obligatorio con `maintainAspectRatio: false`,
+// si no el canvas colapsa a 0. La altura cambia según el tipo de gráfica.
 .reportes-chart-container {
     position: relative;
     width: 100%;
 
-    // Altura según tipo de gráfica — alineada con Velzon (350px típico).
     &.chart-barras {
-        height: 350px;
+        height: 340px;
     }
 
     &.chart-doughnut {
-        height: 350px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        height: 340px;
     }
 
     &.chart-proveedor {
-        height: 350px;
+        height: 300px;
     }
 
     &.chart-serie {
@@ -39,7 +160,7 @@
     }
 }
 
-// Estado vacío: cuando no hay datos, mostramos un mensaje sobre el canvas.
+// Estado vacío: cuando no hay datos, un mensaje centrado sobre el canvas.
 .reportes-chart-vacio {
     position: absolute;
     inset: 0;
@@ -47,52 +168,55 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #858d98;
-    font-size: 0.85rem;
-    font-family: 'Poppins', sans-serif;
+    gap: .35rem;
+    padding: 1rem;
+    color: var(--marca-apagado);
+    font-size: .85rem;
     text-align: center;
     pointer-events: none;
 
     i {
-        font-size: 1.5rem;
-        opacity: 0.4;
-        margin-bottom: 0.5rem;
+        font-size: 1.6rem;
+        opacity: .45;
     }
 }
 
-// Canvas transparente cuando no hay datos.
 .reportes-chart-container.vacio canvas {
     opacity: 0;
 }
 
-// Responsive: en móvil las barras son más cortas.
+// -----------------------------------------------------------------------------
+// Responsive
+// -----------------------------------------------------------------------------
 @media (max-width: 767.98px) {
     .reportes-chart-container {
         &.chart-barras,
         &.chart-proveedor {
-            height: 260px;
-        }
-
-        &.chart-doughnut {
             height: 280px;
         }
 
+        &.chart-doughnut {
+            height: 300px;
+        }
+
         &.chart-serie {
-            height: 200px;
+            height: 210px;
         }
     }
 }
 
-// En tabletas (entre xl y lg), las 3 columnas se apilan en 2+1.
 @media (min-width: 992px) and (max-width: 1199.98px) {
     .reportes-chart-container {
         &.chart-barras,
+        &.chart-doughnut,
         &.chart-proveedor {
             height: 300px;
         }
-
-        &.chart-doughnut {
-            height: 300px;
-        }
     }
+}
+
+@keyframes reportes-latido {
+    0% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+    70% { box-shadow: 0 0 0 .5rem transparent; opacity: .85; }
+    100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
 }
