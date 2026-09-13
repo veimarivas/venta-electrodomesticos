@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
 use App\Http\Controllers\Api\V1\CreditoController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\AutorizacionController;
 use App\Http\Controllers\Api\V1\DispositivoController;
 use App\Http\Controllers\Api\V1\EntregaController;
 use App\Http\Controllers\Api\V1\MarcaController;
@@ -361,6 +362,23 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/pos/buscar', [PosController::class, 'buscar'])->name('pos.buscar');
             Route::get('/pos/qrs', [PosController::class, 'qrs'])->name('pos.qrs');
             Route::post('/pos/cobrar', [PosController::class, 'cobrar'])->name('pos.cobrar');
+            // Reserva del carrito: bloquea el aparato mientras se vende, para
+            // que otra caja no lo tome.
+            Route::post('/pos/reservar', [PosController::class, 'reservar'])->name('pos.reservar');
+            Route::post('/pos/liberar', [PosController::class, 'liberar'])->name('pos.liberar');
+            // Descuento por debajo del mínimo: el vendedor pide el suyo y
+            // consulta el estado mientras espera.
+            Route::post('/pos/solicitudes-descuento', [AutorizacionController::class, 'solicitar'])
+                ->name('pos.solicitudes.solicitar');
+            Route::get('/pos/solicitudes-descuento/{solicitud}', [AutorizacionController::class, 'estado'])
+                ->name('pos.solicitudes.estado');
+        });
+
+        // Autorizaciones de descuento: solo quien puede aprobarlas.
+        Route::middleware('permission:ventas.autorizar_descuento')->group(function () {
+            Route::get('/autorizaciones', [AutorizacionController::class, 'index'])->name('autorizaciones.index');
+            Route::post('/autorizaciones/{solicitud}/resolver', [AutorizacionController::class, 'resolver'])
+                ->name('autorizaciones.resolver');
         });
 
         Route::middleware('permission:ventas.ver')->group(function () {

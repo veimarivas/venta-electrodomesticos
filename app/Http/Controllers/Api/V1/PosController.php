@@ -8,10 +8,13 @@ use App\Models\QrCobro;
 use App\Models\Unidad;
 use App\Models\Venta;
 use App\Support\ProrrateoDeGastos;
+use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
+use App\Support\ReservasDeUnidades;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -204,6 +207,8 @@ class PosController extends Controller
             'lineas' => ['required', 'array', 'min:1', 'max:50'],
             'lineas.*.unidad_id' => ['required', 'integer', 'distinct', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
             'lineas.*.precio' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
+            // Cada línea dice si el cliente se la lleva o va a domicilio.
+            'lineas.*.entrega' => ['nullable', Rule::in(['directa', 'domicilio'])],
             'cliente_id' => ['nullable', 'integer', Rule::exists('clientes', 'id')->whereNull('deleted_at')],
             // METODOS_POS, no METODOS_PAGO: `tarjeta` y `transferencia` siguen
             // en la lista histórica para que el listado pueda mostrar ventas
@@ -219,6 +224,14 @@ class PosController extends Controller
             // Clave que manda el teléfono para reintentar el cobro sin
             // registrarlo dos veces si se pierde la respuesta.
             'clave_idempotencia' => ['nullable', 'string', 'max:64'],
+            // Entrega a domicilio: solo se usa si alguna línea la pide.
+            'entrega' => ['nullable', 'array'],
+            'entrega.direccion' => ['nullable', 'string', 'max:255'],
+            'entrega.referencia' => ['nullable', 'string', 'max:255'],
+            'entrega.telefono_contacto' => ['nullable', 'string', 'max:30'],
+            'entrega.programada_para' => ['nullable', 'date'],
+            'entrega.con_instalacion' => ['nullable', 'boolean'],
+            'entrega.notas' => ['nullable', 'string', 'max:500'],
         ]);
 
         $clave = $datos['clave_idempotencia'] ?? null;
@@ -231,6 +244,19 @@ class PosController extends Controller
             if ($yaRegistrada !== null) {
                 return $this->ventaExistente($yaRegistrada);
             }
+        }
+
+        // Aparatos que van a domicilio y su dirección.
+        $domicilioIds = collect($datos['lineas'])
+            ->filter(fn (array $l): bool => ($l['entrega'] ?? 'directa') === 'domicilio')
+            ->pluck('unidad_id')
+            ->all();
+
+        if ($domicilioIds !== [] && trim((string) ($datos['entrega']['direccion'] ?? '')) === '') {
+            return response()->json([
+                'message' => 'Falta la dirección de la entrega a domicilio.',
+                'errors' => ['entrega.direccion' => ['Escribe la dirección de la entrega.']],
+            ], 422);
         }
 
         $usaQr = in_array($datos['metodo_pago'], Venta::METODOS_CON_QR, true);
@@ -251,7 +277,13 @@ class PosController extends Controller
         foreach ($datos['lineas'] as $linea) {
             $unidad = $unidades->get($linea['unidad_id']);
 
-            if ($unidad === null || ! $unidad->esVendible()) {
+            // La app reserva al agregar al carrito: para su propia caja el
+            // aparato sigue siendo vendible aunque esté en `reservado`.
+            $esMiReserva = $unidad !== null
+                && $unidad->estado === 'reservado'
+                && (int) $unidad->reservado_por === (int) $request->user()->id;
+
+            if ($unidad === null || (! $unidad->esVendible() && ! $esMiReserva)) {
                 return response()->json([
                     'message' => 'Uno de los aparatos ya no está disponible. Revisa el carrito.',
                 ], 422);
@@ -324,8 +356,38 @@ class PosController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        // Entrega a domicilio: se programa DESPUÉS de registrar, porque cuelga
+        // de las líneas de la venta. Si falla, la venta ya está cobrada y la
+        // entrega se puede programar desde la ficha; se anota sin fallar el cobro.
+        if ($domicilioIds !== []) {
+            $venta->loadMissing('detalles');
+
+            $ids = $venta->detalles
+                ->filter(fn ($detalle): bool => in_array($detalle->unidad_id, $domicilioIds, true))
+                ->pluck('id')
+                ->all();
+
+            if ($ids !== []) {
+                try {
+                    app(ProgramacionDeEntregas::class)->programar($venta, $ids, [
+                        'direccion' => $datos['entrega']['direccion'] ?? '',
+                        'referencia' => $datos['entrega']['referencia'] ?? null,
+                        'telefono_contacto' => $datos['entrega']['telefono_contacto'] ?? null,
+                        'programada_para' => $datos['entrega']['programada_para'] ?? null,
+                        'con_instalacion' => (bool) ($datos['entrega']['con_instalacion'] ?? false),
+                        'notas' => $datos['entrega']['notas'] ?? null,
+                    ], $request->user()->id);
+                } catch (RuntimeException $e) {
+                    Log::warning('La venta se registró pero la entrega no se pudo programar.', [
+                        'venta' => $venta->codigo,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
         return (new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
         ))->response()->setStatusCode(201);
     }
 
@@ -336,6 +398,11 @@ class PosController extends Controller
     {
         $precio = (float) $unidad->precio_venta;
         $tope = (float) ($unidad->producto?->descuento_maximo ?? 0);
+
+        // El costo solo viaja a quien puede verlo. La app lo enseña detrás de
+        // un ojito, igual que el POS del panel: con el cliente delante no se
+        // muestra, y con el ojo apagado el dato ni siquiera está en el teléfono.
+        $puedeVerCostos = auth()->user()?->can('reportes.ver_costos') ?? false;
 
         return [
             'unidad_id' => $unidad->id,
@@ -349,14 +416,57 @@ class PosController extends Controller
             'precio_venta' => $precio,
             'descuento_maximo' => $tope,
             'precio_minimo' => round(max($precio - $tope, 0), 2),
+            'costo_unitario' => $puedeVerCostos ? (float) $unidad->costo_unitario : null,
+            'puede_ver_costos' => $puedeVerCostos,
         ];
+    }
+
+    /**
+     * Reserva un aparato para esta caja mientras está en el carrito.
+     *
+     * Devuelve 409 si otra caja lo tiene reservado o ya no está disponible: la
+     * app lo muestra en vez de dejar que el cajero siga con un aparato que no
+     * va a poder cobrar.
+     */
+    public function reservar(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'unidad_id' => ['required', 'integer', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
+        ]);
+
+        $unidad = Unidad::with('producto')->find($datos['unidad_id']);
+
+        if ($unidad === null) {
+            return response()->json(['message' => 'Ese aparato ya no existe.'], 404);
+        }
+
+        if (! app(ReservasDeUnidades::class)->reservar($unidad->id, $request->user()->id)) {
+            return response()->json([
+                'message' => 'Ese aparato está en proceso de venta en otra caja o ya se vendió.',
+            ], 409);
+        }
+
+        return response()->json(['data' => $this->aparato($unidad->refresh())]);
+    }
+
+    /** Suelta la reserva de los aparatos que salieron del carrito. */
+    public function liberar(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'unidad_ids' => ['required', 'array', 'min:1', 'max:50'],
+            'unidad_ids.*' => ['integer'],
+        ]);
+
+        app(ReservasDeUnidades::class)->liberar($datos['unidad_ids'], $request->user()->id);
+
+        return response()->json(['message' => 'Reservas liberadas.']);
     }
 
     /** Devuelve una venta ya registrada (reintento idempotente). */
     private function ventaExistente(Venta $venta): JsonResponse
     {
         return (new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
         ))->response()->setStatusCode(200);
     }
 
