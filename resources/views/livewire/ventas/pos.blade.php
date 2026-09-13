@@ -148,12 +148,29 @@
                             <span class="pos-carrito-badge">{{ count($carrito) }}</span>
                         @endif
                     </div>
-                    @if ($carrito !== [])
-                        <button type="button" class="pos-carrito-vaciar-btn"
-                            wire:click="confirmarVaciar">
-                            <i class="ri-delete-bin-line"></i> Vaciar
-                        </button>
-                    @endif
+
+                    <div class="d-flex align-items-center gap-2">
+                        {{-- El costo vive detrás de este ojo: el POS se usa con
+                             el cliente delante, así que no se pinta hasta que
+                             quien tiene permiso lo enciende. --}}
+                        @if ($puedeVerCostos && $carrito !== [])
+                            <button type="button"
+                                class="pos-carrito-ver-costo @if ($mostrarCosto) is-activo @endif"
+                                wire:click="alternarCosto"
+                                title="{{ $mostrarCosto ? 'Ocultar el costo de compra' : 'Mostrar el costo de compra' }}"
+                                aria-pressed="{{ $mostrarCosto ? 'true' : 'false' }}">
+                                <i class="{{ $mostrarCosto ? 'ri-eye-line' : 'ri-eye-off-line' }}"></i>
+                                <span class="d-none d-sm-inline">{{ $mostrarCosto ? 'Costo visible' : 'Ver costo' }}</span>
+                            </button>
+                        @endif
+
+                        @if ($carrito !== [])
+                            <button type="button" class="pos-carrito-vaciar-btn"
+                                wire:click="confirmarVaciar">
+                                <i class="ri-delete-bin-line"></i> Vaciar
+                            </button>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="card-body p-0">
@@ -168,152 +185,162 @@
                             </p>
                         </div>
                     @else
-                        <div class="table-responsive">
-                            <table class="table align-middle mb-0 tabla-lineas-compra pos-tabla-carrito">
-                                <thead>
-                                    <tr class="text-uppercase fs-11 text-muted">
-                                        <th scope="col" class="ps-4">Aparato</th>
-                                        <th scope="col" class="text-end" style="width: 8.5rem">Referencia</th>
-                                        <th scope="col" style="width: 12.5rem">Precio a cobrar</th>
-                                        <th scope="col" class="text-end" style="width: 8rem">Descuento</th>
-                                        <th scope="col" style="width: 3rem"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($carrito as $indice => $linea)
-                                        @php
-                                            $u = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
-                                            $lista = (float) $linea['precio_lista'];
-                                            $tope = (float) $linea['tope_descuento'];
-                                            $descuentoCentavos = $this->descuentoDeLinea($linea);
-                                            $descuento = $descuentoCentavos / 100;
-                                            $topeCentavos = (int) round($tope * 100);
-                                            $minimo = max($lista - $tope, 0);
-                                        @endphp
-                                        <tr wire:key="carrito-{{ $indice }}-{{ $linea['unidad_id'] }}">
-                                            <td class="ps-4">
-                                                <div class="d-flex align-items-start gap-2">
-                                                    <span class="pos-carrito-item-num">{{ $indice + 1 }}</span>
-                                                    <div class="min-w-0">
-                                                        <div class="fw-semibold" style="color: var(--marca-tinta);">
-                                                            {{ $u?->producto?->nombre ?? 'Producto' }}
-                                                        </div>
+                        <div class="pos-lineas">
+                            @foreach ($carrito as $indice => $linea)
+                                @php
+                                    $u = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
+                                    $lista = (float) $linea['precio_lista'];
+                                    $tope = (float) $linea['tope_descuento'];
+                                    $descuentoCentavos = $this->descuentoDeLinea($linea);
+                                    $descuento = $descuentoCentavos / 100;
+                                    $topeCentavos = (int) round($tope * 100);
+                                    $minimo = max($lista - $tope, 0);
+                                    $cobrado = $lista - $descuento;
+                                    $costo = (float) ($u?->costo_unitario ?? 0);
+                                    $margen = $cobrado - $costo;
+                                @endphp
 
-                                                        {{-- Ficha completa del aparato: el cajero tiene
-                                                             que poder comprobar, sin salir del carrito,
-                                                             que es el que tiene en la mano. --}}
-                                                        <div class="pos-carrito-ficha">
-                                                            <span class="pos-carrito-dato">
-                                                                <i class="ri-barcode-line"></i>
-                                                                <code>{{ $u?->codigo_interno }}</code>
-                                                            </span>
-                                                            @if ($u?->serial)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-fingerprint-line"></i>
-                                                                    S/N {{ $u->serial }}
-                                                                </span>
-                                                            @endif
-                                                            @if ($u?->producto?->marca)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-store-2-line"></i>
-                                                                    {{ $u->producto->marca->nombre }}
-                                                                </span>
-                                                            @endif
-                                                            @if ($u?->producto?->modelo)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-price-tag-line"></i>
-                                                                    {{ $u->producto->modelo }}
-                                                                </span>
-                                                            @endif
+                                <article
+                                    class="pos-linea @error('carrito.'.$indice.'.precio') pos-linea-con-error @enderror"
+                                    wire:key="carrito-{{ $indice }}-{{ $linea['unidad_id'] }}">
 
-                                                            @if ($u?->producto?->categoria)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-folder-2-line"></i>
-                                                                    {{ $u->producto->categoria->nombre }}
-                                                                </span>
-                                                            @endif
-                                                            @if ($u?->garantia_hasta)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-shield-check-line"></i>
-                                                                    Garantía {{ $u->garantia_hasta->format('d/m/Y') }}
-                                                                </span>
-                                                            @endif
-                                                            @if ($u?->ubicacion)
-                                                                <span class="pos-carrito-dato">
-                                                                    <i class="ri-map-pin-line"></i>
-                                                                    {{ $u->ubicacion }}
-                                                                </span>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                    {{-- Cabecera: qué aparato es, para comprobarlo
+                                         contra el que se tiene en la mano. --}}
+                                    <div class="pos-linea-cabecera">
+                                        <span class="pos-linea-num">{{ $indice + 1 }}</span>
 
-                                            <td class="text-end">
-                                                <span class="pos-precio-referencia">
-                                                    Bs {{ number_format($lista, 2, ',', '.') }}
+                                        <div class="pos-linea-media">
+                                            @if ($u?->producto?->imagen)
+                                                <img src="{{ asset('storage/'.$u->producto->imagen) }}" alt="{{ $u->producto->nombre }}">
+                                            @else
+                                                <img src="{{ asset('assets/images/sin_imagen.png') }}" alt="Producto" class="pos-linea-media-sin">
+                                            @endif
+                                        </div>
+
+                                        <div class="pos-linea-info min-w-0">
+                                            <h6 class="pos-linea-nombre">{{ $u?->producto?->nombre ?? 'Producto' }}</h6>
+                                            <div class="pos-linea-chips">
+                                                <span class="pos-linea-chip pos-linea-chip-codigo">
+                                                    <i class="ri-barcode-line"></i>
+                                                    <code>{{ $u?->codigo_interno }}</code>
                                                 </span>
-                                                <span class="d-block fs-11 text-muted">
-                                                    @if ($tope > 0)
-                                                        Mín. Bs {{ number_format($minimo, 2, ',', '.') }}
-                                                    @else
-                                                        Sin descuento
-                                                    @endif
-                                                </span>
-                                            </td>
-
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <span class="pos-carrito-input-precio-span px-2 py-1">Bs</span>
-                                                    <input type="number" step="0.01" min="0.01" max="{{ $lista }}"
-                                                        wire:model.live.debounce.500ms="carrito.{{ $indice }}.precio"
-                                                        class="form-control text-end pos-carrito-input-precio @error('carrito.'.$indice.'.precio') is-invalid @enderror"
-                                                        style="max-width: 9rem;"
-                                                        aria-label="Precio a cobrar de {{ $u?->codigo_interno }}">
-                                                </div>
-
-                                                <div class="d-flex flex-wrap gap-1 mt-1">
-                                                    @if ($descuento > 0)
-                                                        <button type="button" class="pos-carrito-accion-desc"
-                                                            wire:click="quitarDescuento({{ $indice }})">
-                                                            <i class="ri-refresh-line"></i> Precio de lista
-                                                        </button>
-                                                    @endif
-                                                    @if ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos)
-                                                        <button type="button" class="pos-carrito-accion-desc pos-carrito-accion-max"
-                                                            wire:click="aplicarDescuentoMaximo({{ $indice }})">
-                                                            <i class="ri-price-tag-3-line"></i> Rebaja máxima
-                                                        </button>
-                                                    @endif
-                                                </div>
-
-                                                @error('carrito.'.$indice.'.precio')
-                                                    <small class="text-danger fs-11 d-block mt-1">{{ $message }}</small>
-                                                @enderror
-                                            </td>
-
-                                            <td class="text-end">
-                                                @if ($descuento > 0)
-                                                    <span class="pos-descuento-badge">
-                                                        − Bs {{ number_format($descuento, 2, ',', '.') }}
+                                                @if ($u?->serial)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-fingerprint-line"></i> {{ $u->serial }}
                                                     </span>
-                                                @else
-                                                    <span class="text-muted fs-12">—</span>
                                                 @endif
-                                            </td>
+                                                @if ($u?->producto?->marca)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-store-2-line"></i> {{ $u->producto->marca->nombre }}
+                                                    </span>
+                                                @endif
+                                                @if ($u?->producto?->modelo)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-price-tag-line"></i> {{ $u->producto->modelo }}
+                                                    </span>
+                                                @endif
+                                                @if ($u?->producto?->categoria)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-folder-2-line"></i> {{ $u->producto->categoria->nombre }}
+                                                    </span>
+                                                @endif
+                                                @if ($u?->garantia_hasta)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-shield-check-line"></i> Garantía {{ $u->garantia_hasta->format('d/m/Y') }}
+                                                    </span>
+                                                @endif
+                                                @if ($u?->ubicacion)
+                                                    <span class="pos-linea-chip">
+                                                        <i class="ri-map-pin-line"></i> {{ $u->ubicacion }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
 
-                                            <td class="text-end pe-3">
-                                                <button type="button" class="pos-carrito-quitar"
-                                                    wire:click="confirmarQuitar({{ $indice }})"
-                                                    title="Quitar del carrito"
-                                                    aria-label="Quitar {{ $u?->codigo_interno }}">
-                                                    <i class="ri-close-line"></i>
+                                        <button type="button" class="pos-linea-quitar"
+                                            wire:click="confirmarQuitar({{ $indice }})"
+                                            title="Quitar del carrito"
+                                            aria-label="Quitar {{ $u?->codigo_interno }}">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </div>
+
+                                    {{-- Cifras de la línea. El costo solo se pinta
+                                         con el ojito encendido: apagado, el dato
+                                         ni siquiera viaja al navegador. --}}
+                                    <div class="pos-linea-cuerpo">
+                                        <div class="pos-linea-campo">
+                                            <span class="pos-linea-campo-label">Referencia</span>
+                                            <span class="pos-linea-valor">Bs {{ number_format($lista, 2, ',', '.') }}</span>
+                                            <small class="pos-linea-nota">
+                                                @if ($tope > 0)
+                                                    Mín. Bs {{ number_format($minimo, 2, ',', '.') }}
+                                                @else
+                                                    Sin descuento
+                                                @endif
+                                            </small>
+                                        </div>
+
+                                        @if ($puedeVerCostos && $mostrarCosto)
+                                            <div class="pos-linea-campo pos-linea-campo-costo">
+                                                <span class="pos-linea-campo-label">
+                                                    <i class="ri-eye-line"></i> Costo
+                                                </span>
+                                                <span class="pos-linea-valor">Bs {{ number_format($costo, 2, ',', '.') }}</span>
+                                                <small class="pos-linea-nota {{ $margen < 0 ? 'pos-linea-nota-mal' : 'pos-linea-nota-bien' }}">
+                                                    Margen Bs {{ number_format($margen, 2, ',', '.') }}
+                                                </small>
+                                            </div>
+                                        @endif
+
+                                        <div class="pos-linea-campo pos-linea-campo-precio">
+                                            <label class="pos-linea-campo-label" for="v-precio-{{ $indice }}">Precio a cobrar</label>
+                                            <div class="pos-linea-input">
+                                                <span class="pos-linea-input-prefijo">Bs</span>
+                                                <input type="number" step="0.01" min="0.01" max="{{ $lista }}"
+                                                    id="v-precio-{{ $indice }}"
+                                                    wire:model.live.debounce.500ms="carrito.{{ $indice }}.precio"
+                                                    class="form-control text-end @error('carrito.'.$indice.'.precio') is-invalid @enderror"
+                                                    aria-label="Precio a cobrar de {{ $u?->codigo_interno }}">
+                                            </div>
+                                        </div>
+
+                                        <div class="pos-linea-campo">
+                                            <span class="pos-linea-campo-label">Descuento</span>
+                                            @if ($descuento > 0)
+                                                <span class="pos-descuento-badge">
+                                                    − Bs {{ number_format($descuento, 2, ',', '.') }}
+                                                </span>
+                                            @else
+                                                <span class="pos-linea-valor pos-linea-valor-tenue">—</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    {{-- Atajos y el error de la línea. --}}
+                                    @if ($descuento > 0 || ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos) || $errors->has('carrito.'.$indice.'.precio'))
+                                        <div class="pos-linea-acciones">
+                                            @if ($descuento > 0)
+                                                <button type="button" class="pos-carrito-accion-desc"
+                                                    wire:click="quitarDescuento({{ $indice }})">
+                                                    <i class="ri-refresh-line"></i> Precio de lista
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                            @endif
+                                            @if ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos)
+                                                <button type="button" class="pos-carrito-accion-desc pos-carrito-accion-max"
+                                                    wire:click="aplicarDescuentoMaximo({{ $indice }})">
+                                                    <i class="ri-price-tag-3-line"></i> Rebaja máxima
+                                                </button>
+                                            @endif
+                                            @error('carrito.'.$indice.'.precio')
+                                                <small class="text-danger fs-11">
+                                                    <i class="ri-error-warning-line align-bottom me-1"></i>{{ $message }}
+                                                </small>
+                                            @enderror
+                                        </div>
+                                    @endif
+                                </article>
+                            @endforeach
                         </div>
 
                         <div class="pos-carrito-footer">
@@ -725,9 +752,9 @@
                             </div>
                         @endif
 
-                        @if ($puedeVerCostos && $carrito !== [])
+                        @if ($puedeVerCostos && $mostrarCosto && $carrito !== [])
                             <div class="pos-total-linea pos-total-ganancia">
-                                <span>Ganancia estimada</span>
+                                <span><i class="ri-eye-line align-bottom me-1"></i>Ganancia estimada</span>
                                 <strong>Bs {{ number_format($this->gananciaEnCentavos / 100, 2, ',', '.') }}</strong>
                             </div>
                         @endif

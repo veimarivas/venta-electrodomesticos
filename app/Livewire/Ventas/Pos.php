@@ -103,6 +103,15 @@ class Pos extends Component
     /** Venta recién registrada, para mostrar el comprobante. */
     public ?int $ventaRegistradaId = null;
 
+    /**
+     * ¿Se muestra el costo de compra en el carrito?
+     *
+     * Apagado por defecto a propósito: el POS se usa con el cliente delante y
+     * el costo no es información que el cliente deba ver. Solo existe para
+     * quien tiene permiso de ver costos, y aun así hay que encenderlo.
+     */
+    public bool $mostrarCosto = false;
+
     /** Línea que el modal de confirmación está preguntando si se quita. */
     public ?int $quitarIndice = null;
 
@@ -552,6 +561,19 @@ class Pos extends Component
         $this->reajustarMixto();
     }
 
+    /**
+     * Enciende o apaga el costo de compra en el carrito.
+     *
+     * Se comprueba el permiso también aquí: el componente es un endpoint
+     * invocable y la línea de costo no debe salir para quien no puede verla.
+     */
+    public function alternarCosto(): void
+    {
+        $this->autorizar('reportes.ver_costos');
+
+        $this->mostrarCosto = ! $this->mostrarCosto;
+    }
+
     public function confirmarVaciar(): void
     {
         if ($this->carrito === []) {
@@ -579,7 +601,7 @@ class Pos extends Component
         $this->reset([
             'carrito', 'clienteId', 'buscarCliente', 'notas', 'buscar',
             'qrCobroId', 'comprobante', 'montoEfectivo', 'montoQr', 'quitarIndice',
-            'cuotaInicial', 'numeroCuotas', 'primerVencimiento',
+            'cuotaInicial', 'numeroCuotas', 'primerVencimiento', 'mostrarCosto',
         ]);
 
         $this->metodoPago = 'efectivo';

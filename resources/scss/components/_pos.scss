@@ -1,0 +1,263 @@
+// -----------------------------------------------------------------------------
+// Punto de venta — carrito
+// -----------------------------------------------------------------------------
+// Cada aparato del carrito es una tarjeta, no una fila de tabla: en el
+// mostrador se lee mejor un bloque por aparato, con su ficha arriba y sus
+// cifras debajo. El costo de compra solo se pinta con el ojito encendido, así
+// que apagado no viaja ni al navegador.
+//
+// Todos los colores salen de tokens; el modo oscuro se resuelve solo.
+// -----------------------------------------------------------------------------
+
+.pos-modulo {
+
+    // ---- Ojito del costo ---------------------------------------------------
+    .pos-carrito-ver-costo {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .38rem .8rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-pill);
+        background: var(--marca-superficie);
+        color: var(--marca-apagado);
+        font-size: .78rem;
+        font-weight: 600;
+        transition: border-color var(--trans-rapida), color var(--trans-rapida), background-color var(--trans-rapida);
+
+        &:hover {
+            border-color: var(--marca-azul);
+            color: var(--marca-azul-texto);
+        }
+
+        &.is-activo {
+            border-color: var(--marca-azul);
+            background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+            color: var(--marca-azul-texto);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    // ---- Lista de líneas ---------------------------------------------------
+    .pos-lineas {
+        display: flex;
+        flex-direction: column;
+        gap: .75rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .pos-linea {
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-md);
+        background: var(--marca-superficie);
+        overflow: hidden;
+        transition: border-color var(--trans-rapida), box-shadow var(--trans-rapida);
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--marca-azul) 22%, var(--marca-linea));
+            box-shadow: var(--sombra-xs);
+        }
+    }
+
+    .pos-linea-con-error {
+        border-color: color-mix(in srgb, var(--estado-error) 45%, var(--marca-linea));
+        box-shadow: inset 3px 0 0 var(--estado-error);
+    }
+
+    .pos-linea-cabecera {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .7rem .85rem;
+        border-bottom: 1px solid var(--marca-linea);
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+    }
+
+    .pos-linea-num {
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        width: 1.7rem;
+        height: 1.7rem;
+        border-radius: var(--radio-pill);
+        background: color-mix(in srgb, var(--marca-azul) 12%, transparent);
+        color: var(--marca-azul-texto);
+        font-size: .75rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pos-linea-media {
+        flex-shrink: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: var(--radio-sm);
+        overflow: hidden;
+        background: var(--marca-superficie);
+        border: 1px solid var(--marca-linea);
+        display: grid;
+        place-items: center;
+
+        img { width: 100%; height: 100%; object-fit: cover; }
+    }
+
+    .pos-linea-media-sin {
+        object-fit: contain !important;
+        opacity: .6;
+        padding: .25rem;
+    }
+
+    .pos-linea-info { flex: 1 1 auto; min-width: 0; }
+
+    .pos-linea-nombre {
+        margin: 0 0 .3rem;
+        font-size: .88rem;
+        font-weight: 650;
+        color: var(--marca-tinta);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pos-linea-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem;
+    }
+
+    .pos-linea-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .28rem;
+        padding: .18rem .5rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 600;
+
+        i { font-size: .75rem; }
+
+        code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+    }
+
+    .pos-linea-chip-codigo {
+        color: var(--marca-azul-texto);
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+    }
+
+    .pos-linea-quitar {
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        width: 1.9rem;
+        height: 1.9rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        background: var(--marca-superficie);
+        color: var(--marca-apagado);
+        transition: border-color var(--trans-rapida), color var(--trans-rapida), background-color var(--trans-rapida);
+
+        &:hover {
+            border-color: var(--estado-error);
+            color: var(--estado-error);
+            background: var(--estado-error-suave);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .pos-linea-cuerpo {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        gap: .6rem 1rem;
+        padding: .85rem;
+    }
+
+    .pos-linea-campo {
+        display: flex;
+        flex-direction: column;
+        gap: .2rem;
+        min-width: 0;
+    }
+
+    .pos-linea-campo-label {
+        font-size: .66rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: var(--marca-apagado);
+
+        i { font-size: .75rem; }
+    }
+
+    .pos-linea-valor {
+        font-size: .92rem;
+        font-weight: 650;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pos-linea-valor-tenue { color: var(--marca-apagado); }
+
+    .pos-linea-nota {
+        font-size: .68rem;
+        color: var(--marca-apagado);
+    }
+
+    .pos-linea-nota-bien { color: var(--estado-ok); }
+    .pos-linea-nota-mal { color: var(--estado-error); }
+
+    // Campo del precio: el borde vive en el contenedor, no en el input.
+    .pos-linea-input {
+        display: flex;
+        align-items: stretch;
+        max-width: 11rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        overflow: hidden;
+        background: var(--marca-suave);
+    }
+
+    .pos-linea-input-prefijo {
+        display: grid;
+        place-items: center;
+        padding: 0 .5rem;
+        background: var(--marca-superficie);
+        border-right: 1px solid var(--marca-linea);
+        color: var(--marca-apagado);
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    .pos-linea-input .form-control {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        font-weight: 700;
+        color: var(--marca-tinta);
+
+        &:focus {
+            box-shadow: none;
+            background: var(--marca-superficie);
+        }
+
+        &.is-invalid { background: var(--estado-error-suave); }
+    }
+
+    .pos-linea-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem;
+        padding: .55rem .85rem;
+        border-top: 1px dashed var(--marca-linea);
+        background: color-mix(in srgb, var(--marca-suave) 55%, transparent);
+    }
+}

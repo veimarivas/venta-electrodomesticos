@@ -45,6 +45,7 @@
 @use 'components/tienda-publica';
 // Al final: afina la tabla de unidades del inventario.
 @use 'components/unidades';
+@use 'components/pos';
 
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
 @use 'flatpickr/dist/flatpickr.min.css';
