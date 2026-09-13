@@ -34,6 +34,9 @@ class Index extends Component
     /** 'todos' | 'con_stock' | 'agotados' | 'bajo_minimo' */
     public string $filtroEstado = 'todos';
 
+    /** Panel de filtros desplegado en pantallas pequeñas. */
+    public bool $filtrosAbiertos = false;
+
     /**
      * Grupos contraídos del contenido: clave => true. Las claves son
      * "cat-{id}" (o "cat-sin") para categorías y "marca-{id}" (o "marca-sin").
@@ -91,6 +94,11 @@ class Index extends Component
         session()->put('producto_activo', $id);
 
         $this->redirect(route('inventario.unidades.index'));
+    }
+
+    public function toggleFiltros(): void
+    {
+        $this->filtrosAbiertos = ! $this->filtrosAbiertos;
     }
 
     public function limpiarFiltros(): void
@@ -345,6 +353,19 @@ class Index extends Component
             'filtroEstado' => $this->filtroEstado,
             'buscarMarca' => $this->buscarMarca,
             'colapsadas' => $this->colapsadas,
+            'filtrosActivos' => $this->contarFiltrosActivos(),
         ]);
+    }
+
+    /**
+     * Cantidad de criterios de búsqueda aplicados ahora mismo, para el
+     * contador del panel y los chips de filtros activos.
+     */
+    private function contarFiltrosActivos(): int
+    {
+        return ($this->buscar !== '' ? 1 : 0)
+            + ($this->categoriaFiltro !== null ? 1 : 0)
+            + count($this->marcasFiltro)
+            + ($this->filtroEstado !== 'todos' ? 1 : 0);
     }
 }

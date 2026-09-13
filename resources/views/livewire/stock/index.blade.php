@@ -1,286 +1,278 @@
 <div class="stock-modulo">
 
     {{-- ===================== Hero ===================== --}}
-    <div class="stock-hero mb-4">
+    <header class="stock-hero mb-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
             <div class="min-w-0">
-                <h1 class="stock-hero-titulo">Stock Actual</h1>
-                <p class="stock-hero-sub">Inventario en tiempo real de todos los productos.</p>
+                <h1 class="stock-hero-titulo">Stock actual</h1>
+                <p class="stock-hero-sub">Inventario disponible en tiempo real, agrupado por categoría o por marca.</p>
             </div>
             <span class="stock-hero-badge">
                 <i class="ri-stack-line"></i> {{ $resumen['productos'] }} productos activos
             </span>
         </div>
-    </div>
+    </header>
 
-    {{-- ===================== KPIs ===================== --}}
+    {{-- ===================== Indicadores ===================== --}}
     <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stock-kpi h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="min-w-0">
-                            <span class="stock-kpi-label">Unidades en stock</span>
-                            <span class="stock-kpi-valor">{{ number_format($resumen['unidades'], 0, ',', '.') }}</span>
-                            <span class="stock-kpi-nota">Listas para vender</span>
-                        </div>
-                        <span class="stock-kpi-icono stock-kpi-icono--stock"><i class="ri-archive-2-line"></i></span>
-                    </div>
-                </div>
+        <div class="col-6 col-xl-3">
+            <button type="button" class="stock-kpi {{ $filtroEstado === 'con_stock' ? 'is-activo' : '' }}"
+                wire:click="setEstado('con_stock')"
+                aria-pressed="{{ $filtroEstado === 'con_stock' ? 'true' : 'false' }}"
+                title="Ver los productos con existencias">
+                <span class="stock-kpi-icono stock-kpi-icono--stock"><i class="ri-archive-2-line"></i></span>
+                <span class="stock-kpi-cuerpo">
+                    <span class="stock-kpi-label">Unidades en stock</span>
+                    <span class="stock-kpi-valor">{{ number_format($resumen['unidades'], 0, ',', '.') }}</span>
+                    <span class="stock-kpi-nota">Listas para vender</span>
+                </span>
+                <i class="ri-arrow-right-up-line stock-kpi-flecha" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="col-6 col-xl-3">
+            <div class="stock-kpi stock-kpi--estatico">
+                <span class="stock-kpi-icono stock-kpi-icono--valor"><i class="ri-wallet-2-line"></i></span>
+                <span class="stock-kpi-cuerpo">
+                    <span class="stock-kpi-label">Valor de inventario</span>
+                    <span class="stock-kpi-valor">Bs {{ number_format($resumen['valor'], 2, ',', '.') }}</span>
+                    <span class="stock-kpi-nota">Unidades × precio de venta</span>
+                </span>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stock-kpi h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="min-w-0">
-                            <span class="stock-kpi-label">Valor de inventario</span>
-                            <span class="stock-kpi-valor">Bs {{ number_format($resumen['valor'], 2, ',', '.') }}</span>
-                            <span class="stock-kpi-nota">Unidades × precio de venta</span>
-                        </div>
-                        <span class="stock-kpi-icono stock-kpi-icono--valor"><i class="ri-wallet-2-line"></i></span>
-                    </div>
-                </div>
-            </div>
+
+        <div class="col-6 col-xl-3">
+            <button type="button" class="stock-kpi {{ $filtroEstado === 'agotados' ? 'is-activo' : '' }}"
+                wire:click="setEstado('agotados')"
+                aria-pressed="{{ $filtroEstado === 'agotados' ? 'true' : 'false' }}"
+                title="Ver los productos agotados">
+                <span class="stock-kpi-icono stock-kpi-icono--agotados"><i class="ri-close-circle-line"></i></span>
+                <span class="stock-kpi-cuerpo">
+                    <span class="stock-kpi-label">Productos agotados</span>
+                    <span class="stock-kpi-valor {{ $resumen['agotados'] > 0 ? 'stock-kpi-valor--peligro' : '' }}">{{ $resumen['agotados'] }}</span>
+                    <span class="stock-kpi-nota">Sin existencias</span>
+                </span>
+                <i class="ri-arrow-right-up-line stock-kpi-flecha" aria-hidden="true"></i>
+            </button>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stock-kpi h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="min-w-0">
-                            <span class="stock-kpi-label">Productos agotados</span>
-                            <span class="stock-kpi-valor" style="color: #e34948;">{{ $resumen['agotados'] }}</span>
-                            <span class="stock-kpi-nota">Sin existencias disponibles</span>
-                        </div>
-                        <span class="stock-kpi-icono stock-kpi-icono--agotados"><i class="ri-close-circle-line"></i></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card stock-kpi h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="min-w-0">
-                            <span class="stock-kpi-label">Bajo stock mínimo</span>
-                            <span class="stock-kpi-valor" style="color: var(--marca-oro);">{{ $resumen['bajoMinimo'] }}</span>
-                            <span class="stock-kpi-nota">Requieren reposición</span>
-                        </div>
-                        <span class="stock-kpi-icono stock-kpi-icono--alerta"><i class="ri-alert-line"></i></span>
-                    </div>
-                </div>
-            </div>
+
+        <div class="col-6 col-xl-3">
+            <button type="button" class="stock-kpi {{ $filtroEstado === 'bajo_minimo' ? 'is-activo' : '' }}"
+                wire:click="setEstado('bajo_minimo')"
+                aria-pressed="{{ $filtroEstado === 'bajo_minimo' ? 'true' : 'false' }}"
+                title="Ver los productos bajo el mínimo">
+                <span class="stock-kpi-icono stock-kpi-icono--alerta"><i class="ri-alert-line"></i></span>
+                <span class="stock-kpi-cuerpo">
+                    <span class="stock-kpi-label">Bajo stock mínimo</span>
+                    <span class="stock-kpi-valor {{ $resumen['bajoMinimo'] > 0 ? 'stock-kpi-valor--alerta' : '' }}">{{ $resumen['bajoMinimo'] }}</span>
+                    <span class="stock-kpi-nota">Requieren reposición</span>
+                </span>
+                <i class="ri-arrow-right-up-line stock-kpi-flecha" aria-hidden="true"></i>
+            </button>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-3 g-xl-4">
 
-        {{-- ===================== Panel de filtros ===================== --}}
-        <div class="col-xl-3 col-lg-4">
-            <div class="card stock-filtros">
-                <div class="card-header">
-                    <div class="d-flex mb-3">
-                        <div class="flex-grow-1">
-                            <h5 class="fs-16 mb-0 stock-text-ink" style="font-weight: 650;">
-                                <i class="ri-filter-3-line align-bottom me-1 stock-text-accent"></i> Filtros
-                            </h5>
-                        </div>
-                        <div class="flex-shrink-0">
-                            <button type="button"
-                                class="stock-limpiar"
-                                wire:click="limpiarFiltros">
-                                <i class="ri-close-line"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
+        {{-- ===================== Filtros: escritorio ===================== --}}
+        <div class="col-xl-3 d-none d-xl-block">
+            <aside class="stock-filtros card">
+                <div class="card-header stock-filtros-cabecera">
+                    <h5 class="stock-filtros-titulo">
+                        <i class="ri-equalizer-line"></i> Filtros
+                        @if ($filtrosActivos > 0)
+                            <span class="stock-filtros-contador">{{ $filtrosActivos }}</span>
+                        @endif
+                    </h5>
+                    <button type="button" class="stock-limpiar" wire:click="limpiarFiltros"
+                        @disabled($filtrosActivos === 0)>
+                        <i class="ri-close-circle-line"></i> Limpiar
+                    </button>
                 </div>
-
-                <div class="accordion accordion-flush filter-accordion">
-
-                    {{-- Categorías --}}
-                    <div class="card-body border-bottom">
-                        <p class="text-uppercase fs-12 fw-medium mb-2 stock-text-muted">Categorías</p>
-                        <ul class="list-unstyled mb-0 filter-list stock-filtro-lista">
-                            @forelse ($categoriasFiltro as $opcion)
-                                <li>
-                                    <button type="button"
-                                        class="d-flex py-1 align-items-center w-100 bg-transparent border-0 stock-filtro-item {{ $opcion['activa'] ? 'stock-text-accent' : 'stock-text-ink' }}"
-                                        style="padding-left: {{ 8 + $opcion['nivel'] * 14 }}px;"
-                                        wire:click="cambiarCategoria({{ $opcion['id'] }})"
-                                        title="Ver stock de {{ $opcion['nombre'] }}">
-                                        <i class="ri-folder-{{ $opcion['activa'] ? 'open-fill' : 'line' }} align-middle me-1 fs-14"></i>
-                                        <span class="flex-grow-1 text-start text-truncate">{{ $opcion['nombre'] }}</span>
-                                        <span class="badge rounded-pill ms-2 flex-shrink-0 {{ $opcion['activa'] ? 'stock-text-accent' : 'stock-bg-inactive' }}">{{ $opcion['total'] }}</span>
-                                    </button>
-                                </li>
-                            @empty
-                                <li class="text-muted fs-13 py-1">Sin categorías con productos.</li>
-                            @endforelse
-                        </ul>
-                    </div>
-
-                    {{-- Marcas --}}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingMarcas">
-                            <button class="accordion-button bg-transparent shadow-none" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#flush-collapseMarcas"
-                                aria-expanded="true" aria-controls="flush-collapseMarcas">
-                                <span class="text-uppercase fs-12 fw-medium stock-text-muted">Marcas</span>
-                                @if (count($marcasFiltro) > 0)
-                                    <span class="badge rounded-pill align-middle ms-1 stock-text-accent">{{ count($marcasFiltro) }}</span>
-                                @endif
-                            </button>
-                        </h2>
-                        <div id="flush-collapseMarcas" class="accordion-collapse collapse show"
-                            aria-labelledby="flush-headingMarcas">
-                            <div class="accordion-body text-body pt-0">
-                                <div class="search-box search-box-sm stock-buscador">
-                                    <input type="text" class="form-control"
-                                        placeholder="Buscar marcas..." wire:model.live.debounce.300ms="buscarMarca">
-                                    <i class="ri-search-line search-icon"></i>
-                                </div>
-                                <div class="d-flex flex-column gap-2 mt-3 filter-check">
-                                    @forelse ($marcasFiltroLista as $marca)
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox"
-                                                value="{{ $marca['id'] }}" id="marca-filtro-{{ $marca['id'] }}"
-                                                {{ $marca['activa'] ? 'checked' : '' }}
-                                                wire:change="toggleMarca({{ $marca['id'] }})">
-                                            <label class="form-check-label d-flex w-100 justify-content-between"
-                                                for="marca-filtro-{{ $marca['id'] }}">
-                                                <span class="text-truncate">{{ $marca['nombre'] }}</span>
-                                                <span class="badge rounded-pill ms-2" style="background: var(--marca-suave); color: var(--marca-apagado);">{{ $marca['total'] }}</span>
-                                            </label>
-                                        </div>
-                                    @empty
-                                        <p class="text-muted fs-13 mb-0">Sin marcas con ese nombre.</p>
-                                    @endforelse
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Estado del stock --}}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingEstado">
-                            <button class="accordion-button bg-transparent shadow-none {{ $filtroEstado === 'todos' ? 'collapsed' : '' }}"
-                                type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEstado"
-                                aria-expanded="{{ $filtroEstado === 'todos' ? 'false' : 'true' }}"
-                                aria-controls="flush-collapseEstado">
-                                <span class="text-uppercase fs-12 fw-medium" style="color: var(--marca-apagado);">Estado del stock</span>
-                            </button>
-                        </h2>
-                        <div id="flush-collapseEstado" class="accordion-collapse collapse {{ $filtroEstado === 'todos' ? '' : 'show' }}"
-                            aria-labelledby="flush-headingEstado">
-                            <div class="accordion-body text-body">
-                                <div class="d-flex flex-column gap-2 filter-check">
-                                    @foreach (['con_stock' => 'Con stock', 'agotados' => 'Agotados', 'bajo_minimo' => 'Bajo mínimo'] as $valor => $etiqueta)
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="{{ $valor }}"
-                                                id="estado-filtro-{{ $valor }}"
-                                                {{ $filtroEstado === $valor ? 'checked' : '' }}
-                                                wire:click="setEstado('{{ $valor }}')">
-                                            <label class="form-check-label" for="estado-filtro-{{ $valor }}">{{ $etiqueta }}</label>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="card-body stock-filtros-cuerpo">
+                    @include('livewire.stock.partials.filtros', ['contexto' => 'escritorio'])
                 </div>
-            </div>
+            </aside>
         </div>
-        <!-- end col -->
 
         {{-- ===================== Contenido ===================== --}}
-        <div class="col-xl-9 col-lg-8">
+        <div class="col-xl-9">
             <div class="card stock-contenido">
-                <div class="card-header stock-contenido-header">
-                    <div class="row g-3 align-items-center">
-                        <div class="col-sm-auto">
-                            <div>
-                                <h5 class="mb-0 stock-contenido-titulo">
-                                    Stock por {{ $vista === 'categorias' ? 'categoría' : 'marca' }}
-                                    <span class="spinner-border spinner-border-sm align-middle"
-                                        style="color: var(--marca-azul-texto);"
-                                        role="status" wire:loading.delay>
-                                        <span class="visually-hidden">Cargando...</span>
-                                    </span>
-                                </h5>
-                                <small class="fs-13" style="color: var(--marca-apagado);">
-                                    {{ $resumen['conStock'] }} {{ $resumen['conStock'] === 1 ? 'producto con existencias' : 'productos con existencias' }}
-                                    de {{ $resumen['productos'] }} {{ $resumen['productos'] === 1 ? 'activo' : 'activos' }}
-                                    @if ($buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [])
-                                        · con filtros
-                                    @endif
-                                </small>
-                            </div>
+
+                {{-- Filtros: móvil y tablet --}}
+                <div class="stock-filtros-movil d-xl-none">
+                    <button type="button" class="stock-filtros-toggle {{ $filtrosAbiertos ? 'is-abierto' : '' }}"
+                        wire:click="toggleFiltros"
+                        aria-expanded="{{ $filtrosAbiertos ? 'true' : 'false' }}"
+                        aria-controls="stockFiltrosPanel">
+                        <i class="ri-equalizer-line"></i>
+                        <span class="stock-filtros-toggle-texto">Filtros</span>
+                        @if ($filtrosActivos > 0)
+                            <span class="stock-filtros-contador">{{ $filtrosActivos }}</span>
+                        @endif
+                        <i class="ri-arrow-down-s-line stock-filtros-toggle-chevron ms-auto" aria-hidden="true"></i>
+                    </button>
+
+                    @if ($filtrosAbiertos)
+                        <div id="stockFiltrosPanel" class="stock-filtros-panel">
+                            @include('livewire.stock.partials.filtros', ['contexto' => 'movil'])
+                            <button type="button" class="stock-limpiar stock-limpiar--bloque mt-3"
+                                wire:click="limpiarFiltros" @disabled($filtrosActivos === 0)>
+                                <i class="ri-close-circle-line"></i> Limpiar filtros
+                            </button>
                         </div>
-                        <div class="col-sm">
-                            <div class="d-flex justify-content-sm-end">
-                                <div class="search-box stock-buscador ms-2" style="max-width: 20rem">
-                                    <input type="text" class="form-control"
-                                        placeholder="Buscar producto o marca..."
-                                        wire:model.live.debounce.400ms="buscar">
-                                    <i class="ri-search-line search-icon"></i>
-                                    @if ($buscar !== '')
-                                        <button type="button"
-                                            class="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y me-1 p-1"
-                                            wire:click="$set('buscar', '')" title="Limpiar búsqueda">
-                                            <i class="ri-close-circle-fill fs-14"></i>
-                                        </button>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
+                    @endif
+                </div>
+
+                {{-- Encabezado y buscador --}}
+                <div class="stock-contenido-header">
+                    <div class="stock-contenido-titulo">
+                        <h5 class="stock-contenido-titulo-texto">
+                            Stock por {{ $vista === 'categorias' ? 'categoría' : 'marca' }}
+                            <span class="spinner-border spinner-border-sm stock-spinner" role="status" wire:loading.delay>
+                                <span class="visually-hidden">Cargando...</span>
+                            </span>
+                        </h5>
+                        <p class="stock-contenido-subtitulo">
+                            {{ $resumen['conStock'] }} {{ $resumen['conStock'] === 1 ? 'producto con existencias' : 'productos con existencias' }}
+                            de {{ $resumen['productos'] }} {{ $resumen['productos'] === 1 ? 'activo' : 'activos' }}
+                            @if ($filtrosActivos > 0)
+                                · con filtros aplicados
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="search-box stock-buscador">
+                        <input type="text" class="form-control" placeholder="Buscar producto o marca..."
+                            wire:model.live.debounce.400ms="buscar">
+                        <i class="ri-search-line search-icon"></i>
+                        @if ($buscar !== '')
+                            <button type="button" class="stock-buscador-limpiar"
+                                wire:click="$set('buscar', '')" title="Limpiar búsqueda"
+                                aria-label="Limpiar búsqueda">
+                                <i class="ri-close-circle-fill"></i>
+                            </button>
+                        @endif
                     </div>
                 </div>
 
-                <div class="card-header" style="border-bottom: 1px solid var(--marca-suave);">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <ul class="nav nav-tabs-custom card-header-tabs border-bottom-0 stock-tabs" role="tablist">
-                                <li class="nav-item">
-                                    <button type="button"
-                                        class="nav-link {{ $vista === 'categorias' ? 'active' : '' }} fw-semibold"
-                                        wire:click="cambiarVista('categorias')" role="tab">
-                                        <i class="ri-folder-2-line align-middle me-1"></i>Por categorías
-                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">{{ count($categorias) }}</span>
-                                    </button>
-                                </li>
-                                <li class="nav-item">
-                                    <button type="button"
-                                        class="nav-link {{ $vista === 'marcas' ? 'active' : '' }} fw-semibold"
-                                        wire:click="cambiarVista('marcas')" role="tab">
-                                        <i class="ri-trademark-line align-middle me-1"></i>Por marcas
-                                        <span class="badge rounded-pill align-middle ms-1" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">{{ count($marcas) }}</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                {{-- Vistas y estado --}}
+                <div class="stock-toolbar">
+                    <ul class="nav stock-tabs" role="tablist">
+                        <li class="nav-item">
+                            <button type="button"
+                                class="nav-link {{ $vista === 'categorias' ? 'active' : '' }}"
+                                wire:click="cambiarVista('categorias')" role="tab"
+                                aria-selected="{{ $vista === 'categorias' ? 'true' : 'false' }}">
+                                <i class="ri-folder-2-line"></i> Por categorías
+                                <span class="stock-tabs-contador">{{ count($categorias) }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button"
+                                class="nav-link {{ $vista === 'marcas' ? 'active' : '' }}"
+                                wire:click="cambiarVista('marcas')" role="tab"
+                                aria-selected="{{ $vista === 'marcas' ? 'true' : 'false' }}">
+                                <i class="ri-trademark-line"></i> Por marcas
+                                <span class="stock-tabs-contador">{{ count($marcas) }}</span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="stock-segmento" role="group" aria-label="Filtrar por estado del stock">
+                        @foreach ([
+                            'todos' => ['Todos', 'ri-layout-grid-line', ''],
+                            'con_stock' => ['Con stock', 'ri-checkbox-circle-line', 'is-ok'],
+                            'bajo_minimo' => ['Bajo mínimo', 'ri-alert-line', 'is-alerta'],
+                            'agotados' => ['Agotados', 'ri-close-circle-line', 'is-peligro'],
+                        ] as $valor => [$etiqueta, $icono, $tono])
+                            <button type="button"
+                                class="stock-segmento-btn {{ $tono }} {{ $filtroEstado === $valor ? 'is-activo' : '' }}"
+                                wire:click="setEstado('{{ $valor }}')"
+                                aria-pressed="{{ $filtroEstado === $valor ? 'true' : 'false' }}">
+                                <i class="{{ $icono }}"></i>
+                                <span>{{ $etiqueta }}</span>
+                            </button>
+                        @endforeach
                     </div>
                 </div>
 
-                <div class="card-body" wire:loading.class="opacity-50"
-                    wire:target="buscar, filtroEstado, categoriaFiltro, marcasFiltro, cambiarVista, setEstado, cambiarCategoria, toggleMarca">
+                {{-- Chips de filtros activos --}}
+                @php
+                    $categoriaActiva = $categoriaFiltro !== null
+                        ? collect($categoriasFiltro)->firstWhere('id', $categoriaFiltro)
+                        : null;
+                    $marcasActivas = collect($marcasFiltroLista)->whereIn('id', $marcasFiltro);
+                    $estadoEtiquetas = [
+                        'con_stock' => 'Con stock',
+                        'bajo_minimo' => 'Bajo mínimo',
+                        'agotados' => 'Agotados',
+                    ];
+                @endphp
+
+                @if ($filtrosActivos > 0)
+                    <div class="stock-chips">
+                        <span class="stock-chips-label">Filtros activos</span>
+
+                        @if ($buscar !== '')
+                            <button type="button" class="stock-chip-activo" wire:click="$set('buscar', '')">
+                                <i class="ri-search-line"></i>
+                                <span>{{ $buscar }}</span>
+                                <i class="ri-close-line stock-chip-activo-x" aria-hidden="true"></i>
+                            </button>
+                        @endif
+
+                        @if ($categoriaActiva)
+                            <button type="button" class="stock-chip-activo"
+                                wire:click="cambiarCategoria({{ $categoriaActiva['id'] }})">
+                                <i class="ri-folder-2-line"></i>
+                                <span>{{ $categoriaActiva['nombre'] }}</span>
+                                <i class="ri-close-line stock-chip-activo-x" aria-hidden="true"></i>
+                            </button>
+                        @endif
+
+                        @foreach ($marcasActivas as $marca)
+                            <button type="button" class="stock-chip-activo"
+                                wire:click="toggleMarca({{ $marca['id'] }})">
+                                <i class="ri-trademark-line"></i>
+                                <span>{{ $marca['nombre'] }}</span>
+                                <i class="ri-close-line stock-chip-activo-x" aria-hidden="true"></i>
+                            </button>
+                        @endforeach
+
+                        @if ($filtroEstado !== 'todos')
+                            <button type="button" class="stock-chip-activo"
+                                wire:click="setEstado('{{ $filtroEstado }}')">
+                                <i class="ri-pulse-line"></i>
+                                <span>{{ $estadoEtiquetas[$filtroEstado] }}</span>
+                                <i class="ri-close-line stock-chip-activo-x" aria-hidden="true"></i>
+                            </button>
+                        @endif
+
+                        <button type="button" class="stock-chips-limpiar" wire:click="limpiarFiltros">
+                            Limpiar todo
+                        </button>
+                    </div>
+                @endif
+
+                {{-- Listado --}}
+                <div class="stock-contenido-cuerpo" wire:loading.class="is-cargando"
+                    wire:target="buscar, buscarMarca, filtroEstado, categoriaFiltro, marcasFiltro, cambiarVista, setEstado, cambiarCategoria, toggleMarca">
 
                     @if ($resumen['productos'] === 0)
-                        <div class="text-center py-5">
-                            <div class="avatar-lg mx-auto mb-4">
-                                <span class="avatar-title rounded-circle fs-1 shadow-sm" style="background: rgba(37, 73, 112, .12); color: var(--marca-azul-texto);">
-                                    <i class="{{ $buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [] ? 'ri-search-eye-line' : 'ri-stack-line' }}"></i>
-                                </span>
-                            </div>
-                            @if ($buscar !== '' || $filtroEstado !== 'todos' || $categoriaFiltro !== null || $marcasFiltro !== [])
-                                <h5 class="mb-1" style="color: var(--marca-tinta);">Sin resultados con los filtros actuales</h5>
-                                <p class="text-muted mb-3">Prueba con otros términos o limpia los filtros.</p>
-                                <button type="button" class="btn btn-sm" style="background: var(--marca-suave); color: var(--marca-tinta); border: 1px solid var(--marca-linea);" wire:click="limpiarFiltros">
-                                    <i class="ri-close-line align-bottom me-1"></i> Quitar filtros
+                        <div class="stock-vacio">
+                            <span class="stock-vacio-icono">
+                                <i class="{{ $filtrosActivos > 0 ? 'ri-search-eye-line' : 'ri-stack-line' }}"></i>
+                            </span>
+                            @if ($filtrosActivos > 0)
+                                <h5 class="stock-vacio-titulo">Sin resultados con los filtros actuales</h5>
+                                <p class="stock-vacio-texto">Prueba con otros términos o quita los filtros para ver todo el inventario.</p>
+                                <button type="button" class="btn btn-primary btn-sm" wire:click="limpiarFiltros">
+                                    <i class="ri-refresh-line align-bottom me-1"></i> Quitar filtros
                                 </button>
                             @else
-                                <h5 class="mb-1 fw-semibold" style="color: var(--marca-azul-texto);">Todavía no hay productos activos</h5>
-                                <p class="text-muted mb-0">
+                                <h5 class="stock-vacio-titulo">Todavía no hay productos activos</h5>
+                                <p class="stock-vacio-texto">
                                     Registra productos y recepciona compras para ver aquí su stock disponible.
                                 </p>
                             @endif
@@ -305,10 +297,12 @@
                     @endif
 
                     @can('unidades.ver')
-                        <div class="text-center mt-4 stock-pista">
-                            <i class="ri-box-3-line align-middle me-1"></i>
-                            Haz clic en el nombre de un producto para ver sus unidades en el inventario.
-                        </div>
+                        @if ($resumen['productos'] > 0)
+                            <div class="stock-pista">
+                                <i class="ri-box-3-line"></i>
+                                Haz clic en el nombre de un producto para ver sus unidades en el inventario.
+                            </div>
+                        @endif
                     @endcan
 
                 </div>

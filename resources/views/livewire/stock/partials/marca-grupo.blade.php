@@ -2,38 +2,41 @@
     Un grupo de marca del Stock Actual. Recibe $grupo (array) con marca|null,
     productos y resumen; $clave (string) y $colapsadas (array) para el colapso.
 --}}
-<section class="stock-grupo-marca {{ ($colapsadas[$clave] ?? false) ? 'is-collapsed' : '' }}">
+<section class="stock-grupo stock-grupo--marca {{ ($colapsadas[$clave] ?? false) ? 'is-collapsed' : '' }}">
     <header class="stock-grupo-cabecera">
-        <div class="d-flex flex-wrap align-items-center gap-2 w-100">
-            <button type="button" class="btn btn-sm btn-icon rounded-circle btn-ghost-secondary stock-grupo-toggle"
+        <div class="stock-grupo-fila">
+            <button type="button" class="stock-grupo-toggle"
                 wire:click="toggleGrupo('{{ $clave }}')"
                 title="{{ ($colapsadas[$clave] ?? false) ? 'Expandir grupo' : 'Contraer grupo' }}"
+                aria-expanded="{{ ($colapsadas[$clave] ?? false) ? 'false' : 'true' }}"
                 aria-label="{{ ($colapsadas[$clave] ?? false) ? 'Expandir' : 'Contraer' }} {{ $grupo['marca']?->nombre ?? 'Sin marca' }}">
-                <i class="ri-arrow-down-s-line fs-18"></i>
+                <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
             </button>
 
-            <span class="stock-marca-logo avatar-sm flex-shrink-0">
+            <span class="stock-marca-logo">
                 @if ($grupo['marca'] && $grupo['marca']->logo_ruta)
                     <img src="{{ asset('storage/'.$grupo['marca']->logo_ruta) }}" alt="Logo de {{ $grupo['marca']->nombre }}"
-                        class="img-fluid object-fit-contain w-100 h-100" loading="lazy">
+                        class="img-fluid object-fit-contain" loading="lazy">
                 @else
-                    <span class="avatar-title">
-                        <i class="ri-trademark-line"></i>
-                    </span>
+                    <i class="ri-trademark-line"></i>
                 @endif
             </span>
 
-            <h6 class="mb-0 flex-grow-1 text-truncate">{{ $grupo['marca']?->nombre ?? 'Sin marca' }}</h6>
+            <div class="stock-grupo-nombre">
+                <h6 class="stock-grupo-titulo">{{ $grupo['marca']?->nombre ?? 'Sin marca' }}</h6>
+            </div>
 
-            <span class="stock-chip" title="Productos de esta marca">
-                <i class="ri-price-tag-3-line"></i>{{ $grupo['resumen']['productos'] }}
-            </span>
-            <span class="stock-chip stock-chip-unidades" title="Unidades disponibles">
-                <i class="ri-archive-2-line"></i>{{ $grupo['resumen']['unidades'] }}
-            </span>
-            <span class="stock-chip stock-chip-valor" title="Valor en stock (precio de venta)">
-                <i class="ri-wallet-2-line"></i>Bs {{ number_format($grupo['resumen']['valor'], 2, ',', '.') }}
-            </span>
+            <div class="stock-grupo-metricas">
+                <span class="stock-chip" title="Productos de esta marca">
+                    <i class="ri-price-tag-3-line"></i>{{ $grupo['resumen']['productos'] }}
+                </span>
+                <span class="stock-chip stock-chip-unidades" title="Unidades disponibles">
+                    <i class="ri-archive-2-line"></i>{{ number_format($grupo['resumen']['unidades'], 0, ',', '.') }}
+                </span>
+                <span class="stock-chip stock-chip-valor" title="Valor en stock (precio de venta)">
+                    <i class="ri-wallet-2-line"></i>Bs {{ number_format($grupo['resumen']['valor'], 2, ',', '.') }}
+                </span>
+            </div>
         </div>
 
         @if (! ($colapsadas[$clave] ?? false) && $grupo['resumen']['productos'] > 0)
@@ -45,19 +48,20 @@
                 $pctAgotados = (int) round($grupo['resumen']['agotados'] / $totalSalud * 100);
             @endphp
             <div class="stock-salud">
-                <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
-                    <small class="stock-text-muted">Salud del stock</small>
-                    <small class="stock-salud-leyenda">
-                        <span class="stock-text-ok"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $sanos }} sanos</span>
-                        <span class="ms-2 stock-text-warn"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $grupo['resumen']['bajoMinimo'] }} bajo mínimo</span>
-                        <span class="ms-2 stock-text-danger"><i class="ri-checkbox-blank-circle-fill fs-10 align-middle me-1"></i>{{ $grupo['resumen']['agotados'] }} agotados</span>
-                    </small>
+                <div class="stock-salud-top">
+                    <span class="stock-salud-etiqueta">Salud del stock</span>
+                    <span class="stock-salud-pct">{{ $pctSanos }}% en óptimo</span>
                 </div>
-                <div class="d-flex stock-salud-barra" role="img"
+                <div class="stock-salud-barra" role="img"
                     aria-label="{{ $sanos }} sanos, {{ $grupo['resumen']['bajoMinimo'] }} bajo mínimo, {{ $grupo['resumen']['agotados'] }} agotados">
-                    <span class="bg-success" style="width: {{ $pctSanos }}%"></span>
-                    <span class="bg-warning" style="width: {{ $pctBajo }}%"></span>
-                    <span class="bg-danger" style="width: {{ $pctAgotados }}%"></span>
+                    <span class="stock-salud-sanos" style="width: {{ $pctSanos }}%"></span>
+                    <span class="stock-salud-bajo" style="width: {{ $pctBajo }}%"></span>
+                    <span class="stock-salud-agotado" style="width: {{ $pctAgotados }}%"></span>
+                </div>
+                <div class="stock-salud-leyenda">
+                    <span class="stock-text-ok"><i class="ri-checkbox-blank-circle-fill"></i>{{ $sanos }} sanos</span>
+                    <span class="stock-text-warn"><i class="ri-checkbox-blank-circle-fill"></i>{{ $grupo['resumen']['bajoMinimo'] }} bajo mínimo</span>
+                    <span class="stock-text-danger"><i class="ri-checkbox-blank-circle-fill"></i>{{ $grupo['resumen']['agotados'] }} agotados</span>
                 </div>
             </div>
         @endif
@@ -65,15 +69,14 @@
 
     @unless ($colapsadas[$clave] ?? false)
         <div class="table-responsive">
-            <table class="table table-sm table-hover align-middle mb-0 stock-tabla">
+            <table class="table table-hover align-middle mb-0 stock-tabla">
                 <thead>
-                    <tr class="text-uppercase">
-                        <th scope="col" class="ps-3">Producto</th>
-                        <th scope="col">Categoría</th>
-                        <th scope="col" class="text-center">Disponibles</th>
-                        <th scope="col" class="text-center">Mínimo</th>
-                        <th scope="col" class="text-end">Precio venta</th>
-                        <th scope="col" class="text-end pe-3">Valor en stock</th>
+                    <tr>
+                        <th scope="col" class="stock-col-producto">Producto</th>
+                        <th scope="col" class="stock-col-secundaria">Categoría</th>
+                        <th scope="col" class="text-center stock-col-estado">Estado</th>
+                        <th scope="col" class="text-center stock-col-stock">Stock</th>
+                        <th scope="col" class="text-end stock-col-valor">Valor en stock</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -90,62 +93,64 @@
                                 $disponibles <= $producto->stock_minimo => 'Bajo mínimo',
                                 default => 'En stock',
                             };
-                            $claseEstado = match ($tono) {
-                                'success' => 'stock-estado--ok',
-                                'warning' => 'stock-estado--alerta',
-                                'danger' => 'stock-estado--peligro',
+                            $icono = match ($tono) {
+                                'danger' => 'ri-close-circle-line',
+                                'warning' => 'ri-alert-line',
+                                default => 'ri-checkbox-circle-line',
                             };
                         @endphp
                         <tr class="stock-producto-fila">
-                            <td class="ps-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="stock-miniatura flex-shrink-0">
+                            <td>
+                                <div class="stock-producto">
+                                    <span class="stock-miniatura">
                                         @if ($producto->imagen)
                                             <img src="{{ asset('storage/'.$producto->imagen) }}" alt="" loading="lazy">
                                         @else
                                             <i class="ri-image-line"></i>
                                         @endif
                                     </span>
-                                    <span class="min-w-0">
+                                    <span class="stock-producto-datos">
                                         @can('unidades.ver')
                                             <button type="button" class="stock-producto-nombre"
                                                 wire:click="verUnidades({{ $producto->id }})"
                                                 title="Ver unidades de {{ $producto->nombre }} en inventario"
-                                                aria-label="Ver unidades de {{ $producto->nombre }}">
-                                                <span class="fw-medium text-truncate d-block">{{ $producto->nombre }}</span>
-                                                <i class="ri-box-3-line stock-producto-nombre-icono" aria-hidden="true"></i>
+                                                aria-label="Ver unidades de {{ $producto->nombre }} en inventario">
+                                                <span class="stock-producto-nombre-texto">{{ $producto->nombre }}</span>
+                                                <i class="ri-arrow-right-line stock-producto-nombre-icono" aria-hidden="true"></i>
                                             </button>
                                         @else
-                                            <span class="fw-medium text-truncate d-block">{{ $producto->nombre }}</span>
+                                            <span class="stock-producto-nombre-texto">{{ $producto->nombre }}</span>
                                         @endcan
-                                        <small class="d-block stock-text-muted">
-                                            @if ($producto->modelo)
-                                                {{ $producto->modelo }}
-                                            @endif
-                                        </small>
+                                        @if ($producto->modelo)
+                                            <small class="stock-producto-modelo">{{ $producto->modelo }}</small>
+                                        @endif
                                     </span>
                                 </div>
                             </td>
-                            <td>
-                                @if ($producto->categoria)
-                                    <span class="stock-text-muted">
-                                        <i class="ri-folder-line align-middle me-1"></i>{{ $producto->categoria->nombre }}
-                                    </span>
-                                @else
-                                    <span class="stock-text-muted">—</span>
-                                @endif
+                            <td data-label="Categoría">
+                                <span class="stock-celda-texto">{{ $producto->categoria?->nombre ?? '—' }}</span>
                             </td>
-                            <td class="text-center">
-                                <span class="stock-estado {{ $claseEstado }}"
-                                    title="{{ $disponibles }} {{ $disponibles === 1 ? 'unidad en stock' : 'unidades en stock' }}@if ($producto->stock_minimo > 0) · mínimo {{ $producto->stock_minimo }}@endif">
-                                    <i class="ri-archive-2-line align-middle me-1"></i>{{ $disponibles }}
+                            <td class="text-center" data-label="Estado">
+                                <span class="stock-estado stock-estado--{{ $tono }}">
+                                    <i class="{{ $icono }}"></i>{{ $etiqueta }}
                                 </span>
-                                <small class="d-block stock-etiqueta stock-etiqueta--{{ $tono }}">{{ $etiqueta }}</small>
                             </td>
-                                <td class="text-center stock-text-muted">{{ $producto->stock_minimo }}</td>
-                            <td class="text-end">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</td>
-                            <td class="text-end pe-3 fw-medium">
-                                Bs {{ number_format((float) $producto->precio_venta * $disponibles, 2, ',', '.') }}
+                            <td class="text-center" data-label="Stock">
+                                <span class="stock-celda-valor">
+                                    <span class="stock-disponibles stock-disponibles--{{ $tono }}"
+                                        title="{{ $disponibles }} {{ $disponibles === 1 ? 'unidad en stock' : 'unidades en stock' }}">{{ $disponibles }}</span>
+                                    @if ($producto->stock_minimo > 0)
+                                        <small class="stock-minimo">mín {{ $producto->stock_minimo }}</small>
+                                    @endif
+                                </span>
+                            </td>
+                            <td class="text-end" data-label="Valor en stock">
+                                <span class="stock-valor-grupo">
+                                    <span class="stock-valor-total">Bs {{ number_format((float) $producto->precio_venta * $disponibles, 2, ',', '.') }}</span>
+                                    @if ($disponibles > 0)
+                                        <small class="stock-precio-unitario">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }} c/u</small>
+                                    @endif
+                                </span>
                             </td>
                         </tr>
                     @endforeach
