@@ -16,7 +16,8 @@
 </head>
 
 <body data-puede-autorizar="{{ auth()->user()?->can('ventas.autorizar_descuento') ? '1' : '0' }}"
-    data-url-autorizaciones="{{ route('ventas.autorizaciones.index') }}">
+    data-url-autorizaciones="{{ route('ventas.autorizaciones.index') }}"
+    data-url-avisos="{{ route('avisos.recientes') }}">
 
     <!-- Begin page -->
     <div id="layout-wrapper">

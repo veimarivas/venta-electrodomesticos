@@ -27,9 +27,25 @@ app.
 | | Qué | Nota |
 |---|---|---|
 | ✅ | **Campana del panel: el aviso se pinta entero** | La campana leía `title` pero las notificaciones guardan `titulo` y `cuerpo`: el aviso de un descuento, de stock o de una cuota salía siempre como «Nueva venta», sin texto. Ahora cada tipo tiene su icono y su color, y se lee el cuerpo. |
-| ✅ | **Sonido en el panel** | Un módulo propio (`resources/js/avisos.js`) escucha el canal privado `autorizaciones` en cualquier pantalla y hace sonar una campanilla de dos notas con la **Web Audio API** —sin archivo de sonido que versionar ni servir—, sube el contador rojo e inserta el aviso en la campana al instante. El navegador exige un gesto previo: el contexto de audio se despierta con el primer clic o tecla. |
+| ✅ | **El aviso se guarda aunque Reverb esté caído** | Laravel emite el broadcast **antes** que los oyentes: con el WebSocket caído, la excepción se llevaba por delante `AvisarSolicitudDeDescuento` y la notificación no llegaba a guardarse —la solicitud aparecía en la bandeja, pero ni la campana ni los avisos de la app la veían—. Si el anuncio falla, el aviso se ejecuta aparte, como ya se hacía con la venta. El mismo arreglo cubre el aviso de stock bajo. |
+| ✅ | **Sonido en el panel, con o sin WebSocket** | Un módulo propio (`resources/js/avisos.js`) escucha el canal privado `autorizaciones` y, **cada 20 s**, sondea `/avisos/recientes`. Así la campana se mueve y suena también cuando Reverb no está corriendo. Los dos caminos deduplican por solicitud, así que el aviso no suena dos veces. El sonido se genera con la **Web Audio API** —sin archivo que versionar— y el contexto se despierta con el primer clic o tecla. |
 | ✅ | **Sonido en la app** | Los avisos locales se preparan **aunque Firebase no esté configurado** (era la causa de que el push «no hiciera nada» sin credenciales). Un **vigía** consulta el historial cada 15 s mientras hay sesión y, cuando aparece una solicitud nueva, la muestra con notificación local y **sonido propio** (canal `autorizaciones`, aparte del de ventas). |
 | ✅ | **El aviso de la app lleva a la bandeja** | El historial de avisos ya entiende el tipo `solicitud_descuento`: icono propio y navegación a `/autorizaciones` (la ruta la manda el servidor en `enlace`). |
+
+### Por qué el aviso no llegaba
+
+`SolicitudDeDescuentoCreada` es un evento `ShouldBroadcastNow`: Laravel lo emite
+por Reverb en la misma petición **y antes** de correr sus oyentes. Con Reverb
+apagado la conexión falla, y esa excepción se llevaba por delante el oyente que
+guarda la notificación. Resultado: la solicitud llegaba a la bandeja, pero ni la
+campana del panel ni los avisos de la app la veían — y sin aviso no hay a qué
+hacer clic para aprobar, sugerir o rechazar—.
+
+`AutorizacionDeDescuento` ahora vuelve a ejecutar el oyente dentro del `catch`: es
+el mismo apaño que `RegistroDeVenta` usa desde el primer día. Y como el panel
+dependía del WebSocket para enterarse, `avisos.js` sondea además
+`/avisos/recientes` cada 20 s. Eso es lo que hace que la campana se mueva y suene
+con Reverb caído, que hoy es el caso.
 
 ### Por qué sondea y no solo espera el push
 
@@ -48,7 +64,8 @@ repositorio, así que se prueba sin red ni Firebase.
 **Tests:** `test/avisos_test.dart` cubre el modelo, la traducción del enlace y el
 vigía (foto inicial, aviso de venta sin sonido, sin sesión, fallo de red);
 `PosAutorizacionApiTest` fija el contrato `tipo`/`titulo`/`enlace` que consumen
-las dos pantallas.
+las dos pantallas, comprueba que el aviso se guarda con el WebSocket caído y que
+el panel puede leer los avisos recientes por `/avisos/recientes`.
 
 **Lo que queda:** conectar Firebase para que el aviso llegue también con la app
 cerrada (ver [DESPLIEGUE.md](DESPLIEGUE.md) §4).

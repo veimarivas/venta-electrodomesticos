@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Events\VentaRegistrada;
+use App\Listeners\AvisarStockBajo;
 use App\Listeners\AvisarVentaRegistrada;
 use App\Models\Producto;
 use App\Models\QrCobro;
@@ -270,6 +271,10 @@ class RegistroDeVenta
                 // porque el servidor de WebSockets esté apagado. (La notificación
                 // de dentro sigue encolándose, esto solo dispara el oyente.)
                 app(AvisarVentaRegistrada::class)->handle(new VentaRegistrada($venta));
+
+                // El aviso de stock bajo es el otro oyente del mismo evento: sin
+                // esto también se quedaría sin disparar con Reverb caído.
+                app(AvisarStockBajo::class)->handle(new VentaRegistrada($venta));
             } catch (Throwable) {
                 // El aviso es secundario; la venta ya está registrada.
             }

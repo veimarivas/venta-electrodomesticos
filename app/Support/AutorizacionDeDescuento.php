@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Events\SolicitudDeDescuentoCreada;
 use App\Events\SolicitudDeDescuentoResuelta;
+use App\Listeners\AvisarSolicitudDeDescuento;
 use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
 use App\Models\Venta;
@@ -219,6 +220,18 @@ class AutorizacionDeDescuento
             SolicitudDeDescuentoCreada::dispatch($solicitud);
         } catch (Throwable $e) {
             $this->anotarAvisoFallido('La solicitud de descuento se creó pero no pudo anunciarse.', $solicitud, $e);
+
+            // Laravel emite el broadcast ANTES de correr los oyentes, así que la
+            // excepción de Reverb se llevaba por delante el aviso al
+            // administrador: la solicitud llegaba a la bandeja, pero la campana
+            // del panel y los avisos de la app quedaban vacíos. Se ejecuta
+            // aparte: el aviso no tiene por qué caerse porque el servidor de
+            // WebSockets esté apagado. Es el mismo apaño que usa RegistroDeVenta.
+            try {
+                app(AvisarSolicitudDeDescuento::class)->handle(new SolicitudDeDescuentoCreada($solicitud));
+            } catch (Throwable) {
+                // El aviso es secundario; la solicitud ya está creada y en la bandeja.
+            }
         }
     }
 

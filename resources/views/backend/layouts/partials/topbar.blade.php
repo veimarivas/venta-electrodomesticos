@@ -162,7 +162,9 @@
                                             };
                                         @endphp
                                         <div class="text-reset notification-item d-block dropdown-item position-relative"
-                                            data-notification-id="{{ $notification->id }}">
+                                            data-notification-id="{{ $notification->id }}"
+                                            data-notification-tipo="{{ $notification->data['tipo'] ?? 'venta_registrada' }}"
+                                            data-notification-solicitud="{{ $notification->data['solicitud_id'] ?? '' }}">
                                             <div class="d-flex">
                                                 <div class="avatar-xs me-3 flex-shrink-0">
                                                     <span class="avatar-title {{ $color }} rounded-circle fs-16">

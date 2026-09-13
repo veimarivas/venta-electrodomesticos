@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AvisoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadoCuentaController;
 use App\Http\Controllers\EtiquetaController;
@@ -35,6 +36,11 @@ Route::get('/producto/{producto:slug}', [StorefrontController::class, 'producto'
 Route::middleware(['auth', 'active'])->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    // Respaldo sin WebSocket de la campana: el sondeo de `avisos.js` lee aquí
+    // los avisos no leídos. Con Reverb corriendo el aviso llega antes, pero
+    // sin él esto es lo que hace que la campana se mueva y suene.
+    Route::get('/avisos/recientes', [AvisoController::class, 'recientes'])->name('avisos.recientes');
 
     Route::view('/stock', 'backend.stock.index', [
         'title' => 'Stock Actual',

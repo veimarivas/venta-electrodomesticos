@@ -6,9 +6,18 @@
 | descuento SIN estar mirando la pantalla, porque el vendedor está con el
 | cliente delante esperando respuesta.
 |
-| El aviso ya se guarda en la base (lo pinta la campana) y ya viaja por el
-| canal privado `autorizaciones` de Reverb. Aquí solo se escucha ese canal en
-| cualquier pantalla del panel y se hace lo que la campana no puede sola:
+| El aviso ya se guarda en la base (lo pinta la campana). Para enterarse en el
+| momento hay dos caminos:
+|
+|   · El canal privado `autorizaciones` de Reverb, instantáneo.
+|   · Un sondeo cada 20 s a `/avisos/recientes`, que es lo que funciona cuando
+|     el servidor de WebSockets no está corriendo —lo habitual mientras no se
+|     termina de configurar—.
+|
+| Los dos pasan por el mismo `procesarAviso`, que deduplica por solicitud, así
+| que un aviso no suena dos veces.
+|
+| Y en ambos casos se hace lo que la campana no puede sola:
 |
 |   · Suena. Es lo único que cruza la habitación.
 |   · Sube el contador y mete el aviso en la lista al instante, sin recargar.
@@ -187,6 +196,67 @@ const prependerAviso = ({ icono, clase, url, titulo, cuerpo }) => {
     lista.prepend(fila);
 };
 
+/** Claves ya mostradas, para no repetir entre el WebSocket y el sondeo. */
+const avisosVistos = new Set();
+
+/**
+ * Clave con la que se deduplica un aviso.
+ *
+ * Una autorización se identifica por su solicitud, no por la notificación: el
+ * WebSocket manda el id de la solicitud y el sondeo, el de la notificación, y
+ * son distintos. Sin esto sonaría dos veces.
+ */
+const claveDeAviso = (aviso) =>
+    aviso.tipo === 'solicitud_descuento' && aviso.solicitudId
+        ? `solicitud-${aviso.solicitudId}`
+        : `aviso-${aviso.id}`;
+
+/** Muestra un aviso una sola vez: contador, lista y, si reclama decisión, sonido. */
+const procesarAviso = (aviso) => {
+    const clave = claveDeAviso(aviso);
+
+    if (avisosVistos.has(clave)) {
+        return;
+    }
+
+    avisosVistos.add(clave);
+
+    const apariencia =
+        AVISOS_APARIENCIA[aviso.tipo] ?? AVISOS_APARIENCIA.venta_registrada;
+
+    // Solo suenan las autorizaciones: una venta no reclama nada y sonar por
+    // cada una convertiría el aviso en ruido de fondo.
+    if (aviso.tipo === 'solicitud_descuento') {
+        sonarAviso();
+    }
+
+    subirContador();
+    prependerAviso({
+        ...apariencia,
+        url: aviso.url,
+        titulo: aviso.titulo,
+        cuerpo: aviso.cuerpo,
+    });
+};
+
+/** Toma la foto de lo que la campana ya muestra: de eso no se vuelve a avisar. */
+const recordarAvisosVisibles = () => {
+    document
+        .querySelectorAll('#notification-list [data-notification-id]')
+        .forEach((fila) => {
+            const tipo = fila.dataset.notificationTipo;
+            const solicitud = fila.dataset.notificationSolicitud;
+
+            if (tipo === 'solicitud_descuento' && solicitud) {
+                avisosVistos.add(`solicitud-${solicitud}`);
+
+                return;
+            }
+
+            avisosVistos.add(`aviso-${fila.dataset.notificationId}`);
+        });
+};
+
 /** Cuerpo del aviso de autorización, calcado al que guarda el backend. */
 const cuerpoDeSolicitud = (payload) => {
     const producto = payload.producto ?? 'Producto';
@@ -197,8 +267,8 @@ const cuerpoDeSolicitud = (payload) => {
     return `${producto}${codigo} · pide ${precio} Bs · ${vendedor}`;
 };
 
-/** Se suscribe al canal de autorizaciones, solo si el usuario puede resolverlas. */
-const iniciarAvisosEnVivo = () => {
+/** El canal de Reverb: instantáneo cuando el WebSocket está vivo. */
+const escucharAutorizaciones = () => {
     if (!window.Echo || document.body.dataset.puedeAutorizar !== '1') {
         return;
     }
@@ -209,22 +279,62 @@ const iniciarAvisosEnVivo = () => {
     window.Echo.private('autorizaciones').listen(
         '.SolicitudDeDescuentoCreada',
         (payload) => {
-            const apariencia = AVISOS_APARIENCIA.solicitud_descuento;
-
-            sonarAviso();
-            subirContador();
-            prependerAviso({
-                ...apariencia,
-                url: urlAutorizaciones,
+            procesarAviso({
+                id: `web-${payload.id}`,
+                tipo: 'solicitud_descuento',
+                solicitudId: payload.id,
                 titulo: 'Descuento por autorizar',
                 cuerpo: cuerpoDeSolicitud(payload),
+                url: urlAutorizaciones,
             });
         },
     );
 };
 
+/** El respaldo sin WebSocket: se pregunta cada 20 s si hay algo no leído. */
+const sondearAvisos = async () => {
+    const url = document.body.dataset.urlAvisos;
+
+    if (!url) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(url, {
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!respuesta.ok) {
+            return;
+        }
+
+        const json = await respuesta.json();
+
+        (json.data || []).forEach((aviso) =>
+            procesarAviso({
+                id: aviso.id,
+                tipo: aviso.tipo,
+                solicitudId: aviso.solicitud_id,
+                titulo: aviso.titulo,
+                cuerpo: aviso.cuerpo,
+                url: aviso.url,
+            }),
+        );
+    } catch (_) {
+        // Sin red no se rompe: el siguiente sondeo lo intenta otra vez.
+    }
+};
+
+const iniciarAvisos = () => {
+    recordarAvisosVisibles();
+    escucharAutorizaciones();
+
+    sondearAvisos();
+    window.setInterval(sondearAvisos, 20000);
+};
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarAvisosEnVivo);
+    document.addEventListener('DOMContentLoaded', iniciarAvisos);
 } else {
-    iniciarAvisosEnVivo();
+    iniciarAvisos();
 }

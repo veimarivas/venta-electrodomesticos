@@ -123,6 +123,52 @@ class PosAutorizacionApiTest extends TestCase
         $this->assertSame('app://autorizaciones', $aviso->data['enlace']);
     }
 
+    public function test_el_aviso_se_guarda_aunque_el_websocket_este_caido(): void
+    {
+        // Reverb caído: transmitir lanza. Como el broadcast corre ANTES que los
+        // oyentes, su excepción se llevaba por delante el aviso al
+        // administrador: la solicitud aparecía en la bandeja pero la campana y
+        // los avisos de la app quedaban vacíos.
+        $broadcaster = \Mockery::mock(\Illuminate\Contracts\Broadcasting\Broadcaster::class);
+        $broadcaster->shouldReceive('broadcast')->andThrow(new \RuntimeException('reverb caido'));
+
+        $this->mock(\Illuminate\Contracts\Broadcasting\Factory::class, function ($mock) use ($broadcaster): void {
+            $mock->shouldReceive('connection')->andReturn($broadcaster);
+        });
+
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        Sanctum::actingAs($this->vendedor());
+        $this->postJson('/api/v1/pos/solicitudes-descuento', [
+            'unidad_id' => $unidad->id,
+            'precio' => 300,
+        ])->assertStatus(201);
+
+        $this->assertSame(1, $admin->fresh()->unreadNotifications()->count());
+    }
+
+    public function test_el_panel_puede_leer_los_avisos_recientes(): void
+    {
+        // Es el respaldo cuando el WebSocket no está corriendo: la campana se
+        // pinta al cargar la página y el sondeo lee aquí lo no leído.
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        Sanctum::actingAs($this->vendedor());
+        $solicitudId = $this->postJson('/api/v1/pos/solicitudes-descuento', [
+            'unidad_id' => $unidad->id,
+            'precio' => 300,
+        ])->assertStatus(201)->json('data.id');
+
+        $this->actingAs($admin)
+            ->getJson('/avisos/recientes')
+            ->assertOk()
+            ->assertJsonPath('data.0.tipo', 'solicitud_descuento')
+            ->assertJsonPath('data.0.titulo', 'Descuento por autorizar')
+            ->assertJsonPath('data.0.solicitud_id', $solicitudId);
+    }
+
     public function test_el_vendedor_solicita_autorizacion_y_el_admin_la_resuelve(): void
     {
         $unidad = $this->unidadEnStock(200, 400, 50);
