@@ -1,50 +1,40 @@
 <div class="ventas-show-modulo">
 
     {{-- ===================== Hero ===================== --}}
-    <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">
-        <div class="card-body p-0">
-            <div class="p-4 crud-hero ventas-show-hero">
-                <div class="crud-hero-glow" aria-hidden="true"></div>
-                <div class="ventas-show-hero-ring" aria-hidden="true"></div>
-                <div class="row align-items-center g-4">
-                    <div class="col-lg-7">
-                        <span class="badge text-white mb-3 crud-chip">
-                            <i class="ri-file-list-3-line me-1"></i>
-                            Ventas · Detalle
-                        </span>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="ventas-show-hero-avatar flex-shrink-0">
-                                <i class="{{ $venta->esta_anulada ? 'ri-close-circle-line' : 'ri-checkbox-circle-line' }}"></i>
-                            </div>
-                            <div class="min-w-0">
-                                <h4 class="text-white mb-1 d-flex align-items-center gap-2 flex-wrap">
-                                    <span class="font-monospace">{{ $venta->codigo }}</span>
-                                    <span class="ventas-show-estado {{ $venta->esta_anulada ? 'ventas-show-estado-anulada' : 'ventas-show-estado-completada' }}">
-                                        <span class="ventas-show-estado-dot"></span>
-                                        {{ $estados[$venta->estado] }}
-                                    </span>
-                                </h4>
-                                <p class="text-white-50 mb-0">
-                                    {{ $venta->vendida_en->format('d/m/Y H:i') }}
-                                    · {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}
-                                    · Vendió {{ $venta->user?->name ?? '—' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-5">
-                        <div class="d-flex flex-wrap justify-content-lg-end gap-2">
-                            <a href="{{ route('ventas.recibo', $venta) }}" target="_blank" rel="noopener"
-                                class="btn btn-sm btn-light ventas-show-accion">
-                                <i class="ri-file-download-line align-bottom me-1"></i> Recibo
-                            </a>
-                            <a href="{{ route('ventas.index') }}"
-                                class="btn btn-sm btn-outline-light ventas-show-accion">
-                                <i class="ri-arrow-left-line align-bottom me-1"></i> Volver
-                            </a>
-                        </div>
-                    </div>
+    <div class="ventas-show-hero mb-4">
+        <div class="ventas-show-hero-bg" aria-hidden="true"></div>
+        <div class="ventas-show-hero-ring" aria-hidden="true"></div>
+        <div class="ventas-show-hero-content">
+            <div class="ventas-show-hero-main">
+                <div class="ventas-show-hero-avatar flex-shrink-0">
+                    <i class="{{ $venta->esta_anulada ? 'ri-close-circle-line' : 'ri-checkbox-circle-line' }}"></i>
                 </div>
+                <div class="min-w-0">
+                    <div class="ventas-show-hero-tags">
+                        <span class="ventas-show-hero-chip">
+                            <i class="ri-file-list-3-line"></i> Venta
+                        </span>
+                        <span class="ventas-show-estado {{ $venta->esta_anulada ? 'ventas-show-estado-anulada' : 'ventas-show-estado-completada' }}">
+                            <span class="ventas-show-estado-dot"></span>
+                            {{ $estados[$venta->estado] }}
+                        </span>
+                    </div>
+                    <h1 class="ventas-show-hero-codigo">{{ $venta->codigo }}</h1>
+                    <p class="ventas-show-hero-meta">
+                        <span><i class="ri-calendar-line"></i> {{ $venta->vendida_en->format('d/m/Y H:i') }}</span>
+                        <span><i class="ri-user-3-line"></i> {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}</span>
+                        <span><i class="ri-user-star-line"></i> Vendió {{ $venta->user?->name ?? '—' }}</span>
+                    </p>
+                </div>
+            </div>
+            <div class="ventas-show-hero-acciones">
+                <a href="{{ route('ventas.recibo', $venta) }}" target="_blank" rel="noopener"
+                    class="btn btn-sm btn-light ventas-show-accion">
+                    <i class="ri-file-download-line align-bottom me-1"></i> Recibo
+                </a>
+                <a href="{{ route('ventas.index') }}" class="btn btn-sm btn-outline-light ventas-show-accion">
+                    <i class="ri-arrow-left-line align-bottom me-1"></i> Volver
+                </a>
             </div>
         </div>
     </div>
@@ -199,6 +189,10 @@
                             <span class="ventas-show-fila-label">Costo total</span>
                             <span class="ventas-show-fila-valor">Bs {{ number_format((float) $venta->costo_total, 2, ',', '.') }}</span>
                         </div>
+                        <div class="ventas-show-fila-resumen">
+                            <span class="ventas-show-fila-label">Ganancia</span>
+                            <span class="ventas-show-fila-valor ventas-show-ganancia">Bs {{ number_format((float) $venta->ganancia, 2, ',', '.') }}</span>
+                        </div>
                     @endif
                     <div class="ventas-show-fila-total">
                         <span class="ventas-show-fila-label fw-bold">Total</span>
@@ -337,36 +331,6 @@
             </div>
         </div>
     </div>
-
-    {{-- ===================== Beneficio (solo si puede ver costos) ===================== --}}
-    @if ($puedeVerCostos && ! $venta->esta_anulada)
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="ventas-show-beneficio">
-                    <div class="ventas-show-beneficio-icon ventas-show-beneficio-icon-primary">
-                        <i class="ri-money-dollar-circle-line"></i>
-                    </div>
-                    <div class="ventas-show-beneficio-body">
-                        <small class="ventas-show-beneficio-label">Costo total</small>
-                        <h4 class="ventas-show-beneficio-value">Bs {{ number_format((float) $venta->costo_total, 2, ',', '.') }}</h4>
-                        <small class="ventas-show-beneficio-sub">Inversión en los aparatos</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="ventas-show-beneficio">
-                    <div class="ventas-show-beneficio-icon ventas-show-beneficio-icon-success">
-                        <i class="ri-line-chart-line"></i>
-                    </div>
-                    <div class="ventas-show-beneficio-body">
-                        <small class="ventas-show-beneficio-label">Ganancia neta</small>
-                        <h4 class="ventas-show-beneficio-value ventas-show-beneficio-success">Bs {{ number_format((float) $venta->ganancia, 2, ',', '.') }}</h4>
-                        <small class="ventas-show-beneficio-sub">Margen de esta venta</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
 
     {{-- ===================== Método de pago ===================== --}}
     <div class="ventas-show-seccion mb-4">
