@@ -213,10 +213,7 @@ class AutorizacionDeDescuento
         try {
             SolicitudDeDescuentoCreada::dispatch($solicitud);
         } catch (Throwable $e) {
-            Log::warning('La solicitud de descuento se creó pero no pudo anunciarse.', [
-                'solicitud' => $solicitud->id,
-                'error' => $e->getMessage(),
-            ]);
+            $this->anotarAvisoFallido('La solicitud de descuento se creó pero no pudo anunciarse.', $solicitud, $e);
         }
     }
 
@@ -225,10 +222,29 @@ class AutorizacionDeDescuento
         try {
             SolicitudDeDescuentoResuelta::dispatch($solicitud);
         } catch (Throwable $e) {
-            Log::warning('La solicitud de descuento se resolvió pero no pudo anunciarse.', [
+            $this->anotarAvisoFallido('La solicitud de descuento se resolvió pero no pudo anunciarse.', $solicitud, $e);
+        }
+    }
+
+    /**
+     * Deja constancia de un aviso que no salió, sin dejar que el propio log
+     * tumbe la operación.
+     *
+     * Con Reverb caído el dispatch lanza; si encima el archivo de log no se
+     * puede escribir —permisos de `storage`—, un `Log::warning` sin proteger
+     * volvería a lanzar y el administrador vería un error al aprobar algo que
+     * en realidad ya se aprobó. El aviso es secundario: la solicitud y su
+     * resolución se guardan igual.
+     */
+    private function anotarAvisoFallido(string $mensaje, SolicitudDescuento $solicitud, Throwable $e): void
+    {
+        try {
+            Log::warning($mensaje, [
                 'solicitud' => $solicitud->id,
                 'error' => $e->getMessage(),
             ]);
+        } catch (Throwable) {
+            // Si ni el log se puede escribir, no hay nada más que hacer aquí.
         }
     }
 }

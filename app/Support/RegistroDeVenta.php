@@ -247,17 +247,24 @@ class RegistroDeVenta
         try {
             VentaRegistrada::dispatch($venta);
         } catch (Throwable $e) {
-            Log::warning('La venta se registró pero no pudo anunciarse en vivo.', [
-                'venta' => $venta->codigo,
-                'error' => $e->getMessage(),
-            ]);
+            // Ni el log ni el push pueden tumbar una venta ya cobrada: si el
+            // WebSocket está caído y además el log no se puede escribir
+            // —permisos de `storage`—, nada de esto deja escapar la excepción.
+            try {
+                Log::warning('La venta se registró pero no pudo anunciarse en vivo.', [
+                    'venta' => $venta->codigo,
+                    'error' => $e->getMessage(),
+                ]);
 
-            // Laravel emite el broadcast ANTES de correr los oyentes, así que
-            // la excepción del WebSocket se llevó por delante el aviso al
-            // administrador. Se ejecuta aparte: el push no tiene por qué caerse
-            // porque el servidor de WebSockets esté apagado. (La notificación
-            // de dentro sigue encolándose, esto solo dispara el oyente.)
-            app(AvisarVentaRegistrada::class)->handle(new VentaRegistrada($venta));
+                // Laravel emite el broadcast ANTES de correr los oyentes, así que
+                // la excepción del WebSocket se llevó por delante el aviso al
+                // administrador. Se ejecuta aparte: el push no tiene por qué caerse
+                // porque el servidor de WebSockets esté apagado. (La notificación
+                // de dentro sigue encolándose, esto solo dispara el oyente.)
+                app(AvisarVentaRegistrada::class)->handle(new VentaRegistrada($venta));
+            } catch (Throwable) {
+                // El aviso es secundario; la venta ya está registrada.
+            }
         }
 
         return $venta;
