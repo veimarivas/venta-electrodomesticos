@@ -1,0 +1,262 @@
+// -----------------------------------------------------------------------------
+// Unidades — inventario serializado (/inventario/unidades)
+// -----------------------------------------------------------------------------
+// Dos cosas propias de esta pantalla:
+//
+// 1. El interruptor En stock / Vendidos, con el resto de estados como chips.
+// 2. La tabla, que en pantallas angostas pasa a tarjetas para no pedir scroll
+//    horizontal. Cada celda lleva su `data-label`; en móvil se apila como una
+//    fila «etiqueta — valor» y el producto encabeza la tarjeta.
+//
+// Todo sale de tokens, así que el modo oscuro se resuelve solo.
+// -----------------------------------------------------------------------------
+
+.unidades-modulo {
+
+    // ── Interruptor de estado ────────────────────────────────────────────────
+    .unidades-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .6rem 1rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--marca-linea);
+    }
+
+    .unidades-tabs-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: .2rem;
+        padding: .25rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
+    }
+
+    .unidades-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .45rem 1rem;
+        border: 0;
+        border-radius: var(--radio-pill);
+        background: transparent;
+        color: var(--marca-apagado);
+        font-size: .84rem;
+        font-weight: 600;
+        line-height: 1;
+        transition: background-color var(--trans-rapida), color var(--trans-rapida), box-shadow var(--trans-rapida);
+
+        i { font-size: 1rem; }
+
+        &:hover:not(.is-activo) { color: var(--marca-tinta); }
+
+        &.is-activo {
+            background: var(--marca-superficie);
+            color: var(--marca-tinta);
+            box-shadow: var(--sombra-xs);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .unidades-tab-cuenta {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.4rem;
+        height: 1.35rem;
+        padding: 0 .4rem;
+        border-radius: var(--radio-pill);
+        background: color-mix(in srgb, var(--marca-azul) 12%, transparent);
+        color: var(--marca-azul-texto);
+        font-size: .7rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        transition: background-color var(--trans-rapida), color var(--trans-rapida);
+    }
+
+    .unidades-tab.is-activo .unidades-tab-cuenta {
+        background: var(--marca-azul);
+        color: #fff;
+    }
+
+    .unidades-tabs-estados {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .4rem;
+        margin-left: auto;
+    }
+
+    .unidades-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .34rem .7rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-pill);
+        background: var(--marca-superficie);
+        color: var(--marca-apagado);
+        font-size: .76rem;
+        font-weight: 600;
+        line-height: 1;
+        transition: border-color var(--trans-rapida), color var(--trans-rapida), background-color var(--trans-rapida);
+
+        &:hover {
+            border-color: var(--marca-azul);
+            color: var(--marca-azul-texto);
+        }
+
+        &.is-activo {
+            border-color: var(--marca-azul);
+            background: color-mix(in srgb, var(--marca-azul) 9%, transparent);
+            color: var(--marca-azul-texto);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .unidades-chip-cuenta {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.2rem;
+        height: 1.2rem;
+        padding: 0 .35rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // El punto del chip toma el color del estado (gana a `.unidad-estado-dot`).
+    .unidades-tabs {
+        .unidad-estado-dot {
+            width: .5rem;
+            height: .5rem;
+        }
+
+        .tab-estado-en_stock { background: var(--estado-ok); }
+        .tab-estado-reservado { background: var(--estado-info); }
+        .tab-estado-vendido { background: var(--marca-azul); }
+        .tab-estado-devuelto { background: var(--marca-apagado); box-shadow: none; }
+        .tab-estado-danado { background: var(--estado-error); }
+        .tab-estado-garantia { background: var(--estado-alerta); }
+        .tab-estado-perdido { background: var(--marca-apagado); box-shadow: none; }
+    }
+
+    // ── Tabla: columnas opcionales ───────────────────────────────────────────
+    // En tabletas se esconden Serial y Origen para que la tabla quepa sin
+    // scroll; vuelven en pantallas grandes y en la vista de tarjetas.
+    @media (min-width: 992px) and (max-width: 1399.98px) {
+        .col-opcional { display: none; }
+    }
+
+    // ── Tabla: tarjetas en pantallas angostas ────────────────────────────────
+    @media (max-width: 991.98px) {
+        .table-responsive { overflow: visible; }
+
+        .tabla-crud {
+            display: block;
+
+            thead { display: none; }
+
+            tbody {
+                display: block;
+                padding: .75rem;
+            }
+
+            tbody tr {
+                display: flex;
+                flex-direction: column;
+                position: relative;
+                margin-bottom: .75rem;
+                border: 1px solid var(--marca-linea);
+                border-radius: var(--radio-md);
+                background: var(--marca-superficie);
+                box-shadow: var(--sombra-xs);
+                overflow: hidden;
+
+                &:last-child { margin-bottom: 0; }
+                &:hover { background: var(--marca-superficie); box-shadow: var(--sombra-xs); }
+            }
+
+            tbody td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                padding: .55rem .9rem !important;
+                border: 0;
+                border-bottom: 1px solid var(--marca-linea);
+                text-align: right;
+            }
+
+            tbody td:last-child { border-bottom: 0; }
+
+            tbody td[data-label]::before {
+                content: attr(data-label);
+                flex-shrink: 0;
+                color: var(--marca-apagado);
+                font-size: .68rem;
+                font-weight: 700;
+                letter-spacing: .05em;
+                text-transform: uppercase;
+                text-align: left;
+            }
+
+            // El producto encabeza la tarjeta, a lo ancho y sobre fondo suave.
+            .celda-producto {
+                order: 1;
+                display: block;
+                padding: .85rem 3rem .85rem .9rem !important;
+                background: var(--marca-suave);
+
+                &::before { display: block; margin-bottom: .5rem; }
+
+                h6 { max-width: none !important; }
+            }
+
+            .celda-estado { order: 2; }
+            .celda-codigo { order: 4; }
+            .celda-serial { order: 5; }
+            .celda-origen { order: 6; }
+            .celda-costo { order: 7; }
+            .celda-precio { order: 8; }
+
+            // El checkbox vive en la esquina de la tarjeta, junto al producto.
+            .celda-check {
+                order: 0;
+                position: absolute;
+                top: .8rem;
+                right: .85rem;
+                z-index: 2;
+                padding: 0 !important;
+                border: 0;
+                background: transparent;
+            }
+
+            .celda-acciones {
+                order: 9;
+                justify-content: flex-end;
+            }
+
+            // La fila de «sin resultados» no es una tarjeta.
+            tbody tr.fila-vacia {
+                border: 0;
+                box-shadow: none;
+                background: transparent;
+
+                td {
+                    display: block;
+                    padding: 0 !important;
+                    border: 0;
+                    text-align: center;
+                }
+
+                td::before { display: none; }
+            }
+        }
+    }
+}

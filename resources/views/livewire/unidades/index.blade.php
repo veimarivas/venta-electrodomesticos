@@ -1,4 +1,4 @@
-<div class="items-modulo">
+<div class="items-modulo unidades-modulo">
 
     @php
         // Pill de estado con punto, mismo lenguaje que el resto del catálogo.
@@ -306,58 +306,49 @@
         </div>
 
         {{-- ===================== Tabs de estado ===================== --}}
-        @if ($estadosConUnidades->isNotEmpty())
-            <div class="px-4 pt-3">
-                @php
-                    // Los dos estados principales van primero y separados del
-                    // resto: el almacén pregunta «¿qué tengo en stock?» y
-                    // «¿qué se vendió?», no «¿cuántos hay por estado?».
-                    $principales = ['en_stock', 'vendido'];
-                    $secundarios = collect($estados)->keys()
-                        ->reject(fn ($v) => in_array($v, $principales, true))
-                        ->all();
-                @endphp
+        {{-- Los dos estados que importan en el almacén —qué hay y qué se
+             vendió— van siempre visibles, como un interruptor; el resto de
+             estados quedan como chips secundarios. --}}
+        @php
+            $tabsPrincipales = [
+                'en_stock' => ['texto' => 'En stock', 'icono' => 'ri-archive-2-line'],
+                'vendido' => ['texto' => 'Vendidos', 'icono' => 'ri-shopping-bag-3-line'],
+            ];
+            $estadosSecundarios = collect($estados)->keys()
+                ->reject(fn ($valor) => array_key_exists($valor, $tabsPrincipales))
+                ->all();
+        @endphp
 
-                <ul class="nav nav-tabs nav-tabs-estado" role="tablist">
-                    @foreach ($principales as $valor)
+        <div class="unidades-tabs">
+            <div class="unidades-tabs-toggle" role="tablist" aria-label="Estado del inventario">
+                @foreach ($tabsPrincipales as $valor => $meta)
+                    <button type="button" role="tab"
+                        class="unidades-tab {{ $estadoFiltro === $valor ? 'is-activo' : '' }}"
+                        wire:click="$set('estadoFiltro', '{{ $valor }}')"
+                        aria-selected="{{ $estadoFiltro === $valor ? 'true' : 'false' }}">
+                        <i class="{{ $meta['icono'] }}"></i>
+                        {{ $meta['texto'] }}
+                        <span class="unidades-tab-cuenta">{{ $estadosConUnidades->get($valor, 0) }}</span>
+                    </button>
+                @endforeach
+            </div>
+
+            @if (collect($estadosSecundarios)->contains(fn ($valor) => $estadosConUnidades->has($valor)))
+                <div class="unidades-tabs-estados">
+                    @foreach ($estadosSecundarios as $valor)
                         @if ($estadosConUnidades->has($valor))
-                            <li class="nav-item" role="presentation">
-                                <button type="button"
-                                    class="nav-link {{ $estadoFiltro === $valor ? 'active' : '' }}"
-                                    wire:click="$set('estadoFiltro', '{{ $valor }}')"
-                                    role="tab"
-                                    aria-selected="{{ $estadoFiltro === $valor ? 'true' : 'false' }}">
-                                    <span class="unidad-estado-dot tab-estado-dot tab-estado-{{ $valor }}"></span>
-                                    {{ $estados[$valor] }}
-                                    <span class="tab-estado-badge">{{ $estadosConUnidades[$valor] }}</span>
-                                </button>
-                            </li>
+                            <button type="button"
+                                class="unidades-chip {{ $estadoFiltro === $valor ? 'is-activo' : '' }}"
+                                wire:click="$set('estadoFiltro', '{{ $valor }}')">
+                                <span class="unidad-estado-dot tab-estado-{{ $valor }}"></span>
+                                {{ $estados[$valor] }}
+                                <span class="unidades-chip-cuenta">{{ $estadosConUnidades[$valor] }}</span>
+                            </button>
                         @endif
                     @endforeach
-
-                    @if (collect($secundarios)->first(fn ($v) => $estadosConUnidades->has($v)))
-                        <li class="nav-item nav-item-divisor" role="presentation" aria-hidden="true">
-                            <span class="nav-divisor"></span>
-                        </li>
-                        @foreach ($secundarios as $valor)
-                            @if ($estadosConUnidades->has($valor))
-                                <li class="nav-item" role="presentation">
-                                    <button type="button"
-                                        class="nav-link {{ $estadoFiltro === $valor ? 'active' : '' }}"
-                                        wire:click="$set('estadoFiltro', '{{ $valor }}')"
-                                        role="tab"
-                                        aria-selected="{{ $estadoFiltro === $valor ? 'true' : 'false' }}">
-                                        <span class="unidad-estado-dot tab-estado-dot tab-estado-{{ $valor }}"></span>
-                                        {{ $estados[$valor] }}
-                                        <span class="tab-estado-badge">{{ $estadosConUnidades[$valor] }}</span>
-                                    </button>
-                                </li>
-                            @endif
-                        @endforeach
-                    @endif
-                </ul>
-            </div>
-        @endif
+                </div>
+            @endif
+        </div>
 
         {{-- Barra de selección: solo aparece cuando hay unidades marcadas --}}
         @if (count($seleccionadas) > 0)
@@ -409,9 +400,9 @@
                                     <i class="ri-arrow-{{ $direccionOrden === 'asc' ? 'up' : 'down' }}-line align-middle"></i>
                                 @endif
                             </th>
-                            <th scope="col">Serial</th>
+                            <th scope="col" class="col-opcional">Serial</th>
                             <th scope="col">Producto</th>
-                            <th scope="col">Origen</th>
+                            <th scope="col" class="col-opcional">Origen</th>
                             <th scope="col" class="text-end">Costo</th>
                             <th scope="col" class="text-end">Precio</th>
                             <th scope="col" class="text-center">Estado</th>
@@ -422,17 +413,17 @@
                         @forelse ($unidades as $unidad)
                             <tr wire:key="item-{{ $unidad->id }}">
                                 @can('unidades.ver')
-                                    <td class="ps-4">
+                                    <td class="ps-4 celda-check">
                                         <input type="checkbox" class="form-check-input" value="{{ $unidad->id }}"
                                             wire:model.live="seleccionadas"
                                             aria-label="Seleccionar la unidad {{ $unidad->codigo_interno }}">
                                     </td>
                                 @endcan
-                                <td>
+                                <td class="celda-codigo" data-label="Código">
                                     <span class="unidad-codigo">{{ $unidad->codigo_interno }}</span>
                                 </td>
 
-                                <td>
+                                <td class="celda-serial col-opcional" data-label="Serial">
                                     @if ($unidad->serial)
                                         <span class="text-muted font-monospace fs-13">{{ $unidad->serial }}</span>
                                     @else
@@ -440,7 +431,7 @@
                                     @endif
                                 </td>
 
-                                <td>
+                                <td class="celda-producto" data-label="Producto">
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="unidad-imagen-mini">
                                             @if ($unidad->producto?->imagen)
@@ -458,7 +449,7 @@
                                     </div>
                                 </td>
 
-                                <td>
+                                <td class="celda-origen col-opcional" data-label="Origen">
                                     @if ($unidad->compra_id && $unidad->compra?->proveedor)
                                         <div class="d-flex align-items-center gap-2">
                                             <i class="ri-truck-line text-success fs-14"></i>
@@ -475,22 +466,22 @@
                                     @endif
                                 </td>
 
-                                <td class="text-end">
+                                <td class="celda-costo text-end" data-label="Costo">
                                     <span class="text-muted">Bs {{ number_format((float) $unidad->costo_unitario, 2, ',', '.') }}</span>
                                 </td>
 
-                                <td class="text-end">
+                                <td class="celda-precio text-end" data-label="Precio">
                                     <span class="fw-semibold">Bs {{ number_format((float) $unidad->precio_venta, 2, ',', '.') }}</span>
                                 </td>
 
-                                <td class="text-center">
+                                <td class="celda-estado text-center" data-label="Estado">
                                     <span class="unidad-estado {{ $pillEstado[$unidad->estado] ?? 'unidad-estado-perdido' }}">
                                         <span class="unidad-estado-dot"></span>
                                         {{ $estados[$unidad->estado] ?? $unidad->estado }}
                                     </span>
                                 </td>
 
-                                <td class="text-end pe-4">
+                                <td class="celda-acciones text-end pe-4">
                                     <div class="d-inline-flex gap-1">
                                         @if ($unidad->estado === 'vendido')
                                             @if ($unidad->ventaDetalle?->venta)
@@ -525,7 +516,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr>
+                            <tr class="fila-vacia">
                                 <td colspan="9">
                                     <div class="text-center py-5">
                                         <div class="crud-empty-icon mx-auto mb-4">
