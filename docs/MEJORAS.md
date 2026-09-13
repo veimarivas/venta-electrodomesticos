@@ -13,6 +13,78 @@ todos los días y hoy sigue anotando aparte.
 
 ---
 
+## Pantallas, POS y app móvil (2026-09-13)
+
+Ronda de diseño de pantallas y de funciones del mostrador. No cambia reglas de
+negocio existentes: **suma** la autorización de descuentos y la reserva de
+unidades, que era lo que faltaba para vender con varias cajas a la vez sin que
+dos se peleen por el mismo aparato.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Modo oscuro del panel** | El fondo de página (`--marca-fondo`) no se redefinía en oscuro: el cuerpo quedaba claro y las superficies translúcidas se veían blancas. Se corrigió en la marca. |
+| ✅ | **Vitrina** | Rediseño con barra de búsqueda fija, secciones con conteo y tarjetas más limpias. |
+| ✅ | **Ficha de venta** | El hero no tenía fondo porque el contenedor no entraba en la regla compartida; se rehizo con banda de marca, KPIs y resumen financiero. |
+| ✅ | **Reportes y gráficos** | Productos al liderazgo en barras horizontales, dona con el total al centro, barra apilada real por proveedor y colores de marca. |
+| ✅ | **Unidades** | Interruptor **En stock / Vendidos** siempre visible y tabla que en móvil pasa a tarjetas (sin scroll lateral). |
+| ✅ | **Carrito del POS** | Cada aparato es una tarjeta; el **costo de compra vive tras un ojito** (solo con `reportes.ver_costos`) y el margen se pinta con el ojo encendido. |
+| ✅ | **Autorización de descuentos** | Bajar del mínimo obliga a pedir permiso; el administrador aprueba, sugiere o rechaza y el carrito se actualiza solo. |
+| ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección/fecha/instalación; la `Entrega` se crea al cobrar. |
+| ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con vencimiento; otra caja no lo puede vender. |
+| ✅ | **App móvil a la par** | Todo lo anterior en el teléfono, más la bandeja de Autorizaciones y la notificación al administrador. |
+
+### Autorización de descuentos
+
+El vendedor rebaja hasta el tope del producto por su cuenta. Bajar más —**sin
+llegar por debajo del costo**— abre una solicitud con la foto del momento:
+precio de lista, tope, costo y precio pedido. El administrador la resuelve desde
+**Ventas → Autorizaciones** (panel) o su pestaña en la app, y puede aprobar el
+importe pedido, **sugerir otro monto** o rechazar con un motivo.
+
+La venta se actualiza sola: el POS del vendedor recibe la resolución por
+WebSocket (y sondea como respaldo), aplica el monto autorizado o vuelve al
+mínimo si se rechazó. Al cobrar, `RegistroDeVenta` no se fía del carrito: busca
+en la base una autorización **aprobada, sin usar y que cubra el precio**, y la
+consume. Vender por debajo del costo se rechaza siempre.
+
+- Permiso nuevo **`ventas.autorizar_descuento`** (el rol `admin` ya lo tiene por
+  `Gate::before`; se puede dar a otro rol desde *Roles y permisos*).
+- Tabla **`solicitudes_descuento`**.
+- Al pedirla, el administrador recibe una **notificación** (campana del panel y
+  avisos de la app) con enlace a la bandeja. El push al teléfono llega cuando
+  Firebase esté configurado.
+
+### Reserva de unidades
+
+Agregar al carrito deja el aparato en **`reservado`** («En proceso de venta»)
+para que otra caja no lo venda. Al quitarlo vuelve al stock. La reserva
+**vence a los 15 minutos**: el POS cierra el carrito abandonado y un barrido
+programado (`reservas:liberar`, cada minuto con `schedule:work`) devuelve al
+stock las que quedaron colgadas de un carrito que se cerró solo.
+
+`RegistroDeVenta` acepta la reserva **del propio vendedor** y la limpia al
+vender; las de los demás siguen bloqueadas.
+
+### API y app móvil
+
+El POS de la API es sin estado: la app arma el carrito y manda todo al cobrar.
+Se agregaron `POST /pos/reservar` y `/pos/liberar`, `POST
+/pos/solicitudes-descuento` y su estado, `GET /autorizaciones` y `POST
+/autorizaciones/{id}/resolver`, el `costo_unitario` (solo con permiso) en el
+buscador, y `entrega` por línea en el cobro. La app (repo aparte,
+`venta-electrodomesticos-app`) refleja el mismo flujo.
+
+### Lo que queda
+
+- **Push real**: conectar la cuenta de Firebase (`FIREBASE_CREDENTIALS` en el
+  servidor y `google-services.json` en la app). El resto del circuito ya avisa
+  por la campana y por los avisos de la app.
+- **Procesos del servidor**: `queue:work` (avisos de venta), `schedule:work`
+  (copias y barrido de reservas) y `reverb:start` (tiempo real) tienen que estar
+  corriendo; ver [DESPLIEGUE.md](DESPLIEGUE.md) §4.
+
+---
+
 ## Diseño y escaparate público (2026-09-12)
 
 Campaña de diseño sobre las dos caras del producto —el panel y la app— y una
