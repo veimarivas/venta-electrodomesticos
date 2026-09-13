@@ -358,14 +358,25 @@
                                             @else
                                                 <span>
                                                     Por debajo del mínimo (Bs {{ number_format($minimo, 2, ',', '.') }}):
-                                                    necesita autorización del administrador.
+                                                    necesita autorización.
                                                 </span>
-                                                <button type="button" class="btn btn-sm btn-warning"
-                                                    wire:click="solicitarAutorizacion({{ $indice }})"
-                                                    wire:loading.attr="disabled"
-                                                    wire:target="solicitarAutorizacion({{ $indice }})">
-                                                    <i class="ri-send-plane-line align-bottom me-1"></i> Solicitar autorización
-                                                </button>
+                                                @if ($puedeAutorizar)
+                                                    {{-- Quien vende y puede autorizar no se
+                                                         manda una solicitud a sí mismo. --}}
+                                                    <button type="button" class="btn btn-sm btn-success"
+                                                        wire:click="autorizarDirecto({{ $indice }})"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="autorizarDirecto({{ $indice }})">
+                                                        <i class="ri-shield-keyhole-line align-bottom me-1"></i> Autorizar y aplicar
+                                                    </button>
+                                                @else
+                                                    <button type="button" class="btn btn-sm btn-warning"
+                                                        wire:click="solicitarAutorizacion({{ $indice }})"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="solicitarAutorizacion({{ $indice }})">
+                                                        <i class="ri-send-plane-line align-bottom me-1"></i> Solicitar autorización
+                                                    </button>
+                                                @endif
                                             @endif
                                         </div>
                                     @endif

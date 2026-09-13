@@ -724,6 +724,51 @@ class Pos extends Component
             'Solicitud enviada al administrador. La venta se actualizará sola al resolverse.');
     }
 
+    /**
+     * Autoriza la rebaja de una línea en el acto.
+     *
+     * Es el atajo para cuando vende el propio administrador: no tiene sentido
+     * mandarse una solicitud a sí mismo y esperar. Quien tenga el permiso se
+     * salta el ida y vuelta, pero pasa por el mismo servicio —y deja la misma
+     * autorización en la base— que si la hubiera aprobado desde la bandeja.
+     */
+    public function autorizarDirecto(int $indice): void
+    {
+        $this->autorizar('ventas.autorizar_descuento');
+
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null) {
+            return;
+        }
+
+        $unidad = Unidad::find($linea['unidad_id']);
+
+        if ($unidad === null) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
+
+            return;
+        }
+
+        $servicio = app(AutorizacionDeDescuento::class);
+
+        try {
+            $solicitud = $servicio->solicitar($unidad, $linea['precio'], (int) auth()->id());
+            $solicitud = $servicio->resolver($solicitud, true, $linea['precio'], null, (int) auth()->id());
+        } catch (RuntimeException $e) {
+            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+            return;
+        }
+
+        $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
+        $this->carrito[$indice]['solicitud_estado'] = 'aprobada';
+        $this->carrito[$indice]['precio_aprobado'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
+        $this->resetValidation("carrito.{$indice}.precio");
+
+        $this->dispatch('toast', tipo: 'success', mensaje: 'Precio autorizado.');
+    }
+
     /** El cajero retira la solicitud de una línea que ya no la necesita. */
     public function cancelarSolicitud(int $indice): void
     {
@@ -1558,6 +1603,7 @@ class Pos extends Component
             'metodosPago' => Venta::METODOS_PAGO,
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeCrearClientes' => auth()->user()?->can('clientes.crear') ?? false,
+            'puedeAutorizar' => auth()->user()?->can('ventas.autorizar_descuento') ?? false,
         ]);
     }
 }

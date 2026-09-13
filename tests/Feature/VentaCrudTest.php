@@ -657,6 +657,28 @@ class VentaCrudTest extends TestCase
         $this->assertSame('consumida', $solicitud->fresh()->estado);
     }
 
+    public function test_el_administrador_autoriza_su_propia_rebaja_sin_solicitud(): void
+    {
+        // Cuando vende el administrador no tiene sentido que se mande una
+        // solicitud a sí mismo: el POS le da el atajo, pero pasa por el mismo
+        // servicio y deja la misma autorización en la base.
+        $unidad = $this->unidadEnStock(200, 400, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->set('carrito.0.precio', '300')
+            ->assertSet('ventaValida', false)
+            ->call('autorizarDirecto', 0)
+            ->assertSet('carrito.0.solicitud_estado', 'aprobada')
+            ->assertSet('ventaValida', true)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $this->assertSame('300.00', Venta::first()->total);
+        $this->assertSame('consumida', \App\Models\SolicitudDescuento::first()->estado);
+    }
+
     public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void
     {
         $unidad = $this->unidadEnStock(200, 400, 50);
