@@ -679,6 +679,25 @@ class VentaCrudTest extends TestCase
         $this->assertSame('consumida', \App\Models\SolicitudDescuento::first()->estado);
     }
 
+    public function test_el_administrador_autoriza_una_solicitud_pendiente_desde_el_pos(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        // La solicitud ya estaba pedida: el POS reconoce la pendiente y deja al
+        // administrador resolverla ahí mismo, sin dar el viaje a la bandeja.
+        app(\App\Support\AutorizacionDeDescuento::class)->solicitar($unidad, '300', $admin->id);
+
+        Livewire::actingAs($admin)
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->set('carrito.0.precio', '300')
+            ->assertSet('carrito.0.solicitud_estado', 'pendiente')
+            ->call('autorizarDirecto', 0)
+            ->assertSet('carrito.0.solicitud_estado', 'aprobada')
+            ->assertSet('ventaValida', true);
+    }
+
     public function test_una_venta_parte_los_aparatos_entre_llevar_y_domicilio(): void
     {
         $seLoLleva = $this->unidadEnStock(200, 400, 50);

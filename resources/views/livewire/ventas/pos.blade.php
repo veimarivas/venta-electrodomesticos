@@ -367,8 +367,22 @@
                                             @if ($estadoSolicitud === 'pendiente')
                                                 <span class="pos-autorizacion-esperando">
                                                     <span class="spinner-border spinner-border-sm" role="status"></span>
-                                                    Esperando al administrador…
+                                                    @if ($puedeAutorizar)
+                                                        Solicitud en espera
+                                                    @else
+                                                        Esperando al administrador…
+                                                    @endif
                                                 </span>
+                                                @if ($puedeAutorizar)
+                                                    {{-- Quien vende y puede autorizar resuelve
+                                                         la solicitud desde el propio POS. --}}
+                                                    <button type="button" class="btn btn-sm btn-success"
+                                                        wire:click="autorizarDirecto({{ $indice }})"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="autorizarDirecto({{ $indice }})">
+                                                        <i class="ri-shield-keyhole-line align-bottom me-1"></i> Autorizar ahora
+                                                    </button>
+                                                @endif
                                                 <button type="button" class="btn btn-sm btn-light"
                                                     wire:click="cancelarSolicitud({{ $indice }})">
                                                     Cancelar

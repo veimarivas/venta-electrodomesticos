@@ -775,19 +775,30 @@ class Pos extends Component
             return;
         }
 
-        $unidad = Unidad::find($linea['unidad_id']);
-
-        if ($unidad === null) {
-            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
-
-            return;
-        }
-
         $servicio = app(AutorizacionDeDescuento::class);
 
         try {
-            $solicitud = $servicio->solicitar($unidad, $linea['precio'], (int) auth()->id());
-            $solicitud = $servicio->resolver($solicitud, true, $linea['precio'], null, (int) auth()->id());
+            // Si la línea ya trae una solicitud en curso, se aprueba esa misma;
+            // si no, se crea y se aprueba de un tirón. En los dos casos vale el
+            // precio que el administrador tenga tecleado.
+            $enCurso = ($linea['solicitud_id'] ?? null) !== null
+                ? SolicitudDescuento::find($linea['solicitud_id'])
+                : null;
+
+            if ($enCurso !== null && $enCurso->estaPendiente()) {
+                $solicitud = $servicio->resolver($enCurso, true, $linea['precio'], null, (int) auth()->id());
+            } else {
+                $unidad = Unidad::find($linea['unidad_id']);
+
+                if ($unidad === null) {
+                    $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
+
+                    return;
+                }
+
+                $solicitud = $servicio->solicitar($unidad, $linea['precio'], (int) auth()->id());
+                $solicitud = $servicio->resolver($solicitud, true, $linea['precio'], null, (int) auth()->id());
+            }
         } catch (RuntimeException $e) {
             $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
 
