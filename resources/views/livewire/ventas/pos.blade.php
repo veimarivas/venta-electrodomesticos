@@ -336,6 +336,24 @@
                                         </div>
                                     </div>
 
+                                    {{-- Entrega: se lo lleva o hay que llevarlo. --}}
+                                    <div class="pos-linea-entrega">
+                                        <span class="pos-linea-campo-label"><i class="ri-truck-line"></i> Entrega</span>
+                                        <div class="pos-entrega-toggle" role="group"
+                                            aria-label="Tipo de entrega de {{ $u?->codigo_interno }}">
+                                            <button type="button"
+                                                class="pos-entrega-opcion @if (($linea['entrega'] ?? 'directa') === 'directa') is-activo @endif"
+                                                wire:click="marcarEntrega({{ $indice }}, 'directa')">
+                                                <i class="ri-walk-line"></i> Se lo lleva
+                                            </button>
+                                            <button type="button"
+                                                class="pos-entrega-opcion @if (($linea['entrega'] ?? 'directa') === 'domicilio') is-activo @endif"
+                                                wire:click="marcarEntrega({{ $indice }}, 'domicilio')">
+                                                <i class="ri-truck-line"></i> A domicilio
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     {{-- Autorización de descuento bajo el mínimo. --}}
                                     @if ($cubierto)
                                         <div class="pos-linea-autorizacion pos-linea-autorizacion-ok">
@@ -787,6 +805,45 @@
                             class="form-control @error('notas') is-invalid @enderror"
                             placeholder="Observaciones de la venta..."></textarea>
                     </div>
+
+                    {{-- ---------- Entrega a domicilio ---------- --}}
+                    @if ($this->hayEntregaDomicilio)
+                        <div class="pos-seccion pos-entrega-datos">
+                            <label class="pos-seccion-label">
+                                <i class="ri-truck-line"></i> Entrega a domicilio <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text" class="form-control @error('direccionEntrega') is-invalid @enderror"
+                                wire:model="direccionEntrega" placeholder="Dirección de la entrega">
+                            @error('direccionEntrega') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            <div class="row g-2 mt-1">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" wire:model="referenciaEntrega"
+                                        placeholder="Referencia (opcional)">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" wire:model="telefonoEntrega"
+                                        placeholder="Teléfono de contacto (opcional)">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="date" class="form-control @error('fechaEntrega') is-invalid @enderror"
+                                        wire:model="fechaEntrega" aria-label="Fecha de entrega">
+                                    @error('fechaEntrega') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="pos-instalacion"
+                                            wire:model="conInstalacion">
+                                        <label class="form-check-label" for="pos-instalacion">Hay que instalarlo</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <textarea class="form-control mt-2" rows="2" wire:model="notasEntrega"
+                                placeholder="Notas de la entrega (opcional)"></textarea>
+                        </div>
+                    @endif
 
                     {{-- ---------- Totales ---------- --}}
                     <div class="pos-totales">

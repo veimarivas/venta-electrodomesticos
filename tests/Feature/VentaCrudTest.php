@@ -679,6 +679,47 @@ class VentaCrudTest extends TestCase
         $this->assertSame('consumida', \App\Models\SolicitudDescuento::first()->estado);
     }
 
+    public function test_una_venta_parte_los_aparatos_entre_llevar_y_domicilio(): void
+    {
+        $seLoLleva = $this->unidadEnStock(200, 400, 50);
+        $aDomicilio = $this->unidadEnStock(200, 500, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $seLoLleva->id)
+            ->call('agregar', $aDomicilio->id)
+            ->call('marcarEntrega', 1, 'domicilio')
+            ->assertSet('hayEntregaDomicilio', true)
+            ->set('direccionEntrega', 'Av. Siempre Viva 742, zona Sur')
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $venta = Venta::first();
+
+        $this->assertNotNull($venta);
+        $this->assertSame(1, $venta->entregas()->count());
+
+        $entrega = $venta->entregas()->with('detalles')->first();
+
+        $this->assertSame('Av. Siempre Viva 742, zona Sur', $entrega->direccion);
+        $this->assertSame(1, $entrega->detalles->count());
+        $this->assertSame($aDomicilio->id, $entrega->detalles->first()->ventaDetalle->unidad_id);
+    }
+
+    public function test_no_se_cobra_una_entrega_a_domicilio_sin_direccion(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->call('marcarEntrega', 0, 'domicilio')
+            ->call('cobrar')
+            ->assertHasErrors('direccionEntrega');
+
+        $this->assertSame(0, Venta::count());
+    }
+
     public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void
     {
         $unidad = $this->unidadEnStock(200, 400, 50);

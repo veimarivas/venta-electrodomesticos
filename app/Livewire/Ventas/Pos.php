@@ -13,6 +13,7 @@ use App\Support\GeneradorCodigoCliente;
 use App\Support\GeneradorCodigoVenta;
 use App\Support\PlanDeCuotas;
 use App\Support\ProrrateoDeGastos;
+use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,7 +52,7 @@ class Pos extends Component
      * agregar: viajan en el estado del componente y NO se confían al cobrar,
      * donde se vuelven a leer de la base de datos.
      *
-     * @var array<int, array{unidad_id: int, precio_lista: string, precio: string, tope_descuento: string, solicitud_id: ?int, solicitud_estado: ?string, precio_aprobado: ?string}>
+     * @var array<int, array{unidad_id: int, precio_lista: string, precio: string, tope_descuento: string, solicitud_id: ?int, solicitud_estado: ?string, precio_aprobado: ?string, entrega: string}>
      */
     public array $carrito = [];
 
@@ -89,6 +90,24 @@ class Pos extends Component
 
     /** Cuándo vence la primera; las demás caen el mismo día de cada mes. */
     public string $primerVencimiento = '';
+
+    // ---- Entrega -----------------------------------------------------------
+    //
+    // Cada aparato se marca como «se lo lleva» o «a domicilio». La dirección y
+    // la fecha son de la entrega, no de la línea: un cliente suele llevarse
+    // unos aparatos y esperar otros en la misma casa.
+
+    public string $direccionEntrega = '';
+
+    public string $referenciaEntrega = '';
+
+    public string $telefonoEntrega = '';
+
+    public string $fechaEntrega = '';
+
+    public bool $conInstalacion = false;
+
+    public string $notasEntrega = '';
 
     // ---- Alta rápida de cliente -------------------------------------------
 
@@ -163,6 +182,16 @@ class Pos extends Component
                 $this->pagoEsCredito ? 'required' : 'nullable',
                 'date', 'after_or_equal:today',
             ],
+            // Solo pesa si algún aparato va a domicilio: si el cliente se lo
+            // lleva todo, estos campos no se piden ni se validan.
+            'direccionEntrega' => [
+                $this->hayEntregaDomicilio ? 'required' : 'nullable',
+                'string', 'max:255',
+            ],
+            'referenciaEntrega' => ['nullable', 'string', 'max:255'],
+            'telefonoEntrega' => ['nullable', 'string', 'max:30'],
+            'fechaEntrega' => ['nullable', 'date', 'after_or_equal:today'],
+            'notasEntrega' => ['nullable', 'string', 'max:500'],
         ];
     }
 
@@ -186,6 +215,8 @@ class Pos extends Component
             'comprobante.required' => 'Sube el respaldo del pago por QR.',
             'comprobante.image' => 'El respaldo debe ser una imagen del comprobante.',
             'comprobante.max' => 'El respaldo no puede pesar más de 5 MB.',
+            'direccionEntrega.required' => 'Escribe la dirección de la entrega a domicilio.',
+            'fechaEntrega.after_or_equal' => 'La fecha de entrega no puede ser anterior a hoy.',
         ];
     }
 
@@ -559,6 +590,8 @@ class Pos extends Component
             'solicitud_id' => null,
             'solicitud_estado' => null,
             'precio_aprobado' => null,
+            // directa = se lo lleva el cliente; domicilio = hay que llevarlo.
+            'entrega' => 'directa',
         ];
 
         // El buscador se limpia para escanear el siguiente aparato.
@@ -890,6 +923,84 @@ class Pos extends Component
         $this->carrito[$indice]['precio_aprobado'] = null;
     }
 
+    // =======================================================================
+    // Entrega
+    // =======================================================================
+
+    /** Marca una línea como «se lo lleva» o «a domicilio». */
+    public function marcarEntrega(int $indice, string $modo): void
+    {
+        if (! isset($this->carrito[$indice]) || ! in_array($modo, ['directa', 'domicilio'], true)) {
+            return;
+        }
+
+        $this->carrito[$indice]['entrega'] = $modo;
+
+        // Al marcar la primera entrega se propone el teléfono del cliente, que
+        // es a quien hay que llamar al llegar.
+        if ($modo === 'domicilio' && $this->telefonoEntrega === '') {
+            $this->telefonoEntrega = (string) ($this->clienteElegido?->persona?->celular ?? '');
+        }
+    }
+
+    /** ¿Algún aparato del carrito va a domicilio? */
+    #[Computed]
+    public function hayEntregaDomicilio(): bool
+    {
+        foreach ($this->carrito as $linea) {
+            if (($linea['entrega'] ?? 'directa') === 'domicilio') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Crea la entrega de los aparatos marcados «a domicilio».
+     *
+     * Se hace **después** de registrar la venta, porque la entrega cuelga de
+     * sus líneas. Si algo falla, la venta ya está cobrada —no se pierde— y la
+     * entrega se puede programar luego desde la ficha de la venta; por eso el
+     * fallo se avisa en vez de revertir nada.
+     */
+    private function programarEntregaDomicilio(Venta $venta): void
+    {
+        $venta->loadMissing('detalles');
+
+        $ids = [];
+
+        foreach ($this->carrito as $linea) {
+            if (($linea['entrega'] ?? 'directa') !== 'domicilio') {
+                continue;
+            }
+
+            $detalle = $venta->detalles->firstWhere('unidad_id', $linea['unidad_id']);
+
+            if ($detalle !== null) {
+                $ids[] = $detalle->id;
+            }
+        }
+
+        if ($ids === []) {
+            return;
+        }
+
+        try {
+            app(ProgramacionDeEntregas::class)->programar($venta, $ids, [
+                'direccion' => $this->direccionEntrega,
+                'referencia' => $this->referenciaEntrega,
+                'telefono_contacto' => $this->telefonoEntrega,
+                'programada_para' => $this->fechaEntrega,
+                'con_instalacion' => $this->conInstalacion,
+                'notas' => $this->notasEntrega,
+            ], (int) auth()->id());
+        } catch (RuntimeException $e) {
+            $this->dispatch('toast', tipo: 'warning', mensaje:
+                'La venta se registró, pero la entrega no se pudo programar: '.$e->getMessage());
+        }
+    }
+
     /**
      * Escucha la resolución de cada solicitud pendiente del carrito.
      *
@@ -938,6 +1049,8 @@ class Pos extends Component
             'carrito', 'clienteId', 'buscarCliente', 'notas', 'buscar',
             'qrCobroId', 'comprobante', 'montoEfectivo', 'montoQr', 'quitarIndice',
             'cuotaInicial', 'numeroCuotas', 'primerVencimiento', 'mostrarCosto',
+            'direccionEntrega', 'referenciaEntrega', 'telefonoEntrega', 'fechaEntrega',
+            'conInstalacion', 'notasEntrega',
         ]);
 
         $this->metodoPago = 'efectivo';
@@ -1563,6 +1676,10 @@ class Pos extends Component
             $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
 
             return;
+        }
+
+        if ($this->hayEntregaDomicilio) {
+            $this->programarEntregaDomicilio($venta);
         }
 
         $this->vaciar();

@@ -294,4 +294,57 @@
         align-items: center;
         gap: .45rem;
     }
+
+    // ---- Entrega -----------------------------------------------------------
+    .pos-linea-entrega {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem .75rem;
+        padding: .55rem .85rem;
+        border-top: 1px dashed var(--marca-linea);
+    }
+
+    .pos-entrega-toggle {
+        display: inline-flex;
+        gap: .25rem;
+        padding: .2rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
+    }
+
+    .pos-entrega-opcion {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .32rem .7rem;
+        border: 0;
+        border-radius: var(--radio-pill);
+        background: transparent;
+        color: var(--marca-apagado);
+        font-size: .76rem;
+        font-weight: 600;
+        line-height: 1;
+        transition: background-color var(--trans-rapida), color var(--trans-rapida), box-shadow var(--trans-rapida);
+
+        i { font-size: .85rem; }
+
+        &:hover:not(.is-activo) { color: var(--marca-tinta); }
+
+        &.is-activo {
+            background: var(--marca-superficie);
+            color: var(--marca-azul-texto);
+            box-shadow: var(--sombra-xs);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .pos-entrega-datos {
+        .form-check-input:checked {
+            background-color: var(--marca-azul);
+            border-color: var(--marca-azul);
+        }
+    }
 }
