@@ -7,6 +7,7 @@ use App\Models\Persona;
 use App\Models\QrCobro;
 use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
+use App\Models\User;
 use App\Models\Venta;
 use App\Support\AutorizacionDeDescuento;
 use App\Support\GeneradorCodigoCliente;
@@ -110,6 +111,12 @@ class Pos extends Component
 
     public string $notasEntrega = '';
 
+    /** Enlace de Google Maps del punto de entrega (opcional). */
+    public string $ubicacionEntrega = '';
+
+    /** Quién lleva la entrega, si se decide al programar. */
+    public ?int $repartidorEntrega = null;
+
     // ---- Alta rápida de cliente -------------------------------------------
 
     public string $nuevoCarnet = '';
@@ -204,6 +211,8 @@ class Pos extends Component
             'telefonoEntrega' => ['nullable', 'string', 'max:30'],
             'fechaEntrega' => ['nullable', 'date', 'after_or_equal:today'],
             'notasEntrega' => ['nullable', 'string', 'max:500'],
+            'ubicacionEntrega' => ['nullable', 'string', 'max:500'],
+            'repartidorEntrega' => ['nullable', 'integer', Rule::exists('users', 'id')],
         ];
     }
 
@@ -1084,6 +1093,23 @@ class Pos extends Component
     }
 
     /**
+     * Quién puede llevar la entrega: usuarios activos con permiso de gestionar
+     * entregas.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    #[Computed]
+    public function repartidoresEntrega(): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $u): bool => $u->can('entregas.gestionar'))
+            ->values();
+    }
+
+    /**
      * Crea la entrega de los aparatos marcados «a domicilio».
      *
      * Se hace **después** de registrar la venta, porque la entrega cuelga de
@@ -1117,9 +1143,11 @@ class Pos extends Component
             app(ProgramacionDeEntregas::class)->programar($venta, $ids, [
                 'direccion' => $this->direccionEntrega,
                 'referencia' => $this->referenciaEntrega,
+                'ubicacion_url' => $this->ubicacionEntrega,
                 'telefono_contacto' => $this->telefonoEntrega,
                 'programada_para' => $this->fechaEntrega,
                 'con_instalacion' => $this->conInstalacion,
+                'repartidor_id' => $this->repartidorEntrega,
                 'notas' => $this->notasEntrega,
             ], (int) auth()->id());
         } catch (RuntimeException $e) {
@@ -1181,7 +1209,8 @@ class Pos extends Component
             'qrCobroId', 'comprobante', 'montoEfectivo', 'montoQr', 'quitarIndice',
             'cuotaInicial', 'numeroCuotas', 'primerVencimiento', 'mostrarCosto',
             'direccionEntrega', 'referenciaEntrega', 'telefonoEntrega', 'fechaEntrega',
-            'conInstalacion', 'notasEntrega', 'ultimaActividad', 'reservasRefrescadasEn',
+            'conInstalacion', 'notasEntrega', 'ubicacionEntrega', 'repartidorEntrega',
+            'ultimaActividad', 'reservasRefrescadasEn',
         ]);
 
         $this->metodoPago = 'efectivo';
@@ -1852,6 +1881,7 @@ class Pos extends Component
             'puedeVerCostos' => auth()->user()?->can('reportes.ver_costos') ?? false,
             'puedeCrearClientes' => auth()->user()?->can('clientes.crear') ?? false,
             'puedeAutorizar' => auth()->user()?->can('ventas.autorizar_descuento') ?? false,
+            'repartidores' => $this->repartidoresEntrega,
         ]);
     }
 }

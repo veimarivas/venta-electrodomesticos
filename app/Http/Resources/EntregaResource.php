@@ -32,6 +32,7 @@ class EntregaResource extends JsonResource
 
             'direccion' => $this->direccion,
             'referencia' => $this->referencia,
+            'ubicacion_url' => $this->ubicacion_url,
             'telefono_contacto' => $this->telefono_contacto,
             'programada_para' => $this->programada_para?->toDateString(),
             'con_instalacion' => $this->con_instalacion,

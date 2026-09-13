@@ -413,6 +413,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         // eso se hace en el mostrador con el cliente delante—.
         Route::middleware('permission:entregas.ver')->group(function () {
             Route::get('/entregas', [EntregaController::class, 'index'])->name('entregas.index');
+            // Estática ANTES de `/entregas/{entrega}`: si no, Laravel la toma
+            // por el id de una entrega y responde 404.
+            Route::get('/entregas/repartidores', [EntregaController::class, 'repartidores'])
+                ->name('entregas.repartidores');
             Route::get('/entregas/{entrega}', [EntregaController::class, 'show'])->name('entregas.show');
         });
 

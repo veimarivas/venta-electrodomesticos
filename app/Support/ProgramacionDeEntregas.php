@@ -42,7 +42,7 @@ class ProgramacionDeEntregas
      * Programa la entrega de unas líneas concretas de una venta.
      *
      * @param  array<int, int>  $ventaDetalleIds
-     * @param  array{direccion: string, referencia?: ?string, telefono_contacto?: ?string, programada_para?: ?string, con_instalacion?: bool, repartidor_id?: ?int, notas?: ?string}  $datos
+     * @param  array{direccion: string, referencia?: ?string, ubicacion_url?: ?string, telefono_contacto?: ?string, programada_para?: ?string, con_instalacion?: bool, repartidor_id?: ?int, notas?: ?string}  $datos
      */
     public function programar(Venta $venta, array $ventaDetalleIds, array $datos, int $userId): Entrega
     {
@@ -84,6 +84,7 @@ class ProgramacionDeEntregas
                     'cliente_id' => $venta->cliente_id,
                     'direccion' => $direccion,
                     'referencia' => $this->texto($datos['referencia'] ?? null),
+                    'ubicacion_url' => $this->texto($datos['ubicacion_url'] ?? null),
                     'telefono_contacto' => $this->texto($datos['telefono_contacto'] ?? null),
                     'programada_para' => $programada,
                     'estado' => 'pendiente',

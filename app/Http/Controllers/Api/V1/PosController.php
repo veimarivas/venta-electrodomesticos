@@ -228,9 +228,11 @@ class PosController extends Controller
             'entrega' => ['nullable', 'array'],
             'entrega.direccion' => ['nullable', 'string', 'max:255'],
             'entrega.referencia' => ['nullable', 'string', 'max:255'],
+            'entrega.ubicacion_url' => ['nullable', 'string', 'max:500'],
             'entrega.telefono_contacto' => ['nullable', 'string', 'max:30'],
             'entrega.programada_para' => ['nullable', 'date'],
             'entrega.con_instalacion' => ['nullable', 'boolean'],
+            'entrega.repartidor_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'entrega.notas' => ['nullable', 'string', 'max:500'],
         ]);
 
@@ -372,9 +374,11 @@ class PosController extends Controller
                     app(ProgramacionDeEntregas::class)->programar($venta, $ids, [
                         'direccion' => $datos['entrega']['direccion'] ?? '',
                         'referencia' => $datos['entrega']['referencia'] ?? null,
+                        'ubicacion_url' => $datos['entrega']['ubicacion_url'] ?? null,
                         'telefono_contacto' => $datos['entrega']['telefono_contacto'] ?? null,
                         'programada_para' => $datos['entrega']['programada_para'] ?? null,
                         'con_instalacion' => (bool) ($datos['entrega']['con_instalacion'] ?? false),
+                        'repartidor_id' => $datos['entrega']['repartidor_id'] ?? null,
                         'notas' => $datos['entrega']['notas'] ?? null,
                     ], $request->user()->id);
                 } catch (RuntimeException $e) {

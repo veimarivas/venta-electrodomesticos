@@ -854,6 +854,24 @@
                                 </div>
                             </div>
 
+                            <div class="input-group mt-2">
+                                <span class="input-group-text bg-light border-end-0"><i class="ri-map-pin-2-line"></i></span>
+                                <input type="url" class="form-control border-start-0 @error('ubicacionEntrega') is-invalid @enderror"
+                                    wire:model="ubicacionEntrega" maxlength="500"
+                                    placeholder="Enlace de Google Maps (opcional)">
+                                @error('ubicacionEntrega') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            @if ($repartidores->isNotEmpty())
+                                <select class="form-select mt-2" wire:model="repartidorEntrega"
+                                    aria-label="Quién lleva la entrega">
+                                    <option value="">¿Quién la lleva? (se puede decidir después)</option>
+                                    @foreach ($repartidores as $repartidor)
+                                        <option value="{{ $repartidor->id }}">{{ $repartidor->name }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+
                             <textarea class="form-control mt-2" rows="2" wire:model="notasEntrega"
                                 placeholder="Notas de la entrega (opcional)"></textarea>
                         </div>

@@ -69,6 +69,25 @@ class EntregaController extends Controller
         return new EntregaResource($this->cargada($entrega));
     }
 
+    /**
+     * Quién puede llevar una entrega: usuarios activos con permiso de
+     * gestionar entregas. Alimenta el selector al programar desde el móvil.
+     */
+    public function repartidores(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('entregas.ver'), 403);
+
+        $repartidores = \App\Models\User::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->filter(fn ($u): bool => $u->can('entregas.gestionar'))
+            ->map(fn ($u): array => ['id' => $u->id, 'nombre' => $u->name])
+            ->values();
+
+        return response()->json(['data' => $repartidores]);
+    }
+
     public function despachar(Request $request, Entrega $entrega): EntregaResource|JsonResponse
     {
         $datos = $request->validate([

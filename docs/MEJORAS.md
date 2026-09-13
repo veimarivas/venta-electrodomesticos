@@ -29,7 +29,7 @@ dos se peleen por el mismo aparato.
 | ✅ | **Unidades** | Interruptor **En stock / Vendidos** siempre visible y tabla que en móvil pasa a tarjetas (sin scroll lateral). |
 | ✅ | **Carrito del POS** | Cada aparato es una tarjeta; el **costo de compra vive tras un ojito** (solo con `reportes.ver_costos`) y el margen se pinta con el ojo encendido. |
 | ✅ | **Autorización de descuentos** | Bajar del mínimo obliga a pedir permiso; el administrador aprueba, sugiere o rechaza y el carrito se actualiza solo. |
-| ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección/fecha/instalación; la `Entrega` se crea al cobrar. |
+| ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección, enlace de Google Maps, fecha, instalación y quién la lleva; la `Entrega` se crea al cobrar. |
 | ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con vencimiento; otra caja no lo puede vender. |
 | ✅ | **Vistas al día** | Stock, Productos y Unidades muestran las reservadas como «en proceso de venta» y se refrescan solos cada 15 s. |
 | ✅ | **App móvil a la par** | Todo lo anterior en el teléfono, más la bandeja de Autorizaciones y la notificación al administrador. |
@@ -70,6 +70,17 @@ Las vistas que muestran disponibilidad —**Stock actual**, **Productos** y
 **Unidades**— excluyen las reservadas de lo disponible y las pintan como «en
 proceso de venta»; se refrescan solas cada 15 s, así que lo que pasa en otra
 caja se ve sin recargar.
+
+### Entrega a domicilio
+
+Al cobrar, cada aparato se marca «se lo lleva» o «a domicilio». Si hay alguno a
+domicilio se piden la dirección (obligatoria), referencia, teléfono, fecha,
+instalación y, opcionalmente, un **enlace de Google Maps** del punto y **quién la
+lleva**: el repartidor se puede fijar al programar y no solo al despachar. Se
+guarda el enlace y no coordenadas a propósito —no hace falta clave de Google ni
+un selector de mapa dentro del POS— y se abre con un toque desde la ficha de la
+venta (panel) y desde la pantalla de Entregas (app), para que el repartidor
+llegue sin llamar.
 
 ### API y app móvil
 

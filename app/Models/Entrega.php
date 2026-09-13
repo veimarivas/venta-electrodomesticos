@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'cliente_id',
     'direccion',
     'referencia',
+    'ubicacion_url',
     'telefono_contacto',
     'programada_para',
     'estado',

@@ -176,6 +176,7 @@ class PosAutorizacionApiTest extends TestCase
     {
         $seLleva = $this->unidadEnStock(200, 400, 50);
         $aDomicilio = $this->unidadEnStock(200, 500, 50);
+        $repartidor = $this->admin();
 
         Sanctum::actingAs($this->vendedor());
         $this->postJson('/api/v1/pos/cobrar', [
@@ -184,10 +185,30 @@ class PosAutorizacionApiTest extends TestCase
                 ['unidad_id' => $aDomicilio->id, 'precio' => 500, 'entrega' => 'domicilio'],
             ],
             'metodo_pago' => 'efectivo',
-            'entrega' => ['direccion' => 'Av. Siempre Viva 742'],
+            'entrega' => [
+                'direccion' => 'Av. Siempre Viva 742',
+                'ubicacion_url' => 'https://maps.app.goo.gl/abc123',
+                'repartidor_id' => $repartidor->id,
+            ],
         ])->assertStatus(201);
 
-        $this->assertSame(1, Entrega::count());
+        $entrega = Entrega::first();
+
+        $this->assertNotNull($entrega);
+        $this->assertSame('https://maps.app.goo.gl/abc123', $entrega->ubicacion_url);
+        $this->assertSame($repartidor->id, $entrega->repartidor_id);
+    }
+
+    public function test_la_app_puede_listar_los_repartidores(): void
+    {
+        $admin = $this->admin();
+
+        Sanctum::actingAs($this->vendedor());
+        $respuesta = $this->getJson('/api/v1/entregas/repartidores')->assertOk();
+
+        $ids = collect($respuesta->json('data'))->pluck('id')->all();
+
+        $this->assertContains($admin->id, $ids);
     }
 
     public function test_una_entrega_a_domicilio_sin_direccion_se_rechaza(): void

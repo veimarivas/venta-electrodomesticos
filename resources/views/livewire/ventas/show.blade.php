@@ -443,6 +443,12 @@
                         <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
                             <div class="min-w-0">
                                 <span class="fw-semibold d-block">{{ $entrega->direccion }}</span>
+                                @if ($entrega->ubicacion_url)
+                                    <a href="{{ $entrega->ubicacion_url }}" target="_blank" rel="noopener"
+                                        class="small text-info d-inline-flex align-items-center gap-1">
+                                        <i class="ri-map-pin-2-line"></i> Ver ubicación en el mapa
+                                    </a>
+                                @endif
                                 <small class="text-muted d-block">
                                     @if ($entrega->referencia)
                                         {{ $entrega->referencia }} ·
