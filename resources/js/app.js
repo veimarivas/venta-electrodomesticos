@@ -9,6 +9,10 @@ import './echo';
 // Gráficas dinámicas de la página de reportes (Chart.js).
 import './reportes-charts';
 
+// Avisos en vivo con sonido: el administrador se entera de que hay un descuento
+// por autorizar sin tener que mirar la pantalla.
+import './avisos';
+
 /*
 |------------------------------------------------------------------------------
 | Bundle propio del proyecto

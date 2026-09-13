@@ -13,6 +13,48 @@ todos los días y hoy sigue anotando aparte.
 
 ---
 
+## Aviso de autorización con sonido (2026-09-13)
+
+Cuando un vendedor baja del mínimo autorizado, el administrador tiene que
+enterarse **sin estar mirando la pantalla**: el vendedor está con el cliente
+delante esperando respuesta. El aviso ya se guardaba y ya viajaba por WebSocket,
+pero llegaba mudo y solo lo veía quien tuviera abierta la bandeja.
+
+Ahora **suena en las dos caras** —el panel web y el teléfono— y el aviso queda
+donde tiene que quedar: en la campana del panel y en el historial de avisos de la
+app.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Campana del panel: el aviso se pinta entero** | La campana leía `title` pero las notificaciones guardan `titulo` y `cuerpo`: el aviso de un descuento, de stock o de una cuota salía siempre como «Nueva venta», sin texto. Ahora cada tipo tiene su icono y su color, y se lee el cuerpo. |
+| ✅ | **Sonido en el panel** | Un módulo propio (`resources/js/avisos.js`) escucha el canal privado `autorizaciones` en cualquier pantalla y hace sonar una campanilla de dos notas con la **Web Audio API** —sin archivo de sonido que versionar ni servir—, sube el contador rojo e inserta el aviso en la campana al instante. El navegador exige un gesto previo: el contexto de audio se despierta con el primer clic o tecla. |
+| ✅ | **Sonido en la app** | Los avisos locales se preparan **aunque Firebase no esté configurado** (era la causa de que el push «no hiciera nada» sin credenciales). Un **vigía** consulta el historial cada 15 s mientras hay sesión y, cuando aparece una solicitud nueva, la muestra con notificación local y **sonido propio** (canal `autorizaciones`, aparte del de ventas). |
+| ✅ | **El aviso de la app lleva a la bandeja** | El historial de avisos ya entiende el tipo `solicitud_descuento`: icono propio y navegación a `/autorizaciones` (la ruta la manda el servidor en `enlace`). |
+
+### Por qué sondea y no solo espera el push
+
+Firebase es opcional y hoy **no está configurado**. Con push, el aviso llega con
+la app cerrada; sin él, el sondeo cada 15 s es lo que hace que suene en el
+mostrador. El vigía está escrito con funciones inyectadas y no con el
+repositorio, así que se prueba sin red ni Firebase.
+
+- El push, cuando se conecte, usa **el mismo canal y el mismo enlace**: no hay
+  que tocar nada, solo poner las credenciales.
+- La **primera vuelta no suena**: toma la foto de lo que ya había. Avisar de todo
+  lo no leído de días atrás sería una alarma que nadie mira.
+- **Solo suenan las solicitudes de descuento.** Las ventas y el stock se ven al
+  abrir la app; hacer sonar el teléfono por cada venta lo volvería ruido de fondo.
+
+**Tests:** `test/avisos_test.dart` cubre el modelo, la traducción del enlace y el
+vigía (foto inicial, aviso de venta sin sonido, sin sesión, fallo de red);
+`PosAutorizacionApiTest` fija el contrato `tipo`/`titulo`/`enlace` que consumen
+las dos pantallas.
+
+**Lo que queda:** conectar Firebase para que el aviso llegue también con la app
+cerrada (ver [DESPLIEGUE.md](DESPLIEGUE.md) §4).
+
+---
+
 ## Pantallas, POS y app móvil (2026-09-13)
 
 Ronda de diseño de pantallas y de funciones del mostrador. No cambia reglas de

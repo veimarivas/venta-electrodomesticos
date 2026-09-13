@@ -118,6 +118,24 @@ Al cobrar, en un solo movimiento: se emite la venta, los aparatos pasan a
 *vendido*, queda el rastro en el kardex y el aviso llega al administrador. O
 pasa todo, o no pasa nada — nunca queda media venta.
 
+### Pedir autorización para rebajar más
+
+Bajar del tope del producto no se puede por cuenta propia: si necesitas rebajar
+más —sin llegar por debajo del costo—, el vendedor pide autorización desde el
+mismo carrito. La solicitud guarda el precio de lista, el tope, el costo y lo que
+se pide cobrar.
+
+El administrador la resuelve desde **Ventas → Autorizaciones** (panel) o su
+pestaña en la app, y puede aprobar el importe pedido, **sugerir otro** o rechazar
+con un motivo. El carrito se actualiza solo: si se aprueba, aplica el monto
+autorizado; si se rechaza, vuelve al mínimo.
+
+> **Al pedirla, al administrador le llega un aviso con sonido.** En el panel suena
+> una campanilla y el aviso entra en la lista de la campana al instante, aunque
+> esté en otra pantalla; en el teléfono llega como notificación con su propio
+> sonido y queda en el historial de **Avisos**, que abre la bandeja de
+> Autorizaciones.
+
 ### Vender a plazos
 
 Elige **Crédito** como método de pago y aparecen tres campos: la **cuota
@@ -920,6 +938,22 @@ Tocar el aviso abre la ficha del producto.
 > vendidos están en la parte superior del dashboard, debajo de los indicadores
 > del período, para ver primero la actividad reciente antes de la lista de
 > reposición.
+
+### Avisos de autorización de descuento
+
+Cuando un vendedor pide rebajar por debajo del mínimo de un producto, **el aviso
+suena** con una notificación propia —distinta de la de una venta— y queda en el
+historial de **Avisos**. Tocar el aviso abre la bandeja de **Autorizaciones**,
+que es donde se aprueba, se sugiere otro monto o se rechaza.
+
+Mientras la app está abierta revisa el historial cada pocos segundos, así que el
+aviso aparece aunque no llegue un push. Con **Firebase** configurado también
+llega con la app cerrada; hoy no lo está, así que fuera de la app el aviso se ve
+al abrirla.
+
+> **Solo suenan las autorizaciones.** Las ventas y los avisos de stock se ven al
+> abrir la app: hacer sonar el teléfono por cada venta lo convertiría en un ruido
+> que se acaba ignorando.
 
 ---
 

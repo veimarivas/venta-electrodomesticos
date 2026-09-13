@@ -15,7 +15,8 @@
     @include('backend.layouts.partials.head-css')
 </head>
 
-<body>
+<body data-puede-autorizar="{{ auth()->user()?->can('ventas.autorizar_descuento') ? '1' : '0' }}"
+    data-url-autorizaciones="{{ route('ventas.autorizaciones.index') }}">
 
     <!-- Begin page -->
     <div id="layout-wrapper">

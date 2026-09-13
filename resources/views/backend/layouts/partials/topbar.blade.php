@@ -137,18 +137,36 @@
                             <div data-simplebar style="max-height: 300px;" class="pe-2">
                                 <div id="notification-list">
                                     @forelse ($unread as $notification)
+                                        @php
+                                            // El aviso se pinta según su tipo: un descuento por
+                                            // autorizar no es una venta, y confundirlos obliga a
+                                            // abrir cada aviso para saber qué reclama atención.
+                                            // Se lee `titulo` (lo que guardan las notificaciones);
+                                            // `title` se conserva por los avisos ya creados.
+                                            [$icono, $color] = match ($notification->data['tipo'] ?? 'venta_registrada') {
+                                                'solicitud_descuento' => ['bx-purchase-tag-alt', 'bg-warning-subtle text-warning'],
+                                                'stock_bajo' => ['bx-package', 'bg-danger-subtle text-danger'],
+                                                'cuota_por_cobrar' => ['bx-wallet', 'bg-info-subtle text-info'],
+                                                default => ['bx-cart', 'bg-success-subtle text-success'],
+                                            };
+                                        @endphp
                                         <div class="text-reset notification-item d-block dropdown-item position-relative"
                                             data-notification-id="{{ $notification->id }}">
                                             <div class="d-flex">
                                                 <div class="avatar-xs me-3 flex-shrink-0">
-                                                    <span class="avatar-title bg-success-subtle text-success rounded-circle fs-16">
-                                                        <i class="bx bx-cart"></i>
+                                                    <span class="avatar-title {{ $color }} rounded-circle fs-16">
+                                                        <i class="bx {{ $icono }}"></i>
                                                     </span>
                                                 </div>
                                                 <div class="flex-grow-1">
                                                     <a href="{{ $notification->data['url'] ?? '#' }}" class="stretched-link">
-                                                        <h6 class="mt-0 mb-2 lh-base">{{ $notification->data['title'] ?? 'Nueva venta' }}</h6>
+                                                        <h6 class="mt-0 mb-2 lh-base">{{ $notification->data['titulo'] ?? $notification->data['title'] ?? 'Aviso' }}</h6>
                                                     </a>
+                                                    @if (filled($notification->data['cuerpo'] ?? null))
+                                                        <p class="mb-2 fs-12 text-muted">
+                                                            {{ $notification->data['cuerpo'] }}
+                                                        </p>
+                                                    @endif
                                                     <p class="mb-0 fs-11 fw-medium text-uppercase text-muted">
                                                         <span><i class="mdi mdi-clock-outline"></i>
                                                             {{ $notification->created_at->diffForHumans() }}</span>

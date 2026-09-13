@@ -112,6 +112,15 @@ class PosAutorizacionApiTest extends TestCase
 
         // El aviso queda en la campana del panel y en los avisos de la app.
         $this->assertSame(1, $admin->fresh()->unreadNotifications()->count());
+
+        // Contrato que consumen la campana del panel y los avisos de la app:
+        // sin `titulo`/`cuerpo` la campana pintaría el aviso en blanco, y sin
+        // `enlace` el aviso de la app no tendría a dónde llevar.
+        $aviso = $admin->fresh()->unreadNotifications()->first();
+
+        $this->assertSame('solicitud_descuento', $aviso->data['tipo']);
+        $this->assertSame('Descuento por autorizar', $aviso->data['titulo']);
+        $this->assertSame('app://autorizaciones', $aviso->data['enlace']);
     }
 
     public function test_el_vendedor_solicita_autorizacion_y_el_admin_la_resuelve(): void
