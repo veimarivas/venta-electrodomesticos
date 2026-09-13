@@ -323,10 +323,11 @@ Dispara la copia de seguridad diaria y su vigilancia. **Sin este proceso no hay
 copias**, y nadie se entera hasta el día que hay que restaurar.
 
 También corre `reservas:liberar` cada minuto: devuelve al stock los aparatos que
-quedaron reservados por un carrito de POS abandonado. Sin él, el POS igual
-funciona (el propio carrito libera al cerrarse, y una reserva vencida se puede
-tomar), pero el inventario puede contar como «en proceso de venta» algo que ya
-nadie está vendiendo.
+quedaron reservados por un carrito de POS abandonado. Ya **no es la única red**:
+un middleware suelta las reservas vencidas (20 minutos) antes de cada petición,
+una vez por minuto, así que aunque este proceso esté caído el inventario se
+corrige solo. El comando programado se mantiene como segunda red y para dejar el
+barrido en el log.
 
 ```bash
 php artisan reverb:start --host=0.0.0.0 --port=8080

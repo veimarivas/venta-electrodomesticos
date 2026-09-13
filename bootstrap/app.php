@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CabecerasDeSeguridad;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\LiberarReservasVencidas;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // una cabecera de seguridad que hay que acordarse de poner acaba
         // faltando justo en la pantalla que importa.
         $middleware->append(CabecerasDeSeguridad::class);
+
+        // Suelta las reservas de POS vencidas antes de cada petición (una vez
+        // por minuto): sin esto, un carrito abandonado se queda «en proceso de
+        // venta» hasta que el planificador vuelva a correr, y puede tardar días.
+        $middleware->append(LiberarReservasVencidas::class);
 
         $middleware->alias([
             'active' => EnsureUserIsActive::class,

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Ventas\Index as VentasIndex;
+use App\Livewire\Ventas\CarritoPendiente;
 use App\Livewire\Ventas\Pos;
 use App\Models\Cliente;
 use App\Models\MovimientoInventario;
@@ -797,6 +798,99 @@ class VentaCrudTest extends TestCase
         $this->assertSame(1, $reservas->liberarVencidas());
         $this->assertSame('en_stock', $unidad->fresh()->estado);
         $this->assertNull($unidad->fresh()->reservado_por);
+    }
+
+    public function test_la_reserva_dura_veinte_minutos(): void
+    {
+        $unidad = $this->unidadEnStock();
+        $admin = $this->admin();
+
+        app(\App\Support\ReservasDeUnidades::class)->reservar($unidad->id, $admin->id);
+
+        $vence = $unidad->fresh()->reservado_hasta;
+
+        $this->assertNotNull($vence);
+        // Décimas de segundo de margen: el reloj avanza entre el reservar y el
+        // comprobar, así que no da el número exacto.
+        $this->assertGreaterThan(19 * 60, now()->diffInSeconds($vence));
+        $this->assertLessThanOrEqual(20 * 60, now()->diffInSeconds($vence));
+    }
+
+    public function test_el_barrido_libera_las_reservas_sin_fecha(): void
+    {
+        // Una reserva sin fecha no bloquea nada, pero dejaría el aparato
+        // pintado como «en proceso de venta» para siempre.
+        $unidad = $this->unidadEnStock();
+        $unidad->update([
+            'estado' => 'reservado',
+            'reservado_por' => $this->admin()->id,
+            'reservado_hasta' => null,
+        ]);
+
+        $this->assertSame(1, app(\App\Support\ReservasDeUnidades::class)->liberarVencidas());
+        $this->assertSame('en_stock', $unidad->fresh()->estado);
+    }
+
+    public function test_el_middleware_libera_las_reservas_vencidas_al_entrar(): void
+    {
+        // Es el seguro contra el servidor sin `schedule:work`: sin esto, un
+        // carrito abandonado seguiría apartado al día siguiente.
+        $unidad = $this->unidadEnStock();
+        $unidad->update([
+            'estado' => 'reservado',
+            'reservado_por' => $this->admin()->id,
+            'reservado_hasta' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($this->admin())->get('/dashboard')->assertOk();
+
+        $this->assertSame('en_stock', $unidad->fresh()->estado);
+    }
+
+    public function test_el_pos_recupera_el_carrito_apartado(): void
+    {
+        $unidad = $this->unidadEnStock(1000, 1500);
+        $admin = $this->admin();
+
+        app(\App\Support\ReservasDeUnidades::class)->reservar($unidad->id, $admin->id);
+
+        Livewire::actingAs($admin)->test(Pos::class)
+            ->assertSet('carrito.0.unidad_id', $unidad->id)
+            ->assertSet('carrito.0.precio_lista', '1500.00');
+    }
+
+    public function test_otro_cajero_no_recupera_el_carrito_ajeno(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        app(\App\Support\ReservasDeUnidades::class)->reservar($unidad->id, $this->admin()->id);
+
+        Livewire::actingAs(User::factory()->create()->syncRoles('vendedor'))
+            ->test(Pos::class)
+            ->assertSet('carrito', []);
+    }
+
+    public function test_el_indicador_muestra_el_carrito_propio(): void
+    {
+        $unidad = $this->unidadEnStock();
+        $admin = $this->admin();
+
+        app(\App\Support\ReservasDeUnidades::class)->reservar($unidad->id, $admin->id);
+
+        Livewire::actingAs($admin)->test(CarritoPendiente::class)
+            ->assertSee('carrito-pendiente-boton', false)
+            ->assertSee('aparatos apartados', false);
+    }
+
+    public function test_el_indicador_no_muestra_el_carrito_ajeno(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        app(\App\Support\ReservasDeUnidades::class)->reservar($unidad->id, $this->admin()->id);
+
+        Livewire::actingAs(User::factory()->create()->syncRoles('vendedor'))
+            ->test(CarritoPendiente::class)
+            ->assertDontSee('carrito-pendiente-boton', false);
     }
 
     public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void

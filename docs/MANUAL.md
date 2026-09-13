@@ -136,6 +136,21 @@ autorizado; si se rechaza, vuelve al mínimo.
 > sonido y queda en el historial de **Avisos**, que abre la bandeja de
 > Autorizaciones.
 
+### Si sales de la venta sin cobrar
+
+Al agregar un aparato, queda **apartado** para que otra caja no lo venda. Si
+sales del punto de venta y dejas el carrito a medias, lo encuentras igual al
+volver: los aparatos siguen ahí con su precio.
+
+Arriba, al lado de las notificaciones, aparece un **carrito con el número de
+aparatos apartados**; tócalo para volver a la venta. El aparato vuelve solo al
+stock si no cobras en **20 minutos**: el carrito se cierra por sí mismo para que
+otra caja pueda venderlo. Quitar el aparato, vaciar el carrito o cobrar también
+lo devuelven.
+
+> El indicador solo cuenta **tu** carrito: el de otra caja no se muestra, aunque
+> el aparato le quede bloqueado hasta que venza.
+
 ### Vender a plazos
 
 Elige **Crédito** como método de pago y aparecen tres campos: la **cuota

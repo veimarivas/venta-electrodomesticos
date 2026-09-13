@@ -18,7 +18,7 @@ use App\Models\Unidad;
 class ReservasDeUnidades
 {
     /** Cuánto dura la reserva sin que el carrito se toque de nuevo. */
-    public const MINUTOS = 15;
+    public const MINUTOS = 20;
 
     /**
      * Reserva una unidad para el usuario. Devuelve false si otro la tiene.
@@ -87,13 +87,22 @@ class ReservasDeUnidades
             ]);
     }
 
-    /** Suelta todas las reservas vencidas. Devuelve cuántas liberó. */
+    /**
+     * Suelta todas las reservas vencidas. Devuelve cuántas liberó.
+     *
+     * También suelta las que no tienen fecha: una reserva sin `reservado_hasta`
+     * no bloquea nada (`reservaVigente()` la considera libre), pero dejaría el
+     * aparato pintado como «en proceso de venta». Un aparato sin fecha es un dato
+     * a medias, no un bloqueo.
+     */
     public function liberarVencidas(): int
     {
         return Unidad::query()
             ->where('estado', 'reservado')
-            ->whereNotNull('reservado_hasta')
-            ->where('reservado_hasta', '<', now())
+            ->where(function ($query): void {
+                $query->whereNull('reservado_hasta')
+                    ->orWhere('reservado_hasta', '<', now());
+            })
             ->update([
                 'estado' => 'en_stock',
                 'reservado_por' => null,

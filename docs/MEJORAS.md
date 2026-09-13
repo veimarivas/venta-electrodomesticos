@@ -55,6 +55,34 @@ cerrada (ver [DESPLIEGUE.md](DESPLIEGUE.md) §4).
 
 ---
 
+## Carrito apartado: indicador y liberación a los 20 minutos (2026-09-13)
+
+El carrito del POS reserva los aparatos para que otra caja no los venda. Faltaba
+resolver qué pasa cuando el cajero **abandona la venta**: los aparatos seguían
+«en proceso de venta» hasta que corriera `reservas:liberar`, y ese barrido
+depende de `schedule:work`, que en el servidor de la tienda **no está
+corriendo**. Un carrito abierto ayer seguía apartado hoy.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **La reserva dura 20 minutos** | Antes 15. Es lo que aguanta un carrito sin que nadie lo toque. Lo mismo en el panel y en la app: `ReservasDeUnidades::MINUTOS` y `Constantes.minutosDeReserva`. |
+| ✅ | **El barrido ya no depende del planificador** | Un middleware (`LiberarReservasVencidas`) suelta las reservas vencidas antes de cada petición, **una vez por minuto** (marca en caché). Aunque `schedule:work` esté caído, el inventario se corrige solo. |
+| ✅ | **Carrito al lado de las notificaciones** | Si el cajero sale del POS con aparatos apartados, un icono de carrito con su número aparece en la barra superior y lleva de vuelta a la venta. Solo cuenta las reservas **del propio cajero y vigentes**, y no se monta en el propio POS. |
+| ✅ | **El POS retoma el carrito** | Al volver al punto de venta, los aparatos apartados reaparecen con su precio de lista, y una rebaja ya autorizada se recupera con la línea. Antes, el indicador habría llevado a un carrito vacío. |
+
+Una reserva **sin fecha** —un dato a medias— también se suelta: no bloquea nada,
+pero dejaba el aparato pintado como «en proceso de venta».
+
+**Tests:** el barrido, los 20 minutos, la reserva sin fecha, la liberación del
+middleware al entrar, la recuperación del carrito y el indicador propio (y el
+ajeno que no se muestra). El temporizador del carrito en la app usa la misma
+constante de 20 minutos.
+
+**Lo que queda:** nada de esta pieza. El barrido programado sigue existiendo como
+segunda red, pero ya no es la única.
+
+---
+
 ## Pantallas, POS y app móvil (2026-09-13)
 
 Ronda de diseño de pantallas y de funciones del mostrador. No cambia reglas de
@@ -72,7 +100,7 @@ dos se peleen por el mismo aparato.
 | ✅ | **Carrito del POS** | Cada aparato es una tarjeta; el **costo de compra vive tras un ojito** (solo con `reportes.ver_costos`) y el margen se pinta con el ojo encendido. |
 | ✅ | **Autorización de descuentos** | Bajar del mínimo obliga a pedir permiso; el administrador aprueba, sugiere o rechaza y el carrito se actualiza solo. |
 | ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección, enlace de Google Maps, fecha, instalación y quién la lleva; la `Entrega` se crea al cobrar. |
-| ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con vencimiento; otra caja no lo puede vender. |
+| ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con un vencimiento de 20 minutos; otra caja no lo puede vender. |
 | ✅ | **Vistas al día** | Stock, Productos y Unidades muestran las reservadas como «en proceso de venta» y se refrescan solos cada 15 s. |
 | ✅ | **App móvil a la par** | Todo lo anterior en el teléfono, más la bandeja de Autorizaciones y la notificación al administrador. |
 
@@ -101,9 +129,11 @@ consume. Vender por debajo del costo se rechaza siempre.
 
 Agregar al carrito deja el aparato en **`reservado`** («En proceso de venta»)
 para que otra caja no lo venda. Al quitarlo vuelve al stock. La reserva
-**vence a los 15 minutos**: el POS cierra el carrito abandonado y un barrido
-programado (`reservas:liberar`, cada minuto con `schedule:work`) devuelve al
-stock las que quedaron colgadas de un carrito que se cerró solo.
+**vence a los 20 minutos**: el POS cierra el carrito abandonado y un barrido
+—programado (`reservas:liberar`, cada minuto con `schedule:work`) y **también
+adelantado por un middleware en cada petición**— devuelve al stock las que
+quedaron colgadas de un carrito que se cerró solo. El indicador del carrito, al
+lado de las notificaciones, avisa de lo apartado y lleva de vuelta al POS.
 
 `RegistroDeVenta` acepta la reserva **del propio vendedor** y la limpia al
 vender; las de los demás siguen bloqueadas.

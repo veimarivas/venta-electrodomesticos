@@ -165,6 +165,81 @@ class Pos extends Component
     ];
 
     /**
+     * Recupera el carrito que quedó apartado y suelta lo que ya venció.
+     *
+     * Si el cajero salió del punto de venta con aparatos en el carrito —lo
+     * llamaron, cerró la pestaña—, al volver encuentra la venta donde la dejó.
+     * Sin esto, el indicador de la barra superior llevaría a un carrito vacío
+     * mientras los aparatos siguen «en proceso de venta».
+     *
+     * Solo se retoman las reservas **del propio cajero y vigentes**: las de otra
+     * caja no son suyas. Una rebaja ya autorizada se recupera con la línea, para
+     * no obligar a pedirla otra vez por el mismo aparato.
+     */
+    public function mount(): void
+    {
+        if (! auth()->check()) {
+            return;
+        }
+
+        $reservas = app(ReservasDeUnidades::class);
+
+        // Lo vencido se suelta antes de mirar qué queda vivo.
+        $reservas->liberarVencidas();
+
+        $unidades = Unidad::with('producto')
+            ->where('estado', 'reservado')
+            ->where('reservado_por', (int) auth()->id())
+            ->whereNotNull('reservado_hasta')
+            ->where('reservado_hasta', '>', now())
+            ->orderBy('reservado_hasta')
+            ->get();
+
+        if ($unidades->isEmpty()) {
+            return;
+        }
+
+        $autorizaciones = app(AutorizacionDeDescuento::class);
+
+        foreach ($unidades as $unidad) {
+            $lista = number_format((float) $unidad->precio_venta, 2, '.', '');
+            $precio = $lista;
+            $solicitudId = null;
+            $solicitudEstado = null;
+            $precioAprobado = null;
+
+            // Una rebaja aprobada y sin usar se aplica sola: es la que el cajero
+            // ya consiguió antes de dejar el carrito.
+            $aprobada = $autorizaciones->aprobadaVigente(
+                $unidad->id, ProrrateoDeGastos::aCentavos($lista)
+            );
+
+            if ($aprobada !== null) {
+                $solicitudId = $aprobada->id;
+                $solicitudEstado = 'aprobada';
+                $precioAprobado = number_format((float) $aprobada->precio_aprobado, 2, '.', '');
+                $precio = $precioAprobado;
+            }
+
+            $this->carrito[] = [
+                'unidad_id' => $unidad->id,
+                'precio_lista' => $lista,
+                'precio' => $precio,
+                'tope_descuento' => number_format(
+                    (float) ($unidad->producto?->descuento_maximo ?? 0), 2, '.', ''
+                ),
+                'solicitud_id' => $solicitudId,
+                'solicitud_estado' => $solicitudEstado,
+                'precio_aprobado' => $precioAprobado,
+                'entrega' => 'directa',
+            ];
+        }
+
+        // El plazo arranca de nuevo: el cajero retoma la venta, no la dejó tirada.
+        $this->tocar();
+    }
+
+    /**
      * @return array<string, mixed>
      */
     protected function rules(): array

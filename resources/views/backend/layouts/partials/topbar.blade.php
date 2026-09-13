@@ -106,6 +106,17 @@
                     </button>
                 </div>
 
+                <!-- Carrito apartado: al lado de las notificaciones, recuerda
+                     que hay aparatos reservados si el cajero salió del POS.
+                     En el propio POS no se monta: ahí el carrito ya está a la
+                     vista, y decirlo por ruta en el componente no serviría
+                     —durante el sondeo la petición no es la del POS—. -->
+                @can('ventas.crear')
+                    @if (! request()->routeIs('ventas.create'))
+                        @livewire('ventas.carrito-pendiente')
+                    @endif
+                @endcan
+
                 <!-- Notificaciones de ventas (se actualizan en vivo por WebSocket) -->
                 <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdown">
                     <button type="button"
