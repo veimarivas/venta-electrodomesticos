@@ -3,7 +3,8 @@
     `categoria`, `marca` y el conteo `disponibles` cargados).
 
     Toda la tarjeta enlaza a las unidades del producto cuando quien la ve puede
-    entrar al inventario; si no, es solo una ficha legible.
+    entrar al inventario; si no, es solo una ficha legible. Las dos marcas
+    `data-vitrina-*` alimentan el filtro de búsqueda de la vitrina.
 --}}
 @php
     $disponibles = (int) $producto->disponibles;
@@ -13,10 +14,13 @@
     $tono = $agotado
         ? ['clase' => 'vitrina-stock-agotado', 'texto' => 'Agotado']
         : ($bajoMinimo
-            ? ['clase' => 'vitrina-stock-bajo', 'texto' => 'Bajo mínimo']
-            : ['clase' => 'vitrina-stock-ok', 'texto' => $disponibles.($disponibles === 1 ? ' unidad' : ' unidades')]);
+            ? ['clase' => 'vitrina-stock-bajo', 'texto' => 'Últimas unidades']
+            : ['clase' => 'vitrina-stock-ok', 'texto' => 'Disponible']);
 @endphp
-<div class="col-6 col-md-4 col-lg-3 col-xxl-2">
+<div class="col-6 col-md-4 col-xl-3"
+    data-vitrina-card
+    data-vitrina-nombre="{{ $producto->nombre }}"
+    data-vitrina-marca="{{ $producto->marca?->nombre ?? '' }}">
     <div class="vitrina-producto h-100 @if ($agotado) vitrina-producto--agotado @endif">
         <div class="vitrina-producto-imagen">
             @if ($producto->imagen)
@@ -51,11 +55,17 @@
         </div>
         <div class="vitrina-producto-body">
             <div class="vitrina-producto-nombre" title="{{ $producto->nombre }}">{{ $producto->nombre }}</div>
-            <div class="vitrina-producto-marca">{{ $producto->marca?->nombre ?? '' }}</div>
-            <div class="vitrina-producto-precio">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</div>
-            <div class="vitrina-producto-stock {{ $tono['clase'] }}">
-                <span class="vitrina-producto-stock-dot"></span>
-                {{ $tono['texto'] }}
+            @if ($producto->marca)
+                <div class="vitrina-producto-marca">{{ $producto->marca->nombre }}</div>
+            @else
+                <div class="vitrina-producto-marca vitrina-producto-marca--vacia">Sin marca</div>
+            @endif
+            <div class="vitrina-producto-pie">
+                <span class="vitrina-producto-precio">Bs {{ number_format((float) $producto->precio_venta, 2, ',', '.') }}</span>
+                <span class="vitrina-producto-stock {{ $tono['clase'] }}">
+                    <span class="vitrina-producto-stock-dot"></span>
+                    {{ $tono['texto'] }}
+                </span>
             </div>
         </div>
         @can('unidades.ver')

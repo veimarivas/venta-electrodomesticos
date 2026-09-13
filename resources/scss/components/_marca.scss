@@ -112,12 +112,18 @@
 
 // ---- Modo oscuro ------------------------------------------------------------
 //
-// Solo se redefinen los cinco tokens de superficie. El azul, el oro y el resto
+// Se redefinen los neutros que cambian con el tema. El azul, el oro y el resto
 // de la identidad NO cambian: una marca que cambia de color con el tema deja
 // de ser una marca.
+//
+// `--marca-fondo` es el fondo de la página. Sin redefinirlo, el cuerpo se
+// quedaba claro en oscuro y las superficies translúcidas —la vitrina— se leían
+// como si el tema no hubiera cambiado. Su tono es el de Velzon (`--vz-body-bg`),
+// un peldaño por debajo de las tarjetas para que estas se despeguen.
 [data-bs-theme="dark"] {
     --marca-tinta: #e6ebf1;
     --marca-azul-texto: #6ea3d8;
+    --marca-fondo: #1a1d21;
     --marca-superficie: #212529;
     --marca-suave: #2a2d31;
     --marca-linea: #32383e;

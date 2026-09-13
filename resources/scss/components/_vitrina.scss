@@ -1,18 +1,27 @@
 // =============================================================================
 // Vitrina — Catálogo de productos
 // -----------------------------------------------------------------------------
-// Antes esta pantalla traía su propia paleta (slate + indigo #6366f1), como si
-// fuera otra aplicación. Ahora sale de los tokens de la marca —azul noche y oro—
-// y de la escala de `_sistema.scss`, así que la vitrina y el mostrador se leen
-// como el mismo producto.
+// La pantalla se lee como el escaparate del sistema: una banda con el contexto y
+// las cifras, una barra fija para buscar y saltar entre categorías, y debajo las
+// secciones de producto. Todo sale de los tokens de la marca —azul noche y oro—
+// y de la escala de `_sistema.scss`.
 //
-// La jerarquía es una sola: banda oscura arriba con el contexto y las cifras,
-// secciones blancas con su rejilla de productos debajo. El oro solo aparece en
-// lo que la marca quiere destacar (recomendados); el azul de acción, en lo que
-// se puede tocar.
+// El oro marca lo destacado (recomendados); el azul de acción, lo que se puede
+// tocar. Las superficies se resuelven con los tokens locales `--vt-*`, que ya
+// saben cambiar con el tema: el modo oscuro no necesita duplicar cada regla.
 // =============================================================================
 
 .vitrina-modulo {
+    // ── Tokens locales ────────────────────────────────────────────────────────
+    // Un solo punto donde se decide cómo se ve una superficie, un borde o el
+    // fondo de una imagen. En claro toman los tonos de marca; en oscuro se
+    // redefinen al final del archivo.
+    --vt-superficie: var(--marca-superficie);
+    --vt-superficie-2: var(--marca-suave);
+    --vt-imagen: var(--marca-suave);
+    --vt-borde: var(--marca-linea);
+    --vt-borde-tenue: color-mix(in srgb, var(--marca-linea) 70%, transparent);
+    --vt-sombra: var(--sombra-sm);
 
     // ── Hero ──────────────────────────────────────────────────────────────────
     .vitrina-hero {
@@ -20,14 +29,14 @@
         isolation: isolate;
         overflow: hidden;
         border-radius: var(--radio-xl);
-        padding: 2rem 2.25rem;
+        padding: 2.1rem 2.35rem;
         min-height: 8rem;
         color: #fff;
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: linear-gradient(150deg, #0a182b 0%, #10233c 52%, #1b3757 100%);
         box-shadow: var(--sombra-md);
     }
 
-    // Rejilla de puntos y anillo: los mismos adornos del login y del dashboard,
+    // Rejilla de puntos y halos: los mismos adornos del login y del dashboard,
     // para que la banda se reconozca antes de leer el título.
     .vitrina-hero-bg {
         position: absolute;
@@ -35,8 +44,8 @@
         pointer-events: none;
 
         background:
-            radial-gradient(ellipse 60% 50% at 85% 20%, rgba(87, 146, 191, .16) 0%, transparent 70%),
-            radial-gradient(ellipse 45% 60% at 8% 90%, rgba(197, 161, 98, .14) 0%, transparent 70%);
+            radial-gradient(ellipse 60% 50% at 85% 15%, rgba(87, 146, 191, .18) 0%, transparent 70%),
+            radial-gradient(ellipse 45% 60% at 6% 92%, rgba(197, 161, 98, .16) 0%, transparent 70%);
 
         &::after {
             content: '';
@@ -54,56 +63,52 @@
         position: relative;
         z-index: 1;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 2rem;
     }
 
-    .vitrina-hero-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: .4rem;
-        padding: .3rem .75rem;
-        border-radius: var(--radio-pill);
-        background: rgba(255, 255, 255, .08);
-        border: 1px solid rgba(255, 255, 255, .14);
-        color: var(--marca-crema);
-        font-size: .72rem;
-        font-weight: 650;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        margin-bottom: .75rem;
-
-        i { color: var(--marca-oro-claro); font-size: .85rem; }
-    }
+    .vitrina-hero-texto { min-width: 0; }
 
     .vitrina-hero-titulo {
         color: #fff;
-        font-size: 1.75rem;
+        font-size: clamp(1.5rem, 2.6vw, 1.9rem);
         font-weight: 700;
         letter-spacing: -.03em;
-        margin: 0 0 .35rem;
-        line-height: 1.15;
+        margin: 0 0 .4rem;
+        line-height: 1.12;
     }
 
     .vitrina-hero-subtitulo {
-        color: rgba(255, 255, 255, .62);
-        font-size: .88rem;
+        color: rgba(255, 255, 255, .7);
+        font-size: .9rem;
         margin: 0;
         line-height: 1.55;
-        max-width: 30rem;
+        max-width: 34rem;
     }
 
-    .vitrina-hero-acciones { flex-shrink: 0; display: flex; gap: .75rem; }
+    .vitrina-hero-acciones {
+        flex-shrink: 0;
+        display: flex;
+        gap: .65rem;
+    }
 
     .vitrina-hero-stat {
+        min-width: 5.5rem;
         text-align: center;
         padding: .8rem 1.35rem;
         border-radius: var(--radio-md);
-        background: rgba(255, 255, 255, .09);
-        border: 1px solid rgba(255, 255, 255, .14);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, .07);
+        border: 1px solid rgba(255, 255, 255, .15);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .vitrina-hero-stat--oro {
+        background: rgba(197, 161, 98, .18);
+        border-color: rgba(197, 161, 98, .36);
+
+        .vitrina-hero-stat-valor { color: var(--marca-oro-claro); }
     }
 
     .vitrina-hero-stat-valor {
@@ -118,7 +123,7 @@
 
     .vitrina-hero-stat-label {
         display: block;
-        color: rgba(255, 255, 255, .55);
+        color: rgba(255, 255, 255, .6);
         font-size: .68rem;
         font-weight: 600;
         text-transform: uppercase;
@@ -126,34 +131,186 @@
         margin-top: .2rem;
     }
 
+    // ── Barra: buscador + navegación ──────────────────────────────────────────
+    // Se queda pegada bajo la topbar mientras se recorre el catálogo: con el
+    // cliente delante, buscar o saltar de categoría no debería obligar a subir.
+    .vitrina-toolbar {
+        position: sticky;
+        top: 4.5rem;
+        z-index: 8;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .85rem 1rem;
+        padding: 1rem 1.15rem;
+        border: 1px solid var(--vt-borde);
+        border-radius: var(--radio-lg);
+        background: color-mix(in srgb, var(--vt-superficie) 93%, transparent);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: var(--sombra-sm);
+    }
+
+    .vitrina-buscador {
+        position: relative;
+        flex: 1 1 18rem;
+        min-width: 12rem;
+
+        > i {
+            position: absolute;
+            top: 50%;
+            left: .9rem;
+            transform: translateY(-50%);
+            color: var(--marca-apagado);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        .form-control {
+            height: 2.6rem;
+            padding: 0 2.3rem 0 2.5rem;
+            border: 1px solid var(--vt-borde);
+            border-radius: var(--radio-pill);
+            background: var(--vt-superficie-2);
+            font-size: .88rem;
+            color: var(--marca-tinta);
+            transition: border-color var(--trans-rapida), box-shadow var(--trans-rapida), background-color var(--trans-rapida);
+
+            &::placeholder { color: var(--marca-apagado); }
+
+            &:focus {
+                border-color: var(--marca-azul);
+                box-shadow: var(--anillo-foco);
+                background: var(--vt-superficie);
+            }
+        }
+    }
+
+    .vitrina-buscador-limpiar {
+        position: absolute;
+        top: 50%;
+        right: .55rem;
+        transform: translateY(-50%);
+        display: grid;
+        place-items: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--marca-apagado);
+        font-size: .95rem;
+        line-height: 1;
+
+        &:hover { color: var(--estado-error); }
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .vitrina-nav {
+        display: flex;
+        flex: 2 1 24rem;
+        align-items: center;
+        gap: .4rem;
+        min-width: 0;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        padding-bottom: .1rem;
+
+        &::-webkit-scrollbar { display: none; }
+    }
+
+    .vitrina-nav-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .35rem .75rem;
+        border: 1px solid var(--vt-borde);
+        border-radius: var(--radio-pill);
+        background: var(--vt-superficie);
+        color: var(--marca-tinta);
+        font-size: .8rem;
+        font-weight: 600;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: border-color var(--trans-rapida), color var(--trans-rapida), background-color var(--trans-rapida);
+
+        &:hover {
+            border-color: var(--marca-azul);
+            color: var(--marca-azul-texto);
+            background: color-mix(in srgb, var(--marca-azul) 7%, transparent);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+
+        &--oro {
+            color: var(--marca-oro-hondo);
+            border-color: rgba(197, 161, 98, .4);
+            background: rgba(197, 161, 98, .1);
+
+            > i { color: var(--marca-oro); }
+
+            &:hover {
+                border-color: var(--marca-oro);
+                color: var(--marca-oro-hondo);
+                background: rgba(197, 161, 98, .16);
+            }
+        }
+    }
+
+    .vitrina-nav-chip-total {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.3rem;
+        height: 1.3rem;
+        padding: 0 .35rem;
+        border-radius: var(--radio-pill);
+        background: var(--vt-superficie-2);
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Al saltar a una categoría, el ancla no debe quedar oculta bajo la topbar
+    // ni bajo la barra fija.
+    [data-vitrina-seccion] { scroll-margin-top: 9rem; }
+
+    // Lo usa el filtro de búsqueda para ocultar tarjetas, secciones y chips.
+    .vitrina-oculto { display: none !important; }
+
     // ── Secciones (recomendados y categorías) ──────────────────────────────────
     .vitrina-seccion {
-        background: var(--marca-superficie);
-        border: 1px solid var(--marca-linea);
+        background: var(--vt-superficie);
+        border: 1px solid var(--vt-borde);
         border-radius: var(--radio-lg);
         overflow: hidden;
         box-shadow: var(--sombra-sm);
         transition: box-shadow var(--trans-media);
+    }
 
-        &:hover { box-shadow: var(--sombra-md); }
+    .vitrina-seccion--destacada {
+        border-color: color-mix(in srgb, var(--marca-oro) 38%, var(--vt-borde));
+        box-shadow: var(--sombra-sm), inset 0 0 0 1px rgba(197, 161, 98, .06);
     }
 
     .vitrina-seccion-header {
         display: flex;
         align-items: center;
-        gap: .75rem;
-        padding: 1.15rem 1.5rem;
-        border-bottom: 1px solid var(--marca-linea);
-        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+        gap: .85rem;
+        padding: 1.05rem 1.35rem;
+        border-bottom: 1px solid var(--vt-borde-tenue);
+        background: linear-gradient(180deg, var(--vt-superficie-2) 0%, var(--vt-superficie) 100%);
     }
 
     .vitrina-seccion-icono {
-        width: 2.35rem;
-        height: 2.35rem;
+        width: 2.4rem;
+        height: 2.4rem;
         border-radius: var(--radio-sm);
         display: grid;
         place-items: center;
-        font-size: 1.05rem;
+        font-size: 1.1rem;
         flex-shrink: 0;
     }
 
@@ -162,15 +319,18 @@
         background: rgba(197, 161, 98, .16);
         color: var(--marca-oro-hondo);
     }
+
     .vitrina-seccion-icono--categoria {
-        background: rgba(37, 73, 112, .1);
-        color: var(--marca-azul);
+        background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+        color: var(--marca-azul-texto);
     }
+
+    .vitrina-seccion-titulo-grupo { min-width: 0; }
 
     .vitrina-seccion-titulo {
         margin: 0;
         color: var(--marca-tinta);
-        font-size: 1rem;
+        font-size: 1.05rem;
         font-weight: 650;
         letter-spacing: -.01em;
     }
@@ -178,23 +338,33 @@
     .vitrina-seccion-subtitulo {
         margin: .1rem 0 0;
         color: var(--marca-apagado);
-        font-size: .75rem;
+        font-size: .76rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .vitrina-seccion-badge {
+    .vitrina-seccion-conteo {
         margin-left: auto;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 1.5rem;
-        height: 1.5rem;
-        padding: 0 .45rem;
+        flex-shrink: 0;
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.9rem;
+        height: 1.9rem;
+        padding: 0 .55rem;
         border-radius: var(--radio-pill);
-        background: var(--marca-suave);
+        background: var(--vt-superficie-2);
+        border: 1px solid var(--vt-borde);
         color: var(--marca-apagado);
-        font-size: .72rem;
+        font-size: .75rem;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
+    }
+
+    .vitrina-seccion--destacada .vitrina-seccion-conteo {
+        background: rgba(197, 161, 98, .14);
+        border-color: rgba(197, 161, 98, .3);
+        color: var(--marca-oro-hondo);
     }
 
     .vitrina-seccion-body { padding: 1.25rem; }
@@ -202,25 +372,27 @@
     // ── Tarjeta de producto ────────────────────────────────────────────────────
     .vitrina-producto {
         position: relative;
-        border: 1px solid var(--marca-linea);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--vt-borde);
         border-radius: var(--radio-md);
         overflow: hidden;
-        background: var(--marca-superficie);
+        background: var(--vt-superficie);
         transition: transform var(--trans-media), box-shadow var(--trans-media), border-color var(--trans-media);
 
         &:hover {
             transform: translateY(-4px);
             box-shadow: var(--sombra-lg);
-            border-color: color-mix(in srgb, var(--marca-azul) 22%, var(--marca-linea));
+            border-color: color-mix(in srgb, var(--marca-azul) 30%, var(--vt-borde));
 
             .vitrina-producto-imagen img { transform: scale(1.05); }
             .vitrina-producto-overlay { opacity: 1; }
         }
 
         &--agotado {
-            border-color: color-mix(in srgb, var(--estado-error) 20%, var(--marca-linea));
+            border-color: color-mix(in srgb, var(--estado-error) 22%, var(--vt-borde));
 
-            .vitrina-producto-imagen { filter: grayscale(.35); }
+            .vitrina-producto-imagen img { filter: grayscale(.4); }
         }
     }
 
@@ -230,7 +402,7 @@
         overflow: hidden;
         // Fondo suave para que un producto con recorte irregular no flote en el
         // blanco de la tarjeta.
-        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+        background: linear-gradient(180deg, var(--vt-imagen) 0%, var(--vt-superficie) 100%);
 
         img {
             width: 100%;
@@ -238,7 +410,7 @@
             // `contain`: la foto de un televisor o una lavadora tiene que verse
             // entera. Recortarla para llenar la caja parte el producto.
             object-fit: contain;
-            padding: .7rem;
+            padding: .8rem;
             transition: transform .35s ease-out;
         }
     }
@@ -256,7 +428,7 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        opacity: .55;
+        opacity: .6;
         padding: 1rem;
     }
 
@@ -278,8 +450,6 @@
         text-transform: uppercase;
         letter-spacing: .06em;
         z-index: 3;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
 
         i { font-size: .75rem; }
     }
@@ -304,7 +474,7 @@
 
         i { font-size: .72rem; }
 
-        &--bajo { background: var(--estado-alerta); }
+        &--bajo { background: var(--estado-alerta); color: var(--marca-tierra); }
         &--agotado { background: var(--estado-error); }
     }
 
@@ -312,7 +482,7 @@
     .vitrina-producto-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, transparent 40%, rgba(10, 24, 43, .58) 100%);
+        background: linear-gradient(180deg, transparent 40%, rgba(10, 24, 43, .64) 100%);
         opacity: 0;
         transition: opacity .25s ease-out;
         pointer-events: none;
@@ -328,16 +498,19 @@
             color: #fff;
             letter-spacing: .04em;
             text-transform: uppercase;
-            background: rgba(255, 255, 255, .16);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            background: rgba(255, 255, 255, .18);
             padding: .3rem .85rem;
             border-radius: var(--radio-pill);
-            border: 1px solid rgba(255, 255, 255, .22);
+            border: 1px solid rgba(255, 255, 255, .26);
         }
     }
 
-    .vitrina-producto-body { padding: .9rem 1rem 1rem; }
+    .vitrina-producto-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        padding: .9rem 1rem 1rem;
+    }
 
     .vitrina-producto-nombre {
         font-weight: 600;
@@ -356,13 +529,30 @@
     .vitrina-producto-marca {
         font-size: .75rem;
         color: var(--marca-apagado);
-        margin-bottom: .55rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &--vacia { font-style: italic; opacity: .75; }
+    }
+
+    // El pie se empuja al fondo para que todas las tarjetas de una fila
+    // muestren el precio a la misma altura.
+    .vitrina-producto-pie {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .35rem .6rem;
+        margin-top: auto;
+        padding-top: .7rem;
+        border-top: 1px solid var(--vt-borde-tenue);
     }
 
     .vitrina-producto-precio {
         font-weight: 700;
-        font-size: .98rem;
-        color: var(--marca-azul);
+        font-size: 1rem;
+        color: var(--marca-azul-texto);
         letter-spacing: -.01em;
         font-variant-numeric: tabular-nums;
     }
@@ -371,7 +561,6 @@
         display: inline-flex;
         align-items: center;
         gap: .35rem;
-        margin-top: .55rem;
         padding: .2rem .6rem;
         font-size: .68rem;
         font-weight: 600;
@@ -396,103 +585,144 @@
         position: absolute;
         inset: 0;
         z-index: 4;
+        border-radius: inherit;
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
     }
 
-    // ── Estado vacío ──────────────────────────────────────────────────────────
-    .vitrina-vacio {
+    // ── Estado vacío y sin resultados ─────────────────────────────────────────
+    .vitrina-vacio,
+    .vitrina-sin-resultados {
         text-align: center;
         padding: 4rem 1.5rem;
-        background: var(--marca-superficie);
-        border: 1px solid var(--marca-linea);
+        background: var(--vt-superficie);
+        border: 1px solid var(--vt-borde);
         border-radius: var(--radio-lg);
     }
 
-    .vitrina-vacio-icono {
+    .vitrina-vacio-icono,
+    .vitrina-sin-resultados > i {
         width: 4.5rem;
         height: 4.5rem;
         border-radius: 50%;
         display: grid;
         place-items: center;
         margin: 0 auto 1rem;
-        background: rgba(37, 73, 112, .08);
-        border: 1px solid rgba(37, 73, 112, .12);
-        color: var(--marca-azul);
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 12%, transparent);
+        color: var(--marca-azul-texto);
         font-size: 1.6rem;
     }
 
-    .vitrina-vacio h5 {
+    .vitrina-vacio h5,
+    .vitrina-sin-resultados h5 {
         color: var(--marca-tinta);
         font-size: 1rem;
         font-weight: 650;
         margin: 0 0 .35rem;
     }
 
-    .vitrina-vacio p {
+    .vitrina-vacio p,
+    .vitrina-sin-resultados p {
         color: var(--marca-apagado);
         font-size: .85rem;
-        margin: 0;
+        margin: 0 auto;
+        max-width: 28rem;
     }
 
     // ── Responsive ────────────────────────────────────────────────────────────
     @media (max-width: 991.98px) {
-        .vitrina-hero-content { flex-direction: column; }
+        .vitrina-hero-content { flex-direction: column; align-items: flex-start; }
         .vitrina-hero-acciones { align-self: stretch; }
-        .vitrina-hero-stat { flex: 1; text-align: center; }
+        .vitrina-hero-stat { flex: 1; }
     }
 
     @media (max-width: 767.98px) {
         .vitrina-hero { padding: 1.5rem; }
-        .vitrina-hero-titulo { font-size: 1.4rem; }
-        .vitrina-seccion-header { padding: 1rem 1.15rem; }
+        .vitrina-seccion-header { padding: .95rem 1.15rem; }
         .vitrina-seccion-body { padding: 1rem; }
+        .vitrina-toolbar { padding: .85rem; top: 4.25rem; }
     }
 
     @media (max-width: 575.98px) {
-        .vitrina-hero-titulo { font-size: 1.25rem; }
-        .vitrina-hero-subtitulo { font-size: .8rem; }
+        .vitrina-hero-titulo { font-size: 1.3rem; }
+        .vitrina-hero-subtitulo { font-size: .82rem; }
+        .vitrina-hero-stat { padding: .65rem .75rem; min-width: 0; }
+        .vitrina-hero-stat-valor { font-size: 1.25rem; }
+        .vitrina-nav { flex-basis: 100%; }
         .vitrina-producto-nombre { font-size: .8rem; }
-        .vitrina-producto-precio { font-size: .9rem; }
-        .vitrina-producto-overlay span { font-size: .65rem; padding: .25rem .65rem; }
+        .vitrina-producto-precio { font-size: .92rem; }
     }
-}
 
-// ── Modo oscuro ─────────────────────────────────────────────────────────────
-[data-bs-theme="dark"] .vitrina-modulo {
-    .vitrina-hero { box-shadow: var(--sombra-lg); }
+    // ══ Modo oscuro ═══════════════════════════════════════════════════════════
+    // Las superficies que en claro son blancas pasan a capas translúcidas sobre
+    // el fondo oscuro. Los colores de marca (azul, oro, estados) ya cambian solos
+    // desde `_marca.scss`; aquí solo se ajusta el soporte donde hacen falta.
+    [data-bs-theme="dark"] & {
+        --vt-superficie: rgba(255, 255, 255, .04);
+        --vt-superficie-2: rgba(255, 255, 255, .02);
+        --vt-imagen: rgba(255, 255, 255, .05);
+        --vt-borde: rgba(255, 255, 255, .09);
+        --vt-borde-tenue: rgba(255, 255, 255, .06);
 
-    .vitrina-seccion {
-        background: rgba(255, 255, 255, .03);
-        border-color: rgba(255, 255, 255, .08);
-    }
-    .vitrina-seccion-header {
-        background: rgba(255, 255, 255, .02);
-        border-color: rgba(255, 255, 255, .08);
-    }
-    .vitrina-seccion-badge {
-        background: rgba(255, 255, 255, .08);
-        color: rgba(255, 255, 255, .6);
-    }
-    .vitrina-seccion-icono--categoria { background: rgba(110, 163, 216, .16); color: #6ea3d8; }
+        .vitrina-hero { box-shadow: var(--sombra-lg); }
 
-    .vitrina-producto {
-        background: rgba(255, 255, 255, .03);
-        border-color: rgba(255, 255, 255, .08);
-    }
-    .vitrina-producto-imagen { background: rgba(255, 255, 255, .04); }
-    .vitrina-producto-nombre { color: #e6ebf1; }
-    .vitrina-producto-marca { color: rgba(255, 255, 255, .45); }
-    .vitrina-producto-precio { color: #6ea3d8; }
-    .vitrina-producto-overlay { background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .65) 100%); }
+        .vitrina-toolbar {
+            background: color-mix(in srgb, var(--marca-noche-alta) 82%, transparent);
+            border-color: var(--vt-borde);
+        }
 
-    .vitrina-vacio {
-        background: rgba(255, 255, 255, .03);
-        border-color: rgba(255, 255, 255, .08);
+        .vitrina-nav-chip:hover { background: rgba(110, 163, 216, .1); }
+
+        .vitrina-nav-chip--oro {
+            color: var(--marca-oro-claro);
+            border-color: rgba(197, 161, 98, .35);
+
+            > i { color: var(--marca-oro-claro); }
+
+            &:hover {
+                border-color: var(--marca-oro);
+                color: var(--marca-oro-claro);
+                background: rgba(197, 161, 98, .16);
+            }
+        }
+
+        .vitrina-seccion-icono--recomendados {
+            background: rgba(197, 161, 98, .18);
+            color: var(--marca-oro-claro);
+        }
+
+        .vitrina-seccion-icono--categoria {
+            background: rgba(110, 163, 216, .16);
+            color: var(--marca-azul-claro);
+        }
+
+        .vitrina-seccion--destacada {
+            border-color: rgba(197, 161, 98, .3);
+            box-shadow: var(--sombra-sm), inset 0 0 0 1px rgba(197, 161, 98, .05);
+        }
+
+        .vitrina-seccion--destacada .vitrina-seccion-conteo {
+            background: rgba(197, 161, 98, .16);
+            border-color: rgba(197, 161, 98, .3);
+            color: var(--marca-oro-claro);
+        }
+
+        .vitrina-producto-imagen {
+            background: linear-gradient(180deg, var(--vt-imagen) 0%, var(--vt-superficie) 100%);
+        }
+
+        .vitrina-producto-sin-imagen { opacity: .75; }
+
+        .vitrina-producto-overlay {
+            background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, .72) 100%);
+        }
+
+        .vitrina-vacio-icono,
+        .vitrina-sin-resultados > i {
+            background: rgba(110, 163, 216, .12);
+            border-color: rgba(110, 163, 216, .2);
+            color: var(--marca-azul-claro);
+        }
     }
-    .vitrina-vacio-icono {
-        background: rgba(110, 163, 216, .12);
-        border-color: rgba(110, 163, 216, .2);
-        color: #6ea3d8;
-    }
-    .vitrina-vacio h5 { color: #e6ebf1; }
-    .vitrina-vacio p { color: rgba(255, 255, 255, .45); }
 }
