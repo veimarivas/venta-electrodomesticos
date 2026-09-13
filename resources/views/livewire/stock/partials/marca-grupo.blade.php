@@ -139,6 +139,12 @@
                                 <span class="stock-celda-valor">
                                     <span class="stock-disponibles stock-disponibles--{{ $tono }}"
                                         title="{{ $disponibles }} {{ $disponibles === 1 ? 'unidad en stock' : 'unidades en stock' }}">{{ $disponibles }}</span>
+                                    @if (($producto->enProceso ?? 0) > 0)
+                                        <small class="stock-en-proceso"
+                                            title="{{ $producto->enProceso }} {{ $producto->enProceso === 1 ? 'unidad en proceso de venta' : 'unidades en proceso de venta' }}">
+                                            <i class="ri-lock-2-line"></i>{{ $producto->enProceso }} en proceso
+                                        </small>
+                                    @endif
                                     @if ($producto->stock_minimo > 0)
                                         <small class="stock-minimo">mín {{ $producto->stock_minimo }}</small>
                                     @endif

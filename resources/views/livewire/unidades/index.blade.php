@@ -1,4 +1,4 @@
-<div class="items-modulo unidades-modulo">
+<div class="items-modulo unidades-modulo" wire:poll.15s>
 
     @php
         // Pill de estado con punto, mismo lenguaje que el resto del catálogo.

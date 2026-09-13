@@ -31,6 +31,7 @@ dos se peleen por el mismo aparato.
 | ✅ | **Autorización de descuentos** | Bajar del mínimo obliga a pedir permiso; el administrador aprueba, sugiere o rechaza y el carrito se actualiza solo. |
 | ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección/fecha/instalación; la `Entrega` se crea al cobrar. |
 | ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con vencimiento; otra caja no lo puede vender. |
+| ✅ | **Vistas al día** | Stock, Productos y Unidades muestran las reservadas como «en proceso de venta» y se refrescan solos cada 15 s. |
 | ✅ | **App móvil a la par** | Todo lo anterior en el teléfono, más la bandeja de Autorizaciones y la notificación al administrador. |
 
 ### Autorización de descuentos
@@ -64,6 +65,11 @@ stock las que quedaron colgadas de un carrito que se cerró solo.
 
 `RegistroDeVenta` acepta la reserva **del propio vendedor** y la limpia al
 vender; las de los demás siguen bloqueadas.
+
+Las vistas que muestran disponibilidad —**Stock actual**, **Productos** y
+**Unidades**— excluyen las reservadas de lo disponible y las pintan como «en
+proceso de venta»; se refrescan solas cada 15 s, así que lo que pasa en otra
+caja se ve sin recargar.
 
 ### API y app móvil
 

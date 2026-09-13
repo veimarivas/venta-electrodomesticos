@@ -119,6 +119,10 @@ class Index extends Component
             ->activos()
             ->with(['categoria', 'marca'])
             ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
+            // Unidades apartadas por un carrito del POS: no cuentan como
+            // disponibles, pero se muestran como «en proceso de venta» para que
+            // el número no parezca perdido.
+            ->withCount(['unidades as enProceso' => fn ($q) => $q->where('estado', 'reservado')])
             ->when($this->categoriaFiltro !== null, fn ($q) => $q->whereIn('categoria_id', $this->idsRama()))
             ->when($this->marcasFiltro !== [], fn ($q) => $q->whereIn('marca_id', $this->marcasFiltro))
             ->when($termino !== '', fn ($q) => $q->where(function (Builder $q2) use ($termino) {

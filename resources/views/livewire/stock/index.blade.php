@@ -1,4 +1,4 @@
-<div class="stock-modulo">
+<div class="stock-modulo" wire:poll.15s>
 
     {{-- ===================== Hero ===================== --}}
     <header class="stock-hero mb-4">

@@ -1,4 +1,4 @@
-<div class="productos-modulo">
+<div class="productos-modulo" wire:poll.15s>
 
     {{-- ===================== Encabezado del módulo ===================== --}}
     <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">

@@ -1147,6 +1147,20 @@
     .stock-disponibles--warning { color: var(--estado-alerta-texto); }
     .stock-disponibles--danger  { color: var(--estado-error); }
 
+    // Unidades apartadas por un carrito del POS: se ven como un aviso azul, no
+    // como stock perdido.
+    .stock-en-proceso {
+        display: inline-flex;
+        align-items: center;
+        gap: .2rem;
+        color: var(--estado-info);
+        font-size: .68rem;
+        font-weight: 600;
+        white-space: nowrap;
+
+        i { font-size: .72rem; }
+    }
+
     // En pantallas medianas y pequeñas cada fila se convierte en una ficha
     // apilada: así ninguna columna obliga a desplazarse de lado.
     @media (max-width: 767.98px) {
