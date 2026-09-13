@@ -1,4 +1,4 @@
-<div class="items-modulo pos-modulo">
+<div class="items-modulo pos-modulo" wire:poll.60s="revisarInactividad">
 
     {{-- ===================== Encabezado ===================== --}}
     <div class="card border-0 shadow-sm overflow-hidden mb-4 crud-encabezado">

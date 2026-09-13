@@ -28,6 +28,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'costo_unitario',
     'precio_venta',
     'estado',
+    'reservado_por',
+    'reservado_hasta',
     'ubicacion',
     'ingresado_en',
     'vendido_en',
@@ -43,7 +45,9 @@ class Unidad extends Model
     /** Estados posibles de una unidad física y su etiqueta en español. */
     public const ESTADOS = [
         'en_stock' => 'En stock',
-        'reservado' => 'Reservado',
+        // `reservado` es el bloqueo temporal del POS: el aparato está en el
+        // carrito de una caja y no se puede vender desde otra.
+        'reservado' => 'En proceso de venta',
         'vendido' => 'Vendido',
         'devuelto' => 'Devuelto',
         'danado' => 'Dañado',
@@ -66,6 +70,8 @@ class Unidad extends Model
             'costo_unitario' => 'decimal:2',
             'precio_venta' => 'decimal:2',
             'estado' => 'string',
+            'reservado_por' => 'integer',
+            'reservado_hasta' => 'datetime',
             'ingresado_en' => 'datetime',
             'vendido_en' => 'datetime',
         ];
@@ -178,5 +184,18 @@ class Unidad extends Model
     public function esVendible(): bool
     {
         return $this->estado === 'en_stock';
+    }
+
+    /**
+     * ¿Tiene una reserva de POS todavía vigente?
+     *
+     * Una reserva sin fecha —o ya vencida— no bloquea: la unidad vuelve a estar
+     * disponible aunque el barrido todavía no la haya soltado.
+     */
+    public function reservaVigente(): bool
+    {
+        return $this->estado === 'reservado'
+            && $this->reservado_hasta !== null
+            && $this->reservado_hasta->isFuture();
     }
 }

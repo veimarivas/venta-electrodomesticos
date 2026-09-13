@@ -75,9 +75,14 @@ class RegistroDeVenta
                         throw new RuntimeException('Uno de los aparatos ya no existe.');
                     }
 
-                    // Solo se vende lo que está en stock. Un aparato reservado,
-                    // dañado o ya vendido no puede salir por caja.
-                    if (! $unidad->esVendible()) {
+                    // Solo se vende lo que está en stock. Un aparato dañado o
+                    // ya vendido no puede salir por caja. La excepción es la
+                    // reserva del propio vendedor: agregar al carrito deja el
+                    // aparato en `reservado`, y es quien lo está cobrando.
+                    $esMiReserva = $unidad->estado === 'reservado'
+                        && (int) $unidad->reservado_por === $userId;
+
+                    if (! $unidad->esVendible() && ! $esMiReserva) {
                         throw new RuntimeException(
                             "El aparato {$unidad->codigo_interno} ya no está disponible (".
                             (Unidad::ESTADOS[$unidad->estado] ?? $unidad->estado).').'
@@ -200,6 +205,9 @@ class RegistroDeVenta
                         // El precio realmente cobrado, para que la unidad
                         // refleje lo que salió por caja.
                         'precio_venta' => ProrrateoDeGastos::aDecimal($detalle['precio'] - $detalle['descuento']),
+                        // Se suelta la reserva del POS: ya no está en un carrito.
+                        'reservado_por' => null,
+                        'reservado_hasta' => null,
                     ]);
 
                     $this->kardex->cambioDeEstado(

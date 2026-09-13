@@ -739,6 +739,66 @@ class VentaCrudTest extends TestCase
         $this->assertSame(0, Venta::count());
     }
 
+    public function test_agregar_al_carrito_reserva_la_unidad(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        Livewire::actingAs($admin)
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id);
+
+        $unidad->refresh();
+
+        $this->assertSame('reservado', $unidad->estado);
+        $this->assertSame($admin->id, $unidad->reservado_por);
+        $this->assertNotNull($unidad->reservado_hasta);
+    }
+
+    public function test_quitar_del_carrito_devuelve_la_unidad_al_stock(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->call('confirmarQuitar', 0)
+            ->call('quitar');
+
+        $this->assertSame('en_stock', $unidad->fresh()->estado);
+    }
+
+    public function test_otra_caja_no_puede_agregar_una_unidad_reservada(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id);
+
+        Livewire::actingAs(User::factory()->create()->syncRoles('admin'))
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->assertSet('carrito', []);
+
+        $this->assertSame('reservado', $unidad->fresh()->estado);
+    }
+
+    public function test_el_barrido_libera_las_reservas_vencidas(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        $reservas = app(\App\Support\ReservasDeUnidades::class);
+        $reservas->reservar($unidad->id, $admin->id);
+
+        $unidad->update(['reservado_hasta' => now()->subMinute()]);
+
+        $this->assertSame(1, $reservas->liberarVencidas());
+        $this->assertSame('en_stock', $unidad->fresh()->estado);
+        $this->assertNull($unidad->fresh()->reservado_por);
+    }
+
     public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void
     {
         $unidad = $this->unidadEnStock(200, 400, 50);

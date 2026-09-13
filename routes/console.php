@@ -55,3 +55,16 @@ Schedule::command('backup:monitor')
 Schedule::command('cuotas:avisar')
     ->dailyAt('08:30')
     ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Reservas de POS vencidas
+|--------------------------------------------------------------------------
+|
+| Un carrito abandonado deja sus aparatos en «en proceso de venta». Cada minuto
+| se devuelven al stock los que pasaron su tiempo. Va sin solaparse: dos
+| barridos a la vez solo se pelearían por las mismas filas.
+*/
+Schedule::command('reservas:liberar')
+    ->everyMinute()
+    ->withoutOverlapping();

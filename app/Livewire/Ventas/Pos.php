@@ -15,6 +15,7 @@ use App\Support\PlanDeCuotas;
 use App\Support\ProrrateoDeGastos;
 use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
+use App\Support\ReservasDeUnidades;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -132,6 +133,17 @@ class Pos extends Component
      * quien tiene permiso de ver costos, y aun así hay que encenderlo.
      */
     public bool $mostrarCosto = false;
+
+    /**
+     * Última interacción del cajero con el carrito.
+     *
+     * Con esto el POS decide si el carrito se quedó abandonado: pasados unos
+     * minutos sin tocarlo, se cierra solo y los aparatos vuelven al stock.
+     */
+    public ?string $ultimaActividad = null;
+
+    /** Cuándo se extendieron por última vez las reservas, para no escribir de más. */
+    public ?string $reservasRefrescadasEn = null;
 
     /** Línea que el modal de confirmación está preguntando si se quita. */
     public ?int $quitarIndice = null;
@@ -255,6 +267,7 @@ class Pos extends Component
             if (preg_match('/^carrito\.(\d+)\.precio$/', $campo, $coincidencia)) {
                 $this->revisarPrecio((int) $coincidencia[1]);
                 $this->sincronizarAutorizacion((int) $coincidencia[1]);
+                $this->tocar();
             }
 
             // Cambiar un precio mueve el total, y con él el reparto del mixto.
@@ -565,13 +578,33 @@ class Pos extends Component
 
         $unidad = Unidad::with('producto')->find($unidadId);
 
-        if ($unidad === null || ! $unidad->esVendible()) {
-            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no está disponible.');
+        if ($unidad === null) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
 
             return;
         }
 
         if (in_array($unidad->id, $this->unidadesEnCarrito(), true)) {
+            return;
+        }
+
+        // Si otra caja lo tiene reservado y la reserva sigue viva, no se toca.
+        // Una reserva vencida —o la del propio cajero— sí se puede tomar.
+        if (! $unidad->esVendible() && ! $this->reservaTomable($unidad)) {
+            $mensaje = $unidad->estado === 'reservado'
+                ? 'Ese aparato está en proceso de venta en otra caja.'
+                : 'Ese aparato ya no está disponible ('.(Unidad::ESTADOS[$unidad->estado] ?? $unidad->estado).').';
+
+            $this->dispatch('toast', tipo: 'error', mensaje: $mensaje);
+
+            return;
+        }
+
+        // Reservar es la operación atómica que decide: si otra caja se adelantó
+        // entre la comprobación y este update, devuelve false.
+        if (! app(ReservasDeUnidades::class)->reservar($unidad->id, (int) auth()->id())) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Otra caja acaba de tomar ese aparato. Vuelve a buscarlo.');
+
             return;
         }
 
@@ -597,7 +630,81 @@ class Pos extends Component
         // El buscador se limpia para escanear el siguiente aparato.
         $this->buscar = '';
         $this->resetValidation('carrito');
+
+        // Cada aparato nuevo extiende el bloqueo de todos los del carrito.
+        $this->tocar();
         $this->reajustarMixto();
+    }
+
+    /** ¿La reserva de la unidad se puede tomar (vencida o del propio cajero)? */
+    private function reservaTomable(Unidad $unidad): bool
+    {
+        return $unidad->estado === 'reservado'
+            && ($unidad->reservado_por === null
+                || (int) $unidad->reservado_por === (int) auth()->id()
+                || $unidad->reservado_hasta === null
+                || $unidad->reservado_hasta->isPast());
+    }
+
+    /**
+     * Marca actividad del cajero y mantiene vivas las reservas.
+     *
+     * Se llama al agregar, quitar o ajustar algo del carrito. Para no escribir
+     * en la base en cada tecla, el refresco real va como mucho una vez por
+     * minuto; el cierre por inactividad lo decide `ultimaActividad`, que sí se
+     * actualiza siempre.
+     */
+    private function tocar(): void
+    {
+        $this->ultimaActividad = now()->toIso8601String();
+
+        if ($this->carrito === []) {
+            return;
+        }
+
+        if ($this->reservasRefrescadasEn !== null
+            && now()->diffInSeconds(\Illuminate\Support\Carbon::parse($this->reservasRefrescadasEn)) < 60) {
+            return;
+        }
+
+        app(ReservasDeUnidades::class)->refrescar($this->unidadesEnCarrito(), (int) auth()->id());
+        $this->reservasRefrescadasEn = now()->toIso8601String();
+    }
+
+    /**
+     * Cierra el carrito si pasó demasiado tiempo sin tocarlo.
+     *
+     * Lo llama el sondeo de la vista. Mientras el cajero trabaja extiende el
+     * bloqueo; si el carrito quedó abierto y quieto, lo vacía y devuelve los
+     * aparatos al stock.
+     */
+    public function revisarInactividad(): void
+    {
+        if ($this->carrito === []) {
+            return;
+        }
+
+        $reservas = app(ReservasDeUnidades::class);
+        $userId = (int) auth()->id();
+        $ids = $this->unidadesEnCarrito();
+
+        if ($this->ultimaActividad === null) {
+            $this->ultimaActividad = now()->toIso8601String();
+        }
+
+        $minutosQuieto = now()->diffInMinutes(\Illuminate\Support\Carbon::parse($this->ultimaActividad));
+
+        if ($minutosQuieto < ReservasDeUnidades::MINUTOS) {
+            $reservas->refrescar($ids, $userId);
+
+            return;
+        }
+
+        $reservas->liberar($ids, $userId);
+        $this->vaciar();
+
+        $this->dispatch('toast', tipo: 'warning', mensaje:
+            'El carrito se cerró por inactividad y los aparatos volvieron al stock.');
     }
 
     /**
@@ -641,11 +748,18 @@ class Pos extends Component
             return;
         }
 
+        $unidadId = $this->carrito[$indice]['unidad_id'] ?? null;
+
         unset($this->carrito[$indice]);
 
         // Reindexar: con huecos, Livewire deja de casar cada fila con sus
         // inputs y el usuario ve precios en la fila equivocada.
         $this->carrito = array_values($this->carrito);
+
+        // Al salir del carrito, el aparato vuelve al stock.
+        if ($unidadId !== null) {
+            app(ReservasDeUnidades::class)->liberar([$unidadId], (int) auth()->id());
+        }
 
         $this->resetValidation('carrito');
         $this->reajustarMixto();
@@ -947,6 +1061,8 @@ class Pos extends Component
 
         $this->carrito[$indice]['entrega'] = $modo;
 
+        $this->tocar();
+
         // Al marcar la primera entrega se propone el teléfono del cliente, que
         // es a quien hay que llamar al llegar.
         if ($modo === 'domicilio' && $this->telefonoEntrega === '') {
@@ -1056,12 +1172,16 @@ class Pos extends Component
      */
     public function vaciar(): void
     {
+        // Los aparatos del carrito vuelven al stock (las vendidas ya no están
+        // en `reservado`, así que esto no las toca).
+        app(ReservasDeUnidades::class)->liberar($this->unidadesEnCarrito(), (int) auth()->id());
+
         $this->reset([
             'carrito', 'clienteId', 'buscarCliente', 'notas', 'buscar',
             'qrCobroId', 'comprobante', 'montoEfectivo', 'montoQr', 'quitarIndice',
             'cuotaInicial', 'numeroCuotas', 'primerVencimiento', 'mostrarCosto',
             'direccionEntrega', 'referenciaEntrega', 'telefonoEntrega', 'fechaEntrega',
-            'conInstalacion', 'notasEntrega',
+            'conInstalacion', 'notasEntrega', 'ultimaActividad', 'reservasRefrescadasEn',
         ]);
 
         $this->metodoPago = 'efectivo';

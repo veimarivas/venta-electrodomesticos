@@ -38,7 +38,12 @@ class AutorizacionDeDescuento
     {
         $unidad->loadMissing('producto');
 
-        if (! $unidad->esVendible()) {
+        // Agregar al carrito deja el aparato en `reservado`: para su propio
+        // cajero sigue siendo vendible. Para los demás, no.
+        $esMiReserva = $unidad->estado === 'reservado'
+            && (int) $unidad->reservado_por === $userId;
+
+        if (! $unidad->esVendible() && ! $esMiReserva) {
             throw new RuntimeException('Ese aparato ya no está disponible para vender.');
         }
 
