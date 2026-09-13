@@ -99,6 +99,21 @@ class PosAutorizacionApiTest extends TestCase
         $this->assertSame('en_stock', $unidad->fresh()->estado);
     }
 
+    public function test_el_administrador_recibe_un_aviso_cuando_piden_un_descuento(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        Sanctum::actingAs($this->vendedor());
+        $this->postJson('/api/v1/pos/solicitudes-descuento', [
+            'unidad_id' => $unidad->id,
+            'precio' => 300,
+        ])->assertStatus(201);
+
+        // El aviso queda en la campana del panel y en los avisos de la app.
+        $this->assertSame(1, $admin->fresh()->unreadNotifications()->count());
+    }
+
     public function test_el_vendedor_solicita_autorizacion_y_el_admin_la_resuelve(): void
     {
         $unidad = $this->unidadEnStock(200, 400, 50);
