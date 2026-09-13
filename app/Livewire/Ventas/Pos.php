@@ -5,8 +5,10 @@ namespace App\Livewire\Ventas;
 use App\Models\Cliente;
 use App\Models\Persona;
 use App\Models\QrCobro;
+use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
 use App\Models\Venta;
+use App\Support\AutorizacionDeDescuento;
 use App\Support\GeneradorCodigoCliente;
 use App\Support\GeneradorCodigoVenta;
 use App\Support\PlanDeCuotas;
@@ -49,7 +51,7 @@ class Pos extends Component
      * agregar: viajan en el estado del componente y NO se confían al cobrar,
      * donde se vuelven a leer de la base de datos.
      *
-     * @var array<int, array{unidad_id: int, precio_lista: string, precio: string, tope_descuento: string}>
+     * @var array<int, array{unidad_id: int, precio_lista: string, precio: string, tope_descuento: string, solicitud_id: ?int, solicitud_estado: ?string, precio_aprobado: ?string}>
      */
     public array $carrito = [];
 
@@ -214,14 +216,14 @@ class Pos extends Component
 
     public function updated(string $campo): void
     {
-        if (str_starts_with($campo, 'carrito.')) {
-            $this->validateOnly($campo, $this->rules());
+        if (str_starts_with($campo, 'carrito.')) {            $this->validateOnly($campo, $this->rules());
 
             // El precio tecleado se contrasta contra la referencia y el tope
             // del producto en cuanto se escribe: enterarse al cobrar, con el
             // cliente delante, llega tarde.
             if (preg_match('/^carrito\.(\d+)\.precio$/', $campo, $coincidencia)) {
                 $this->revisarPrecio((int) $coincidencia[1]);
+                $this->sincronizarAutorizacion((int) $coincidencia[1]);
             }
 
             // Cambiar un precio mueve el total, y con él el reparto del mixto.
@@ -245,8 +247,12 @@ class Pos extends Component
     }
 
     /**
-     * Comprueba una línea contra su precio de referencia y el tope de rebaja.
-     * El error se cuelga del propio input para que se vea en la fila.
+     * Comprueba una línea contra su precio de referencia, el tope de rebaja y
+     * el costo. El error se cuelga del propio input para que se vea en la fila.
+     *
+     * Bajar del mínimo pero sin llegar al costo **no** es un error aquí: es una
+     * rebaja que exige autorización del administrador. El estado lo pinta la
+     * vista y la autorización la valida `RegistroDeVenta` al cobrar.
      */
     private function revisarPrecio(int $indice): void
     {
@@ -256,9 +262,11 @@ class Pos extends Component
             return;
         }
 
+        $unidad = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
+
         $precio = ProrrateoDeGastos::aCentavos($linea['precio']);
         $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista']);
-        $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento']);
+        $costo = ProrrateoDeGastos::aCentavos($unidad?->costo_unitario ?? '0');
 
         if ($precio > $lista) {
             $this->addError(
@@ -270,15 +278,91 @@ class Pos extends Component
             return;
         }
 
-        if ($lista - $precio > $tope) {
+        // Por debajo del costo no hay autorización que valga: se pierde dinero.
+        if ($precio < $costo) {
             $this->addError(
                 "carrito.{$indice}.precio",
-                $tope === 0
-                    ? 'Este producto no admite descuento: cóbralo a Bs '.ProrrateoDeGastos::aDecimal($lista).'.'
-                    : 'El descuento máximo de este producto es Bs '.ProrrateoDeGastos::aDecimal($tope).
-                        ' (precio mínimo Bs '.ProrrateoDeGastos::aDecimal($lista - $tope).').'
+                'El precio no puede quedar por debajo del costo del aparato (Bs '.
+                ProrrateoDeGastos::aDecimal($costo).').'
             );
         }
+    }
+
+    /**
+     * Pone el estado de autorización de la línea en línea con la base.
+     *
+     * Se llama cada vez que cambia el precio: cancela una solicitud pendiente
+     * que ya no aplica y, si hay una aprobada que cubre el nuevo precio, la
+     * adopta. Así el botón «Cobrar» sabe si la línea está en regla sin que el
+     * cajero tenga que recordarlo.
+     */
+    private function sincronizarAutorizacion(int $indice): void
+    {
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null || ! is_numeric($linea['precio'] ?? '')) {
+            return;
+        }
+
+        $precio = ProrrateoDeGastos::aCentavos($linea['precio']);
+        $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista']);
+        $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento']);
+
+        $necesita = ($lista - $precio) > $tope;
+
+        // Una solicitud pendiente dejó de aplicar si el precio ya entra en el
+        // descuento permitido o si pidió otro importe.
+        $solicitudId = $linea['solicitud_id'] ?? null;
+
+        if ($solicitudId !== null && ($linea['solicitud_estado'] ?? null) === 'pendiente') {
+            $solicitud = SolicitudDescuento::find($solicitudId);
+
+            if ($solicitud !== null && $solicitud->estaPendiente()
+                && (! $necesita || ProrrateoDeGastos::aCentavos($solicitud->precio_solicitado) !== $precio)) {
+                try {
+                    app(AutorizacionDeDescuento::class)->cancelar($solicitud, (int) auth()->id());
+                } catch (RuntimeException) {
+                    // Si ya no es suya o ya se resolvió, da igual: se limpia.
+                }
+
+                $this->limpiarSolicitudDeLinea($indice);
+            }
+        }
+
+        if (! $necesita) {
+            $this->limpiarSolicitudDeLinea($indice);
+
+            return;
+        }
+
+        // ¿Alguna aprobación sin usar cubre este precio?
+        $cubre = app(AutorizacionDeDescuento::class)->aprobadaVigente($linea['unidad_id'], $precio);
+
+        if ($cubre !== null) {
+            $this->carrito[$indice]['solicitud_id'] = $cubre->id;
+            $this->carrito[$indice]['solicitud_estado'] = 'aprobada';
+            $this->carrito[$indice]['precio_aprobado'] = number_format((float) $cubre->precio_aprobado, 2, '.', '');
+
+            return;
+        }
+
+        // ¿Hay una pendiente para exactamente este precio?
+        $pendiente = SolicitudDescuento::query()
+            ->where('unidad_id', $linea['unidad_id'])
+            ->where('user_id', auth()->id())
+            ->where('estado', 'pendiente')
+            ->where('precio_solicitado', ProrrateoDeGastos::aDecimal($precio))
+            ->first();
+
+        if ($pendiente !== null) {
+            $this->carrito[$indice]['solicitud_id'] = $pendiente->id;
+            $this->carrito[$indice]['solicitud_estado'] = 'pendiente';
+            $this->carrito[$indice]['precio_aprobado'] = null;
+
+            return;
+        }
+
+        $this->limpiarSolicitudDeLinea($indice);
     }
 
     // =======================================================================
@@ -471,6 +555,10 @@ class Pos extends Component
             'tope_descuento' => number_format(
                 (float) ($unidad->producto?->descuento_maximo ?? 0), 2, '.', ''
             ),
+            // Autorización de descuento, si la hubiera.
+            'solicitud_id' => null,
+            'solicitud_estado' => null,
+            'precio_aprobado' => null,
         ];
 
         // El buscador se limpia para escanear el siguiente aparato.
@@ -572,6 +660,209 @@ class Pos extends Component
         $this->autorizar('reportes.ver_costos');
 
         $this->mostrarCosto = ! $this->mostrarCosto;
+    }
+
+    // =======================================================================
+    // Autorización de descuentos
+    // =======================================================================
+
+    /** ¿Hay alguna línea esperando que el administrador resuelva? */
+    #[Computed]
+    public function haySolicitudesPendientes(): bool
+    {
+        foreach ($this->carrito as $linea) {
+            if (($linea['solicitud_estado'] ?? null) === 'pendiente') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Manda al administrador la solicitud de rebaja de una línea.
+     *
+     * La detección es automática —la vista sabe cuándo el precio baja del
+     * mínimo—, pero el envío lo dispara el cajero: pedir en cada tecla llenaría
+     * la bandeja del administrador de solicitudes de precios a medio escribir.
+     */
+    public function solicitarAutorizacion(int $indice): void
+    {
+        $this->autorizar('ventas.crear');
+
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null) {
+            return;
+        }
+
+        $unidad = Unidad::find($linea['unidad_id']);
+
+        if ($unidad === null) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
+
+            return;
+        }
+
+        try {
+            $solicitud = app(AutorizacionDeDescuento::class)->solicitar(
+                $unidad,
+                $linea['precio'],
+                (int) auth()->id()
+            );
+        } catch (RuntimeException $e) {
+            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+            return;
+        }
+
+        $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
+        $this->carrito[$indice]['solicitud_estado'] = $solicitud->estado;
+        $this->carrito[$indice]['precio_aprobado'] = null;
+
+        $this->dispatch('toast', tipo: 'success', mensaje:
+            'Solicitud enviada al administrador. La venta se actualizará sola al resolverse.');
+    }
+
+    /** El cajero retira la solicitud de una línea que ya no la necesita. */
+    public function cancelarSolicitud(int $indice): void
+    {
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null) {
+            return;
+        }
+
+        $solicitudId = $linea['solicitud_id'] ?? null;
+
+        if ($solicitudId !== null) {
+            $solicitud = SolicitudDescuento::find($solicitudId);
+
+            if ($solicitud !== null) {
+                try {
+                    app(AutorizacionDeDescuento::class)->cancelar($solicitud, (int) auth()->id());
+                } catch (RuntimeException) {
+                    // Ya resuelta o no es suya: se limpia igual.
+                }
+            }
+        }
+
+        $this->limpiarSolicitudDeLinea($indice);
+
+        $this->dispatch('toast', tipo: 'info', mensaje: 'Solicitud cancelada.');
+    }
+
+    /**
+     * Relee el estado de las solicitudes y ajusta el carrito.
+     *
+     * Se dispara por WebSocket cuando el administrador resuelve, y también por
+     * sondeo mientras haya algo pendiente: si Reverb está caído, la venta no
+     * puede quedarse esperando para siempre.
+     */
+    public function comprobarSolicitudes(): void
+    {
+        $cambio = false;
+
+        foreach (array_keys($this->carrito) as $indice) {
+            $linea = $this->carrito[$indice] ?? null;
+
+            if ($linea === null) {
+                continue;
+            }
+
+            $solicitudId = $linea['solicitud_id'] ?? null;
+
+            if ($solicitudId === null) {
+                continue;
+            }
+
+            $solicitud = SolicitudDescuento::find($solicitudId);
+
+            if ($solicitud === null) {
+                $this->limpiarSolicitudDeLinea($indice);
+                $cambio = true;
+
+                continue;
+            }
+
+            if ($solicitud->estado === 'aprobada') {
+                // Se aplica sola: el trato que autorizó el administrador es el
+                // que va al carrito, aunque haya sugerido otro importe.
+                $this->carrito[$indice]['solicitud_estado'] = 'aprobada';
+                $this->carrito[$indice]['precio_aprobado'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
+                $this->carrito[$indice]['precio'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
+                $this->resetValidation("carrito.{$indice}.precio");
+
+                $this->dispatch('toast', tipo: 'success', mensaje:
+                    'El administrador autorizó Bs '.number_format((float) $solicitud->precio_aprobado, 2, ',', '.').' para ese aparato.');
+
+                $cambio = true;
+
+                continue;
+            }
+
+            if ($solicitud->estado === 'rechazada') {
+                // Se vuelve al mínimo autorizado del producto para no dejar la
+                // venta trabada con un precio que ya nadie va a aprobar.
+                $this->carrito[$indice]['precio'] = ProrrateoDeGastos::aDecimal(
+                    max(
+                        ProrrateoDeGastos::aCentavos($linea['precio_lista'])
+                            - ProrrateoDeGastos::aCentavos($linea['tope_descuento']),
+                        0
+                    )
+                );
+                $this->limpiarSolicitudDeLinea($indice);
+                $this->resetValidation("carrito.{$indice}.precio");
+
+                $this->dispatch('toast', tipo: 'warning', mensaje:
+                    'El administrador rechazó el descuento'.($solicitud->motivo ? ': '.$solicitud->motivo : '.'));
+
+                $cambio = true;
+
+                continue;
+            }
+
+            if (in_array($solicitud->estado, ['cancelada', 'consumida'], true)) {
+                $this->limpiarSolicitudDeLinea($indice);
+                $cambio = true;
+            }
+        }
+
+        if ($cambio) {
+            $this->olvidarTotales();
+            $this->reajustarMixto();
+        }
+    }
+
+    private function limpiarSolicitudDeLinea(int $indice): void
+    {
+        if (! isset($this->carrito[$indice])) {
+            return;
+        }
+
+        $this->carrito[$indice]['solicitud_id'] = null;
+        $this->carrito[$indice]['solicitud_estado'] = null;
+        $this->carrito[$indice]['precio_aprobado'] = null;
+    }
+
+    /**
+     * Escucha la resolución de cada solicitud pendiente del carrito.
+     *
+     * @return array<string, string>
+     */
+    protected function getListeners(): array
+    {
+        $listeners = [];
+
+        foreach ($this->carrito as $linea) {
+            $id = $linea['solicitud_id'] ?? null;
+
+            if ($id !== null && ($linea['solicitud_estado'] ?? null) === 'pendiente') {
+                $listeners["echo-private:solicitud.{$id},.SolicitudDeDescuentoResuelta"] = 'comprobarSolicitudes';
+            }
+        }
+
+        return $listeners;
     }
 
     public function confirmarVaciar(): void
@@ -1072,12 +1363,28 @@ class Pos extends Component
                 return false;
             }
 
+            $unidad = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
             $precio = ProrrateoDeGastos::aCentavos($linea['precio']);
             $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista']);
+            $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento']);
+            $costo = ProrrateoDeGastos::aCentavos($unidad?->costo_unitario ?? '0');
 
-            // Ni por encima de la referencia ni por debajo del tope de rebaja.
-            if ($precio > $lista || $lista - $precio > ProrrateoDeGastos::aCentavos($linea['tope_descuento'])) {
+            // Ni por encima de la referencia ni por debajo del costo.
+            if ($precio > $lista || $precio < $costo) {
                 return false;
+            }
+
+            // Bajar del mínimo solo se acepta con una autorización aprobada que
+            // cubra el precio cobrado.
+            if ($lista - $precio > $tope) {
+                $aprobado = $linea['precio_aprobado'] ?? null;
+                $cubierto = ($linea['solicitud_estado'] ?? null) === 'aprobada'
+                    && $aprobado !== null
+                    && $precio >= ProrrateoDeGastos::aCentavos($aprobado);
+
+                if (! $cubierto) {
+                    return false;
+                }
             }
         }
 

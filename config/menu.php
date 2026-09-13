@@ -67,6 +67,7 @@ return [
         'children' => [
             ['label' => 'Punto de venta', 'route' => 'ventas.create', 'active' => 'ventas/nueva', 'permission' => 'ventas.crear'],
             ['label' => 'Historial de ventas', 'route' => 'ventas.index', 'active' => 'ventas', 'permission' => 'ventas.ver'],
+            ['label' => 'Autorizaciones', 'route' => 'ventas.autorizaciones.index', 'active' => 'ventas/autorizaciones*', 'permission' => 'ventas.autorizar_descuento'],
             ['label' => 'Créditos y cuotas', 'route' => 'creditos.index', 'active' => 'creditos*', 'permission' => 'creditos.ver'],
             ['label' => 'Entregas', 'route' => 'entregas.index', 'active' => 'entregas*', 'permission' => 'entregas.ver'],
             ['label' => 'Clientes', 'route' => 'clientes.index', 'active' => 'clientes*', 'permission' => 'clientes.ver'],

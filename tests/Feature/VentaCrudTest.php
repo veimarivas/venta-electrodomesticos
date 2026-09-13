@@ -605,18 +605,56 @@ class VentaCrudTest extends TestCase
         $this->assertSame('350.00', Venta::first()->total);
     }
 
-    public function test_el_pos_no_deja_rebajar_mas_alla_del_tope_del_producto(): void
+    public function test_el_pos_marca_para_autorizacion_rebajar_mas_alla_del_tope(): void
     {
+        // Costo 200, lista 400, tope 50: 300 baja del mínimo pero no del costo,
+        // así que ya no es un error de tecleo: exige autorización del
+        // administrador. No se pinta error en el campo, pero no se puede cobrar.
         $unidad = $this->unidadEnStock(200, 400, 50);
 
         Livewire::actingAs($this->admin())
             ->test(Pos::class)
             ->call('agregar', $unidad->id)
             ->set('carrito.0.precio', '300')
-            ->assertHasErrors('carrito.0.precio')
+            ->assertHasNoErrors('carrito.0.precio')
             ->assertSet('ventaValida', false);
 
         $this->assertSame(0, Venta::count());
+    }
+
+    public function test_el_pos_no_deja_vender_por_debajo_del_costo(): void
+    {
+        // Ninguna autorización salva vender por debajo del costo.
+        $unidad = $this->unidadEnStock(200, 400, 300);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->set('carrito.0.precio', '150')
+            ->assertHasErrors('carrito.0.precio')
+            ->assertSet('ventaValida', false);
+    }
+
+    public function test_una_rebaja_bajo_el_minimo_se_cobra_con_autorizacion_aprobada(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+        $admin = $this->admin();
+
+        $servicio = app(\App\Support\AutorizacionDeDescuento::class);
+        $solicitud = $servicio->solicitar($unidad, '300', $admin->id);
+        $servicio->resolver($solicitud, true, '300', null, $admin->id);
+
+        Livewire::actingAs($admin)
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->set('carrito.0.precio', '300')
+            ->assertSet('carrito.0.solicitud_estado', 'aprobada')
+            ->assertSet('ventaValida', true)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $this->assertSame('300.00', Venta::first()->total);
+        $this->assertSame('consumida', $solicitud->fresh()->estado);
     }
 
     public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void

@@ -44,7 +44,7 @@ class LocalDataSeeder extends Seeder
             'inventario' => ['ver', 'ajustar'],
             'stock' => ['ver'],
             'caja' => ['ver', 'gestionar'],
-            'ventas' => ['ver', 'crear', 'anular'],
+            'ventas' => ['ver', 'crear', 'anular', 'autorizar_descuento'],
             'creditos' => ['ver', 'crear', 'cobrar'],
             'entregas' => ['ver', 'crear', 'gestionar'],
             'reparaciones' => ['ver', 'recibir', 'atender'],

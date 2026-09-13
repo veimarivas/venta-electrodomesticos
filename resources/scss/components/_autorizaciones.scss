@@ -1,0 +1,223 @@
+// -----------------------------------------------------------------------------
+// Autorizaciones de descuento — bandeja del administrador
+// -----------------------------------------------------------------------------
+// Una tarjeta por solicitud, con la foto del momento: precio de lista, mínimo,
+// costo y precio pedido. El costo vive aquí sin problema: esta pantalla solo la
+// ve quien puede autorizar.
+// -----------------------------------------------------------------------------
+
+.autorizaciones-modulo {
+
+    .aut-contador {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.5rem;
+        height: 1.5rem;
+        padding: 0 .45rem;
+        border-radius: var(--radio-pill);
+        background: var(--estado-alerta-suave);
+        color: var(--estado-alerta-texto);
+        font-size: .75rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // ---- Tarjeta de solicitud ----------------------------------------------
+    .aut-card {
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-lg);
+        background: var(--marca-superficie);
+        overflow: hidden;
+        box-shadow: var(--sombra-xs);
+    }
+
+    .aut-card-cabecera {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .85rem 1rem;
+        border-bottom: 1px solid var(--marca-linea);
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+    }
+
+    .aut-card-producto {
+        margin: 0 0 .3rem;
+        font-size: .92rem;
+        font-weight: 650;
+        color: var(--marca-tinta);
+    }
+
+    .aut-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem .9rem;
+        color: var(--marca-apagado);
+        font-size: .72rem;
+
+        span { display: inline-flex; align-items: center; gap: .3rem; }
+        i { font-size: .8rem; }
+    }
+
+    .aut-pendiente {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        flex-shrink: 0;
+        padding: .28rem .65rem;
+        border-radius: var(--radio-pill);
+        background: var(--estado-alerta-suave);
+        color: var(--estado-alerta-texto);
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .aut-latido {
+        width: .5rem;
+        height: .5rem;
+        border-radius: 50%;
+        background: var(--estado-alerta);
+        animation: aut-latido 1.6s infinite;
+    }
+
+    .aut-card-cifras {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+        gap: .75rem 1rem;
+        padding: .9rem 1rem;
+    }
+
+    .aut-cifra {
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+        min-width: 0;
+    }
+
+    .aut-cifra-label {
+        font-size: .66rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: var(--marca-apagado);
+    }
+
+    .aut-cifra-valor {
+        font-size: .98rem;
+        font-weight: 700;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .aut-cifra-costo { color: var(--marca-azul-texto); }
+
+    .aut-cifra-pedido {
+        padding-left: .85rem;
+        border-left: 2px solid var(--marca-oro);
+    }
+
+    .aut-cifra-nota {
+        font-size: .68rem;
+        color: var(--marca-apagado);
+    }
+
+    .aut-cifra-nota-bien { color: var(--estado-ok); }
+    .aut-cifra-nota-mal { color: var(--estado-error); }
+
+    .aut-form {
+        padding: .85rem 1rem;
+        border-top: 1px dashed var(--marca-linea);
+        background: color-mix(in srgb, var(--marca-suave) 60%, transparent);
+    }
+
+    .aut-card-acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+        padding: .75rem 1rem;
+        border-top: 1px solid var(--marca-linea);
+    }
+
+    // ---- Estado vacío -------------------------------------------------------
+    .aut-vacio-icono {
+        display: grid;
+        place-items: center;
+        width: 4.5rem;
+        height: 4.5rem;
+        border-radius: 50%;
+        background: var(--estado-ok-suave);
+        color: var(--estado-ok);
+        font-size: 1.8rem;
+    }
+
+    // ---- Resueltas recientes ------------------------------------------------
+    .aut-resuelta {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .8rem 1rem;
+        border-bottom: 1px solid var(--marca-linea);
+
+        &:last-child { border-bottom: 0; }
+    }
+
+    .aut-resuelta-producto {
+        display: block;
+        font-size: .85rem;
+        font-weight: 600;
+        color: var(--marca-tinta);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .aut-resuelta-meta {
+        display: block;
+        color: var(--marca-apagado);
+        font-size: .72rem;
+    }
+
+    .aut-resuelta-motivo {
+        display: block;
+        margin-top: .2rem;
+        color: var(--marca-apagado);
+        font-size: .72rem;
+        font-style: italic;
+    }
+
+    .aut-resuelta-monto {
+        display: block;
+        margin-top: .2rem;
+        font-size: .78rem;
+        font-weight: 650;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .aut-resuelta-monto-pedido { color: var(--marca-apagado); font-weight: 500; }
+
+    .aut-estado {
+        display: inline-flex;
+        align-items: center;
+        padding: .22rem .55rem;
+        border-radius: var(--radio-pill);
+        font-size: .68rem;
+        font-weight: 700;
+    }
+
+    .aut-estado-aprobada { color: var(--estado-ok); background: var(--estado-ok-suave); }
+    .aut-estado-consumida { color: var(--marca-azul-texto); background: color-mix(in srgb, var(--marca-azul) 10%, transparent); }
+    .aut-estado-rechazada { color: var(--estado-error); background: var(--estado-error-suave); }
+    .aut-estado-cancelada { color: var(--marca-apagado); background: var(--marca-suave); }
+}
+
+@keyframes aut-latido {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--estado-alerta) 70%, transparent); }
+    70% { box-shadow: 0 0 0 .45rem transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .autorizaciones-modulo .aut-latido { animation: none; }
+}

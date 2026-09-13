@@ -137,7 +137,11 @@
             </div>
 
             {{-- ---------- Carrito ---------- --}}
-            <div class="card border-0 shadow-sm pos-carrito-card">
+            {{-- Mientras haya solicitudes pendientes, el carrito se sondea como
+                 respaldo del WebSocket: si Reverb está caído, el vendedor no se
+                 queda esperando una autorización que ya llegó. --}}
+            <div class="card border-0 shadow-sm pos-carrito-card"
+                @if ($this->haySolicitudesPendientes) wire:poll.4s="comprobarSolicitudes" @endif>
                 <div class="pos-carrito-header">
                     <div class="d-flex align-items-center gap-2">
                         <span class="pos-carrito-header-icon">
@@ -198,6 +202,21 @@
                                     $cobrado = $lista - $descuento;
                                     $costo = (float) ($u?->costo_unitario ?? 0);
                                     $margen = $cobrado - $costo;
+
+                                    // Autorización: el precio baja del mínimo pero
+                                    // no del costo, así que necesita permiso.
+                                    $precioActual = (float) ($linea['precio'] ?? 0);
+                                    $bajoMinimo = ($lista - $precioActual) > $tope;
+                                    $estadoSolicitud = $linea['solicitud_estado'] ?? null;
+                                    $aprobado = ($linea['precio_aprobado'] ?? null) !== null
+                                        ? (float) $linea['precio_aprobado']
+                                        : null;
+                                    $cubierto = $estadoSolicitud === 'aprobada'
+                                        && $aprobado !== null
+                                        && $precioActual >= $aprobado;
+                                    $requiereAutorizacion = $bajoMinimo
+                                        && $precioActual >= $costo
+                                        && ! $cubierto;
                                 @endphp
 
                                 <article
@@ -316,6 +335,40 @@
                                             @endif
                                         </div>
                                     </div>
+
+                                    {{-- Autorización de descuento bajo el mínimo. --}}
+                                    @if ($cubierto)
+                                        <div class="pos-linea-autorizacion pos-linea-autorizacion-ok">
+                                            <i class="ri-shield-check-line"></i>
+                                            Autorizado por el administrador hasta
+                                            Bs {{ number_format($aprobado, 2, ',', '.') }}
+                                        </div>
+                                    @elseif ($requiereAutorizacion)
+                                        <div class="pos-linea-autorizacion">
+                                            <i class="ri-lock-2-line"></i>
+                                            @if ($estadoSolicitud === 'pendiente')
+                                                <span class="pos-autorizacion-esperando">
+                                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                                    Esperando al administrador…
+                                                </span>
+                                                <button type="button" class="btn btn-sm btn-light"
+                                                    wire:click="cancelarSolicitud({{ $indice }})">
+                                                    Cancelar
+                                                </button>
+                                            @else
+                                                <span>
+                                                    Por debajo del mínimo (Bs {{ number_format($minimo, 2, ',', '.') }}):
+                                                    necesita autorización del administrador.
+                                                </span>
+                                                <button type="button" class="btn btn-sm btn-warning"
+                                                    wire:click="solicitarAutorizacion({{ $indice }})"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="solicitarAutorizacion({{ $indice }})">
+                                                    <i class="ri-send-plane-line align-bottom me-1"></i> Solicitar autorización
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endif
 
                                     {{-- Atajos y el error de la línea. --}}
                                     @if ($descuento > 0 || ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos) || $errors->has('carrito.'.$indice.'.precio'))

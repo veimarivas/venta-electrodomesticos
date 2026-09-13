@@ -99,6 +99,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'QR de cobro' => null],
     ])->middleware('permission:qrs_cobro.ver')->name('ventas.qrs-cobro.index');
 
+    // Bandeja de autorizaciones de descuento. `whereNumber` en la ficha hace
+    // innecesario el orden, pero se declara antes igual por claridad.
+    Route::view('/ventas/autorizaciones', 'backend.autorizaciones.index', [
+        'title' => 'Autorizaciones de descuento',
+        'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Autorizaciones' => null],
+    ])->middleware('permission:ventas.autorizar_descuento')->name('ventas.autorizaciones.index');
+
     // `whereNumber` es el cinturón además del orden: deja fuera cualquier
     // segmento que no sea un id, así una ruta estática nueva bajo /ventas no
     // vuelve a caer en la misma trampa aunque se declare después.

@@ -104,11 +104,24 @@ class RegistroDeVenta
                         $productos[$unidad->producto_id]->descuento_maximo ?? '0'
                     );
 
+                    // Si la rebaja pasa del tope, solo la salva una autorización
+                    // aprobada que cubra el precio final. Quien vende no manda
+                    // la autorización: se busca en la base, así el POS no puede
+                    // inventarse una.
+                    $autorizacion = null;
+
                     if ($descuento > $topeDescuento) {
-                        throw new RuntimeException(
-                            "El descuento del aparato {$unidad->codigo_interno} supera el máximo autorizado ".
-                            'para ese producto ('.ProrrateoDeGastos::aDecimal($topeDescuento).' Bs).'
+                        $autorizacion = app(AutorizacionDeDescuento::class)->aprobadaPara(
+                            $unidad->id,
+                            $precio - $descuento
                         );
+
+                        if ($autorizacion === null) {
+                            throw new RuntimeException(
+                                "El descuento del aparato {$unidad->codigo_interno} supera el máximo autorizado ".
+                                'y no tiene una autorización vigente para ese precio.'
+                            );
+                        }
                     }
 
                     $subtotal += $precio;
@@ -120,6 +133,7 @@ class RegistroDeVenta
                         'precio' => $precio,
                         'descuento' => $descuento,
                         'costo' => $costo,
+                        'autorizacion' => $autorizacion,
                     ];
                 }
 
@@ -152,7 +166,7 @@ class RegistroDeVenta
                 foreach ($detalles as $detalle) {
                     $unidad = $detalle['unidad'];
 
-                    VentaDetalle::create([
+                    $lineaVenta = VentaDetalle::create([
                         'venta_id' => $venta->id,
                         'unidad_id' => $unidad->id,
                         // Guardia de la doble venta: se pone al vender y se
@@ -167,6 +181,16 @@ class RegistroDeVenta
                             $detalle['precio'] - $detalle['descuento'] - $detalle['costo']
                         ),
                     ]);
+
+                    // La autorización se gasta al vender: no vale para otro
+                    // aparato ni para otra venta.
+                    if (($detalle['autorizacion'] ?? null) !== null) {
+                        app(AutorizacionDeDescuento::class)->consumir(
+                            $detalle['autorizacion'],
+                            $venta,
+                            $lineaVenta
+                        );
+                    }
 
                     $estadoAnterior = $unidad->estado;
 

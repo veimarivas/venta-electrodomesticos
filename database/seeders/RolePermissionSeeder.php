@@ -28,7 +28,7 @@ class RolePermissionSeeder extends Seeder
         // El arqueo lo abre y lo cierra quien está en el mostrador; verlo
         // -el histórico de cierres y sus diferencias- es de quien supervisa.
         'caja' => ['ver', 'gestionar'],
-        'ventas' => ['ver', 'crear', 'anular'],
+        'ventas' => ['ver', 'crear', 'anular', 'autorizar_descuento'],
         // `crear` es autorizar el crédito al vender; `cobrar` es recibir una
         // cuota. Van separados porque fiar y cobrar no son la misma decisión.
         'creditos' => ['ver', 'crear', 'cobrar'],

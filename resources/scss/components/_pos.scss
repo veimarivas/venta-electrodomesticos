@@ -260,4 +260,38 @@
         border-top: 1px dashed var(--marca-linea);
         background: color-mix(in srgb, var(--marca-suave) 55%, transparent);
     }
+
+    // ---- Autorización de descuento -----------------------------------------
+    .pos-linea-autorizacion {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem .7rem;
+        padding: .65rem .85rem;
+        border-top: 1px dashed color-mix(in srgb, var(--estado-alerta) 45%, var(--marca-linea));
+        background: var(--estado-alerta-suave);
+        color: var(--estado-alerta-texto);
+        font-size: .78rem;
+        font-weight: 600;
+
+        > i { font-size: 1rem; }
+
+        .btn { margin-left: auto; }
+
+        @media (max-width: 575.98px) {
+            .btn { margin-left: 0; width: 100%; }
+        }
+    }
+
+    .pos-linea-autorizacion-ok {
+        border-top-color: color-mix(in srgb, var(--estado-ok) 40%, var(--marca-linea));
+        background: var(--estado-ok-suave);
+        color: var(--estado-ok);
+    }
+
+    .pos-autorizacion-esperando {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+    }
 }
