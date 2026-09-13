@@ -150,7 +150,7 @@ class PosController extends Controller
                         .'pero el aparato no volvió al stock. Hay que corregirlo en el panel.'
                     : "Ya se vendió el {$venta->vendida_en?->format('d/m/Y')} "
                         ."en la venta {$venta->codigo}."),
-            'reservado' => 'Está reservado para un cliente. Libéralo en el panel si la reserva ya no vale.',
+            'reservado' => 'Está en proceso de venta en otra caja. Si no se cobra en unos minutos, vuelve al stock.',
             'devuelto' => 'Fue devuelto y todavía no se revisó. Hay que darlo de alta otra vez antes de venderlo.',
             'danado' => 'Está marcado como dañado, así que no se puede vender.',
             'garantia' => 'Está en garantía: salió a reparación y no es vendible mientras tanto.',
