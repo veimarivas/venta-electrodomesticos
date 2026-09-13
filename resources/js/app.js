@@ -218,10 +218,113 @@ const bindBuscadorGlobal = () => {
     });
 };
 
+/*
+|------------------------------------------------------------------------------
+| Vitrina: filtrar el catálogo mientras se escribe
+|------------------------------------------------------------------------------
+| Un catálogo largo se recorre mejor escribiendo. Cada tarjeta lleva su nombre y
+| su marca en `data-vitrina-*`; al teclear se ocultan las que no coinciden, se
+| cierran las secciones y los chips que quedan vacíos y se avisa si no hay nada.
+| Es puro cliente: la vitrina es un listado de solo lectura y no necesita red.
+*/
+const bindVitrinaFiltro = (root = document) => {
+    root.querySelectorAll('[data-vitrina-buscador]').forEach((input) => {
+        if (input.dataset.vitrinaEnlazado === '1') {
+            return;
+        }
+
+        const modulo = input.closest('.vitrina-modulo');
+
+        if (!modulo) {
+            return;
+        }
+
+        input.dataset.vitrinaEnlazado = '1';
+
+        const normaliza = (texto) => (texto || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+        const tarjetas = Array.from(modulo.querySelectorAll('[data-vitrina-card]'));
+        const secciones = Array.from(modulo.querySelectorAll('[data-vitrina-seccion]'));
+        const chips = Array.from(modulo.querySelectorAll('[data-vitrina-nav]'));
+        const sinResultados = modulo.querySelector('[data-vitrina-sin-resultados]');
+        const limpiar = modulo.querySelector('[data-vitrina-limpiar]');
+
+        const aplicar = () => {
+            const termino = normaliza(input.value.trim());
+
+            if (termino === '') {
+                tarjetas.forEach((tarjeta) => tarjeta.classList.remove('vitrina-oculto'));
+                secciones.forEach((seccion) => seccion.classList.remove('vitrina-oculto'));
+                chips.forEach((chip) => chip.classList.remove('vitrina-oculto'));
+
+                if (sinResultados) {
+                    sinResultados.hidden = true;
+                }
+
+                if (limpiar) {
+                    limpiar.hidden = true;
+                }
+
+                return;
+            }
+
+            tarjetas.forEach((tarjeta) => {
+                const nombre = normaliza(tarjeta.dataset.vitrinaNombre);
+                const marca = normaliza(tarjeta.dataset.vitrinaMarca);
+                const coincide = nombre.includes(termino) || marca.includes(termino);
+
+                tarjeta.classList.toggle('vitrina-oculto', !coincide);
+            });
+
+            let alguna = false;
+
+            secciones.forEach((seccion) => {
+                const visibles = seccion.querySelectorAll('[data-vitrina-card]:not(.vitrina-oculto)').length;
+
+                seccion.classList.toggle('vitrina-oculto', visibles === 0);
+
+                if (visibles > 0) {
+                    alguna = true;
+                }
+            });
+
+            chips.forEach((chip) => {
+                const id = (chip.getAttribute('href') || '').replace('#', '');
+                const seccion = id ? modulo.querySelector(`[data-vitrina-seccion][id="${id}"]`) : null;
+
+                chip.classList.toggle('vitrina-oculto', seccion ? seccion.classList.contains('vitrina-oculto') : false);
+            });
+
+            if (sinResultados) {
+                sinResultados.hidden = alguna;
+            }
+
+            if (limpiar) {
+                limpiar.hidden = false;
+            }
+        };
+
+        input.addEventListener('input', aplicar);
+
+        limpiar?.addEventListener('click', () => {
+            input.value = '';
+            input.focus();
+            aplicar();
+        });
+
+        aplicar();
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     bindConfirmForms();
     bindDatePickers();
     bindBuscadorGlobal();
+    bindVitrinaFiltro();
 });
 
 /*
@@ -526,6 +629,7 @@ document.addEventListener('livewire:navigated', () => {
     bindConfirmForms();
     bindDatePickers();
     bindBuscadorGlobal();
+    bindVitrinaFiltro();
 });
 
 /*
