@@ -55,6 +55,10 @@
                     <div class="col-lg-4">
                         <div class="d-flex flex-wrap justify-content-lg-end">
                             @can('productos.crear')
+                                <a href="{{ route('catalogo.importar') }}"
+                                    class="btn btn-outline-light me-lg-2 mb-2 mb-lg-0">
+                                    <i class="ri-file-excel-2-line align-bottom me-1"></i> Importar Excel
+                                </a>
                                 <button type="button" class="btn btn-light crud-nueva-hero" wire:click="abrirCrear">
                                     <i class="ri-add-line align-bottom me-1"></i> Nuevo producto
                                 </button>

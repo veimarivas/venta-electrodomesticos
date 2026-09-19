@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CajaController;
 use App\Http\Controllers\Api\V1\CargoController;
 use App\Http\Controllers\Api\V1\CatalogoController;
+use App\Http\Controllers\Api\V1\CatalogoImportController;
 use App\Http\Controllers\Api\V1\CategoriaController;
 use App\Http\Controllers\Api\V1\ClienteController;
 use App\Http\Controllers\Api\V1\CompraController;
@@ -175,6 +176,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:productos.editar')->name('catalogo.productos.restaurar');
         Route::post('/catalogo/categorias/{categoria}/restaurar', [CategoriaController::class, 'restaurar'])
             ->middleware('permission:categorias.editar')->name('catalogo.categorias.restaurar');
+
+        // Carga masiva: la plantilla y el Excel relleno. Basta con poder crear
+        // productos o categorías, que es lo que el archivo acaba escribiendo.
+        Route::middleware('permission:productos.crear|categorias.crear')->group(function () {
+            Route::get('/catalogo/plantilla', [CatalogoImportController::class, 'plantilla'])
+                ->name('catalogo.plantilla');
+            Route::post('/catalogo/importar', [CatalogoImportController::class, 'importar'])
+                ->name('catalogo.importar');
+        });
 
         // Personal y clientes: también solo consulta. Cada uno con su permiso,
         // porque quien lleva las ventas no tiene por qué ver la ficha laboral

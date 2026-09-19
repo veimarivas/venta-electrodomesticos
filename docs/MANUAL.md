@@ -409,6 +409,31 @@ activa, porque ahí la lista es plana y no hay «antes» ni «después».
 La columna **Disponibles** cuenta solo unidades en stock; vendidas, dañadas o en
 garantía no suman.
 
+### Carga masiva desde Excel
+
+*Catálogo → Importar Excel*, o el botón **Importar Excel** que está en la
+cabecera de *Productos* y de *Categorías*. Es para no registrar uno por uno lo
+que la tienda ya tiene en una lista.
+
+1. **Descargar plantilla.** Un Excel con una hoja de instrucciones, la hoja
+   *Categorias* y la hoja *Productos*.
+2. **Rellenarlo.** En *Categorias*, `Categoria padre` vacío crea una categoría
+   principal; con el nombre de otra, una subcategoría. En *Productos*, la
+   categoría se escribe por su nombre y, si aplica, la subcategoría en su
+   columna. La marca se crea sola si no existe.
+3. **Subir el archivo** y leer el resumen: cuántas categorías y productos se
+   crearon o actualizaron y qué filas quedaron fuera, con su motivo.
+
+Un producto o categoría que ya existe (mismo nombre, en la misma categoría o bajo
+el mismo padre) se **actualiza** en vez de duplicarse, así que reimportar el
+mismo archivo no ensucia el catálogo. Las filas de ejemplo de la plantilla
+empiezan por `#` y se ignoran. Se acepta `.xlsx` o `.csv`, y la misma carga está
+en la app del teléfono, en *Catálogo*: el icono de subir trae la descarga de la
+plantilla y la subida del archivo.
+
+> Hace falta permiso para crear productos o categorías. Las filas mal escritas no
+> detienen el resto: se importan las correctas y el resumen dice qué fila falló.
+
 ---
 
 ## 5. Comprar mercadería

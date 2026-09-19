@@ -13,6 +13,35 @@ todos los días y hoy sigue anotando aparte.
 
 ---
 
+## Carga masiva del catálogo desde Excel (2026-09-18)
+
+Registrar las categorías, las subcategorías y los productos uno por uno era el
+último trabajo manual que quedaba en el arranque de la tienda. Ahora se sube un
+**Excel relleno** y el catálogo queda armado de una vez, desde el panel y desde
+el teléfono, con la **plantilla descargable** para no adivinar el formato.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Un `.xlsx` con dos hojas** | *Categorias* (nombre, padre, descripción, activo) y *Productos* (categoría, subcategoría, nombre, marca, modelo, precio, rebaja máxima, stock mínimo, garantía, serial, activo y especificaciones). La jerarquía se resuelve dentro del archivo: la subcategoría declara su padre y el producto apunta a la categoría o al padre + hija. |
+| ✅ | **Reimportar actualiza, no duplica** | Categorías por `(padre, nombre)` y productos por `(categoría, nombre)`, sin distinguir mayúsculas. La marca se crea sola si el producto la menciona y no existe. |
+| ✅ | **Las filas malas no tumban al resto** | Se importan las válidas y el resumen dice qué fila falló y por qué. Todo va en una transacción: un fallo inesperado no deja medio catálogo. Las filas de ejemplo empiezan por `#` y se ignoran. |
+| ✅ | **Plantilla y carga en el panel** | *Catálogo → Importar Excel*, con el formato generado al momento y botones en las cabeceras de Productos y Categorías. |
+| ✅ | **La misma función en la app** | `GET /catalogo/plantilla` y `POST /catalogo/importar` (multipart), consumidos desde la hoja de *Catálogo → subir Excel*. El selector de archivos lo aporta `file_picker`. |
+
+### Sin dependencias nuevas en el backend
+
+El `.xlsx` se lee y se escribe con **PHP nativo** (`ZipArchive` + `SimpleXML`),
+sin `phpoffice/phpspreadsheet` ni `maatwebsite/excel`: para una plantilla de
+texto y números no hacía falta el paquete entero, y el proyecto sigue
+instalable sin red. `App\Support\Excel\LectorXlsx` y `EscritorXlsx` están
+probados a ida y vuelta (acentos, caracteres XML y celdas huecas incluidas).
+
+**Tests:** `CatalogoImportTest` (importar, reimportar, filas con error, filas de
+ejemplo, permisos, plantilla y la pantalla del panel) y `ExcelXlsxTest` (ida y
+vuelta del formato).
+
+---
+
 ## Aviso de autorización con sonido (2026-09-13)
 
 Cuando un vendedor baja del mínimo autorizado, el administrador tiene que

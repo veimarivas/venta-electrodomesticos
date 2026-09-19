@@ -189,6 +189,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Productos' => null],
     ])->middleware('permission:productos.ver')->name('productos.index');
 
+    // Carga masiva del catálogo: categorías, subcategorías y productos de una
+    // vez desde un Excel. Basta poder crear una de las dos entidades.
+    Route::view('/catalogo/importar', 'backend.catalogo.importar', [
+        'title' => 'Importar catálogo',
+        'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Importar catálogo' => null],
+    ])->middleware('permission:productos.crear|categorias.crear')->name('catalogo.importar');
+
     Route::view('/cargos', 'backend.cargos.index', [
         'title' => 'Cargos',
         'breadcrumbs' => ['Inicio' => null, 'Personal' => null, 'Cargos' => null],

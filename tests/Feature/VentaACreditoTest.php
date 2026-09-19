@@ -94,7 +94,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([6000], [
             'cuota_inicial' => 1200,
             'numero_cuotas' => 6,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         $credito = $venta->credito;
@@ -115,7 +115,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([1000], [
             'cuota_inicial' => 0,
             'numero_cuotas' => 3,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         $cuotas = $venta->credito->cuotas;
@@ -153,7 +153,7 @@ class VentaACreditoTest extends TestCase
             cabecera: [
                 'cliente_id' => null,
                 'metodo_pago' => 'credito',
-                'credito' => ['numero_cuotas' => 3, 'primer_vencimiento' => '2026-09-15'],
+                'credito' => ['numero_cuotas' => 3, 'primer_vencimiento' => today()->addMonth()->format('Y-m-d')],
             ],
             userId: $this->supervisor()->id,
         );
@@ -167,7 +167,7 @@ class VentaACreditoTest extends TestCase
         $this->venderACredito([1000], [
             'cuota_inicial' => 1000,
             'numero_cuotas' => 3,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
     }
 
@@ -194,7 +194,7 @@ class VentaACreditoTest extends TestCase
                     'cliente_id' => $this->cliente()->id,
                     'metodo_pago' => 'credito',
                     // Sin cuotas: el plan no se puede armar.
-                    'credito' => ['numero_cuotas' => 0, 'primer_vencimiento' => '2026-09-15'],
+                    'credito' => ['numero_cuotas' => 0, 'primer_vencimiento' => today()->addMonth()->format('Y-m-d')],
                 ],
                 userId: $this->supervisor()->id,
             );
@@ -268,7 +268,7 @@ class VentaACreditoTest extends TestCase
         $this->venderACredito([6000], [
             'cuota_inicial' => 1200,
             'numero_cuotas' => 6,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ], user: $cajero);
 
         // Fondo 100 + inicial 1200. Los 4800 financiados no son dinero cobrado:
@@ -281,7 +281,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([6000], [
             'cuota_inicial' => 1200,
             'numero_cuotas' => 6,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         $this->actingAs($this->supervisor())
@@ -299,7 +299,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([1000], [
             'cuota_inicial' => 0,
             'numero_cuotas' => 4,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         app(RegistroDeVenta::class)->anular($venta, 'El cliente se arrepintió');
@@ -315,7 +315,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([1000, 1000], [
             'cuota_inicial' => 0,
             'numero_cuotas' => 4,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         app(RegistroDeVenta::class)->devolver(
@@ -340,7 +340,7 @@ class VentaACreditoTest extends TestCase
         $venta = $this->venderACredito([1000], [
             'cuota_inicial' => 0,
             'numero_cuotas' => 4,
-            'primer_vencimiento' => '2026-09-15',
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
         ]);
 
         app(RegistroDeVenta::class)->devolver(
