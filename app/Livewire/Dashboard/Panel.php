@@ -49,25 +49,63 @@ class Panel extends Component
         array_unshift($this->enVivo, $payload);
         $this->enVivo = array_slice($this->enVivo, 0, 5);
 
-        unset($this->hoy, $this->semana, $this->mes, $this->serie, $this->ultimasVentas, $this->topProductos);
+        unset(
+            $this->comparativoHoy,
+            $this->comparativoSemana,
+            $this->comparativoMes,
+            $this->hoy,
+            $this->semana,
+            $this->mes,
+            $this->serie,
+            $this->ultimasVentas,
+            $this->topProductos,
+        );
+    }
+
+    /**
+     * Resumen del período **y** su variación contra el anterior.
+     *
+     * El comparativo es lo que convierte una cifra en información: «Bs 4.000»
+     * no dice nada sin saber si la semana pasada fueron 2.000 o 9.000. Se
+     * calcula aquí y de él salen tanto los totales como las flechas de
+     * tendencia, para no consultar dos veces el mismo período.
+     *
+     * @return array{actual: array, anterior: array, variacion: array<string, float|null>}
+     */
+    #[Computed]
+    public function comparativoHoy(): array
+    {
+        return $this->reportes()->comparativo(now()->startOfDay(), now()->endOfDay());
+    }
+
+    #[Computed]
+    public function comparativoSemana(): array
+    {
+        return $this->reportes()->comparativo(now()->startOfWeek(), now()->endOfWeek());
+    }
+
+    #[Computed]
+    public function comparativoMes(): array
+    {
+        return $this->reportes()->comparativo(now()->startOfMonth(), now()->endOfMonth());
     }
 
     #[Computed]
     public function hoy(): array
     {
-        return $this->reportes()->resumen(now()->startOfDay(), now()->endOfDay());
+        return $this->comparativoHoy['actual'];
     }
 
     #[Computed]
     public function semana(): array
     {
-        return $this->reportes()->resumen(now()->startOfWeek(), now()->endOfWeek());
+        return $this->comparativoSemana['actual'];
     }
 
     #[Computed]
     public function mes(): array
     {
-        return $this->reportes()->resumen(now()->startOfMonth(), now()->endOfMonth());
+        return $this->comparativoMes['actual'];
     }
 
     /** Últimos 14 días: cabe en la tarjeta sin apretar las barras. */

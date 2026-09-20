@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Livewire\Dashboard\Panel;
+use App\Models\Producto;
+use App\Models\Unidad;
 use App\Models\User;
+use App\Support\RegistroDeVenta;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -109,5 +112,41 @@ class DashboardPermisosTest extends TestCase
             ->assertSee('Más vendidos', false)
             ->assertSee('Almacén', false)
             ->assertSee('Aparatos disponibles', false);
+    }
+
+    // ---- El ranking de más vendidos ----------------------------------------
+
+    /** Registra una venta real de una unidad en stock. */
+    private function vender(string $nombre): void
+    {
+        $unidad = Unidad::factory()->create([
+            'producto_id' => Producto::factory()->create([
+                'nombre' => $nombre,
+                'precio_venta' => 1000,
+                'stock_minimo' => 0,
+            ])->id,
+            'estado' => 'en_stock',
+            'costo_unitario' => 500,
+            'precio_venta' => 1000,
+        ]);
+
+        app(RegistroDeVenta::class)->registrar(
+            [['unidad_id' => $unidad->id, 'precio_unitario' => '1000', 'descuento' => '0']],
+            [],
+            $this->usuario('admin')->id,
+        );
+    }
+
+    public function test_el_mas_vendido_se_pinta_como_ranking_con_puesto(): void
+    {
+        $this->vender('Televisor 55 pulgadas');
+
+        Livewire::actingAs($this->usuario('supervisor'))
+            ->test(Panel::class)
+            ->assertSee('por unidades vendidas', false)
+            ->assertSee('Televisor 55 pulgadas', false)
+            // La fila del ranking y su puesto, no la lista genérica de barras.
+            ->assertSee('dash-top-fila', false)
+            ->assertSee('dash-top-puesto', false);
     }
 }

@@ -87,12 +87,29 @@
     }
 
     // ---- Cifra protagonista y datos secundarios -----------------------------
+    // El bloque de la cifra separa con su borde inferior: la tarjeta se lee
+    // como «el número» arriba y «el detalle» abajo, sin un segundo borde que
+    // compita.
+    .reportes-cifra-bloque {
+        padding-bottom: 1.15rem;
+        margin-bottom: 1.15rem;
+        border-bottom: 1px solid var(--marca-linea);
+    }
+
+    .reportes-bloque-titulo {
+        color: var(--marca-tinta);
+        font-size: .9rem;
+        font-weight: 650;
+        letter-spacing: -.01em;
+    }
+
     .reportes-resumen {
         display: flex;
         flex-direction: column;
-        gap: .6rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--marca-linea);
+        gap: .75rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
 
     .reportes-resumen-dato {
@@ -103,6 +120,21 @@
 
         span { color: var(--marca-apagado); font-size: .82rem; }
         strong { color: var(--marca-tinta); font-size: .95rem; font-variant-numeric: tabular-nums; }
+    }
+
+    // ---- Panel en vivo: el vacío también queda centrado --------------------
+    .reportes-envivo {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .reportes-envivo-vacio {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 12rem;
     }
 
     // ---- Punto «en vivo» ----------------------------------------------------

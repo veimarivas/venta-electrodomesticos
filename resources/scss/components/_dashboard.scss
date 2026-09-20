@@ -411,6 +411,12 @@
     &:active {
         transform: scale(.99);
     }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--anillo-foco);
+        border-radius: var(--radio-sm);
+    }
 }
 
 .dash-venta-enlace {
@@ -427,6 +433,12 @@
     &:last-child { border-bottom: 0; }
     &:hover { background: rgba(37, 73, 112, .04); }
     &:active { background: rgba(37, 73, 112, .07); }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--anillo-foco);
+        border-radius: var(--radio-sm);
+    }
 }
 
 .viz-barra-enlace {
@@ -462,9 +474,237 @@
     }
 
     .dash-venta.esta-nueva {
-        background: rgba(27, 175, 122, .06);
-        box-shadow: inset 3px 0 0 #1baf7a;
+        background: var(--estado-ok-suave);
+        animation: dash-entrada-nueva .6s cubic-bezier(.2, .7, .3, 1) both;
     }
+}
+
+// -----------------------------------------------------------------------------
+// Insignia de tendencia (variación contra el período anterior)
+// -----------------------------------------------------------------------------
+.dash-tend {
+    display: inline-flex;
+    align-items: center;
+    gap: .18rem;
+    padding: .08rem .42rem;
+    border-radius: var(--radio-pill);
+    font-size: .7rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    i { font-size: .8rem; }
+}
+
+.dash-tend--sube {
+    color: #127a52;
+    background: var(--estado-ok-suave);
+}
+
+.dash-tend--baja {
+    color: #b3312f;
+    background: var(--estado-error-suave);
+}
+
+.dash-tend--plana {
+    color: var(--marca-apagado);
+    background: color-mix(in srgb, var(--marca-apagado) 12%, transparent);
+}
+
+// -----------------------------------------------------------------------------
+// Más vendidos: ranking
+// -----------------------------------------------------------------------------
+.dash-top-lista {
+    display: flex;
+    flex-direction: column;
+}
+
+.dash-top-fila {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .8rem 1.25rem;
+    border-bottom: 1px solid var(--marca-linea);
+
+    &:last-child { border-bottom: 0; }
+}
+
+.dash-top-enlace {
+    color: inherit;
+    text-decoration: none;
+    transition: background-color var(--trans-rapida);
+
+    &:hover { background: rgba(37, 73, 112, .035); }
+    &:active { background: rgba(37, 73, 112, .06); }
+
+    &:focus-visible {
+        outline: none;
+        box-shadow: var(--anillo-foco);
+        border-radius: var(--radio-sm);
+    }
+}
+
+// El puesto es jerarquía real —quién vendió más—, no un adorno de sección.
+.dash-top-puesto {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: var(--radio-sm);
+    background: var(--marca-suave);
+    color: var(--marca-apagado);
+    font-size: .82rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.dash-top-puesto--1 {
+    color: #62492d;
+    background: linear-gradient(150deg, rgba(197, 161, 98, .3), rgba(197, 161, 98, .12));
+    box-shadow: inset 0 0 0 1px rgba(197, 161, 98, .38);
+}
+
+.dash-top-puesto--2 {
+    color: #254970;
+    background: linear-gradient(150deg, rgba(87, 146, 191, .28), rgba(87, 146, 191, .1));
+    box-shadow: inset 0 0 0 1px rgba(87, 146, 191, .32);
+}
+
+.dash-top-puesto--3 {
+    color: #62492d;
+    background: linear-gradient(150deg, rgba(138, 107, 52, .22), rgba(138, 107, 52, .08));
+    box-shadow: inset 0 0 0 1px rgba(138, 107, 52, .26);
+}
+
+.dash-top-linea {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.dash-top-nombre {
+    color: var(--marca-tinta);
+    font-size: .85rem;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dash-top-ingreso {
+    color: var(--marca-tinta);
+    font-size: .82rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dash-top-pie {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: .35rem;
+}
+
+.dash-top-pista {
+    flex: 1;
+    height: 6px;
+    border-radius: var(--radio-pill);
+    background: color-mix(in srgb, var(--marca-linea) 70%, transparent);
+    overflow: hidden;
+}
+
+.dash-top-barra {
+    display: block;
+    height: 100%;
+    border-radius: var(--radio-pill);
+    background: linear-gradient(90deg, #254970, #5792bf);
+    transform-origin: left center;
+    animation: dash-barra-crecer .55s cubic-bezier(.2, .7, .3, 1) both;
+}
+
+.dash-top-unidades {
+    flex-shrink: 0;
+    color: var(--marca-tinta);
+    font-size: .78rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    em {
+        font-style: normal;
+        color: var(--marca-apagado);
+        font-weight: 500;
+    }
+}
+
+.dash-top-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .4rem;
+    padding: 2.5rem 1rem;
+    color: var(--marca-apagado);
+    font-size: .85rem;
+
+    i { font-size: 1.6rem; opacity: .5; }
+}
+
+@keyframes dash-barra-crecer {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+
+@keyframes dash-entrada-nueva {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dash-top-barra,
+    .dash-ventas-lista .dash-venta.esta-nueva { animation: none; }
+}
+
+// -----------------------------------------------------------------------------
+// Barra de cobertura de stock (bajo mínimo)
+// -----------------------------------------------------------------------------
+.dash-stock-pista {
+    display: block;
+    height: 4px;
+    margin-top: .45rem;
+    border-radius: var(--radio-pill);
+    background: color-mix(in srgb, var(--marca-linea) 75%, transparent);
+    overflow: hidden;
+}
+
+.dash-stock-barra {
+    display: block;
+    height: 100%;
+    border-radius: var(--radio-pill);
+    background: var(--estado-alerta);
+}
+
+.dash-stock-barra.esta-agotado { background: var(--estado-error); }
+
+// Etiqueta efímera de la venta que acaba de entrar por WebSocket.
+.dash-venta-pill {
+    display: inline-flex;
+    align-items: center;
+    margin-left: .45rem;
+    padding: .05rem .4rem;
+    border-radius: var(--radio-pill);
+    background: var(--estado-ok-suave);
+    color: #127a52;
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    vertical-align: middle;
 }
 
 .dash-venta-icono {
@@ -649,6 +889,32 @@
     .dash-venta-codigo { color: #e8ecf1; }
     .dash-venta-meta { color: rgba(255, 255, 255, .45); }
     .dash-venta-monto { color: #1baf7a; }
+
+    .dash-venta-pill { color: #6fd7a8; }
+
+    .dash-tend--sube { color: #6fd7a8; }
+    .dash-tend--baja { color: #f0a1a0; }
+
+    .dash-top-fila { border-bottom-color: rgba(255, 255, 255, .06); }
+
+    .dash-top-enlace {
+        &:hover { background: rgba(255, 255, 255, .04); }
+        &:active { background: rgba(255, 255, 255, .07); }
+    }
+
+    .dash-top-puesto {
+        background: rgba(255, 255, 255, .06);
+        color: rgba(255, 255, 255, .6);
+    }
+
+    .dash-top-nombre,
+    .dash-top-ingreso,
+    .dash-top-unidades { color: #e8ecf1; }
+
+    .dash-top-unidades em { color: rgba(255, 255, 255, .45); }
+
+    .dash-top-pista,
+    .dash-stock-pista { background: rgba(255, 255, 255, .08); }
 
     .dash-resumen--card { border-top-color: rgba(255, 255, 255, .08); }
 }

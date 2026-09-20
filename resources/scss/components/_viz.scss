@@ -266,21 +266,47 @@
 // -----------------------------------------------------------------------------
 // Cifra protagonista
 // -----------------------------------------------------------------------------
+// El contenedor da a `cqi` un ancho real del que depender: el de la columna,
+// no el del viewport. En una columna estrecha la cifra encoge aunque la
+// pantalla sea grande.
+.viz-cifra-contenedor {
+    container-type: inline-size;
+}
+
 .viz-cifra {
     color: var(--viz-texto);
-    font-size: clamp(2rem, 4vw, 3rem);
+    // `cqi` aporta el ancho disponible y `--cifra-largo` (lo pone el
+    // componente) cuántos caracteres hay que meter. El 0.62 es la anchura
+    // media de un carácter tabular en esta tipografía. El mínimo evita que un
+    // importe enorme quede ilegible; si ni así cabe, `overflow-wrap` lo parte
+    // antes de recortarlo.
+    font-size: clamp(1.15rem, calc(100cqi / var(--cifra-largo, 8) / 0.62), 3rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -.02em;
     font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+// Sin consultas de contenedor (navegadores viejos) se cae a un tamaño por
+// viewport: menos preciso, pero nunca roto.
+@supports not (container-type: inline-size) {
+    .viz-cifra { font-size: clamp(1.7rem, 4vw, 3rem); }
 }
 
 .viz-cifra-etiqueta {
+    display: block;
+    margin-bottom: .3rem;
     color: var(--viz-texto-suave);
     font-size: .72rem;
     font-weight: 600;
     letter-spacing: .06em;
     text-transform: uppercase;
+}
+
+.viz-cifra-nota {
+    display: block;
+    margin-top: .4rem;
 }
 
 // -----------------------------------------------------------------------------

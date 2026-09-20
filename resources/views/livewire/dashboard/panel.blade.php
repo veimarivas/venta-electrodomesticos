@@ -26,6 +26,19 @@
         $semana = $this->semana;
         $mes = $this->mes;
         $bajoMinimo = $this->bajoMinimo;
+
+        // Convierte la variación del período en una insignia con flecha. Sin
+        // base con la que comparar muestra «Sin base» en vez de inventar un
+        // +100 %: una tendencia que no existe es peor que no enseñarla.
+        $tendencia = function (?float $variacion): array {
+            if ($variacion === null) {
+                return ['clase' => 'dash-tend--plana', 'icono' => 'ri-subtract-line', 'texto' => 'Sin base'];
+            }
+
+            return $variacion >= 0
+                ? ['clase' => 'dash-tend--sube', 'icono' => 'ri-arrow-up-line', 'texto' => number_format(abs($variacion), 1, ',', '.').' %']
+                : ['clase' => 'dash-tend--baja', 'icono' => 'ri-arrow-down-line', 'texto' => number_format(abs($variacion), 1, ',', '.').' %'];
+        };
     @endphp
 
     {{--
@@ -72,9 +85,16 @@
                             <i class="ri-image-line"></i>
                         </div>
                     @endif
+                    @php
+                        $cobertura = min(100, (int) round($producto->disponibles / max(1, $producto->stock_minimo) * 100));
+                    @endphp
                     <div class="min-w-0 flex-grow-1">
                         <div class="dash-alerta-nombre">{{ $producto->nombre }}</div>
-                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? '' }}</small>
+                        <small class="dash-alerta-marca">{{ $producto->marca?->nombre ?? 'Sin marca' }}</small>
+                        <span class="dash-stock-pista" aria-hidden="true">
+                            <span class="dash-stock-barra {{ $producto->disponibles === 0 ? 'esta-agotado' : '' }}"
+                                style="width: {{ max(4, $cobertura) }}%"></span>
+                        </span>
                     </div>
                     <span class="dash-alerta-badge {{ $producto->disponibles === 0 ? 'dash-alerta-badge--peligro' : 'dash-alerta-badge--alerta' }}">
                         {{ $producto->disponibles }} / {{ $producto->stock_minimo }}
@@ -124,7 +144,10 @@
                         @endcan
                             <span class="dash-venta-icono dash-venta-icono--vivo"><i class="ri-shopping-bag-3-line"></i></span>
                             <div class="min-w-0 flex-grow-1">
-                                <div class="dash-venta-codigo">{{ $venta['codigo'] }}</div>
+                                <div class="dash-venta-codigo">
+                                    {{ $venta['codigo'] }}
+                                    <span class="dash-venta-pill">Nueva</span>
+                                </div>
                                 <small class="dash-venta-meta">
                                     {{ $venta['hora'] }} · {{ $venta['vendedor'] }} · {{ $venta['cliente'] }}
                                 </small>
@@ -149,7 +172,7 @@
                             <div class="min-w-0 flex-grow-1">
                                 <div class="dash-venta-codigo">{{ $venta->codigo }}</div>
                                 <small class="dash-venta-meta">
-                                    {{ $venta->vendida_en->format('d/m H:i') }}
+                                    {{ $venta->vendida_en->diffForHumans() }}
                                     · {{ $venta->user?->name }}
                                     · {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}
                                 </small>
@@ -177,21 +200,69 @@
 
         @if ($puedeVerReportes)
         <div class="{{ $columnasDeTop }}">
-            <div class="card dash-card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <span class="dash-card-header-icono dash-card-header-icono--top"><i class="ri-trophy-line"></i></span>
-                        Más vendidos
-                    </h5>
-                    <small class="text-muted fs-13">{{ ucfirst(now()->translatedFormat('F')) }}, por ingreso</small>
+            <div class="card dash-card h-100 dash-top-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="min-w-0">
+                        <h5 class="card-title mb-0">
+                            <span class="dash-card-header-icono dash-card-header-icono--top"><i class="ri-trophy-line"></i></span>
+                            Más vendidos
+                        </h5>
+                        <small class="text-muted fs-13">{{ ucfirst(now()->translatedFormat('F')) }} · por unidades vendidas</small>
+                    </div>
+                    <a href="{{ route('reportes.index') }}" class="dash-ver-todas">
+                        Ver reportes <i class="ri-arrow-right-line"></i>
+                    </a>
                 </div>
-                <div class="card-body">
-                    <x-viz.barras :filas="$this->topProductos->map(fn ($p) => [
-                        'nombre' => $p->nombre,
-                        'valor' => (float) $p->ingreso,
-                        'meta' => $p->unidades.' '.($p->unidades == 1 ? 'unidad' : 'unidades'),
-                        'url' => $puedeVerUnidades ? route('dashboard.producto', $p->id) : null,
-                    ])->all()" vacio="Sin ventas este mes." />
+
+                @php
+                    $top = $this->topProductos;
+                    $maxUnidades = max(1, (int) $top->max('unidades'));
+                @endphp
+
+                <div class="card-body p-0 dash-top-lista">
+                    @forelse ($top as $indice => $producto)
+                        @php
+                            $puesto = $indice + 1;
+                            $ancho = max(8, (int) round($producto->unidades / $maxUnidades * 100));
+                        @endphp
+
+                        @if ($puedeVerUnidades)
+                            <a href="{{ route('dashboard.producto', $producto->id) }}"
+                                class="dash-top-fila dash-top-enlace" wire:key="top-{{ $producto->id }}">
+                        @else
+                            <div class="dash-top-fila" wire:key="top-{{ $producto->id }}">
+                        @endif
+                            <span class="dash-top-puesto {{ $puesto <= 3 ? 'dash-top-puesto--'.$puesto : '' }}">
+                                {{ $puesto }}
+                            </span>
+
+                            <div class="min-w-0 flex-grow-1">
+                                <div class="dash-top-linea">
+                                    <span class="dash-top-nombre" title="{{ $producto->nombre }}">{{ $producto->nombre }}</span>
+                                    <span class="dash-top-ingreso">Bs {{ number_format((float) $producto->ingreso, 2, ',', '.') }}</span>
+                                </div>
+
+                                <div class="dash-top-pie">
+                                    <span class="dash-top-pista">
+                                        <span class="dash-top-barra" style="width: {{ $ancho }}%"></span>
+                                    </span>
+                                    <span class="dash-top-unidades">
+                                        {{ $producto->unidades }}
+                                        <em>{{ $producto->unidades == 1 ? 'unidad' : 'unidades' }}</em>
+                                    </span>
+                                </div>
+                            </div>
+                        @if ($puedeVerUnidades)
+                            </a>
+                        @else
+                            </div>
+                        @endif
+                    @empty
+                        <div class="dash-top-vacio">
+                            <i class="ri-bar-chart-2-line"></i>
+                            <span>Sin ventas este mes.</span>
+                        </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -207,10 +278,14 @@
             <div class="card dash-kpi h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
+                        @php $t = $tendencia($this->comparativoHoy['variacion']['ingreso']); @endphp
                         <div class="min-w-0">
                             <span class="dash-kpi-label">Ventas de hoy</span>
                             <span class="dash-kpi-valor">Bs {{ number_format($hoy['ingreso'], 2, ',', '.') }}</span>
-                            <span class="dash-kpi-nota">{{ $hoy['ventas'] }} {{ $hoy['ventas'] === 1 ? 'venta' : 'ventas' }}</span>
+                            <span class="dash-kpi-nota d-flex align-items-center flex-wrap gap-2">
+                                {{ $hoy['ventas'] }} {{ $hoy['ventas'] === 1 ? 'venta' : 'ventas' }}
+                                <span class="dash-tend {{ $t['clase'] }}"><i class="{{ $t['icono'] }}"></i>{{ $t['texto'] }}</span>
+                            </span>
                         </div>
                         <span class="dash-kpi-icono dash-kpi-icono--ingreso"><i class="ri-money-dollar-circle-line"></i></span>
                     </div>
@@ -221,10 +296,14 @@
             <div class="card dash-kpi h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
+                        @php $t = $tendencia($this->comparativoSemana['variacion']['ingreso']); @endphp
                         <div class="min-w-0">
                             <span class="dash-kpi-label">Esta semana</span>
                             <span class="dash-kpi-valor">Bs {{ number_format($semana['ingreso'], 2, ',', '.') }}</span>
-                            <span class="dash-kpi-nota">{{ $semana['ventas'] }} {{ $semana['ventas'] === 1 ? 'venta' : 'ventas' }}</span>
+                            <span class="dash-kpi-nota d-flex align-items-center flex-wrap gap-2">
+                                {{ $semana['ventas'] }} {{ $semana['ventas'] === 1 ? 'venta' : 'ventas' }}
+                                <span class="dash-tend {{ $t['clase'] }}"><i class="{{ $t['icono'] }}"></i>{{ $t['texto'] }}</span>
+                            </span>
                         </div>
                         <span class="dash-kpi-icono dash-kpi-icono--ventas"><i class="ri-calendar-check-line"></i></span>
                     </div>
@@ -235,10 +314,14 @@
             <div class="card dash-kpi h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
+                        @php $t = $tendencia($this->comparativoMes['variacion']['ingreso']); @endphp
                         <div class="min-w-0">
                             <span class="dash-kpi-label">Este mes</span>
                             <span class="dash-kpi-valor">Bs {{ number_format($mes['ingreso'], 2, ',', '.') }}</span>
-                            <span class="dash-kpi-nota">{{ $mes['ventas'] }} {{ $mes['ventas'] === 1 ? 'venta' : 'ventas' }}</span>
+                            <span class="dash-kpi-nota d-flex align-items-center flex-wrap gap-2">
+                                {{ $mes['ventas'] }} {{ $mes['ventas'] === 1 ? 'venta' : 'ventas' }}
+                                <span class="dash-tend {{ $t['clase'] }}"><i class="{{ $t['icono'] }}"></i>{{ $t['texto'] }}</span>
+                            </span>
                         </div>
                         <span class="dash-kpi-icono dash-kpi-icono--unidades"><i class="ri-bar-chart-grouped-line"></i></span>
                     </div>
@@ -250,10 +333,14 @@
                 <div class="card dash-kpi h-100">
                     <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between">
+                            @php $t = $tendencia($this->comparativoMes['variacion']['ganancia']); @endphp
                             <div class="min-w-0">
                                 <span class="dash-kpi-label">Ganancia del mes</span>
                                 <span class="dash-kpi-valor" style="color: #1baf7a;">Bs {{ number_format($mes['ganancia'], 2, ',', '.') }}</span>
-                                <span class="dash-kpi-nota">Margen neto</span>
+                                <span class="dash-kpi-nota d-flex align-items-center flex-wrap gap-2">
+                                    Margen neto
+                                    <span class="dash-tend {{ $t['clase'] }}"><i class="{{ $t['icono'] }}"></i>{{ $t['texto'] }}</span>
+                                </span>
                             </div>
                             <span class="dash-kpi-icono dash-kpi-icono--ganancia"><i class="ri-line-chart-line"></i></span>
                         </div>

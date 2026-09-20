@@ -73,37 +73,39 @@
         <div class="col-xl-8">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <div class="row g-4 align-items-start">
-                        <div class="col-md-5">
-                            {{-- El número con el que se lidera no es una gráfica
-                                 de una barra: es un número grande. --}}
-                            <x-viz.cifra etiqueta="Ingresos del período"
-                                :valor="'Bs '.number_format($r['ingreso'], 2, ',', '.')"
-                                :nota="$r['ventas'].' '.($r['ventas'] === 1 ? 'venta' : 'ventas').' · ticket promedio Bs '.number_format($r['ticket'], 2, ',', '.')" />
+                    {{-- La cifra manda y ocupa todo el ancho de la tarjeta: así un
+                         importe largo nunca se corta, y el detalle queda debajo. --}}
+                    <div class="reportes-cifra-bloque">
+                        <x-viz.cifra etiqueta="Ingresos del período"
+                            :valor="'Bs '.number_format($r['ingreso'], 2, ',', '.')"
+                            :nota="$r['ventas'].' '.($r['ventas'] === 1 ? 'venta' : 'ventas').' · ticket promedio Bs '.number_format($r['ticket'], 2, ',', '.')" />
+                    </div>
 
-                            <div class="reportes-resumen mt-4">
-                                <div class="reportes-resumen-dato">
+                    <div class="row g-4 align-items-start">
+                        <div class="col-lg-4">
+                            <ul class="reportes-resumen">
+                                <li class="reportes-resumen-dato">
                                     <span>Aparatos vendidos</span>
-                                    <strong>{{ $r['unidades'] }}</strong>
-                                </div>
+                                    <strong>{{ number_format($r['unidades'], 0, ',', '.') }}</strong>
+                                </li>
                                 @if ($puedeVerCostos)
-                                    <div class="reportes-resumen-dato">
+                                    <li class="reportes-resumen-dato">
                                         <span>Ganancia</span>
                                         <strong class="text-success">
                                             Bs {{ number_format($r['ganancia'], 2, ',', '.') }}
                                         </strong>
-                                    </div>
-                                    <div class="reportes-resumen-dato">
+                                    </li>
+                                    <li class="reportes-resumen-dato">
                                         <span>Margen</span>
                                         <strong>{{ number_format($r['margen'], 1, ',', '.') }} %</strong>
-                                    </div>
+                                    </li>
                                 @endif
-                            </div>
+                            </ul>
                         </div>
 
-                        <div class="col-md-7">
+                        <div class="col-lg-8">
                             <div class="d-flex align-items-baseline justify-content-between mb-2">
-                                <h6 class="mb-0">Evolución diaria</h6>
+                                <h6 class="reportes-bloque-titulo mb-0">Evolución diaria</h6>
                                 <small class="text-muted fs-12">Ingresos por día</small>
                             </div>
 
@@ -138,7 +140,7 @@
                     </h5>
                     <small class="text-muted fs-13">Llegan solas, sin recargar</small>
                 </div>
-                <div class="card-body">
+                <div class="card-body reportes-envivo">
                     @forelse ($enVivo as $venta)
                         <div class="reportes-evento" wire:key="vivo-{{ $venta['id'] }}">
                             <span class="reportes-evento-punto"><i class="ri-shopping-bag-3-line"></i></span>
@@ -158,7 +160,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center text-muted py-5">
+                        <div class="reportes-envivo-vacio text-center text-muted">
                             <i class="ri-radar-line fs-1 d-block mb-2 opacity-50"></i>
                             Esperando ventas...
                             <div class="fs-12 mt-1">Las que se registren aparecerán aquí al instante.</div>
