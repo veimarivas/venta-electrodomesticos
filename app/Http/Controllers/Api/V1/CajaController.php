@@ -35,6 +35,48 @@ class CajaController extends Controller
         return response()->json(['data' => $this->estado($usuario)]);
     }
 
+    /**
+     * Histórico de cierres de caja.
+     *
+     * Es de quien supervisa: al cajero se le enseña su turno y nada más, porque
+     * los descuadres de sus compañeros no son asunto suyo. `monto_esperado` y
+     * `diferencia` son la foto que se guardó al cerrar, no un recálculo: un
+     * arqueo que se moviera al día siguiente no serviría para encontrar un
+     * faltante.
+     */
+    public function cierres(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->can('caja.ver'), 403);
+
+        $cierres = Caja::query()
+            ->cerradas()
+            ->with(['abiertaPor', 'cerradaPor'])
+            ->withCount('ventas')
+            ->latest('cerrada_en')
+            ->paginate(20);
+
+        return response()->json([
+            'data' => collect($cierres->items())->map(fn (Caja $caja): array => [
+                'id' => $caja->id,
+                'abierta_en' => $caja->abierta_en?->toIso8601String(),
+                'cerrada_en' => $caja->cerrada_en?->toIso8601String(),
+                'abierta_por' => $caja->abiertaPor?->name,
+                'cerrada_por' => $caja->cerradaPor?->name,
+                'monto_inicial' => (float) $caja->monto_inicial,
+                'monto_declarado' => (float) $caja->monto_declarado,
+                'monto_esperado' => (float) $caja->monto_esperado,
+                'diferencia' => (float) $caja->diferencia,
+                'ventas' => (int) $caja->ventas_count,
+                'notas' => $caja->notas,
+            ]),
+            'meta' => [
+                'current_page' => $cierres->currentPage(),
+                'last_page' => $cierres->lastPage(),
+                'total' => $cierres->total(),
+            ],
+        ]);
+    }
+
     public function abrir(Request $request): JsonResponse
     {
         $datos = $request->validate([

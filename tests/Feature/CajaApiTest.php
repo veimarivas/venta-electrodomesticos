@@ -159,4 +159,36 @@ class CajaApiTest extends TestCase
     {
         $this->getJson('/api/v1/caja')->assertUnauthorized();
     }
+
+    // ---- Histórico de cierres ----------------------------------------------
+
+    public function test_el_historico_de_cierres_es_de_quien_supervisa(): void
+    {
+        $cajero = $this->cajero();
+
+        Caja::create([
+            'abierta_por' => $cajero->id,
+            'cerrada_por' => $cajero->id,
+            'abierta_en' => now()->subHours(8),
+            'cerrada_en' => now(),
+            'monto_inicial' => 0,
+            'monto_esperado' => 1000,
+            'monto_declarado' => 900,
+            'diferencia' => -100,
+            'estado' => 'cerrada',
+        ]);
+
+        $this->actingAs($this->supervisor());
+
+        $this->getJson('/api/v1/caja/cierres')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            // El descuadre es la foto guardada al cerrar, no un recálculo.
+            ->assertJsonPath('data.0.diferencia', -100)
+            ->assertJsonPath('data.0.monto_esperado', 1000);
+
+        // Al cajero no se le enseñan los descuadres de sus compañeros.
+        $this->actingAs($cajero);
+        $this->getJson('/api/v1/caja/cierres')->assertForbidden();
+    }
 }

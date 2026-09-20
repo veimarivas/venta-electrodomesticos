@@ -361,7 +361,9 @@ cuánto.
 > la diferencia queda explicada.
 
 Quien atiende puede **abrir y cerrar** su turno. El **histórico de cierres** de
-todos, con sus diferencias, es de quien supervisa.
+todos, con sus diferencias, es de quien supervisa, y ahora también se repasa
+desde el teléfono (el cajero solo ve su turno: los descuadres de sus compañeros
+no son asunto suyo).
 
 ---
 
@@ -464,13 +466,16 @@ lista para imprimir.
 El código interno lo pone el sistema; el **serial del fabricante** viene en la
 caja. Entra a la compra → **Registrar seriales**: salen todas las unidades
 agrupadas por producto, con el código interno a la izquierda y un campo a la
-derecha. Se teclean todos y se guardan **de una vez**.
+derecha. Se teclean todos y se guardan **de una vez**. Lo mismo se hace desde el
+teléfono: en la ficha de una compra recepcionada, el botón de **seriales** abre
+la lista con un campo por aparato y los guarda todos juntos.
 
 Se pueden dejar en blanco: el aparato se identifica igual por su código interno.
 
 ### Etiquetas
 
-- Toda la compra: botón **Imprimir etiquetas** en su detalle.
+- Toda la compra: botón **Imprimir etiquetas** en su detalle (también desde el
+  teléfono, que baja el PDF con el lote completo).
 - Sueltas: desde *Inventario*, por fila o marcando varias.
 
 Tres tamaños (50×25, 70×35 y 100×50 mm) y hasta 5 copias. Las medidas son

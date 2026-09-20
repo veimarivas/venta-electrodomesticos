@@ -861,4 +861,55 @@ class ComprasApiTest extends TestCase
         $porCodigo = $this->getJson('/api/v1/compras/pagos?buscar='.$compra->codigo)->assertOk();
         $this->assertCount(1, $porCodigo->json('data'));
     }
+
+    // ---- Etiquetas y seriales en lote --------------------------------------
+
+    public function test_las_etiquetas_de_una_compra_se_bajan_en_pdf(): void
+    {
+        $compra = $this->compraPendiente();
+        $this->recepcionar($compra);
+
+        Sanctum::actingAs($this->admin());
+
+        $respuesta = $this->get("/api/v1/compras/{$compra->id}/etiquetas?tamano=mediana");
+
+        $respuesta->assertOk();
+        $this->assertStringContainsString('application/pdf', $respuesta->headers->get('content-type'));
+        $this->assertStringStartsWith('%PDF', $respuesta->getContent());
+    }
+
+    public function test_los_seriales_se_registran_en_lote(): void
+    {
+        $compra = $this->compraPendiente();
+        $this->recepcionar($compra);
+
+        $unidades = $compra->unidades()->orderBy('id')->get();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}/seriales", [
+            'seriales' => $unidades
+                ->map(fn ($u): array => ['unidad_id' => $u->id, 'serial' => 'LOTE-'.$u->id])
+                ->all(),
+        ])->assertOk();
+
+        $this->assertSame('LOTE-'.$unidades[0]->id, $unidades[0]->fresh()->serial);
+    }
+
+    public function test_los_seriales_repetidos_se_rechazan(): void
+    {
+        $compra = $this->compraPendiente();
+        $this->recepcionar($compra);
+
+        $unidades = $compra->unidades()->orderBy('id')->get();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson("/api/v1/compras/{$compra->id}/seriales", [
+            'seriales' => [
+                ['unidad_id' => $unidades[0]->id, 'serial' => 'REPETIDO'],
+                ['unidad_id' => $unidades[1]->id, 'serial' => 'REPETIDO'],
+            ],
+        ])->assertStatus(422)->assertJsonValidationErrors('seriales');
+    }
 }

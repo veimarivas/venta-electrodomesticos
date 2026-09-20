@@ -227,6 +227,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('compras.unidades');
         });
 
+        // Etiquetas del lote completo de una compra, en PDF. Lleva el permiso
+        // de inventario, no el de compras: es imprimir etiquetas, no ver la
+        // factura.
+        Route::get('/compras/{compra}/etiquetas', [CompraController::class, 'etiquetas'])
+            ->middleware('permission:unidades.ver')
+            ->name('compras.etiquetas');
+
+        // Seriales en lote: registrar de una vez los de toda una compra
+        // recepcionada, como el modal del panel.
+        Route::post('/compras/{compra}/seriales', [CompraController::class, 'seriales'])
+            ->middleware('permission:unidades.editar')
+            ->name('compras.seriales');
+
         // Recepcionar una compra genera las unidades físicas del almacén y
         // congela sus costos. Requiere el mismo permiso que crear: quien
         // puede registrar una compra puede también recepcionarla.
@@ -410,6 +423,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/caja', [CajaController::class, 'show'])
             ->middleware('permission:caja.gestionar|caja.ver')
             ->name('caja.show');
+
+        // Histórico de cierres: solo quien supervisa, porque los descuadres de
+        // los compañeros no son asunto del cajero.
+        Route::get('/caja/cierres', [CajaController::class, 'cierres'])
+            ->middleware('permission:caja.ver')
+            ->name('caja.cierres');
 
         Route::middleware('permission:caja.gestionar')->group(function () {
             Route::post('/caja/abrir', [CajaController::class, 'abrir'])->name('caja.abrir');

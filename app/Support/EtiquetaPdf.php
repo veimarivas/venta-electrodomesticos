@@ -42,6 +42,36 @@ class EtiquetaPdf
         return $pdf->output();
     }
 
+    /**
+     * Etiquetas de varias unidades en un solo PDF, una por página, cada una del
+     * tamaño del adhesivo. Es lo que se imprime al recepcionar una compra
+     * entera o un lote seleccionado, sin sacarlas de a una.
+     *
+     * @param  iterable<int, Unidad>  $unidades
+     */
+    public static function generarLote(iterable $unidades, string $tamano = 'mediana'): string
+    {
+        $config = self::MEDIDAS[$tamano] ?? self::MEDIDAS['mediana'];
+
+        $paginas = [];
+
+        foreach ($unidades as $unidad) {
+            $unidad->loadMissing(['producto.marca']);
+
+            $paginas[] = [
+                'unidad' => $unidad,
+                'qr' => app(GeneradorEtiquetas::class)->cuadroQrPng($unidad->codigo_interno),
+            ];
+        }
+
+        $pdf = Pdf::loadView('backend.etiquetas.pdf-lote', [
+            'paginas' => $paginas,
+            'qrMm' => $config['qr'],
+        ])->setPaper([0, 0, self::aPuntos($config['ancho']), self::aPuntos($config['alto'])]);
+
+        return $pdf->output();
+    }
+
     /** Milímetros a puntos PostScript (1 pt = 1/72"). */
     private static function aPuntos(float $mm): float
     {

@@ -10,7 +10,10 @@ use App\Models\Compra;
 use App\Models\CompraDetalle;
 use App\Models\PagoCompra;
 use App\Models\Producto;
+use App\Models\Unidad;
+use App\Support\EtiquetaPdf;
 use App\Support\GeneradorCodigoCompra;
+use App\Support\GeneradorEtiquetas;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RecepcionDeCompra;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Consulta y recepción de órdenes de compra desde la app.
@@ -101,6 +105,99 @@ class CompraController extends Controller
                 'en_stock' => $compra->unidades()->disponibles()->count(),
             ],
         ]);
+    }
+
+    /**
+     * Etiquetas de todas las unidades de la compra, en un PDF.
+     *
+     * Una página por etiqueta, del tamaño del adhesivo. Es lo que se imprime al
+     * recepcionar un lote entero sin sacarlas de a una desde la ficha.
+     */
+    public function etiquetas(Request $request, Compra $compra): Response
+    {
+        abort_unless($request->user()?->can('unidades.ver') ?? false, 403);
+
+        $tamano = $request->string('tamano', 'mediana')->toString();
+
+        if (! array_key_exists($tamano, GeneradorEtiquetas::TAMANOS)) {
+            $tamano = 'mediana';
+        }
+
+        $unidades = $compra->unidades()
+            ->with('producto.marca')
+            ->orderBy('codigo_interno')
+            ->get();
+
+        $contenido = EtiquetaPdf::generarLote($unidades, $tamano);
+
+        return response($contenido, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Etiquetas-'.$compra->codigo.'.pdf"',
+            'Content-Length' => (string) strlen($contenido),
+        ]);
+    }
+
+    /**
+     * Registra los seriales del fabricante de varias unidades de la compra de
+     * una sola vez. Mismo criterio que el modal del panel: los vacíos borran el
+     * serial y los repetidos se rechazan antes de tocar nada.
+     */
+    public function seriales(Request $request, Compra $compra): JsonResponse
+    {
+        abort_unless($request->user()?->can('unidades.editar') ?? false, 403);
+
+        $datos = $request->validate([
+            'seriales' => ['required', 'array'],
+            'seriales.*.unidad_id' => ['required', 'integer'],
+            'seriales.*.serial' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $unidades = $compra->unidades()->get()->keyBy('id');
+
+        // Solo se aceptan unidades de esta compra: la ruta no debe poder tocar
+        // el inventario de otra.
+        $limpios = [];
+
+        foreach ($datos['seriales'] as $fila) {
+            $unidadId = (int) $fila['unidad_id'];
+
+            if (! $unidades->has($unidadId)) {
+                continue;
+            }
+
+            $serial = trim((string) ($fila['serial'] ?? ''));
+
+            $limpios[$unidadId] = $serial === '' ? null : $serial;
+        }
+
+        // La regla `unique` mira la base y no vería dos iguales en esta pasada.
+        $repetidos = collect($limpios)->filter()->duplicates();
+
+        if ($repetidos->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'seriales' => 'Hay seriales repetidos: '.$repetidos->unique()->implode(', '),
+            ]);
+        }
+
+        foreach ($limpios as $unidadId => $serial) {
+            if ($serial === null) {
+                continue;
+            }
+
+            if (Unidad::where('serial', $serial)->whereKeyNot($unidadId)->exists()) {
+                throw ValidationException::withMessages([
+                    'seriales' => "El serial «{$serial}» ya está registrado en otra unidad.",
+                ]);
+            }
+        }
+
+        DB::transaction(function () use ($limpios, $unidades): void {
+            foreach ($limpios as $unidadId => $serial) {
+                $unidades->get($unidadId)->update(['serial' => $serial]);
+            }
+        });
+
+        return response()->json(['mensaje' => 'Seriales guardados.']);
     }
 
     /**
