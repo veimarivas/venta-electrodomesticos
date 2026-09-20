@@ -67,8 +67,9 @@
         display: flex; align-items: center; gap: .75rem;
         padding: .85rem 1rem; border-radius: .7rem;
         background: #fff; border: 1px solid #f1f5f9;
-        transition: border-color .2s, box-shadow .2s;
-        &:hover { border-color: #e2e8f0; box-shadow: 0 .25rem .75rem rgba(0,0,0,.04); }
+        transition: border-color .2s, box-shadow .2s, transform .18s;
+        position: relative; overflow: hidden;
+        &:hover { border-color: #e2e8f0; box-shadow: 0 .25rem .75rem rgba(0,0,0,.04); transform: translateY(-2px); }
     }
     .kardex-mini-stat-icono {
         width: 2.25rem; height: 2.25rem; border-radius: .55rem;
@@ -209,6 +210,8 @@
         background: #fff; border: 1px solid #f1f5f9; border-radius: .85rem;
         box-shadow: 0 .15rem .5rem rgba(0,0,0,.04);
         overflow: hidden;
+        transition: box-shadow .2s;
+        &:hover { box-shadow: 0 .4rem 1rem rgba(0,0,0,.06); }
     }
     .kardex-ficha-cabecera {
         display: flex; align-items: flex-start; gap: 1rem;
@@ -390,6 +393,7 @@
     .kardex-timeline-evento {
         display: flex; gap: .75rem; position: relative;
         &:not(:last-child) { padding-bottom: 1rem; }
+        &:hover .kardex-timeline-contenido { transform: translateX(2px); }
     }
     .kardex-timeline-linea {
         position: relative; flex-shrink: 0; width: 1.1rem;
@@ -412,7 +416,7 @@
     .kardex-punto--dano { background: rgba(239,68,68,.12); color: #ef4444; }
     .kardex-punto--traspaso { background: rgba(107,114,128,.12); color: #6b7280; }
 
-    .kardex-timeline-contenido { min-width: 0; flex-grow: 1; }
+    .kardex-timeline-contenido { min-width: 0; flex-grow: 1; transition: transform .15s ease-out; }
     .kardex-timeline-cabecera {
         display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
     }
@@ -504,8 +508,8 @@
         }
     }
     .kardex-tabla-fila {
-        transition: background .12s;
-        &:hover { background: #fafbfc; }
+        transition: background .12s, box-shadow .12s;
+        &:hover { background: #fafbfc; box-shadow: inset 3px 0 0 #6366f1; }
     }
     .kardex-tabla-td--fecha { white-space: nowrap; }
     .kardex-tabla-fecha {

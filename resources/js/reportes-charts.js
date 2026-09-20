@@ -600,30 +600,55 @@ function initVentasPago(canvasId, pago) {
         { nombre: 'QR', valor: qr },
     ];
 
+    // Plugin: texto central con el total
+    const centroPlugin = {
+        id: 'centroTotal_' + canvasId,
+        afterDraw(chart) {
+            const { ctx, width, height } = chart;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const cx = width / 2;
+            const cy = height / 2 - 8;
+            ctx.font = `600 11px '${FUENTE}'`;
+            ctx.fillStyle = apagado();
+            ctx.fillText('TOTAL', cx, cy - 10);
+            ctx.font = `700 16px '${FUENTE}'`;
+            ctx.fillStyle = cssVar('--marca-tinta', '#0a182b');
+            ctx.fillText(formatBs(total), cx, cy + 10);
+            ctx.restore();
+        },
+    };
+
     const opts = baseOptions();
     delete opts.scales;
-    opts.cutout = '64%';
+    opts.cutout = '72%';
+    opts.layout = { padding: { top: 4, bottom: 4 } };
     opts.plugins.legend = leyendaTarta(valores, usar);
     opts.plugins.tooltip.callbacks = {
         label: (item) => {
             const pct = total > 0 ? ((item.raw / total) * 100).toFixed(1) : '0.0';
-            return `${formatBs(item.raw)}  ·  ${pct}%`;
+            return `${item.dataset.label}: ${formatBs(item.raw)}  (${pct}%)`;
         },
     };
 
     return new Chart(canvas, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: ['Efectivo', 'QR'],
             datasets: [{
                 data: [efectivo, qr],
                 backgroundColor: usar,
-                hoverBackgroundColor: usar.map((c) => lighten(c, 0.12)),
+                hoverBackgroundColor: usar.map((c) => lighten(c, 0.14)),
                 borderColor: isDark() ? '#212529' : '#fff',
-                borderWidth: 3,
+                borderWidth: 4,
+                hoverBorderColor: isDark() ? '#212529' : '#fff',
+                hoverBorderWidth: 5,
+                hoverOffset: 6,
             }],
         },
         options: opts,
+        plugins: [centroPlugin],
     });
 }
 
@@ -647,24 +672,31 @@ function initVentasEvolucion(canvasId, serie) {
 
     const opts = baseOptions();
     opts.scales.x.stacked = true;
+    opts.scales.x.grid = { display: false };
+    opts.scales.x.border = { display: false };
+    opts.scales.x.ticks = {
+        color: apagado(),
+        font: { size: 10.5, family: FUENTE },
+        maxRotation: 0,
+        autoSkip: true,
+    };
     opts.scales.y.stacked = true;
     opts.scales.y.ticks.callback = (v) => formatCompacto(v);
+    opts.scales.y.ticks.color = apagado();
+    opts.scales.y.ticks.font = { size: 10.5, family: FUENTE };
+    opts.scales.y.grid = { color: colorRejilla(), drawBorder: false, lineWidth: 0.8 };
+    opts.scales.y.border = { display: false };
+    opts.layout = { padding: { top: 4, bottom: 0 } };
     opts.plugins.legend = {
-        display: true,
-        position: 'bottom',
-        labels: {
-            color: apagado(),
-            font: { size: 11.5, family: FUENTE },
-            padding: 14,
-            usePointStyle: true,
-            pointStyleWidth: 9,
-            boxHeight: 8,
-        },
+        display: false, // La legend está en el header del card
     };
     opts.plugins.tooltip.callbacks = {
         title: (items) => serie[items[0].dataIndex]?.fecha || '',
-        label: (item) => `${item.dataset.label}: ${formatBs(item.raw)}`,
-        footer: (items) => 'Total: ' + formatBs(serie[items[0].dataIndex].total),
+        label: (item) => `  ${item.dataset.label}:  ${formatBs(item.raw)}`,
+        footer: (items) => {
+            const idx = items[0].dataIndex;
+            return `Total:  ${formatBs(serie[idx].total)}`;
+        },
     };
 
     return new Chart(canvas, {
@@ -676,15 +708,21 @@ function initVentasEvolucion(canvasId, serie) {
                     label: 'Efectivo',
                     data: valsEfectivo,
                     backgroundColor: cEf,
-                    borderRadius: 3,
-                    barPercentage: 0.7,
+                    hoverBackgroundColor: lighten(cEf, 0.12),
+                    borderRadius: { topLeft: 4, topRight: 4 },
+                    borderSkipped: false,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.72,
                 },
                 {
                     label: 'QR',
                     data: valsQr,
                     backgroundColor: cQr,
-                    borderRadius: 3,
-                    barPercentage: 0.7,
+                    hoverBackgroundColor: lighten(cQr, 0.12),
+                    borderRadius: { topLeft: 4, topRight: 4 },
+                    borderSkipped: false,
+                    barPercentage: 0.65,
+                    categoryPercentage: 0.72,
                 },
             ],
         },

@@ -1,10 +1,10 @@
 // -----------------------------------------------------------------------------
 // Caja: el turno abierto y el histórico de cierres
-// Estilo consistente con personas-modulo
 // -----------------------------------------------------------------------------
 
 .caja-modulo {
 
+    // ── Hero decorado ────────────────────────────────────────────────────────
     .caja-hero {
         background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
         position: relative;
@@ -17,7 +17,7 @@
             position: absolute;
             border-radius: 50%;
             pointer-events: none;
-            z-index: -1;
+            z-index: 0;
         }
 
         &::before {
@@ -40,6 +40,62 @@
         .avatar-title { box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .2); }
     }
 
+    .caja-hero-bg {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, .05) 1px, transparent 1.2px);
+            background-size: 1.4rem 1.4rem;
+            mask-image: radial-gradient(60% 100% at 85% 10%, black 0%, transparent 100%);
+            -webkit-mask-image: radial-gradient(60% 100% at 85% 10%, black 0%, transparent 100%);
+            opacity: .5;
+        }
+    }
+
+    .caja-hero-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .1rem;
+        padding: .5rem .9rem;
+        border-radius: var(--radio-md);
+        background: rgba(255, 255, 255, .12);
+        border: 1px solid rgba(255, 255, 255, .18);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        min-width: 5rem;
+        transition: background var(--trans-rapida);
+    }
+
+    .caja-hero-stat--abierta {
+        background: rgba(16, 185, 129, .15);
+        border-color: rgba(16, 185, 129, .25);
+    }
+
+    .caja-hero-stat-label {
+        color: rgba(255, 255, 255, .6);
+        font-size: .62rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .caja-hero-stat-value {
+        color: #fff;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .caja-hero-stat-value--ok { color: #86e0b3; }
+
     .caja-chip {
         display: inline-flex;
         align-items: center;
@@ -57,7 +113,7 @@
 
     .caja-encabezado { border-radius: 1rem; }
 
-    // ---- Tarjeta del turno ----
+    // ── Tarjeta del turno ─────────────────────────────────────────────────────
     .caja-turno-card {
         border-radius: 1rem;
         overflow: hidden;
@@ -94,6 +150,24 @@
         }
     }
 
+    .caja-turno-hero-bg {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, .04) 1px, transparent 1.2px);
+            background-size: 1.2rem 1.2rem;
+            mask-image: radial-gradient(55% 100% at 80% 10%, black 0%, transparent 100%);
+            -webkit-mask-image: radial-gradient(55% 100% at 80% 10%, black 0%, transparent 100%);
+            opacity: .6;
+        }
+    }
+
     .caja-turno-hero--abierta {
         background: linear-gradient(112deg, #26375f 0%, #10b981 58%, color-mix(in srgb, #10b981 72%, #06b6d4) 100%);
     }
@@ -118,7 +192,6 @@
         backdrop-filter: blur(6px);
     }
 
-    // Punto que late: la caja está abierta AHORA.
     .caja-latido {
         width: 7px;
         height: 7px;
@@ -137,56 +210,244 @@
     .caja-nueva-hero {
         border-radius: .65rem;
         font-weight: 600;
-        padding-inline: 1.1rem;
-        box-shadow: 0 .6rem 1.6rem rgba(10, 24, 43, .28);
+        padding-inline: 1rem;
+        font-size: .82rem;
+        box-shadow: 0 .5rem 1.2rem rgba(10, 24, 43, .25);
         background: rgba(255, 255, 255, .2);
         border: 1px solid rgba(255, 255, 255, .3);
         color: #fff;
         backdrop-filter: blur(6px);
+        transition: all var(--trans-rapida);
 
         &:hover {
-            background: rgba(255, 255, 255, .3);
+            background: rgba(255, 255, 255, .32);
             transform: translateY(-1px);
+            box-shadow: 0 .7rem 1.6rem rgba(10, 24, 43, .3);
         }
     }
 
-    // ---- Datos del turno ----
-    .caja-dato {
-        padding: .75rem .9rem;
+    .caja-nueva-hero--retiro {
+        background: rgba(239, 68, 68, .2);
+        border-color: rgba(239, 68, 68, .35);
+
+        &:hover {
+            background: rgba(239, 68, 68, .32);
+        }
+    }
+
+    .caja-nueva-hero--cerrar {
+        background: rgba(255, 255, 255, .12);
+        border-color: rgba(255, 255, 255, .2);
+
+        &:hover {
+            background: rgba(255, 255, 255, .22);
+        }
+    }
+
+    // ── KPIs del turno ────────────────────────────────────────────────────────
+    .caja-kpi {
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        padding: .6rem .8rem;
         border-radius: .6rem;
         background: rgba(255, 255, 255, .12);
         border: 1px solid rgba(255, 255, 255, .15);
+        transition: background var(--trans-rapida);
     }
 
-    .caja-dato-label {
+    .caja-kpi--ok {
+        background: rgba(16, 185, 129, .12);
+        border-color: rgba(16, 185, 129, .2);
+    }
+
+    .caja-kpi--mal {
+        background: rgba(239, 68, 68, .12);
+        border-color: rgba(239, 68, 68, .2);
+    }
+
+    .caja-kpi-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: .4rem;
+        display: grid;
+        place-items: center;
+        font-size: .95rem;
+        background: rgba(255, 255, 255, .15);
+        color: rgba(255, 255, 255, .85);
+        flex-shrink: 0;
+    }
+
+    .caja-kpi-icon--ventas { background: rgba(255, 255, 255, .18); }
+    .caja-kpi-icon--neto { background: rgba(255, 255, 255, .15); }
+    .caja-kpi-icon--esperado { background: rgba(255, 255, 255, .15); }
+
+    .caja-kpi-body { min-width: 0; }
+
+    .caja-kpi-label {
         display: block;
-        font-size: .68rem;
-        letter-spacing: .06em;
+        font-size: .62rem;
+        letter-spacing: .05em;
         text-transform: uppercase;
         color: rgba(255, 255, 255, .6);
         font-weight: 600;
     }
 
-    .caja-dato-valor {
+    .caja-kpi-valor {
         display: block;
-        margin-top: .15rem;
-        font-size: 1.15rem;
-        font-weight: 650;
+        margin-top: .05rem;
+        font-size: 1rem;
+        font-weight: 700;
         color: #fff;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    // ── Alerta de sueltas ─────────────────────────────────────────────────────
+    .caja-alerta {
+        display: flex;
+        align-items: flex-start;
+        gap: .6rem;
+        padding: .65rem .85rem;
+        border-radius: .55rem;
+        background: rgba(245, 158, 11, .12);
+        border: 1px solid rgba(245, 158, 11, .22);
+        color: rgba(255, 255, 255, .9);
+        font-size: .78rem;
+        line-height: 1.45;
+
+        > i {
+            flex-shrink: 0;
+            font-size: 1rem;
+            margin-top: .05rem;
+            color: #fbbf24;
+        }
+
+        strong { font-weight: 700; }
+    }
+
+    // ── Caja cerrada icon ─────────────────────────────────────────────────────
+    .caja-cerrada-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: .7rem;
+        display: grid;
+        place-items: center;
+        font-size: 1.3rem;
+        background: rgba(255, 255, 255, .12);
+        border: 1px solid rgba(255, 255, 255, .18);
+        color: rgba(255, 255, 255, .8);
+        flex-shrink: 0;
+    }
+
+    // ── Header de sección ─────────────────────────────────────────────────────
+    .caja-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .9rem 1.25rem;
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+        border-bottom: 1px solid var(--marca-linea);
+
+        .card-title {
+            color: var(--marca-tinta);
+            font-size: .92rem;
+            font-weight: 650;
+        }
+
+        small { font-size: .72rem; }
+    }
+
+    .caja-section-icon {
+        width: 1.8rem;
+        height: 1.8rem;
+        border-radius: var(--radio-xs);
+        display: inline-grid;
+        place-items: center;
+        font-size: .9rem;
+        background: color-mix(in srgb, var(--estado-alerta) 12%, transparent);
+        color: var(--estado-alerta-texto);
+        border: 1px solid color-mix(in srgb, var(--estado-alerta) 18%, transparent);
+    }
+
+    .caja-section-icon--historial {
+        background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+        color: var(--marca-azul-texto);
+        border-color: color-mix(in srgb, var(--marca-azul) 18%, transparent);
+    }
+
+    // ── Badge de neto ─────────────────────────────────────────────────────────
+    .caja-neto-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .3rem .7rem;
+        border-radius: var(--radio-pill);
+        font-size: .75rem;
+        font-weight: 700;
         font-variant-numeric: tabular-nums;
     }
 
-    // ---- Histórico de cierres ----
+    .caja-neto-badge--ok {
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        border: 1px solid color-mix(in srgb, var(--estado-ok) 18%, transparent);
+    }
+
+    .caja-neto-badge--mal {
+        color: var(--estado-error);
+        background: var(--estado-error-suave);
+        border: 1px solid color-mix(in srgb, var(--estado-error) 18%, transparent);
+    }
+
+    // ── Tabla de movimientos ──────────────────────────────────────────────────
+    .caja-tabla-mov {
+        thead th {
+            padding-top: .85rem;
+            padding-bottom: .85rem;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
+        }
+
+        tbody td {
+            padding-top: .8rem;
+            padding-bottom: .8rem;
+            border-bottom-color: color-mix(in srgb, var(--marca-linea) 50%, transparent);
+        }
+
+        tbody tr {
+            transition: background-color var(--trans-rapida);
+
+            &:hover {
+                background-color: color-mix(in srgb, var(--marca-suave) 60%, transparent);
+            }
+        }
+    }
+
+    .caja-mov-user {
+        font-weight: 600;
+        font-size: .82rem;
+        color: var(--marca-tinta);
+    }
+
+    .caja-monto {
+        font-weight: 700;
+        font-size: .88rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .caja-monto--ingreso { color: var(--estado-ok); }
+    .caja-monto--retiro { color: var(--estado-error); }
+
+    // ── Histórico de cierres ──────────────────────────────────────────────────
     .caja-listado {
         overflow: hidden;
         border-radius: 1rem;
-        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
-    }
-
-    .caja-toolbar {
-        padding-inline: 1.5rem;
-        border-bottom: 1px solid var(--vz-border-color);
-        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+        box-shadow: 0 .5rem 1.5rem rgba(10, 24, 43, .07) !important;
     }
 
     .tabla-caja {
@@ -194,69 +455,234 @@
 
         thead th {
             letter-spacing: 0.04em;
-            font-weight: 600;
-            background-color: var(--vz-light);
-            border-bottom: 0;
+            font-weight: 700;
+            font-size: .68rem;
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
             white-space: nowrap;
         }
 
         tbody td {
-            padding-top: 0.85rem;
-            padding-bottom: 0.85rem;
+            padding-top: .85rem;
+            padding-bottom: .85rem;
+            border-bottom-color: color-mix(in srgb, var(--marca-linea) 50%, transparent);
         }
 
         tbody tr {
             transition: background-color .16s ease-out, box-shadow .16s ease-out;
             &:hover {
-                box-shadow: inset 2px 0 0 var(--vz-primary);
-                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+                box-shadow: inset 3px 0 0 var(--marca-azul);
+                background-color: color-mix(in srgb, var(--marca-azul) 4%, transparent);
             }
         }
     }
 
-    // Pills de diferencia
+    .caja-turno-fecha {
+        font-weight: 650;
+        font-size: .85rem;
+        color: var(--marca-tinta);
+    }
+
+    .caja-turno-horario {
+        color: var(--marca-apagado);
+        font-size: .72rem;
+    }
+
+    .caja-turno-cajero {
+        color: var(--marca-apagado);
+        font-size: .72rem;
+        font-weight: 500;
+    }
+
+    .caja-ventas-count {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.6rem;
+        height: 1.5rem;
+        padding: 0 .4rem;
+        border-radius: var(--radio-pill);
+        background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+        color: var(--marca-azul-texto);
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    // ── Pills de diferencia ───────────────────────────────────────────────────
     .caja-estado {
         display: inline-flex;
         align-items: center;
-        gap: .4rem;
-        padding: .3rem .65rem;
+        gap: .35rem;
+        padding: .28rem .65rem;
         font-size: .72rem;
-        font-weight: 600;
+        font-weight: 700;
         line-height: 1;
         border-radius: 2rem;
         white-space: nowrap;
+        border: 1px solid transparent;
     }
 
-    .caja-estado-dot {
-        width: .45rem;
-        height: .45rem;
-        border-radius: 50%;
-    }
-
-    .caja-estado-cuadra {
+    .caja-estado--cuadra {
         color: #10b981;
-        background: rgba(16, 185, 129, .12);
-        .caja-estado-dot { background: #10b981; }
+        background: rgba(16, 185, 129, .1);
+        border-color: rgba(16, 185, 129, .18);
     }
 
-    .caja-estado-falta {
+    .caja-estado--falta {
         color: #ef4444;
-        background: rgba(239, 68, 68, .12);
-        .caja-estado-dot { background: #ef4444; }
+        background: rgba(239, 68, 68, .1);
+        border-color: rgba(239, 68, 68, .18);
     }
 
-    .caja-estado-sobra {
+    .caja-estado--sobra {
         color: #f59e0b;
-        background: rgba(245, 158, 11, .12);
-        .caja-estado-dot { background: #f59e0b; }
+        background: rgba(245, 158, 11, .1);
+        border-color: rgba(245, 158, 11, .18);
     }
 
-    // Los importes se leen en columna.
-    .caja-num {
-        font-variant-numeric: tabular-nums;
+    .caja-estado--ingreso {
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        border-color: color-mix(in srgb, var(--estado-ok) 18%, transparent);
+    }
+
+    .caja-estado--retiro {
+        color: var(--estado-error);
+        background: var(--estado-error-suave);
+        border-color: color-mix(in srgb, var(--estado-error) 18%, transparent);
+    }
+
+    .caja-num { font-variant-numeric: tabular-nums; }
+
+    // ── Empty state ───────────────────────────────────────────────────────────
+    .caja-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+        color: var(--marca-azul-texto);
+        font-size: 1.6rem;
+        border: 2px solid color-mix(in srgb, var(--marca-azul) 12%, transparent);
+    }
+
+    // ── Modales ───────────────────────────────────────────────────────────────
+    .caja-modal-content {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 1rem 3rem rgba(10, 24, 43, .15);
+    }
+
+    .caja-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.1rem 1.25rem;
+        color: #fff;
+    }
+
+    .caja-modal-header--abrir {
+        background: linear-gradient(135deg, #26375f 0%, #1b3757 50%, #254970 100%);
+    }
+
+    .caja-modal-header--cerrar {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #6b7280 100%);
+    }
+
+    .caja-modal-header--ingreso {
+        background: linear-gradient(135deg, #065f46 0%, #047857 50%, #10b981 100%);
+    }
+
+    .caja-modal-header--retiro {
+        background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+    }
+
+    .caja-modal-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: .6rem;
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        background: rgba(255, 255, 255, .15);
+        border: 1px solid rgba(255, 255, 255, .22);
+        flex-shrink: 0;
+    }
+
+    .caja-modal-close {
+        color: #fff;
+        opacity: .7;
+        border: 0;
+        background: 0;
+        padding: .3rem;
+
+        &:hover { opacity: 1; }
+    }
+
+    .caja-input-group {
+        .input-group-text {
+            background: var(--marca-suave);
+            border-color: var(--marca-linea);
+            color: var(--marca-apagado);
+            font-size: .82rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            font-size: .92rem;
+            font-weight: 600;
+        }
+    }
+
+    .caja-info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: .5rem;
+        padding: .6rem .8rem;
+        border-radius: .55rem;
+        background: color-mix(in srgb, var(--marca-azul) 5%, transparent);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 12%, transparent);
+        color: var(--marca-apagado);
+        font-size: .78rem;
+        line-height: 1.45;
+        margin-bottom: 1rem;
+
+        > i {
+            flex-shrink: 0;
+            color: var(--marca-azul-texto);
+            opacity: .7;
+            margin-top: .05rem;
+        }
+
+        strong { color: var(--marca-tinta); font-weight: 600; }
+    }
+
+    .caja-btn {
+        border-radius: var(--radio-sm);
+        font-size: .82rem;
+        font-weight: 600;
+        padding: .45rem .9rem;
+        transition: all var(--trans-rapida);
+    }
+
+    .caja-btn--primary {
+        background: var(--marca-azul);
+        border-color: var(--marca-azul);
+
+        &:hover {
+            background: color-mix(in srgb, var(--marca-azul) 85%, #000);
+            box-shadow: 0 .3rem .8rem color-mix(in srgb, var(--marca-azul) 30%, transparent);
+        }
+    }
+
+    .caja-btn--danger {
+        &:hover {
+            box-shadow: 0 .3rem .8rem color-mix(in srgb, var(--estado-error) 30%, transparent);
+        }
     }
 }
 
+// ── Animaciones ──────────────────────────────────────────────────────────────
 @keyframes caja-latido {
     0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .5); }
     70% { box-shadow: 0 0 0 .5rem rgba(255, 255, 255, 0); }
@@ -265,4 +691,46 @@
 
 @media (prefers-reduced-motion: reduce) {
     .caja-modulo .caja-latido { animation: none; }
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 991.98px) {
+    .caja-modulo {
+        .caja-hero-stat {
+            padding: .4rem .7rem;
+            min-width: 4.2rem;
+        }
+
+        .caja-hero-stat-value { font-size: 1rem; }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .caja-modulo {
+        .caja-kpi {
+            padding: .5rem .65rem;
+            gap: .5rem;
+        }
+
+        .caja-kpi-icon {
+            width: 1.7rem;
+            height: 1.7rem;
+            font-size: .85rem;
+        }
+
+        .caja-kpi-valor { font-size: .88rem; }
+
+        .caja-nueva-hero {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .caja-turno-hero { padding: 1.2rem; }
+
+        .caja-section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: .4rem;
+        }
+    }
 }

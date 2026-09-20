@@ -712,7 +712,20 @@
 // -----------------------------------------------------------------------------
 .compras-show-modulo {
 
-    .compras-show-hero { position: relative; }
+    .compras-show-hero {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .compras-show-hero::after {
+        content: '';
+        position: absolute; inset: 0; pointer-events: none;
+        background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+        background-size: 1.25rem 1.25rem;
+        z-index: 0;
+    }
+
+    .compras-show-hero > * { position: relative; z-index: 1; }
 
     .compras-show-hero-ring {
         position: absolute;
@@ -751,14 +764,35 @@
         background: var(--marca-superficie);
         border: 1px solid var(--marca-linea);
         box-shadow: 0 .15rem .5rem rgba(10, 24, 43, .04);
-        transition: transform .18s ease-out, box-shadow .18s ease-out;
+        transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s;
         height: 100%;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: var(--kpi-bar, #254970);
+            border-radius: 0 3px 3px 0;
+            opacity: 0;
+            transition: opacity .18s;
+        }
 
         &:hover {
             transform: translateY(-3px);
             box-shadow: 0 .5rem 1.25rem rgba(10, 24, 43, .08);
+            border-color: transparent;
+            &::before { opacity: 1; }
         }
     }
+
+    .compras-show-kpi-card:has(.compras-show-kpi-icon-primary) { --kpi-bar: #254970; }
+    .compras-show-kpi-card:has(.compras-show-kpi-icon-info)    { --kpi-bar: #0369a1; }
+    .compras-show-kpi-card:has(.compras-show-kpi-icon-success) { --kpi-bar: #16a34a; }
+    .compras-show-kpi-card:has(.compras-show-kpi-icon-warning) { --kpi-bar: #a8834a; }
+    .compras-show-kpi-card:has(.compras-show-kpi-icon-accent)  { --kpi-bar: #b45309; }
 
     .compras-show-kpi-icon {
         width: 2.75rem;
@@ -809,6 +843,12 @@
         background: var(--marca-superficie);
         overflow: hidden;
         height: 100%;
+        transition: box-shadow .18s, transform .18s;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 .4rem 1rem rgba(10, 24, 43, .06);
+        }
     }
 
     .compras-show-info-header {
@@ -942,6 +982,12 @@
     }
 
     .compras-show-seccion-body { padding: 0; }
+
+    // Tabla hover
+    .compras-show-seccion-body table tbody tr {
+        transition: background .12s, box-shadow .12s;
+        &:hover { background: #fafbfc; box-shadow: inset 3px 0 0 #254970; }
+    }
 
     // Tabla de productos
     .compras-show-producto-img {
@@ -1225,10 +1271,17 @@
 
     // Pagos al proveedor
     .compras-show-pago {
-        padding: .7rem .9rem;
+        padding: .75rem 1rem;
         border: 1px solid var(--vz-border-color);
         border-radius: .6rem;
         margin-bottom: .5rem;
+        background: var(--marca-superficie);
+        transition: border-color .15s, box-shadow .15s;
+
+        &:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 .2rem .6rem rgba(0,0,0,.03);
+        }
     }
 
     .compras-show-pago-fecha {
@@ -1246,5 +1299,368 @@
         font-size: .8rem;
         color: var(--vz-success);
         text-decoration: none;
+    }
+}
+
+// =============================================================================
+// Pagos a proveedores — /compras/pagos
+// =============================================================================
+.pagos-modulo {
+
+    // ── Hero stat cards ───────────────────────────────────────────────────────
+    .pagos-hero-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .1rem;
+        padding: .5rem .9rem;
+        border-radius: var(--radio-md);
+        background: rgba(255, 255, 255, .12);
+        border: 1px solid rgba(255, 255, 255, .18);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        min-width: 5rem;
+    }
+
+    .pagos-hero-stat--total {
+        background: rgba(27, 175, 122, .15);
+        border-color: rgba(27, 175, 122, .25);
+    }
+
+    .pagos-hero-stat-label {
+        color: rgba(255, 255, 255, .6);
+        font-size: .62rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .pagos-hero-stat-value {
+        color: #fff;
+        font-size: 1.15rem;
+        font-weight: 700;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pagos-hero-stat-sub {
+        color: rgba(255, 255, 255, .5);
+        font-size: .62rem;
+    }
+
+    // ── KPI cards ─────────────────────────────────────────────────────────────
+    .pagos-kpi-card {
+        border-radius: var(--radio-lg) !important;
+        transition: box-shadow var(--trans-media), transform var(--trans-media);
+
+        &:hover {
+            box-shadow: 0 .4rem 1.2rem rgba(10, 24, 43, .07) !important;
+            transform: translateY(-2px);
+        }
+    }
+
+    .pagos-kpi-icon {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: var(--radio-sm);
+        display: grid;
+        place-items: center;
+        font-size: 1.15rem;
+        flex-shrink: 0;
+    }
+
+    .pagos-kpi-icon--success {
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        border: 1px solid color-mix(in srgb, var(--estado-ok) 15%, transparent);
+    }
+
+    .pagos-kpi-icon--primary {
+        color: var(--marca-azul-texto);
+        background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 15%, transparent);
+    }
+
+    .pagos-kpi-label {
+        color: var(--marca-apagado);
+        font-size: .72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .pagos-kpi-valor {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.01em;
+    }
+
+    // ── Filtros ───────────────────────────────────────────────────────────────
+    .pagos-filtros-card {
+        border-radius: var(--radio-lg) !important;
+    }
+
+    .pagos-filtro-btn {
+        border-radius: var(--radio-pill);
+        font-size: .75rem;
+        font-weight: 600;
+        padding: .35rem .75rem;
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
+        color: var(--marca-apagado);
+        transition: all var(--trans-rapida);
+        margin-right: .25rem;
+        margin-bottom: .25rem;
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--marca-azul) 30%, var(--marca-linea));
+            color: var(--marca-azul-texto);
+            background: color-mix(in srgb, var(--marca-azul) 5%, var(--marca-superficie));
+        }
+    }
+
+    .pagos-filtro-btn--active {
+        background: var(--marca-azul);
+        border-color: var(--marca-azul);
+        color: #fff;
+        box-shadow: 0 .2rem .5rem color-mix(in srgb, var(--marca-azul) 25%, transparent);
+
+        &:hover {
+            background: color-mix(in srgb, var(--marca-azul) 85%, #000);
+            border-color: color-mix(in srgb, var(--marca-azul) 85%, #000);
+            color: #fff;
+        }
+    }
+
+    .pagos-search-box {
+        position: relative;
+
+        .form-control {
+            padding-left: 2.2rem;
+            border-radius: var(--radio-sm);
+            border-color: var(--marca-linea);
+            font-size: .78rem;
+            background: var(--marca-suave);
+
+            &:focus {
+                border-color: var(--marca-azul);
+                box-shadow: var(--anillo-foco);
+                background: var(--marca-superficie);
+            }
+        }
+
+        > i {
+            position: absolute;
+            left: .7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--marca-apagado);
+            font-size: .85rem;
+            pointer-events: none;
+        }
+    }
+
+    // ── Header de sección ─────────────────────────────────────────────────────
+    .pagos-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .9rem 1.25rem;
+        background: linear-gradient(180deg, var(--marca-suave) 0%, var(--marca-superficie) 100%);
+        border-bottom: 1px solid var(--marca-linea);
+
+        .card-title {
+            color: var(--marca-tinta);
+            font-size: .92rem;
+            font-weight: 650;
+        }
+
+        small { font-size: .72rem; }
+    }
+
+    .pagos-section-icon {
+        width: 1.8rem;
+        height: 1.8rem;
+        border-radius: var(--radio-xs);
+        display: inline-grid;
+        place-items: center;
+        font-size: .9rem;
+        background: color-mix(in srgb, var(--marca-azul) 10%, transparent);
+        color: var(--marca-azul-texto);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 15%, transparent);
+    }
+
+    .pagos-total-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: .3rem .75rem;
+        border-radius: var(--radio-pill);
+        background: var(--estado-ok-suave);
+        color: var(--estado-ok);
+        font-size: .75rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        border: 1px solid color-mix(in srgb, var(--estado-ok) 18%, transparent);
+    }
+
+    // ── Listado card ──────────────────────────────────────────────────────────
+    .pagos-listado-card {
+        border-radius: var(--radio-lg) !important;
+        overflow: hidden;
+    }
+
+    // ── Tabla ─────────────────────────────────────────────────────────────────
+    .tabla-pagos {
+        thead th {
+            padding-top: .85rem;
+            padding-bottom: .85rem;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
+        }
+
+        tbody td {
+            padding-top: .85rem;
+            padding-bottom: .85rem;
+            border-bottom-color: color-mix(in srgb, var(--marca-linea) 50%, transparent);
+        }
+
+        tbody tr {
+            transition: background-color var(--trans-rapida), box-shadow var(--trans-rapida);
+
+            &:hover {
+                background-color: color-mix(in srgb, var(--marca-azul) 4%, transparent);
+                box-shadow: inset 3px 0 0 var(--marca-azul);
+            }
+        }
+    }
+
+    .pagos-compra-link {
+        display: inline-flex;
+        align-items: center;
+        padding: .3rem .6rem;
+        border-radius: var(--radio-sm);
+        color: var(--marca-azul-texto);
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 15%, transparent);
+        font-size: .82rem;
+        font-weight: 600;
+        font-family: var(--vz-font-family-monospace, monospace);
+        text-decoration: none;
+        transition: all var(--trans-rapida);
+
+        &:hover {
+            background: color-mix(in srgb, var(--marca-azul) 14%, transparent);
+            border-color: color-mix(in srgb, var(--marca-azul) 28%, transparent);
+            color: var(--marca-azul-texto);
+            transform: translateY(-1px);
+        }
+    }
+
+    .pagos-factura-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: .15rem .5rem;
+        border-radius: var(--radio-pill);
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 500;
+    }
+
+    .pagos-proveedor {
+        font-weight: 600;
+        font-size: .85rem;
+        color: var(--marca-tinta);
+    }
+
+    .pagos-fecha {
+        font-size: .82rem;
+        color: var(--marca-apagado);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .pagos-user {
+        font-size: .82rem;
+        color: var(--marca-apagado);
+    }
+
+    .pagos-boucher-btn {
+        display: inline-grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: var(--radio-sm);
+        color: var(--marca-azul-texto);
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+        border: 1px solid color-mix(in srgb, var(--marca-azul) 15%, transparent);
+        text-decoration: none;
+        transition: all var(--trans-rapida);
+
+        &:hover {
+            background: color-mix(in srgb, var(--marca-azul) 14%, transparent);
+            border-color: color-mix(in srgb, var(--marca-azul) 28%, transparent);
+            transform: translateY(-1px);
+            box-shadow: 0 .2rem .5rem color-mix(in srgb, var(--marca-azul) 15%, transparent);
+        }
+    }
+
+    .pagos-sin-boucher {
+        display: inline-grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        color: var(--marca-apagado);
+        opacity: .4;
+    }
+
+    .pagos-monto {
+        font-weight: 700;
+        font-size: .92rem;
+        color: var(--marca-tinta);
+        font-variant-numeric: tabular-nums;
+    }
+
+    // ── Empty state ───────────────────────────────────────────────────────────
+    .pagos-empty-icon {
+        display: grid;
+        place-items: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--marca-azul) 8%, transparent);
+        color: var(--marca-azul-texto);
+        font-size: 1.6rem;
+        border: 2px solid color-mix(in srgb, var(--marca-azul) 12%, transparent);
+    }
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 991.98px) {
+    .pagos-modulo {
+        .pagos-hero-stat {
+            padding: .4rem .7rem;
+            min-width: 4.2rem;
+        }
+
+        .pagos-hero-stat-value { font-size: 1rem; }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .pagos-modulo {
+        .pagos-section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: .4rem;
+        }
+
+        .pagos-kpi-card .card-body { padding: 1rem; }
     }
 }

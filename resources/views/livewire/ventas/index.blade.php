@@ -68,61 +68,144 @@
         $graf = $this->ingresosPorPago;
         $serieGraf = $this->serieIngresos;
         $tieneIngresos = ($graf['total'] ?? 0) > 0;
+        $pctEfectivo = $graf['total'] > 0 ? round(($graf['efectivo'] / $graf['total']) * 100) : 0;
+        $pctQr = $graf['total'] > 0 ? round(($graf['qr'] / $graf['total']) * 100) : 0;
     @endphp
     <div class="row g-3 mb-4">
+
+        {{-- ─── Dona: Ingresos por tipo de cobro ────────────────────────────── --}}
         <div class="col-xl-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent py-3">
-                    <h5 class="card-title mb-0 d-flex align-items-center gap-2">
-                        <i class="ri-wallet-3-line"></i> Ingresos por tipo de cobro
-                    </h5>
-                    <small class="text-muted fs-13">
-                        {{ \Carbon\Carbon::parse($desde)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($hasta)->format('d/m/Y') }}
-                        · Mixto desagregado en Efectivo y QR
-                    </small>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex gap-2 mb-3 flex-wrap">
-                        <span class="badge bg-success-subtle text-success border fs-12">
-                            <i class="ri-money-dollar-circle-line me-1"></i>Efectivo Bs {{ number_format($graf['efectivo'], 2, ',', '.') }}
-                        </span>
-                        <span class="badge bg-primary-subtle text-primary border fs-12">
-                            <i class="ri-qr-code-line me-1"></i>QR Bs {{ number_format($graf['qr'], 2, ',', '.') }}
-                        </span>
-                        <span class="badge bg-light text-body border fs-12">
-                            Total Bs {{ number_format($graf['total'], 2, ',', '.') }}
-                        </span>
+            <div class="card border-0 shadow-sm h-100 ventas-chart-card">
+                <div class="ventas-chart-header ventas-chart-header--ingresos">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="ventas-chart-header-icon">
+                            <i class="ri-wallet-3-line"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="mb-0">Ingresos por tipo de cobro</h5>
+                            <small>
+                                {{ \Carbon\Carbon::parse($desde)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($hasta)->format('d/m/Y') }}
+                            </small>
+                        </div>
                     </div>
-                    <div class="reportes-chart-container chart-doughnut {{ $tieneIngresos ? '' : 'vacio' }}" style="height: 240px">
-                        <canvas id="chart-ventas-pago" data-colors='["--vz-success", "--vz-primary"]'></canvas>
+                </div>
+
+                <div class="card-body">
+                    {{-- Métricas resumen --}}
+                    <div class="row g-2 mb-3 ventas-metric-row">
+                        <div class="col">
+                            <div class="ventas-metric-item ventas-metric-item--efectivo">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="ventas-metric-dot bg-success"></span>
+                                    <span class="ventas-metric-label">Efectivo</span>
+                                </div>
+                                <span class="ventas-metric-value">Bs {{ number_format($graf['efectivo'], 2, ',', '.') }}</span>
+                                <div class="ventas-metric-bar">
+                                    <div class="ventas-metric-bar-fill bg-success" style="width: {{ $pctEfectivo }}%"></div>
+                                </div>
+                                <small class="ventas-metric-pct">{{ $pctEfectivo }}%</small>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="ventas-metric-item ventas-metric-item--qr">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="ventas-metric-dot bg-primary"></span>
+                                    <span class="ventas-metric-label">QR</span>
+                                </div>
+                                <span class="ventas-metric-value">Bs {{ number_format($graf['qr'], 2, ',', '.') }}</span>
+                                <div class="ventas-metric-bar">
+                                    <div class="ventas-metric-bar-fill bg-primary" style="width: {{ $pctQr }}%"></div>
+                                </div>
+                                <small class="ventas-metric-pct">{{ $pctQr }}%</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Dona --}}
+                    <div class="ventas-chart-wrap {{ $tieneIngresos ? '' : 'vacio' }}">
+                        <canvas id="chart-ventas-pago" data-colors='["--estado-ok", "--marca-azul"]'
+                            style="max-height: 200px;"></canvas>
                         @if (! $tieneIngresos)
-                            <div class="reportes-chart-vacio">
-                                <i class="ri-wallet-3-line d-block"></i>
-                                Sin ingresos en este período.
+                            <div class="ventas-chart-empty">
+                                <i class="ri-wallet-3-line"></i>
+                                <span>Sin ingresos en este período</span>
                             </div>
                         @endif
                     </div>
-                    <small class="text-muted fs-12 d-block mt-2">
-                        Efectivo y QR puros suman directo; en pago mixto se suma cada parte en su canal.
-                    </small>
+
+                    <div class="ventas-chart-footer">
+                        <i class="ri-information-line"></i>
+                        En pago mixto, cada parte se registra en su canal.
+                        <strong>Total:</strong> Bs {{ number_format($graf['total'], 2, ',', '.') }}
+                    </div>
                 </div>
             </div>
         </div>
+
+        {{-- ─── Barras: Evolución diaria Efectivo vs QR ─────────────────────── --}}
         <div class="col-xl-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent py-3">
-                    <h5 class="card-title mb-0 d-flex align-items-center gap-2">
-                        <i class="ri-bar-chart-line"></i> Evolución diaria — Efectivo vs QR
-                    </h5>
-                    <small class="text-muted fs-13">Ingresos diarios desagregados</small>
+            <div class="card border-0 shadow-sm h-100 ventas-chart-card">
+                <div class="ventas-chart-header ventas-chart-header--evolucion">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="ventas-chart-header-icon">
+                                <i class="ri-bar-chart-grouped-line"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h5 class="mb-0">Evolución diaria — Efectivo vs QR</h5>
+                                <small>Ingresos diarios desagregados por método de cobro</small>
+                            </div>
+                        </div>
+                        {{-- Mini-legend --}}
+                        <div class="ventas-chart-legend d-none d-sm-flex">
+                            <span class="ventas-chart-legend-item">
+                                <span class="ventas-chart-legend-dot bg-success"></span> Efectivo
+                            </span>
+                            <span class="ventas-chart-legend-item">
+                                <span class="ventas-chart-legend-dot bg-primary"></span> QR
+                            </span>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="card-body">
-                    <div class="reportes-chart-container chart-barras {{ $serieGraf->sum('total') > 0 ? '' : 'vacio' }}" style="height: 240px">
-                        <canvas id="chart-ventas-evolucion" data-colors='["--vz-success", "--vz-primary"]'></canvas>
+                    {{-- Stats resumen --}}
+                    @php
+                        $totalEfectivoSerie = $serieGraf->sum('efectivo');
+                        $totalQrSerie = $serieGraf->sum('qr');
+                        $totalSerie = $serieGraf->sum('total');
+                        $diasConDatos = $serieGraf->filter(fn($d) => is_array($d) ? ($d['total'] ?? 0) > 0 : ($d->total ?? 0) > 0)->count();
+                        $promedioDiario = $diasConDatos > 0 ? $totalSerie / $diasConDatos : 0;
+                    @endphp
+                    <div class="row g-2 mb-3 ventas-metric-row">
+                        <div class="col-auto">
+                            <div class="ventas-mini-stat">
+                                <span class="ventas-mini-stat-label">Efectivo</span>
+                                <span class="ventas-mini-stat-value text-success">Bs {{ number_format($totalEfectivoSerie, 2, ',', '.') }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="ventas-mini-stat">
+                                <span class="ventas-mini-stat-label">QR</span>
+                                <span class="ventas-mini-stat-value text-primary">Bs {{ number_format($totalQrSerie, 2, ',', '.') }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="ventas-mini-stat">
+                                <span class="ventas-mini-stat-label">Promedio / día</span>
+                                <span class="ventas-mini-stat-value">Bs {{ number_format($promedioDiario, 2, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Barras --}}
+                    <div class="ventas-chart-wrap {{ $serieGraf->sum('total') > 0 ? '' : 'vacio' }}">
+                        <canvas id="chart-ventas-evolucion" data-colors='["--estado-ok", "--marca-azul"]'
+                            style="max-height: 260px;"></canvas>
                         @if ($serieGraf->sum('total') == 0)
-                            <div class="reportes-chart-vacio">
-                                <i class="ri-line-chart-line d-block"></i>
-                                Sin datos en este período.
+                            <div class="ventas-chart-empty">
+                                <i class="ri-line-chart-line"></i>
+                                <span>Sin datos en este período</span>
                             </div>
                         @endif
                     </div>
