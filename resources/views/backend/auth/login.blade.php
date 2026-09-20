@@ -22,7 +22,7 @@
 
         .login-header .login-logo-img {
             display: block;
-            max-height: 5rem;
+            max-height: clamp(4rem, 12vw, 6rem);
             width: auto;
             margin: 0 auto;
             object-fit: contain;
@@ -110,7 +110,7 @@
             font-size: 1.1rem;
             cursor: pointer;
             transition: background .18s, color .18s;
-            z-index: 2;
+            z-index: 5;
         }
 
         .login-form .toggle-pass:hover {
@@ -459,3 +459,23 @@
         Acceso personal y protegido · Tus datos están seguros
     </p>
 @endsection
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.login-form .toggle-pass').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = btn.closest('.input-group').querySelector('.password-input');
+            var icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('ri-eye-off-line', 'ri-eye-line');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('ri-eye-line', 'ri-eye-off-line');
+            }
+        });
+    });
+});
+</script>
+@endpush

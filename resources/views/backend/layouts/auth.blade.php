@@ -14,19 +14,10 @@
             vea bien aunque el CSS compilado tarde en llegar.
 
             ---------------------------------------------------------------
-            Cómo se adapta al dispositivo
+            Responsive
             ---------------------------------------------------------------
-            La regla es una sola: **el tamaño se interpola, no salta**. Todo lo
-            que crece —el logo, los títulos, los márgenes— usa clamp() contra el
-            ancho de la ventana, así que entre un móvil de 320 px y un monitor
-            de 1920 no hay ningún punto en el que el diseño «se rompa y vuelva a
-            montarse». Los @media solo cambian la ESTRUCTURA (una columna o
-            dos), no las medidas.
-
-            Y hay dos ejes, no uno. Un móvil en horizontal tiene ancho de
-            tablet y alto de nada: sin mirar también la altura, la banda de
-            marca se come la pantalla y el formulario queda fuera. Por eso hay
-            consultas de `max-height` que encogen el logo y los espacios.
+            Todo usa clamp() contra el ancho de la ventana para que el tamaño
+            se interpole suavemente entre un móvil de 320px y un monitor de 1920px.
         */
         .auth-body {
             --auth-noche: var(--marca-noche, #0a182b);
@@ -38,10 +29,6 @@
             --auth-crema: var(--marca-crema, #e7e2c2);
             --auth-apagado: #6b778a;
             --auth-linea: #e3e9f0;
-
-            /* Ancho del logo. Es la pieza que más manda en el equilibrio de la
-               pantalla, así que se declara una vez y se ajusta por tramos. */
-            --auth-logo: clamp(11rem, 62vw, 17rem);
 
             margin: 0;
             background: #fff;
@@ -55,145 +42,17 @@
         .auth-body ::selection { background: rgba(197, 161, 98, .28); }
 
         .auth-shell {
-            display: grid;
-            grid-template-columns: 1fr;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
-
-        /* ---------- Banda de marca ---------- */
-
-        .auth-showcase {
-            position: relative;
-            overflow: hidden;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: clamp(1.25rem, 4vh, 2.5rem);
-            padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1.5rem, 5vw, 3.5rem);
-            color: #fff;
-            /* El mismo azul del que se diseñó el logotipo: el dorado cae sobre
-               su fondo natural. */
-            background:
-                radial-gradient(120% 80% at 50% 0%, #1b3757 0%, transparent 60%),
-                linear-gradient(160deg, #0a182b, #10233c 55%, #142c4a);
-        }
-
-        /* Anillo dorado: la misma geometría del arco del logotipo. */
-        .auth-showcase::before {
-            content: "";
-            position: absolute;
-            width: 38rem;
-            height: 38rem;
-            top: -19rem;
-            right: -13rem;
-            border: 1px solid rgba(197, 161, 98, .16);
-            border-radius: 50%;
-            box-shadow: 0 0 0 4.5rem rgba(197, 161, 98, .045),
-                        0 0 0 9rem rgba(197, 161, 98, .025);
-            pointer-events: none;
-        }
-
-        /* Halo: el reflejo del oro del logotipo. */
-        .auth-showcase::after {
-            content: "";
-            position: absolute;
-            width: 26rem;
-            height: 26rem;
-            bottom: -12rem;
-            left: -9rem;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(197, 161, 98, .22), transparent 68%);
-            pointer-events: none;
-        }
-
-        .auth-logo,
-        .auth-showcase-content,
-        .auth-showcase-footer { position: relative; z-index: 1; }
-
-        /*
-            El logo va SIN marco. El archivo tiene el fondo recortado, así que
-            el dorado cae directo sobre la banda. Enmarcarlo lo convertiría en
-            una estampita pegada encima; suelto, la banda entera ES la marca.
-
-            La sombra proyectada le da el mismo relieve que tiene el oro del
-            propio logotipo, para que no se vea plano sobre el degradado.
-        */
-        .auth-logo {
-            display: block;
-            width: var(--auth-logo);
-            margin: 0 auto;
-            filter: drop-shadow(0 .75rem 1.5rem rgba(0, 0, 0, .45));
-        }
-
-        /* `height: auto` con las medidas en el <img>: el navegador reserva el
-           hueco exacto antes de descargarlo y la pantalla no da un tirón. */
-        .auth-logo img { display: block; width: 100%; height: auto; }
-
-        .auth-showcase-content { max-width: 32rem; }
-
-        .auth-eyebrow {
-            display: inline-flex;
             align-items: center;
-            gap: .45rem;
-            padding: .42rem .75rem;
-            border: 1px solid rgba(197, 161, 98, .32);
-            border-radius: 99px;
-            color: var(--auth-crema);
-            font-size: .72rem;
-            font-weight: 700;
-            letter-spacing: .09em;
-            text-transform: uppercase;
+            justify-content: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
         }
 
-        .auth-eyebrow i { color: var(--auth-oro); font-size: .85rem; }
+        /* ---------- Banda de marca (ocultada) ---------- */
 
-        .auth-showcase h1 {
-            margin: 1.15rem 0 .9rem;
-            max-width: 26rem;
-            color: #fff;
-            font-size: clamp(1.75rem, 2.6vw, 2.9rem);
-            line-height: 1.1;
-            letter-spacing: -.045em;
-            font-weight: 700;
-            text-wrap: balance;
-        }
-
-        .auth-showcase h1 span { color: var(--auth-oro-claro); }
-
-        .auth-showcase p {
-            max-width: 27rem;
-            margin: 0;
-            color: #b6c6d8;
-            font-size: clamp(.9rem, 1vw, 1rem);
-            line-height: 1.65;
-        }
-
-        .auth-points {
-            display: grid;
-            gap: .75rem;
-            margin: 1.75rem 0 0;
-            padding: 0;
-            list-style: none;
-            color: #e6eef7;
-            font-size: clamp(.83rem, .9vw, .9rem);
-        }
-
-        .auth-points li { display: flex; align-items: center; gap: .7rem; }
-
-        .auth-points i {
-            display: grid;
-            place-items: center;
-            flex: 0 0 auto;
-            width: 1.5rem;
-            height: 1.5rem;
-            border-radius: 50%;
-            background: rgba(197, 161, 98, .18);
-            color: var(--auth-oro-claro);
-            font-size: .9rem;
-        }
-
-        .auth-showcase-footer { color: #8ba1b8; font-size: .78rem; }
+        .auth-showcase { display: none; }
 
         /* ---------- Panel del formulario ---------- */
 
@@ -201,17 +60,24 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1.5rem, 5vw, 3.5rem);
-            padding-bottom: max(clamp(1.75rem, 5vw, 3.5rem), env(safe-area-inset-bottom));
-            /* Blanco con dos tintes de marca muy suaves en las esquinas: el
-               panel deja de ser una pared blanca y se conecta con la banda. */
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem);
+            padding-bottom: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-bottom));
             background:
-                radial-gradient(120% 80% at 100% 0%, rgba(37, 73, 112, .045), transparent 55%),
-                radial-gradient(90% 70% at 0% 100%, rgba(197, 161, 98, .055), transparent 60%),
-                #fff;
+                radial-gradient(ellipse at 20% 0%, rgba(37, 73, 112, .06), transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(197, 161, 98, .05), transparent 50%),
+                linear-gradient(180deg, #fafbfc 0%, #fff 100%);
         }
 
-        .auth-card { width: min(100%, 26rem); }
+        .auth-card {
+            width: min(100%, 24rem);
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+        }
 
         .auth-card > div:first-child h5 {
             margin: 0 0 .5rem;
@@ -344,92 +210,8 @@
         .auth-nota i { color: var(--auth-oro); flex: 0 0 auto; }
 
         /* ---------------------------------------------------------------
-           Estructura: una columna hasta que de verdad caben dos
+           Responsive
            --------------------------------------------------------------- */
-
-        /* En una columna, el texto de escaparate sobra: quita sitio al
-           formulario, que es a lo que se viene. Queda solo el logo. */
-        .auth-showcase-content,
-        .auth-showcase-footer { display: none; }
-
-        /*
-            Pantallas bajas: la banda se comprime para que el formulario siga
-            alcanzable.
-
-            Va atada a `orientation: landscape` a propósito. Un móvil pequeño en
-            VERTICAL también mide menos de 700 px de alto, y sin esa condición
-            se llevaba el logo encogido sin ninguna razón: ahí sobra ancho y el
-            problema es al revés. Quien tiene poca altura de verdad es el
-            teléfono tumbado y el portátil de pantalla corta.
-        */
-        @media (max-height: 700px) and (orientation: landscape) {
-            .auth-body { --auth-logo: clamp(8rem, 34vw, 12rem); }
-            .auth-showcase { gap: 1rem; padding-top: 1.25rem; padding-bottom: 1.25rem; }
-        }
-
-        @media (max-height: 520px) and (orientation: landscape) {
-            .auth-body { --auth-logo: clamp(6.5rem, 26vw, 9rem); }
-            .auth-showcase { padding-top: .9rem; padding-bottom: .9rem; }
-            .auth-panel { padding-top: 1.25rem; padding-bottom: 1.25rem; }
-        }
-
-        /*
-            Dos columnas a partir de 62rem (992 px) y NO de 768: en una tablet
-            en vertical, dos columnas dejan el formulario en 300 px, más
-            estrecho que en un móvil. El punto de corte se fija en rem para que
-            siga la letra del usuario: quien la agranda necesita el cambio
-            antes, no en el mismo píxel.
-        */
-        @media (min-width: 62rem) {
-            .auth-shell {
-                grid-template-columns: minmax(22rem, 1.05fr) minmax(24rem, 1fr);
-                /* Alto fijo con cada panel desplazándose por su cuenta: así un
-                   formulario con errores nunca empuja la banda ni deja la
-                   página con dos barras de desplazamiento. */
-                height: 100vh;
-                height: 100dvh;
-            }
-
-            /* Solo el formulario se desplaza. La banda se queda en
-               `overflow: hidden` porque sus adornos son `position: absolute` y
-               asoman 12rem por debajo del borde: con `auto` dejarían de
-               recortarse y le saldría una barra de desplazamiento a un panel
-               que no tiene nada que desplazar. */
-            .auth-panel {
-                min-height: 0;
-                overflow-y: auto;
-            }
-
-            .auth-showcase { min-height: 0; }
-
-            .auth-body { --auth-logo: clamp(12rem, 20vw, 19rem); }
-
-            .auth-showcase {
-                justify-content: center;
-                align-items: center;
-                text-align: center;
-                gap: clamp(1.5rem, 3vh, 3rem);
-            }
-
-            .auth-logo { margin: 0 auto; }
-
-            .auth-showcase-content,
-            .auth-showcase-footer { display: block; }
-            .auth-showcase-content { max-width: 28rem; }
-            .auth-showcase-content .auth-points li { justify-content: center; }
-            .auth-showcase-footer { margin-top: auto; }
-        }
-
-        /* Con poca altura no hay sitio para la lista de ventajas aunque el
-           ancho dé para dos columnas. */
-        @media (min-width: 62rem) and (max-height: 640px) {
-            .auth-points { display: none; }
-            .auth-showcase p { display: none; }
-        }
-
-        @media (min-width: 100rem) {
-            .auth-shell { grid-template-columns: minmax(28rem, 1fr) minmax(30rem, 1fr); }
-        }
 
         /* Dedos, no ratón: los objetivos crecen a lo que se puede tocar. */
         @media (pointer: coarse) {
@@ -445,61 +227,8 @@
             .auth-campo > i:first-child { transition: none; }
         }
 
-        /* ---------------------------------------------------------------
-           Movimiento de la banda de marca
-           ---------------------------------------------------------------
-           El halo de oro respira y el anillo se abre y se cierra muy despacio:
-           es ambiente, no una animación que se mire. Si distrae, está mal.
-           Los tiempos son largos (16 s y 22 s) justo para que no se perciba
-           como movimiento sino como vida.
-           --------------------------------------------------------------- */
-        @keyframes auth-halo {
-            0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .9; }
-            50%      { transform: translate3d(2.5rem, -1.5rem, 0) scale(1.12); opacity: 1; }
-        }
-
-        @keyframes auth-anillo {
-            0%, 100% { transform: scale(1); opacity: .82; }
-            50%      { transform: scale(1.06); opacity: 1; }
-        }
-
-        @keyframes auth-showcase-rise {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: none; }
-        }
-
-        @media (prefers-reduced-motion: no-preference) {
-            .auth-showcase::after  { animation: auth-halo 16s ease-in-out infinite; }
-            .auth-showcase::before { animation: auth-anillo 22s ease-in-out infinite; }
-        }
-
-        /* La banda se arma por capas al abrir: logo, distintivo, titular y
-           puntos. Solo en las dos columnas grandes, que es donde se ve. */
-        @media (min-width: 62rem) and (prefers-reduced-motion: no-preference) {
-            .auth-logo            { animation: auth-showcase-rise .6s ease-out both; }
-            .auth-eyebrow         { animation: auth-showcase-rise .55s ease-out .1s both; }
-            .auth-showcase h1     { animation: auth-showcase-rise .6s ease-out .18s both; }
-            .auth-showcase p      { animation: auth-showcase-rise .6s ease-out .26s both; }
-            .auth-points li       { animation: auth-showcase-rise .5s ease-out both; }
-            .auth-points li:nth-child(1) { animation-delay: .34s; }
-            .auth-points li:nth-child(2) { animation-delay: .42s; }
-            .auth-points li:nth-child(3) { animation-delay: .5s; }
-            .auth-showcase-footer { animation: auth-showcase-rise .6s ease-out .5s both; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .auth-showcase::after,
-            .auth-showcase::before,
-            .auth-logo,
-            .auth-eyebrow,
-            .auth-showcase h1,
-            .auth-showcase p,
-            .auth-points li,
-            .auth-showcase-footer { animation: none; }
-        }
-
         @keyframes auth-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-        @media (min-width: 62rem) and (prefers-reduced-motion: no-preference) {
+        @media (prefers-reduced-motion: no-preference) {
             .auth-card { animation: auth-rise .45s ease-out both; }
         }
     </style>
