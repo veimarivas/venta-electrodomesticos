@@ -105,12 +105,12 @@
         }
 
         .auth-card .form-control {
-            min-height: 3.1rem;
+            min-height: 2.6rem;
             border: 1px solid var(--auth-linea);
-            border-radius: .7rem;
+            border-radius: .6rem;
             /* 16 px exactos: por debajo, iOS hace zoom al enfocar el campo y
                descuadra la pantalla entera. */
-            font-size: 1rem;
+            font-size: .9rem;
             color: var(--auth-noche);
             background: #fbfcfe;
             box-shadow: none;
@@ -167,11 +167,11 @@
         .auth-card .btn-success {
             position: relative;
             overflow: hidden;
-            min-height: 3.2rem;
+            min-height: 2.8rem;
             border: 0;
-            border-radius: .7rem;
+            border-radius: .6rem;
             background: linear-gradient(135deg, var(--auth-noche), var(--auth-azul));
-            box-shadow: 0 .65rem 1.25rem rgba(10, 24, 43, .22);
+            box-shadow: 0 .5rem 1rem rgba(10, 24, 43, .22);
             font-weight: 650;
             letter-spacing: .01em;
             transition: transform .18s, box-shadow .18s, filter .18s;

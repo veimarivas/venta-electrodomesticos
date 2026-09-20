@@ -7,12 +7,12 @@
         /* ── Login refinements ─────────────────────────────────────── */
         .login-header {
             text-align: center;
-            margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
         }
 
         .login-header .login-logo-link {
             display: inline-block;
-            margin-bottom: 1.15rem;
+            margin-bottom: clamp(.6rem, 1.5vw, 1rem);
             transition: opacity .2s;
         }
 
@@ -22,17 +22,17 @@
 
         .login-header .login-logo-img {
             display: block;
-            max-height: clamp(4rem, 12vw, 6rem);
+            max-height: clamp(3rem, 8vw, 4.5rem);
             width: auto;
             margin: 0 auto;
             object-fit: contain;
-            filter: drop-shadow(0 .4rem .8rem rgba(0, 0, 0, .15));
+            filter: drop-shadow(0 .3rem .6rem rgba(0, 0, 0, .12));
         }
 
         .login-header h5 {
-            margin: 0 0 .4rem;
+            margin: 0 0 .25rem;
             color: var(--auth-noche) !important;
-            font-size: clamp(1.4rem, 2vw, 1.7rem);
+            font-size: clamp(1.2rem, 2vw, 1.5rem);
             letter-spacing: -.035em;
             font-weight: 700;
             text-wrap: balance;
@@ -41,22 +41,22 @@
         .login-header p {
             margin: 0;
             color: var(--auth-apagado) !important;
-            font-size: clamp(.85rem, 1vw, .93rem);
-            line-height: 1.55;
+            font-size: clamp(.78rem, 1vw, .85rem);
+            line-height: 1.4;
         }
 
         /* ── Formulario ───────────────────────────────────────────── */
         .login-form .form-group {
-            margin-bottom: 1.35rem;
+            margin-bottom: clamp(.8rem, 1.5vw, 1rem);
         }
 
         .login-form .form-label {
             display: flex;
             align-items: center;
             gap: .35rem;
-            margin-bottom: .45rem;
+            margin-bottom: .35rem;
             color: #2c3a4d;
-            font-size: .82rem;
+            font-size: .78rem;
             font-weight: 650;
             letter-spacing: .01em;
         }
@@ -65,7 +65,7 @@
             margin-left: auto;
             font-weight: 500;
             color: var(--auth-azul);
-            font-size: .76rem;
+            font-size: .72rem;
             opacity: .85;
         }
 
@@ -76,10 +76,10 @@
         .login-form .input-icon {
             position: absolute;
             top: 50%;
-            left: .85rem;
+            left: .75rem;
             transform: translateY(-50%);
             color: #93a1b2;
-            font-size: 1.05rem;
+            font-size: .95rem;
             pointer-events: none;
             z-index: 2;
             transition: color .2s ease;
@@ -90,24 +90,24 @@
         }
 
         .login-form .input-group .form-control {
-            padding-left: 2.6rem;
+            padding-left: 2.3rem;
         }
 
         .login-form .toggle-pass {
             position: absolute;
             top: 50%;
-            right: .35rem;
+            right: .25rem;
             transform: translateY(-50%);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 2rem;
+            height: 2rem;
             border: 0;
-            border-radius: .55rem;
+            border-radius: .45rem;
             background: transparent;
             color: #7d8b9c;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: background .18s, color .18s;
             z-index: 5;
@@ -127,9 +127,9 @@
         .login-forgot {
             display: inline-flex;
             align-items: center;
-            gap: .25rem;
+            gap: .2rem;
             color: var(--auth-azul);
-            font-size: .79rem;
+            font-size: .72rem;
             font-weight: 600;
             text-decoration: none;
             transition: color .18s;
@@ -145,10 +145,10 @@
         .login-remember {
             display: flex;
             align-items: center;
-            gap: .6rem;
-            padding: .65rem .85rem;
-            margin-top: .15rem;
-            border-radius: .65rem;
+            gap: .5rem;
+            padding: .5rem .7rem;
+            margin-top: .1rem;
+            border-radius: .5rem;
             background: #f6f8fb;
             cursor: pointer;
             transition: background .18s;
@@ -163,14 +163,14 @@
         }
 
         .login-remember .form-check-input {
-            width: 1.15em;
-            height: 1.15em;
+            width: 1.1em;
+            height: 1.1em;
             margin-top: .05em;
             flex-shrink: 0;
         }
 
         .login-remember .form-check-label {
-            font-size: .84rem;
+            font-size: .78rem;
             color: #3d4e63;
             font-weight: 500;
             cursor: pointer;
@@ -182,20 +182,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: .55rem;
+            gap: .45rem;
             width: 100%;
-            min-height: 3.25rem;
-            margin-top: .35rem;
+            min-height: 2.8rem;
+            margin-top: .25rem;
             border: 0;
-            border-radius: .75rem;
+            border-radius: .6rem;
             background: linear-gradient(135deg, var(--auth-noche), var(--auth-azul));
             color: #fff;
-            font-size: .95rem;
+            font-size: .88rem;
             font-weight: 650;
             letter-spacing: .015em;
             cursor: pointer;
             box-shadow:
-                0 .6rem 1.15rem rgba(10, 24, 43, .2),
+                0 .5rem 1rem rgba(10, 24, 43, .2),
                 inset 0 1px 0 rgba(255, 255, 255, .08);
             transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
             overflow: hidden;
@@ -213,14 +213,14 @@
         .login-btn:hover {
             filter: brightness(1.12);
             box-shadow:
-                0 .85rem 1.5rem rgba(10, 24, 43, .28),
+                0 .7rem 1.3rem rgba(10, 24, 43, .28),
                 inset 0 1px 0 rgba(255, 255, 255, .08);
             transform: translateY(-1px);
         }
 
         .login-btn:active {
             transform: translateY(0);
-            box-shadow: 0 .35rem .7rem rgba(10, 24, 43, .18);
+            box-shadow: 0 .3rem .6rem rgba(10, 24, 43, .18);
         }
 
         .login-btn:focus-visible {
@@ -242,18 +242,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: .4rem;
-            margin-top: 1.5rem;
-            padding-top: 1.25rem;
+            gap: .35rem;
+            margin-top: auto;
+            padding-top: .75rem;
             border-top: 1px solid var(--auth-linea);
             color: #93a1b2;
-            font-size: .76rem;
+            font-size: .7rem;
             text-align: center;
         }
 
         .login-secure i {
             color: var(--auth-oro);
-            font-size: .85rem;
+            font-size: .75rem;
             flex-shrink: 0;
         }
 
@@ -261,18 +261,18 @@
         .login-alert {
             display: flex;
             align-items: flex-start;
-            gap: .6rem;
-            padding: .75rem .9rem;
-            border-radius: .65rem;
-            font-size: .84rem;
-            line-height: 1.45;
-            margin-bottom: .25rem;
+            gap: .5rem;
+            padding: .6rem .75rem;
+            border-radius: .5rem;
+            font-size: .78rem;
+            line-height: 1.4;
+            margin-bottom: .2rem;
         }
 
         .login-alert i {
-            margin-top: .1rem;
+            margin-top: .05rem;
             flex-shrink: 0;
-            font-size: .95rem;
+            font-size: .85rem;
         }
 
         .login-alert-success {
@@ -416,10 +416,10 @@
         </div>
 
         <div class="form-group">
-            <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.45rem">
+            <div class="d-flex align-items-center justify-content-between" style="margin-bottom:.3rem">
                 <label class="form-label mb-0" for="password-input">Contraseña</label>
                 <a href="{{ route('password.request') }}" class="login-forgot">
-                    <i class="ri-key-2-line" style="font-size:.8rem"></i> ¿Olvidaste tu contraseña?
+                    <i class="ri-key-2-line" style="font-size:.7rem"></i> ¿Olvidaste tu contraseña?
                 </a>
             </div>
             <div class="input-group">
