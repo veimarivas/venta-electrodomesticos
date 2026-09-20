@@ -62,9 +62,16 @@ antes de abrir la tienda.
 >
 > | Archivo | Para qué |
 > |---|---|
-> | `images/logo_hogar.png` | El original con el fondo recortado. No se sirve; es la fuente de los otros dos y del icono de la app |
-> | `images/marca-login.png` | 478×357 — el logo del login |
-> | `images/marca-sidebar.png` | 260×194 — el menú lateral y la barra superior |
+> | `images/logo_hogar.png` | El original con el fondo recortado. No se sirve; es la fuente de los demás y del icono de la app |
+> | `images/marca-login.png` | El logo del login (478 px de ancho) |
+> | `images/marca-sidebar.png` | El menú lateral y la barra superior (260 px de ancho) |
+> | `images/favicon.ico` | La pestaña (16/32/48 px) |
+>
+> Cuando cambia el logo, se regeneran del original:
+>
+> ```bash
+> php scripts/generar_marca.php
+> ```
 >
 > Se sacaron de la exclusión a propósito: sin ellas el login y el menú salen sin
 > logo en cada despliegue, y copiarlas a mano cada vez es justo el paso que se

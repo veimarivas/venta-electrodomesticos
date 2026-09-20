@@ -2024,21 +2024,26 @@ del logo nunca se deforma.
 > 644×387 y lo único que se le quita es el margen vacío. En una primera versión
 > se recortó también la **tira de categorías** —nevera, lavadora, cocina…— por
 > legibilidad a tamaño pequeño; fue un error: esa tira es parte del logotipo y
-> quitarla lo deja incompleto. El recuadro del contenido se midió por el canal
-> alfa, píxel a píxel: ocupa **x 87..553, y 35..380**.
+> quitarla lo deja incompleto. El recorte **no está a fuego**: se mide por el
+> canal alfa del propio archivo.
 >
 > | Archivo | Tamaño | Dónde |
 > |---|---|---|
-> | `marca-login.png` | 478×357, 138 KB | El login del panel |
-> | `marca-sidebar.png` | 260×194, 55 KB | Menú lateral y barra superior |
+> | `marca-login.png` | 478 px de ancho | El login del panel |
+> | `marca-sidebar.png` | 260 px de ancho | Menú lateral y barra superior |
+> | `favicon.ico` | 16/32/48 px | La pestaña |
 >
 > `public/assets/` está fuera del repositorio, así que estos recortes **no
 > viajan con el código**: se regeneran del original con GD (ver
 > `docs/DESPLIEGUE.md`).
 >
 > ```bash
-> php -r '$s=imagecreatefrompng("public/assets/images/logo_hogar.png"); foreach([["marca-login.png",478],["marca-sidebar.png",260]] as [$n,$a]){ $al=(int)round(357*$a/478); $d=imagecreatetruecolor($a,$al); imagealphablending($d,false); imagesavealpha($d,true); imagefill($d,0,0,imagecolorallocatealpha($d,0,0,0,127)); imagecopyresampled($d,$s,0,0,81,29,$a,$al,478,357); imagepng($d,"public/assets/images/$n",9); }'
+> php scripts/generar_marca.php
 > ```
+>
+> El script detecta el recuadro del contenido y el hueco que separa el logotipo
+> de la tira, así que **un logo nuevo se recorta solo**, sin volver a tocar
+> coordenadas. El mismo criterio usa `android/generar_iconos.php` en la app.
 >
 > **`imagealphablending(false)` + `imagesavealpha(true)` no son opcionales.** Sin
 > las dos, GD tira el canal alfa y el recorte sale con fondo negro, que sobre la
@@ -2051,7 +2056,7 @@ El logo no se veía en el servidor, y la causa era el `.gitignore`: excluía
 que los recortes de la marca **no viajaban con el `git pull`** y había que
 copiarlos a mano en cada despliegue. Ese es justo el paso que se olvida.
 
-Ahora los tres archivos de marca están versionados y el resto de la plantilla
+Ahora los cuatro archivos de marca están versionados y el resto de la plantilla
 sigue fuera:
 
 ```gitignore
@@ -2061,6 +2066,7 @@ sigue fuera:
 !/public/assets/images/logo_hogar.png
 !/public/assets/images/marca-login.png
 !/public/assets/images/marca-sidebar.png
+!/public/assets/images/favicon.ico
 ```
 
 > **El `/*` no es cosmético.** Git **no entra en un directorio excluido**, así

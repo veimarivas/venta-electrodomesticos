@@ -513,7 +513,7 @@
                      para empequeñecer el logotipo. El logo va completo, con su
                      tira de categorías. --}}
                 <img src="{{ asset('assets/images/marca-login.png') }}"
-                     width="478" height="357"
+                     width="478" height="391"
                      alt="{{ config('app.name') }} · Tecnología para tu vida">
             </a>
 

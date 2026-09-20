@@ -366,8 +366,8 @@
         <a href="{{ url('/') }}" class="login-logo-link">
             <img src="{{ asset('assets/images/marca-login.png') }}"
                  alt="{{ config('app.name') }}"
-                 class="login-logo-img"
-                 width="478" height="357">
+            class="login-logo-img"
+            width="478" height="391">
         </a>
         <h5>Bienvenido de nuevo</h5>
         <p>Ingresa tus credenciales para acceder al panel de gestión.</p>
