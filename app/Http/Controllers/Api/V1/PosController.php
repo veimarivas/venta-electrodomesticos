@@ -7,6 +7,7 @@ use App\Http\Resources\VentaResource;
 use App\Models\QrCobro;
 use App\Models\Unidad;
 use App\Models\Venta;
+use App\Support\PlanDeCuotas;
 use App\Support\ProrrateoDeGastos;
 use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
@@ -203,13 +204,24 @@ class PosController extends Controller
      */
     public function cobrar(Request $request): JsonResponse
     {
+        // A crédito cambian tres reglas: el cliente pasa a ser obligatorio, se
+        // exige el plan de cuotas y hace falta el permiso de crear créditos. Se
+        // mira el método antes de validar porque las reglas dependen de él.
+        $pagoEsCredito = $request->input('metodo_pago') === 'credito';
+
         $datos = $request->validate([
             'lineas' => ['required', 'array', 'min:1', 'max:50'],
             'lineas.*.unidad_id' => ['required', 'integer', 'distinct', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
             'lineas.*.precio' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             // Cada línea dice si el cliente se la lleva o va a domicilio.
             'lineas.*.entrega' => ['nullable', Rule::in(['directa', 'domicilio'])],
-            'cliente_id' => ['nullable', 'integer', Rule::exists('clientes', 'id')->whereNull('deleted_at')],
+            // A crédito el cliente deja de ser opcional: una deuda sin deudor
+            // no se puede cobrar.
+            'cliente_id' => [
+                $pagoEsCredito ? 'required' : 'nullable',
+                'integer',
+                Rule::exists('clientes', 'id')->whereNull('deleted_at'),
+            ],
             // METODOS_POS, no METODOS_PAGO: `tarjeta` y `transferencia` siguen
             // en la lista histórica para que el listado pueda mostrar ventas
             // viejas cobradas así, pero el mostrador ya no los ofrece. Validar
@@ -220,6 +232,18 @@ class PosController extends Controller
             'qr_cobro_id' => ['nullable', 'integer', Rule::exists('qrs_cobro', 'id')->whereNull('deleted_at')],
             'monto_efectivo' => ['nullable', 'numeric', 'min:0'],
             'monto_qr' => ['nullable', 'numeric', 'min:0'],
+            // Venta a plazos: el plan que arma el crédito. Se exige solo cuando
+            // el método es `credito`; en los demás llega vacío y se ignora.
+            'credito' => [$pagoEsCredito ? 'required' : 'nullable', 'array'],
+            'credito.cuota_inicial' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'credito.numero_cuotas' => [
+                $pagoEsCredito ? 'required' : 'nullable',
+                'integer', 'min:1', 'max:'.PlanDeCuotas::MAX_CUOTAS,
+            ],
+            'credito.primer_vencimiento' => [
+                $pagoEsCredito ? 'required' : 'nullable',
+                'date', 'after_or_equal:today',
+            ],
             'comprobante' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             // Clave que manda el teléfono para reintentar el cobro sin
             // registrarlo dos veces si se pierde la respuesta.
@@ -234,7 +258,20 @@ class PosController extends Controller
             'entrega.con_instalacion' => ['nullable', 'boolean'],
             'entrega.repartidor_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'entrega.notas' => ['nullable', 'string', 'max:500'],
+        ], [
+            'cliente_id.required' => 'Una venta a crédito necesita un cliente identificado.',
+            'credito.required' => 'Falta el plan de cuotas.',
+            'credito.numero_cuotas.required' => 'Indica en cuántas cuotas se paga.',
+            'credito.numero_cuotas.max' => 'Como mucho '.PlanDeCuotas::MAX_CUOTAS.' cuotas.',
+            'credito.primer_vencimiento.required' => 'Indica cuándo vence la primera cuota.',
+            'credito.primer_vencimiento.after_or_equal' => 'La primera cuota no puede vencer antes de hoy.',
         ]);
+
+        // Vender a plazo es una decisión de riesgo del dueño: el mismo permiso
+        // que el panel (`creditos.crear`), no el genérico de vender.
+        if ($pagoEsCredito && ! $request->user()->can('creditos.crear')) {
+            abort(403, 'No tienes permiso para vender a crédito.');
+        }
 
         $clave = $datos['clave_idempotencia'] ?? null;
 
@@ -330,6 +367,11 @@ class PosController extends Controller
                     'monto_efectivo' => $datos['monto_efectivo'] ?? '0',
                     'monto_qr' => $datos['monto_qr'] ?? '0',
                     'comprobante_qr' => $comprobante,
+                    'credito' => $pagoEsCredito ? [
+                        'cuota_inicial' => $datos['credito']['cuota_inicial'] ?? '0',
+                        'numero_cuotas' => (int) $datos['credito']['numero_cuotas'],
+                        'primer_vencimiento' => $datos['credito']['primer_vencimiento'],
+                    ] : null,
                 ],
                 userId: $request->user()->id,
             );

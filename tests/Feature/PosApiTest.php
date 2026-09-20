@@ -578,4 +578,117 @@ class PosApiTest extends TestCase
 
         $this->postJson('/api/v1/clientes', [])->assertForbidden();
     }
+
+    // ---- Venta a crédito desde el teléfono ---------------------------------
+
+    private function admin(): User
+    {
+        return User::factory()->create(['is_active' => true])->syncRoles('admin');
+    }
+
+    private function cliente(): Cliente
+    {
+        return Cliente::factory()->create();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function plan(float $inicial = 0, int $cuotas = 3): array
+    {
+        return [
+            'cuota_inicial' => $inicial,
+            'numero_cuotas' => $cuotas,
+            'primer_vencimiento' => today()->addMonth()->format('Y-m-d'),
+        ];
+    }
+
+    public function test_cobra_a_credito_y_arma_el_plan_de_cuotas(): void
+    {
+        $unidad = $this->unidadEnStock(6000);
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 6000]],
+            'metodo_pago' => 'credito',
+            'cliente_id' => $this->cliente()->id,
+            'credito' => $this->plan(inicial: 1200, cuotas: 6),
+        ])->assertCreated();
+
+        $venta = Venta::firstOrFail();
+
+        $this->assertSame('credito', $venta->metodo_pago);
+        // Al cajón solo entra la inicial; el resto es deuda.
+        $this->assertEquals(1200.0, (float) $venta->monto_efectivo);
+
+        $credito = $venta->credito()->firstOrFail();
+        $this->assertSame(6, $credito->cuotas()->count());
+        $this->assertEquals(4800.0, (float) $credito->total_financiado);
+    }
+
+    public function test_a_credito_el_cliente_es_obligatorio(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+            'metodo_pago' => 'credito',
+            'credito' => $this->plan(),
+        ])->assertStatus(422)->assertJsonValidationErrors('cliente_id');
+
+        $this->assertSame(0, Venta::count());
+    }
+
+    public function test_a_credito_el_plan_es_obligatorio(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+            'metodo_pago' => 'credito',
+            'cliente_id' => $this->cliente()->id,
+        ])->assertStatus(422)->assertJsonValidationErrors('credito');
+
+        $this->assertSame(0, Venta::count());
+    }
+
+    public function test_la_inicial_no_puede_cubrir_toda_la_venta(): void
+    {
+        $unidad = $this->unidadEnStock(1500);
+
+        Sanctum::actingAs($this->admin());
+
+        // Cubrirla entera es un pago al contado con otro nombre.
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+            'metodo_pago' => 'credito',
+            'cliente_id' => $this->cliente()->id,
+            'credito' => $this->plan(inicial: 1500),
+        ])->assertStatus(422);
+
+        $this->assertSame(0, Venta::count());
+    }
+
+    public function test_sin_permiso_de_creditos_no_se_cobra_a_credito(): void
+    {
+        $unidad = $this->unidadEnStock();
+
+        // El vendedor cobra, pero fiar es una decisión del dueño: no tiene
+        // `creditos.crear`.
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson('/api/v1/pos/cobrar', [
+            'lineas' => [['unidad_id' => $unidad->id, 'precio' => 1500]],
+            'metodo_pago' => 'credito',
+            'cliente_id' => $this->cliente()->id,
+            'credito' => $this->plan(),
+        ])->assertForbidden();
+
+        $this->assertSame(0, Venta::count());
+    }
 }

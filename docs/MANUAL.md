@@ -733,7 +733,7 @@ cuenta puede ver:
 - **Clientes** — búsqueda por código, nombre o carnet, cuánto ha comprado cada
   uno y sus últimas compras, con enlace al detalle de cada venta.
 
-Y en **Compras**, tres:
+Y en **Compras**, cuatro (la última solo si puedes ver costos):
 
 - **Órdenes** — búsqueda por código, factura o proveedor, y filtro por estado
   (*Pendientes · Recepcionadas · Anuladas*). Al abrir una se ve el desglose de
@@ -745,6 +745,9 @@ Y en **Compras**, tres:
   *hoy / semana / mes / todas* y el total del período.
 - **Proveedores** — a quién llamar, cuánto se le ha comprado y sus últimas
   órdenes. Tocar uno filtra las órdenes por él.
+- **Rentabilidad** — lo invertido y lo recuperado con cada proveedor. Es
+  histórico, no del período. En la ficha de una compra recepcionada aparece,
+  además, su propia tarjeta de rentabilidad.
 
 El **registro** de compras también se hace desde el teléfono: en *Compras →
 Órdenes*, el botón **+** abre el alta con proveedor, fecha, factura, total y
@@ -789,11 +792,14 @@ El botón **Vender** aparece en cualquier pantalla de la app, abajo a la derecha
    - Solo si no aparece en ninguno de los dos se habilita *Registrar nuevo
      cliente*. Es a propósito: dar de alta a alguien que ya existe duplicaría
      su ficha y partiría su historial.
-4. Los métodos de pago son **los mismos tres del mostrador**: *Efectivo*, *QR* y
-   *Mixto*. En **QR** y **Mixto** se muestra el QR de la tienda para que el
-   cliente lo escanee, y hay que **adjuntar la foto del comprobante** antes de
-   cobrar. En mixto, al escribir una de las dos cantidades la otra se completa
-   con la diferencia.
+4. Los métodos de pago son **los cuatro del mostrador**: *Efectivo*, *QR*,
+   *Mixto* y *Crédito* (este último solo si tu cuenta puede abrir créditos). En
+   **QR** y **Mixto** se muestra el QR de la tienda para que el cliente lo
+   escanee, y hay que **adjuntar la foto del comprobante** antes de cobrar. En
+   mixto, al escribir una de las dos cantidades la otra se completa con la
+   diferencia. En **Crédito** se pide la cuota inicial (puede ser cero), en
+   cuántas cuotas y cuándo vence la primera, y el cliente pasa a ser
+   obligatorio.
 
    > *Tarjeta* y *Transferencia* ya no se ofrecen, ni aquí ni en el panel. Las
    > ventas viejas cobradas así siguen viéndose en el histórico.
@@ -1039,9 +1045,10 @@ lo que se comprueba antes de cargar.
 Si hay teléfono de contacto, tocarlo **lo copia** para que lo pegues en el
 marcador — llamar antes de salir evita el viaje en balde.
 
-> **Lo que no se hace desde el teléfono es programar** una entrega. Hace falta
-> elegir aparatos de una venta y teclear una dirección, y eso se hace en el
-> mostrador con el cliente delante.
+> **Programar una entrega** —elegir aparatos de una venta y teclear una
+> dirección— sigue siendo del mostrador: eso se hace con el cliente delante. Lo
+> que sí se puede desde el teléfono es **reprogramar** una entrega abierta
+> (cambiarle el día, o dejarla «cuando se pueda»).
 
 > Si al confirmar te dice que la entrega ya se hizo, es que alguien la marcó
 > desde el panel mientras andabas fuera. La lista se refresca sola para que
@@ -1071,8 +1078,11 @@ efectivo, pide el número de comprobante del banco.
 > dinero se aplica de la más antigua a la más nueva. Y no se acepta un pago
 > mayor que el saldo.
 
-> **Abrir un crédito no se hace desde el teléfono.** Eso ocurre al cobrar la
-> venta, con el plan entero delante.
+> **Abrir un crédito sí se hace desde el teléfono**, al cobrar: elige *Crédito*
+> como método de pago y aparecen la cuota inicial, en cuántas cuotas se paga el
+> resto y cuándo vence la primera. Necesita el permiso `creditos.crear` —como en
+> el panel— y que la venta tenga cliente. Una venta a crédito **no se guarda sin
+> conexión**: el plan lo valida el servidor.
 
 Si el sistema rechaza el cobro, te dice el motivo con esas palabras —«el pago
 supera el saldo del crédito»—, no un «algo salió mal».

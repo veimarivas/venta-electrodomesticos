@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Events\VentaRegistrada;
 use App\Listeners\AvisarVentaRegistrada;
+use App\Models\Compra;
 use App\Models\Dispositivo;
 use App\Models\Producto;
 use App\Models\Unidad;
@@ -368,6 +369,33 @@ class ApiV1Test extends TestCase
 
         Sanctum::actingAs($this->admin());
         $this->getJson('/api/v1/reportes/proveedores')->assertOk();
+    }
+
+    public function test_la_rentabilidad_de_una_compra_trae_sus_totales(): void
+    {
+        $compra = Compra::factory()->create(['total' => 1000]);
+
+        Sanctum::actingAs($this->admin());
+
+        // Es el contrato que consume la ficha de compra de la app.
+        $this->getJson("/api/v1/reportes/compras/{$compra->id}/rentabilidad")
+            ->assertOk()
+            ->assertJsonPath('compra.id', $compra->id)
+            ->assertJsonPath('inversion', 1000)
+            ->assertJsonStructure([
+                'inversion', 'unidades', 'vendidas', 'en_stock',
+                'ingreso', 'ganancia', 'potencial', 'recuperado', 'margen',
+            ]);
+    }
+
+    public function test_la_rentabilidad_de_una_compra_exige_ver_costos(): void
+    {
+        $compra = Compra::factory()->create();
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->getJson("/api/v1/reportes/compras/{$compra->id}/rentabilidad")
+            ->assertForbidden();
     }
 
     // ---- Notificaciones y push ---------------------------------------------
