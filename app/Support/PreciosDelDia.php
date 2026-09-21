@@ -188,6 +188,10 @@ class PreciosDelDia
     {
         return Producto::query()
             ->activos()
+            // La categoría se usa para situar cada fila en pantalla: se carga
+            // aquí y no al pintar, que con la carga diferida desactivada
+            // revienta con LazyLoadingViolationException.
+            ->with('categoria')
             ->withCount(['unidades as disponibles' => fn ($q) => $q->disponibles()])
             ->orderBy('nombre')
             ->get()
