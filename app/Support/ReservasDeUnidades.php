@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use App\Events\InventarioActualizado;
 use App\Models\Unidad;
+use Throwable;
 
 /**
  * Reserva temporal de unidades mientras están en un carrito del POS.
@@ -46,6 +48,10 @@ class ReservasDeUnidades
                 'reservado_hasta' => now()->addMinutes(self::MINUTOS),
             ]);
 
+        if ($afectadas === 1) {
+            $this->avisar();
+        }
+
         return $afectadas === 1;
     }
 
@@ -76,7 +82,7 @@ class ReservasDeUnidades
             return;
         }
 
-        Unidad::query()
+        $afectadas = Unidad::query()
             ->whereIn('id', $unidadIds)
             ->where('estado', 'reservado')
             ->when($userId !== null, fn ($query) => $query->where('reservado_por', $userId))
@@ -85,6 +91,10 @@ class ReservasDeUnidades
                 'reservado_por' => null,
                 'reservado_hasta' => null,
             ]);
+
+        if ($afectadas > 0) {
+            $this->avisar();
+        }
     }
 
     /**
@@ -97,7 +107,7 @@ class ReservasDeUnidades
      */
     public function liberarVencidas(): int
     {
-        return Unidad::query()
+        $afectadas = Unidad::query()
             ->where('estado', 'reservado')
             ->where(function ($query): void {
                 $query->whereNull('reservado_hasta')
@@ -108,5 +118,24 @@ class ReservasDeUnidades
                 'reservado_por' => null,
                 'reservado_hasta' => null,
             ]);
+
+        if ($afectadas > 0) {
+            $this->avisar();
+        }
+
+        return $afectadas;
+    }
+
+    /**
+     * Avisa a las pantallas de disponibilidad. Si Reverb no está corriendo, el
+     * broadcast falla y no debe tumbar la reserva: el sondeo lo cubre.
+     */
+    private function avisar(): void
+    {
+        try {
+            event(new InventarioActualizado);
+        } catch (Throwable) {
+            // Sin WebSocket, las pantallas se actualizan por su sondeo.
+        }
     }
 }

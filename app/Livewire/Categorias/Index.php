@@ -10,10 +10,19 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Index extends Component
 {
+    /**
+     * Otra caja apartó o soltó un aparato: se repinta para que los conteos de
+     * disponibilidad no queden viejos. El sondeo de la vista es la red de
+     * seguridad cuando Reverb no está corriendo.
+     */
+    #[On('echo-private:inventario,.InventarioActualizado')]
+    public function refrescarInventario(): void {}
+
     /** Buscador del listado. */
     public string $buscar = '';
 

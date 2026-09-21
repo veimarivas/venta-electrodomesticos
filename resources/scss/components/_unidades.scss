@@ -260,3 +260,43 @@
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+// Unidades a pérdida (el precio no cubre el costo)
+// -----------------------------------------------------------------------------
+// Se marca la fila y, sobre todo, el precio: es el dato que hay que corregir.
+.fila-a-perdida {
+    background: var(--estado-error-suave);
+
+    &:hover {
+        background: color-mix(in srgb, var(--estado-error) 14%, transparent);
+    }
+}
+
+.unidad-perdida {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    margin-top: .25rem;
+    padding: .1rem .4rem;
+    border-radius: var(--radio-pill);
+    background: var(--estado-error-suave);
+    border: 1px solid color-mix(in srgb, var(--estado-error) 35%, transparent);
+    color: var(--estado-error);
+    font-size: .68rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.unidad-perdida-editar {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--estado-error);
+    font-size: .68rem;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover { color: color-mix(in srgb, var(--estado-error) 80%, #000); }
+}

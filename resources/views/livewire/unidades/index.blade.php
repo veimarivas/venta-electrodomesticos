@@ -1,4 +1,4 @@
-<div class="items-modulo unidades-modulo" wire:poll.15s>
+<div class="items-modulo unidades-modulo" wire:poll.10s>
 
     @php
         // Pill de estado con punto, mismo lenguaje que el resto del catálogo.
@@ -71,6 +71,25 @@
                 icon="bx-wallet2" color="warning" caption="Suma del precio de stock" />
         </div>
     </div>
+
+    {{-- ===================== Aviso de precios a pérdida ===================== --}}
+    {{-- El precio no cubre el costo: vender así deja pérdida. --}}
+    @if ($aPerdida > 0)
+        <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+            <i class="ri-alert-line fs-18"></i>
+            <div>
+                <strong>
+                    {{ $aPerdida }}
+                    {{ $aPerdida === 1 ? 'unidad tiene el precio por debajo del costo' : 'unidades tienen el precio por debajo del costo' }}.
+                </strong>
+                Vender así deja pérdida sobre lo que costó. Edita el precio con el lápiz de cada fila
+                @canany(['caja.gestionar', 'productos.editar'])
+                    o fija el <a href="{{ route('precios.index') }}" class="alert-link">precio del día</a> del producto
+                @endcanany
+                .
+            </div>
+        </div>
+    @endif
 
     {{-- ===================== Ficha del producto ===================== --}}
     @if ($producto)
@@ -411,7 +430,8 @@
                     </thead>
                     <tbody>
                         @forelse ($unidades as $unidad)
-                            <tr wire:key="item-{{ $unidad->id }}">
+                            <tr wire:key="item-{{ $unidad->id }}"
+                                @class(['fila-a-perdida' => (float) $unidad->costo_unitario > (float) $unidad->precio_venta && (float) $unidad->costo_unitario > 0])>
                                 @can('unidades.ver')
                                     <td class="ps-4 celda-check">
                                         <input type="checkbox" class="form-check-input" value="{{ $unidad->id }}"
@@ -470,8 +490,30 @@
                                     <span class="text-muted">Bs {{ number_format((float) $unidad->costo_unitario, 2, ',', '.') }}</span>
                                 </td>
 
+                                @php
+                                    $aPerdida = (float) $unidad->costo_unitario > (float) $unidad->precio_venta
+                                        && (float) $unidad->costo_unitario > 0;
+                                @endphp
                                 <td class="celda-precio text-end" data-label="Precio">
-                                    <span class="fw-semibold">Bs {{ number_format((float) $unidad->precio_venta, 2, ',', '.') }}</span>
+                                    <span class="fw-semibold {{ $aPerdida ? 'text-danger' : '' }}">
+                                        Bs {{ number_format((float) $unidad->precio_venta, 2, ',', '.') }}
+                                    </span>
+                                    @if ($aPerdida)
+                                        <div class="unidad-perdida"
+                                            title="El precio (Bs {{ number_format((float) $unidad->precio_venta, 2, ',', '.') }}) no cubre el costo (Bs {{ number_format((float) $unidad->costo_unitario, 2, ',', '.') }}). Edita el precio para no vender a pérdida.">
+                                            <i class="ri-alert-line"></i> A pérdida
+                                            {{-- En una vendida el precio ya es histórico: no se
+                                                 ofrece editarla, solo se deja constancia. --}}
+                                            @if ($unidad->estado !== 'vendido')
+                                                @can('unidades.editar')
+                                                    <button type="button" class="unidad-perdida-editar"
+                                                        wire:click="abrirEditar({{ $unidad->id }})">
+                                                        Editar
+                                                    </button>
+                                                @endcan
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <td class="celda-estado text-center" data-label="Estado">

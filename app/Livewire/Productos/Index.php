@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -19,6 +20,10 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use WithFileUploads, WithPagination;
+
+    /** Otra caja apartó o soltó un aparato: las existencias se repintan solas. */
+    #[On('echo-private:inventario,.InventarioActualizado')]
+    public function refrescarInventario(): void {}
 
     protected string $paginationTheme = 'bootstrap';
 

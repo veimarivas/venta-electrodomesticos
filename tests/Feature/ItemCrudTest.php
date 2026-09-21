@@ -408,4 +408,22 @@ class ItemCrudTest extends TestCase
             ->assertOk()
             ->assertSee($unidad->codigo_interno);
     }
+
+    public function test_avisa_de_las_unidades_con_precio_por_debajo_del_costo(): void
+    {
+        // Precio por debajo del costo: se vendería a pérdida.
+        $producto = Producto::factory()->create(['precio_venta' => 500]);
+
+        Unidad::factory()->create([
+            'producto_id' => $producto->id,
+            'estado' => 'en_stock',
+            'costo_unitario' => 800,
+            'precio_venta' => 500,
+        ]);
+
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->assertSee('A pérdida')
+            ->assertSee('por debajo del costo');
+    }
 }

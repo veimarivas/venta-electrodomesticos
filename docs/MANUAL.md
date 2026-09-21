@@ -545,6 +545,18 @@ además su ficha completa.
 Perdido. Se cambian editando la unidad o desde un ajuste en el kardex. Una
 unidad nueva entra siempre **en stock**.
 
+> **Las pantallas se actualizan solas.** Cuando una caja aparta un aparato al
+> agregarlo al carrito, la cantidad disponible baja en **Categorías, Marcas,
+> Productos, Stock y Unidades** sin recargar la página (y también en la app del
+> teléfono). El aparato apartado se ve como *En proceso de venta*; si el carrito
+> se abandona, vuelve solo al stock a los 20 minutos.
+
+> **A pérdida.** Si el costo de un aparato es **mayor que su precio**, la fila se
+> marca **«A pérdida»** y el sistema sugiere corregir el precio: vender así deja
+> pérdida sobre lo que costó. En el panel se edita con el lápiz de la fila (o se
+> ajusta el *precio del día* del producto); en el teléfono, el aviso aparece en
+> la ficha del aparato.
+
 **Kardex** (*Inventario → Kardex*) — la historia de cada aparato. Busca (o
 escanea) el serial y sale su línea de tiempo completa: cuándo entró, de qué
 compra, cada cambio de estado, quién lo hizo y por qué.

@@ -8,6 +8,7 @@ use App\Models\Producto;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
@@ -17,6 +18,10 @@ use Livewire\Component;
  */
 class Index extends Component
 {
+    /** Otra caja apartó o soltó un aparato: el stock se repinta solo. */
+    #[On('echo-private:inventario,.InventarioActualizado')]
+    public function refrescarInventario(): void {}
+
     /** Vista de agrupación activa: 'categorias' o 'marcas'. */
     public string $vista = 'categorias';
 

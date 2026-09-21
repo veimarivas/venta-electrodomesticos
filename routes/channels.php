@@ -28,6 +28,20 @@ Broadcast::channel('autorizaciones', function ($user) {
 });
 
 /**
+ * Disponibilidad del inventario.
+ *
+ * Lo escuchan las pantallas que muestran cuántas unidades quedan (catálogo,
+ * stock y unidades). No lleva datos, solo avisa de que hay que refrescar, así
+ * que basta con poder ver el catálogo o el inventario.
+ */
+Broadcast::channel('inventario', function ($user) {
+    return $user->can('productos.ver')
+        || $user->can('inventario.ver')
+        || $user->can('unidades.ver')
+        || $user->can('stock.ver');
+});
+
+/**
  * Canal de una solicitud concreta: ahí viaja su resolución.
  *
  * Lo escuchan el vendedor que la pidió —para que su carrito se actualice solo—

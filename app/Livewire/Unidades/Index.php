@@ -14,12 +14,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
     use WithPagination;
+
+    /** Otra caja apartó o soltó un aparato: la tabla se repinta sola. */
+    #[On('echo-private:inventario,.InventarioActualizado')]
+    public function refrescarInventario(): void {}
 
     protected string $paginationTheme = 'bootstrap';
 
@@ -532,6 +537,9 @@ class Index extends Component
         $totales = Unidad::query()
             ->when($producto !== null, fn ($q) => $q->where('producto_id', $producto->id))
             ->selectRaw('count(*) as total, sum(case when estado = "en_stock" then 1 else 0 end) as en_stock, sum(case when estado = "vendido" then 1 else 0 end) as vendidos, sum(case when estado = "en_stock" then precio_venta else 0 end) as valor')
+            // A pérdida: el precio no cubre el costo. Solo cuentan las que aún
+            // se pueden corregir (una vendida ya no se re-precio).
+            ->selectRaw('sum(case when costo_unitario > precio_venta and estado <> "vendido" then 1 else 0 end) as a_perdida')
             ->first();
 
         // Desglose por estado del producto abierto, para la ficha.
@@ -556,6 +564,7 @@ class Index extends Component
             'enStock' => (int) $totales->en_stock,
             'vendidos' => (int) $totales->vendidos,
             'valorInventario' => (float) $totales->valor,
+            'aPerdida' => (int) $totales->a_perdida,
             'productos' => $this->opcionesProductos(),
             'estados' => Unidad::ESTADOS,
             'producto' => $producto,
