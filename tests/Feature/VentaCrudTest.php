@@ -16,6 +16,7 @@ use App\Models\Venta;
 use App\Models\VentaDetalle;
 use App\Support\ArqueoDeCaja;
 use App\Support\GeneradorCodigoVenta;
+use App\Support\PreciosDelDia;
 use App\Support\RegistroDeVenta;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,11 +48,16 @@ class VentaCrudTest extends TestCase
     /** Unidad en stock, lista para vender. */
     private function unidadEnStock(float $costo = 1000, float $precio = 1500, float $descuentoMaximo = 0): Unidad
     {
+        $producto = Producto::factory()->create([
+            'precio_venta' => $precio,
+            'descuento_maximo' => $descuentoMaximo,
+        ]);
+
+        // La jornada empieza fijando los precios: el POS no cobra sin ellos.
+        app(PreciosDelDia::class)->guardar([$producto->id => $precio], $this->admin()->id);
+
         return Unidad::factory()->create([
-            'producto_id' => Producto::factory()->create([
-                'precio_venta' => $precio,
-                'descuento_maximo' => $descuentoMaximo,
-            ])->id,
+            'producto_id' => $producto->id,
             'estado' => 'en_stock',
             'costo_unitario' => $costo,
             'precio_venta' => $precio,

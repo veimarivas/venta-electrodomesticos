@@ -21,6 +21,12 @@ class Index extends Component
     /** Precio de hoy por producto: producto_id => texto del campo. */
     public array $precios = [];
 
+    /** Buscador de la lista. */
+    public string $buscar = '';
+
+    /** Deja solo los que todavía no tienen precio de hoy. */
+    public bool $soloPendientes = false;
+
     public function mount(): void
     {
         $this->autorizar();
@@ -36,7 +42,8 @@ class Index extends Component
     }
 
     /**
-     * Productos con stock y su precio de referencia.
+     * Productos con stock y su precio de referencia. Es la lista completa: la
+     * validación y el guardado la recorren entera aunque la vista filtre.
      *
      * @return Collection<int, object>
      */
@@ -44,6 +51,39 @@ class Index extends Component
     public function revision(): Collection
     {
         return app(PreciosDelDia::class)->paraRevisar();
+    }
+
+    /**
+     * La lista tal como se ve: acotada por el buscador y por «solo pendientes».
+     *
+     * @return Collection<int, object>
+     */
+    #[Computed]
+    public function filtradas(): Collection
+    {
+        $termino = mb_strtolower(trim($this->buscar));
+
+        return $this->revision
+            ->filter(function ($fila) use ($termino): bool {
+                if ($this->soloPendientes && $fila->precio_hoy !== null) {
+                    return false;
+                }
+
+                if ($termino === '') {
+                    return true;
+                }
+
+                return str_contains(mb_strtolower($fila->producto->nombre), $termino)
+                    || str_contains(mb_strtolower((string) $fila->producto->categoria?->nombre), $termino);
+            })
+            ->values();
+    }
+
+    /** Cuántos ya tienen precio de hoy. */
+    #[Computed]
+    public function fijados(): int
+    {
+        return $this->revision->whereNotNull('precio_hoy')->count();
     }
 
     public function guardar(): void
@@ -88,7 +128,10 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.precios.index', [
-            'filas' => $this->revision,
+            'filas' => $this->filtradas,
+            'total' => $this->revision->count(),
+            'fijados' => $this->fijados,
+            'pendientes' => $this->revision->count() - $this->fijados,
         ]);
     }
 

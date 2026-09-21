@@ -92,6 +92,18 @@ class PreciosDelDia
     }
 
     /**
+     * ¿Se puede empezar a vender? La jornada arranca fijando los precios: hasta
+     * que no se guardan los del día, el punto de venta no cobra. Si no hay nada
+     * con stock que fijar, no hay nada que esperar.
+     */
+    public function listos(?CarbonInterface $fecha = null): bool
+    {
+        $fecha ??= now();
+
+        return $this->definidos($fecha) || $this->pendientes($fecha) === 0;
+    }
+
+    /**
      * Productos con stock, con su precio de referencia (el de la jornada
      * anterior o, si no hay, el inicial), el de hoy si ya se fijó y el costo.
      *

@@ -187,6 +187,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('catalogo.importar');
         });
 
+        // Estado de los precios de hoy, para el punto de venta: lo consulta
+        // quien puede vender, aunque no pueda administrar el catálogo.
+        Route::get('/precios-del-dia/estado', [PrecioController::class, 'estado'])
+            ->middleware('permission:ventas.crear')
+            ->name('precios.estado');
+
         // Precios del día: se fijan al empezar la jornada y son los que ofrece
         // el punto de venta. Basta con abrir la caja o editar el catálogo.
         Route::middleware('permission:caja.gestionar|productos.editar')->group(function () {

@@ -934,6 +934,19 @@
                                 </a>
                             @endcan
                         </div>
+                    @elseif ($carrito !== [] && ! $this->preciosDelDiaListos)
+                        <div class="pos-aviso pos-aviso--caja mt-3">
+                            <i class="ri-price-tag-3-line"></i>
+                            <div>
+                                <strong>Faltan los precios de hoy.</strong>
+                                La jornada empieza fijándolos: hasta que no se guarden, no se puede cobrar.
+                            </div>
+                            @canany(['caja.gestionar', 'productos.editar'])
+                                <a href="{{ route('precios.index') }}" class="btn btn-sm btn-warning">
+                                    Fijar precios
+                                </a>
+                            @endcanany
+                        </div>
                     @elseif ($carrito !== [] && $this->motivosParaNoCobrar !== [])
                         <div class="pos-aviso pos-aviso--pendiente mt-3">
                             <i class="ri-error-warning-line"></i>

@@ -27,6 +27,9 @@ class PrecioController extends Controller
             'producto_id' => $fila->producto->id,
             'nombre' => $fila->producto->nombre,
             'categoria' => $fila->producto->categoria?->nombre,
+            'imagen_url' => $fila->producto->imagen
+                ? asset('storage/'.$fila->producto->imagen)
+                : null,
             'disponibles' => $fila->disponibles,
             'costo' => $fila->costo,
             'precio_inicial' => $fila->precio_inicial,
@@ -39,6 +42,24 @@ class PrecioController extends Controller
             'meta' => [
                 'pendientes' => $servicio->pendientes(),
                 'definidos' => $servicio->definidos(),
+            ],
+        ]);
+    }
+
+    /**
+     * Estado liviano para el punto de venta: si los precios de hoy están
+     * listos. Lo consulta cualquiera que pueda vender, sin necesidad de poder
+     * administrar el catálogo, para saber si el cobro está habilitado.
+     */
+    public function estado(): JsonResponse
+    {
+        $servicio = app(PreciosDelDia::class);
+
+        return response()->json([
+            'data' => [
+                'listos' => $servicio->listos(),
+                'definidos' => $servicio->definidos(),
+                'pendientes' => $servicio->pendientes(),
             ],
         ]);
     }

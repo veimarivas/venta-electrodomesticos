@@ -1772,6 +1772,16 @@ class Pos extends Component
     }
 
     /**
+     * ¿Se fijaron los precios de hoy? La jornada empieza por ahí: hasta que no
+     * se guardan, el punto de venta no cobra.
+     */
+    #[Computed]
+    public function preciosDelDiaListos(): bool
+    {
+        return app(PreciosDelDia::class)->listos();
+    }
+
+    /**
      * Qué le falta a la venta para poder cobrarse.
      *
      * Se enseña junto al botón: un botón apagado sin decir por qué deja al
@@ -1791,6 +1801,10 @@ class Pos extends Component
 
         if (! $this->cajaAbierta) {
             $motivos[] = 'No hay una caja abierta. Ábrela para empezar a vender.';
+        }
+
+        if (! $this->preciosDelDiaListos) {
+            $motivos[] = 'Faltan los precios de hoy. Fíjalos en «Precios del día».';
         }
 
         foreach ($this->carrito as $linea) {
@@ -1857,6 +1871,11 @@ class Pos extends Component
         // Vender exige la caja abierta: una venta fuera de turno no entra en
         // ningún cuadre.
         if (! $this->cajaAbierta) {
+            return false;
+        }
+
+        // Y exige los precios del día: la jornada empieza fijándolos.
+        if (! $this->preciosDelDiaListos) {
             return false;
         }
 

@@ -1,0 +1,98 @@
+// -----------------------------------------------------------------------------
+// Precios del día (/precios-del-dia)
+// -----------------------------------------------------------------------------
+// La pantalla es una tabla larga de productos con un campo por fila. Lo propio
+// es la barra de guardar, que queda pegada abajo mientras se revisa: el botón
+// no se pierde al bajar por la lista.
+// -----------------------------------------------------------------------------
+
+.precios-modulo {
+
+    // Barra de guardar pegada al borde inferior del área de contenido.
+    .precios-barra {
+        position: sticky;
+        bottom: 1rem;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .75rem 1rem;
+        margin-top: 1rem;
+        padding: .85rem 1.1rem;
+        border-radius: var(--radio-lg);
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
+        box-shadow: var(--sombra-lg);
+    }
+
+    .precios-barra-info {
+        color: var(--marca-apagado);
+        font-size: .82rem;
+
+        strong { color: var(--marca-tinta); }
+    }
+
+    // Cambio frente al precio de la jornada anterior. Ni verde ni rojo: subir o
+    // bajar un precio no es bueno ni malo, solo hay que verlo.
+    .precios-cambio {
+        display: inline-block;
+        margin-top: .2rem;
+        font-size: .72rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+
+        &--sube { color: var(--marca-azul-texto); }
+        &--baja { color: var(--estado-alerta-texto); }
+        &--igual { color: var(--marca-apagado); }
+    }
+
+    .precios-ya {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        font-size: .62rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: var(--estado-ok);
+    }
+
+    // La fila del producto que ya tiene precio de hoy va un punto apagada: lo
+    // que queda por hacer resalta solo.
+    .precios-fila-ya {
+        background: color-mix(in srgb, var(--estado-ok) 5%, transparent);
+    }
+
+    .precios-input {
+        width: 8.5rem;
+        margin-left: auto;
+    }
+
+    .precios-imagen-mini {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+        border-radius: var(--radio-sm);
+        overflow: hidden;
+        background: var(--marca-suave);
+        border: 1px solid var(--marca-linea);
+
+        img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .precios-imagen-mini-sin {
+            object-fit: contain;
+            padding: 4px;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .precios-input { width: 100%; margin-left: 0; }
+    }
+}

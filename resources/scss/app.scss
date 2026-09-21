@@ -47,6 +47,7 @@
 @use 'components/unidades';
 @use 'components/pos';
 @use 'components/autorizaciones';
+@use 'components/precios';
 
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
 @use 'flatpickr/dist/flatpickr.min.css';

@@ -10,6 +10,7 @@ use App\Models\Unidad;
 use App\Models\User;
 use App\Models\Venta;
 use App\Support\ArqueoDeCaja;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RegistroDeVenta;
 use Database\Seeders\RolePermissionSeeder;
@@ -49,14 +50,19 @@ class VentaACreditoTest extends TestCase
 
     private function unidad(float $precio): Unidad
     {
+        $producto = Producto::factory()->create([
+            'precio_venta' => $precio,
+            // Fijo: al azar dispararía el aviso de stock bajo, que aquí no
+            // pinta nada.
+            'stock_minimo' => 0,
+            'descuento_maximo' => 0,
+        ]);
+
+        // La jornada empieza fijando los precios: el POS no cobra sin ellos.
+        app(PreciosDelDia::class)->guardar([$producto->id => $precio], $this->supervisor()->id);
+
         return Unidad::factory()->create([
-            'producto_id' => Producto::factory()->create([
-                'precio_venta' => $precio,
-                // Fijo: al azar dispararía el aviso de stock bajo, que aquí no
-                // pinta nada.
-                'stock_minimo' => 0,
-                'descuento_maximo' => 0,
-            ])->id,
+            'producto_id' => $producto->id,
             'estado' => 'en_stock',
             'costo_unitario' => $precio / 2,
             'precio_venta' => $precio,

@@ -428,6 +428,11 @@ así que se **fija al empezar la jornada**. Al **abrir la caja**, si faltan
 precios por revisar, el sistema lleva directo a *Ventas → Precios del día* (o se
 entra desde la propia pantalla de Caja, que avisa mientras haya pendientes).
 
+> **Hasta que no se guarden los precios del día, el punto de venta no cobra.**
+> El botón de cobrar queda apagado con un aviso y un atajo para fijarlos; lo
+> mismo en el panel y en el teléfono. Es la primera tarea de la jornada: abrir la
+> caja, revisar los precios y guardar.
+
 Ahí salen los productos **con stock**, cada uno con el **precio de la jornada
 anterior** (o el inicial, si nunca se fijó) y un campo para el de hoy. Se
 guarda, y ese precio es el que ofrece el punto de venta. **El último registrado
