@@ -348,3 +348,53 @@
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+// Avisos del POS: caja cerrada, datos pendientes y recordatorio de cierre
+// -----------------------------------------------------------------------------
+// Van justo encima del botón de cobrar: explican por qué está apagado.
+.pos-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .7rem .85rem;
+    border-radius: var(--radio-md);
+    font-size: .82rem;
+    line-height: 1.4;
+
+    > i {
+        flex-shrink: 0;
+        margin-top: .1rem;
+        font-size: 1.05rem;
+    }
+
+    > div {
+        flex: 1;
+        min-width: 0;
+    }
+
+    strong { display: block; }
+
+    .btn {
+        flex-shrink: 0;
+        align-self: center;
+    }
+}
+
+.pos-aviso--caja {
+    color: var(--estado-alerta-texto);
+    background: var(--estado-alerta-suave);
+    border: 1px solid color-mix(in srgb, var(--estado-alerta) 32%, transparent);
+}
+
+.pos-aviso--pendiente {
+    color: var(--estado-error);
+    background: var(--estado-error-suave);
+    border: 1px solid color-mix(in srgb, var(--estado-error) 32%, transparent);
+}
+
+.pos-aviso--cierre {
+    color: var(--marca-azul-texto);
+    background: var(--vz-primary-bg-subtle);
+    border: 1px solid color-mix(in srgb, var(--marca-azul) 26%, transparent);
+}

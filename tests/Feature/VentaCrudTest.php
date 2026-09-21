@@ -14,6 +14,7 @@ use App\Models\Unidad;
 use App\Models\User;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
+use App\Support\ArqueoDeCaja;
 use App\Support\GeneradorCodigoVenta;
 use App\Support\RegistroDeVenta;
 use Database\Seeders\RolePermissionSeeder;
@@ -33,6 +34,9 @@ class VentaCrudTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+
+        // Vender exige la caja abierta: el POS de estos tests necesita un turno.
+        app(ArqueoDeCaja::class)->abrir($this->admin()->id, 0);
     }
 
     private function admin(): User

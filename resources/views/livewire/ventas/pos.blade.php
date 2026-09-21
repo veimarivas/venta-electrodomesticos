@@ -917,6 +917,55 @@
                         <div class="text-danger fs-12 mt-2">{{ $message }}</div>
                     @enderror
 
+                    {{-- ---------- Por qué no se puede cobrar todavía ---------- --}}
+                    {{-- Un botón apagado sin explicación deja al cajero
+                         adivinando. El primer caso es el que más se olvida:
+                         abrir la caja al empezar la jornada. --}}
+                    @if ($carrito !== [] && ! $this->cajaAbierta)
+                        <div class="pos-aviso pos-aviso--caja mt-3">
+                            <i class="ri-lock-2-line"></i>
+                            <div>
+                                <strong>La caja está cerrada.</strong>
+                                Ábrela para vender: las ventas de hoy tienen que entrar en un turno.
+                            </div>
+                            @can('caja.gestionar')
+                                <a href="{{ route('caja.index') }}" class="btn btn-sm btn-warning">
+                                    Abrir caja
+                                </a>
+                            @endcan
+                        </div>
+                    @elseif ($carrito !== [] && $this->motivosParaNoCobrar !== [])
+                        <div class="pos-aviso pos-aviso--pendiente mt-3">
+                            <i class="ri-error-warning-line"></i>
+                            <div>
+                                <strong>Falta un dato para cobrar:</strong>
+                                <ul class="mb-0 ps-3">
+                                    @foreach ($this->motivosParaNoCobrar as $motivo)
+                                        <li>{{ $motivo }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- ---------- Recordatorio de cierre ---------- --}}
+                    {{-- Pasadas las 20:00, con la caja abierta, se sugiere
+                         cerrar el turno antes de irse. --}}
+                    @if ($this->cajaAbierta && now()->hour >= 20)
+                        <div class="pos-aviso pos-aviso--cierre mt-3">
+                            <i class="ri-moon-line"></i>
+                            <div>
+                                <strong>Son las {{ now()->format('H:i') }}.</strong>
+                                Cuando termines, cierra la caja del turno.
+                            </div>
+                            @can('caja.gestionar')
+                                <a href="{{ route('caja.index') }}" class="btn btn-sm btn-outline-primary">
+                                    Cerrar caja
+                                </a>
+                            @endcan
+                        </div>
+                    @endif
+
                     {{-- ---------- Botón cobrar ---------- --}}
                     {{-- Abre el repaso, no cobra: registrar la venta solo se
                          deshace anulándola, y la anulación deja su rastro. --}}

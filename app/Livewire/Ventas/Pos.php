@@ -9,6 +9,7 @@ use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
 use App\Models\User;
 use App\Models\Venta;
+use App\Support\ArqueoDeCaja;
 use App\Support\AutorizacionDeDescuento;
 use App\Support\GeneradorCodigoCliente;
 use App\Support\GeneradorCodigoVenta;
@@ -1743,11 +1744,102 @@ class Pos extends Component
         return $this->totalEnCentavos - $efectivo - $porQr;
     }
 
+    /**
+     * ¿Hay un turno de caja abierto? Vender exige la caja abierta: una venta
+     * fuera de turno no entra en ningún cuadre y el arqueo nunca cuadraría.
+     */
+    #[Computed]
+    public function cajaAbierta(): bool
+    {
+        return app(ArqueoDeCaja::class)->abierta() !== null;
+    }
+
+    /**
+     * Qué le falta a la venta para poder cobrarse.
+     *
+     * Se enseña junto al botón: un botón apagado sin decir por qué deja al
+     * cajero adivinando y llamando al administrador. El primer motivo es el
+     * que más se olvida —abrir la caja al empezar la jornada—.
+     *
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function motivosParaNoCobrar(): array
+    {
+        if ($this->carrito === []) {
+            return [];
+        }
+
+        $motivos = [];
+
+        if (! $this->cajaAbierta) {
+            $motivos[] = 'No hay una caja abierta. Ábrela para empezar a vender.';
+        }
+
+        foreach ($this->carrito as $linea) {
+            $unidad = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
+            $precio = ProrrateoDeGastos::aCentavos($linea['precio'] ?? 0);
+            $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista'] ?? 0);
+            $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento'] ?? 0);
+
+            if ($precio > $lista) {
+                $motivos[] = 'Un aparato está por encima de su precio de referencia.';
+
+                break;
+            }
+
+            if ($lista - $precio > $tope) {
+                $aprobado = $linea['precio_aprobado'] ?? null;
+                $cubierto = ($linea['solicitud_estado'] ?? null) === 'aprobada'
+                    && $aprobado !== null
+                    && $precio >= ProrrateoDeGastos::aCentavos($aprobado);
+
+                if (! $cubierto) {
+                    $motivos[] = 'Hay una rebaja por debajo del mínimo pendiente de autorización.';
+
+                    break;
+                }
+            }
+        }
+
+        if ($this->pagoEsCredito) {
+            if ($this->clienteId === null) {
+                $motivos[] = 'Una venta a crédito necesita un cliente.';
+            }
+
+            if ((int) $this->numeroCuotas < 1 || $this->primerVencimiento === '') {
+                $motivos[] = 'Completa el plan de cuotas: número y primer vencimiento.';
+            } elseif ($this->financiadoEnCentavos <= 0) {
+                $motivos[] = 'La cuota inicial no puede cubrir toda la venta.';
+            }
+        }
+
+        if ($this->pagoUsaQr && ($this->qrElegido === null || $this->comprobante === null)) {
+            $motivos[] = 'El cobro por QR necesita elegir el QR y subir el respaldo.';
+        }
+
+        if ($this->metodoPago === 'mixto' && $this->diferenciaMixtoEnCentavos !== 0) {
+            $motivos[] = 'El reparto del pago mixto tiene que cuadrar con el total.';
+        }
+
+        if ($this->hayEntregaDomicilio() && trim($this->direccionEntrega) === '') {
+            $motivos[] = 'La entrega a domicilio necesita una dirección.';
+        }
+
+        return $motivos;
+    }
+
     /** ¿Se puede cobrar ya? */
     #[Computed]
     public function ventaValida(): bool
     {
         if ($this->carrito === [] || $this->totalEnCentavos <= 0) {
+            return false;
+        }
+
+        // Vender exige la caja abierta: una venta fuera de turno no entra en
+        // ningún cuadre.
+        if (! $this->cajaAbierta) {
             return false;
         }
 

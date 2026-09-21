@@ -52,6 +52,11 @@ contraseña inicial es tu carnet y la conoce quien te dio de alta.
 
 *Ventas → Nueva venta.*
 
+> **Antes de vender, abre la caja del turno** (*Ventas → Caja*). Sin una caja
+> abierta el botón **Cobrar y registrar** no se habilita y la pantalla te dice
+> por qué, con un atajo para abrirla. Es lo que hace que ninguna venta quede
+> fuera del cuadre.
+
 1. **Escanea o teclea** el serial o el código interno del aparato. También
    busca por SKU o por nombre.
 2. Sale en la lista; pulsa y entra al carrito. Repite con cada aparato.
@@ -349,9 +354,13 @@ cuánto.
 > te propone la cifra esperada: si te la enseñara, cerrar sería darle a aceptar
 > y no estarías cuadrando nada.
 
-> **Vender no exige tener la caja abierta.** El mostrador cobra igual. Pero esas
-> ventas no entran en ningún cuadre, y si las hay el cierre te avisa para que
-> las revises.
+> **Para vender hay que abrir la caja.** Al empezar la jornada, abre el turno
+> con su fondo; hasta entonces el botón de cobrar queda apagado y la pantalla lo
+> dice. Así ninguna venta se queda fuera del cuadre. Lo mismo en el panel y en
+> el teléfono.
+
+> **A partir de las 20:00 el sistema te recuerda cerrar.** Con la caja abierta,
+> el punto de venta enseña un aviso con un atajo para ir a cerrar el turno.
 
 > **El cierre no se mueve.** Si mañana se anula una venta de ese turno, el
 > arqueo sigue diciendo lo que se vio esa noche. Es lo que hace que sirva para

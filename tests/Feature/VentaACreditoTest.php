@@ -216,7 +216,11 @@ class VentaACreditoTest extends TestCase
         $unidad = $this->unidad(1200);
         $cliente = $this->cliente();
 
-        Livewire::actingAs($this->supervisor())
+        // Vender exige la caja abierta.
+        $supervisor = $this->supervisor();
+        app(ArqueoDeCaja::class)->abrir($supervisor->id, 0);
+
+        Livewire::actingAs($supervisor)
             ->test(Pos::class)
             ->call('agregar', $unidad->id)
             ->call('elegirCliente', $cliente->id)
