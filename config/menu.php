@@ -61,7 +61,7 @@ return [
     [
         'label' => 'Ventas',
         'icon' => 'ri-shopping-cart-2-line',
-        'active' => ['ventas*', 'clientes*', 'creditos*', 'entregas*'],
+        'active' => ['ventas*', 'clientes*', 'creditos*', 'entregas*', 'precios-del-dia*'],
         // Sin permiso en el grupo: cada hijo declara el suyo y MenuBuilder
         // descarta el grupo si se queda sin ítems visibles. Con 'ventas.ver'
         // aquí, quien solo puede ver clientes no vería ni la sección.
@@ -76,6 +76,7 @@ return [
             // Con `caja.gestionar` basta: el cajero abre y cierra su turno
             // aunque no pueda repasar el histórico de todos.
             ['label' => 'Caja', 'route' => 'caja.index', 'active' => 'caja*', 'permission' => 'caja.gestionar'],
+            ['label' => 'Precios del día', 'route' => 'precios.index', 'active' => 'precios-del-dia*', 'permission' => 'caja.gestionar'],
         ],
     ],
 

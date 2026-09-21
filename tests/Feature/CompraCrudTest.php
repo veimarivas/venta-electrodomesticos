@@ -57,7 +57,9 @@ class CompraCrudTest extends TestCase
      */
     private function compraLista(string $totalPagado = '1000', int $cantidad = 4): array
     {
-        $producto = Producto::factory()->create(['activo' => true]);
+        // Precio alto y fijo: el costo unitario tiene que quedar por debajo del
+        // precio de venta, o la compra se rechaza.
+        $producto = Producto::factory()->create(['activo' => true, 'precio_venta' => 500000]);
         $costoUnitario = (string) ($totalPagado / $cantidad);
 
         $componente = Livewire::actingAs($this->admin())
@@ -176,7 +178,8 @@ class CompraCrudTest extends TestCase
 
     public function test_el_total_pagado_se_calcula_automaticamente(): void
     {
-        $producto = Producto::factory()->create(['activo' => true]);
+        // El precio tiene que superar al costo (600), o la compra se rechaza.
+        $producto = Producto::factory()->create(['activo' => true, 'precio_venta' => 1000]);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
@@ -197,8 +200,8 @@ class CompraCrudTest extends TestCase
 
     public function test_el_total_pagado_se_actualiza_al_agregar_productos(): void
     {
-        $tv = Producto::factory()->create(['activo' => true]);
-        $lavadora = Producto::factory()->create(['activo' => true]);
+        $tv = Producto::factory()->create(['activo' => true, 'precio_venta' => 4500]);
+        $lavadora = Producto::factory()->create(['activo' => true, 'precio_venta' => 2200]);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)
@@ -256,7 +259,7 @@ class CompraCrudTest extends TestCase
 
     public function test_quitar_un_producto_lo_saca_del_cuadre(): void
     {
-        $producto = Producto::factory()->create(['activo' => true]);
+        $producto = Producto::factory()->create(['activo' => true, 'precio_venta' => 1000]);
 
         Livewire::actingAs($this->admin())
             ->test(Index::class)

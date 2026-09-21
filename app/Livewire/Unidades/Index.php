@@ -82,6 +82,19 @@ class Index extends Component
     /**
      * @return array<string, mixed>
      */
+    /**
+     * El precio de venta tiene que cubrir el costo: vender por debajo sería
+     * regalar el aparato.
+     */
+    private function precioMayorQueCosto(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ((float) $this->costo > 0 && (float) $value <= (float) $this->costo) {
+                $fail('El precio de venta tiene que ser mayor que el costo del aparato.');
+            }
+        };
+    }
+
     protected function rules(): array
     {
         if ($this->itemId !== null) {
@@ -92,7 +105,7 @@ class Index extends Component
                     Rule::unique('unidades', 'serial')->ignore($this->itemId)->whereNull('deleted_at'),
                 ],
                 'costo' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-                'precio' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+                'precio' => ['nullable', 'numeric', 'min:0', 'max:99999999', $this->precioMayorQueCosto()],
                 'estado' => ['nullable', Rule::in(array_keys(Unidad::ESTADOS))],
                 'ubicacion' => ['nullable', 'string', 'max:120'],
                 'fechaIngreso' => ['nullable', 'date'],
@@ -107,7 +120,7 @@ class Index extends Component
                 Rule::unique('unidades', 'serial')->ignore($this->itemId)->whereNull('deleted_at'),
             ],
             'costo' => ['required', 'numeric', 'min:0', 'max:99999999'],
-            'precio' => ['required', 'numeric', 'min:0', 'max:99999999'],
+            'precio' => ['required', 'numeric', 'min:0', 'max:99999999', $this->precioMayorQueCosto()],
             'estado' => ['required', Rule::in(array_keys(Unidad::ESTADOS))],
             'ubicacion' => ['nullable', 'string', 'max:120'],
             'fechaIngreso' => ['required', 'date'],

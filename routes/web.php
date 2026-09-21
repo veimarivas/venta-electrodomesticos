@@ -277,6 +277,13 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Caja' => null],
     ])->middleware('permission:caja.ver|caja.gestionar')->name('caja.index');
 
+    // Precios del día: se fijan al empezar la jornada y son los que ofrece el
+    // punto de venta. Basta con abrir la caja o poder editar el catálogo.
+    Route::view('/precios-del-dia', 'backend.precios.index', [
+        'title' => 'Precios del día',
+        'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Precios del día' => null],
+    ])->middleware('permission:caja.gestionar|productos.editar')->name('precios.index');
+
     Route::view('/roles', 'backend.roles.index', [
         'title' => 'Roles y permisos',
         'breadcrumbs' => ['Inicio' => null, 'Sistema' => null, 'Roles y permisos' => null],

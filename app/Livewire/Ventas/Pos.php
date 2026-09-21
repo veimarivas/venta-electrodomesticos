@@ -14,6 +14,7 @@ use App\Support\AutorizacionDeDescuento;
 use App\Support\GeneradorCodigoCliente;
 use App\Support\GeneradorCodigoVenta;
 use App\Support\PlanDeCuotas;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
@@ -203,7 +204,7 @@ class Pos extends Component
         $autorizaciones = app(AutorizacionDeDescuento::class);
 
         foreach ($unidades as $unidad) {
-            $lista = number_format((float) $unidad->precio_venta, 2, '.', '');
+            $lista = $this->precioDeVenta($unidad);
             $precio = $lista;
             $solicitudId = null;
             $solicitudEstado = null;
@@ -657,6 +658,22 @@ class Pos extends Component
     // Carrito
     // =======================================================================
 
+    /**
+     * Precio de referencia de una unidad: el precio del día de su producto (el
+     * último registrado) o, si nunca se registró, el precio con el que se dio
+     * de alta el producto. El que trae la unidad es solo respaldo.
+     */
+    private function precioDeVenta(Unidad $unidad): string
+    {
+        $precio = app(PreciosDelDia::class)->precioVigente($unidad->producto_id);
+
+        if ($precio <= 0) {
+            $precio = (float) $unidad->precio_venta;
+        }
+
+        return number_format($precio, 2, '.', '');
+    }
+
     public function agregar(int $unidadId): void
     {
         $this->autorizar('ventas.crear');
@@ -693,11 +710,11 @@ class Pos extends Component
             return;
         }
 
-        $precio = number_format((float) $unidad->precio_venta, 2, '.', '');
+        $precio = $this->precioDeVenta($unidad);
 
         $this->carrito[] = [
             'unidad_id' => $unidad->id,
-            // Referencia intocable: es el precio con el que salió la unidad.
+            // Precio del día del producto: la referencia que se ofrece.
             'precio_lista' => $precio,
             // Lo que se va a cobrar. Arranca en el de lista, sin descuento.
             'precio' => $precio,

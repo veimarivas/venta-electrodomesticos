@@ -51,6 +51,14 @@ class UnidadController extends Controller
         $precioVenta = $datos['precio_venta'] ?? $producto->precio_venta;
         $costoUnitario = $datos['costo_unitario'] ?? 0;
 
+        // El precio tiene que cubrir el costo: vender por debajo sería regalar
+        // el aparato.
+        if ($costoUnitario > 0 && $precioVenta <= $costoUnitario) {
+            throw ValidationException::withMessages([
+                'precio_venta' => 'El precio de venta tiene que ser mayor que el costo del aparato.',
+            ]);
+        }
+
         try {
             $unidad = app(\App\Support\GeneradorCodigoUnidad::class)->crearCon([
                 'producto_id' => $datos['producto_id'],

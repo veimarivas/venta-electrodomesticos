@@ -14,6 +14,7 @@ use App\Models\Unidad;
 use App\Support\EtiquetaPdf;
 use App\Support\GeneradorCodigoCompra;
 use App\Support\GeneradorEtiquetas;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RecepcionDeCompra;
 use Illuminate\Http\JsonResponse;
@@ -381,6 +382,33 @@ class CompraController extends Controller
             throw ValidationException::withMessages([
                 'lineas' => 'La suma de los productos no cuadra con el total.',
             ]);
+        }
+
+        // El costo unitario no puede alcanzar al precio de venta: se estaría
+        // comprando para perder. Se compara contra el precio del día del
+        // producto (el último registrado).
+        $precios = app(PreciosDelDia::class);
+
+        foreach ($datos['lineas'] as $linea) {
+            $producto = Producto::find($linea['producto_id']);
+
+            if ($producto === null) {
+                continue;
+            }
+
+            $precioCentavos = ProrrateoDeGastos::aCentavos($precios->precioVigente($producto->id));
+
+            if ($precioCentavos <= 0) {
+                continue;
+            }
+
+            $costoCentavos = ProrrateoDeGastos::aCentavos($linea['costo_total']);
+
+            if ($costoCentavos >= $precioCentavos * (int) $linea['cantidad']) {
+                throw ValidationException::withMessages([
+                    'lineas' => "El costo de «{$producto->nombre}» no puede ser igual o mayor a su precio de venta.",
+                ]);
+            }
         }
 
         // Un producto no puede repetirse en dos líneas: el prorrateo y el

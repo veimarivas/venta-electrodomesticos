@@ -407,8 +407,9 @@ activa, porque ahí la lista es plana y no hay «antes» ni «después».
 
 - **SKU**: identificador corto y único. Es la raíz del código interno de cada
   unidad, así que conviene que se entienda (`TVSAM55`).
-- **Precio de venta**: el precio de lista. Es el que se propone al vender y el
-  que se usa en las compras.
+- **Precio de venta**: el precio inicial. Es el que se usa en las compras y el
+  que sirve de punto de partida hasta que se fija el **precio del día** (ver
+  *Precios del día*).
 - **Descuento máximo**: lo más que el mostrador puede rebajar de este producto,
   en Bs. Con **0** se cobra siempre el precio de lista. Es el margen de
   negociación que autorizas al vendedor: el punto de venta no deja pasar de ahí.
@@ -419,6 +420,28 @@ activa, porque ahí la lista es plana y no hay «antes» ni «después».
 
 La columna **Disponibles** cuenta solo unidades en stock; vendidas, dañadas o en
 garantía no suman.
+
+### Precios del día
+
+El precio de un producto no es fijo —el proveedor sube, la competencia baja—,
+así que se **fija al empezar la jornada**. Al **abrir la caja**, si faltan
+precios por revisar, el sistema lleva directo a *Ventas → Precios del día* (o se
+entra desde la propia pantalla de Caja, que avisa mientras haya pendientes).
+
+Ahí salen los productos **con stock**, cada uno con el **precio de la jornada
+anterior** (o el inicial, si nunca se fijó) y un campo para el de hoy. Se
+guarda, y ese precio es el que ofrece el punto de venta. **El último registrado
+manda**: el precio que trae cada aparato queda solo como respaldo.
+
+- Queda un **historial por fecha**: cada jornada deja su precio.
+- El precio **no puede quedar en o por debajo del costo**; el sistema lo
+  rechaza.
+- Se revisa igual desde el teléfono (*Caja → icono de precios*).
+
+> **Comprar y vender también respetan el costo.** Al registrar un aparato, el
+> precio tiene que ser mayor que su costo; y en una compra, el costo unitario
+> tiene que quedar por debajo del precio de venta. Comprar o vender para perder
+> se rechaza con el motivo.
 
 ### Carga masiva desde Excel
 

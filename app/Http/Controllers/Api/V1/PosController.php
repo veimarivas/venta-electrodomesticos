@@ -8,6 +8,7 @@ use App\Models\QrCobro;
 use App\Models\Unidad;
 use App\Models\Venta;
 use App\Support\PlanDeCuotas;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use App\Support\ProgramacionDeEntregas;
 use App\Support\RegistroDeVenta;
@@ -442,7 +443,14 @@ class PosController extends Controller
      */
     private function aparato(Unidad $unidad): array
     {
-        $precio = (float) $unidad->precio_venta;
+        // El precio de referencia es el del día (el último registrado del
+        // producto); el que trae la unidad es solo respaldo.
+        $precio = app(PreciosDelDia::class)->precioVigente($unidad->producto_id);
+
+        if ($precio <= 0) {
+            $precio = (float) $unidad->precio_venta;
+        }
+
         $tope = (float) ($unidad->producto?->descuento_maximo ?? 0);
 
         // El costo solo viaja a quien puede verlo. La app lo enseña detrás de

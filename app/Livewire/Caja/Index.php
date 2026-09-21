@@ -5,6 +5,7 @@ namespace App\Livewire\Caja;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
 use App\Support\ArqueoDeCaja;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -85,6 +86,16 @@ class Index extends Component
 
         $this->reset(['montoInicial', 'notas']);
         $this->dispatch('cerrar-modal-abrir-caja');
+
+        // Recién abierta la jornada, si quedan precios por fijar se va directo a
+        // fijarlos: el punto de venta no debería ofrecer un precio que nadie
+        // revisó hoy.
+        if (app(PreciosDelDia::class)->pendientes() > 0) {
+            $this->redirect(route('precios.index'));
+
+            return;
+        }
+
         $this->dispatch('toast', tipo: 'success', mensaje: 'Caja abierta.');
     }
 
@@ -268,6 +279,11 @@ class Index extends Component
                 ? ProrrateoDeGastos::aDecimal($this->arqueo()->movimientosNetosEnCentavos($abierta))
                 : null,
             'tiposMovimiento' => MovimientoCaja::TIPOS,
+            // Productos con stock a los que todavía no se les fijó el precio de
+            // hoy: es lo que se revisa al empezar la jornada.
+            'preciosPendientes' => $this->puedeGestionar()
+                ? app(PreciosDelDia::class)->pendientes()
+                : 0,
         ]);
     }
 }

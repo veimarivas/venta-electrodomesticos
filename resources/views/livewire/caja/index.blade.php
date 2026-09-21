@@ -1,5 +1,22 @@
 <div class="caja-modulo">
 
+    {{-- ===================== Precios del día pendientes ===================== --}}
+    {{-- Al empezar la jornada, antes de vender hay que revisar los precios. --}}
+    @if ($preciosPendientes > 0)
+        <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <i class="ri-price-tag-3-line me-1"></i>
+                <strong>Faltan los precios de hoy:</strong>
+                {{ $preciosPendientes }}
+                {{ $preciosPendientes === 1 ? 'producto con stock' : 'productos con stock' }}
+                sin precio de la jornada.
+            </div>
+            <a href="{{ route('precios.index') }}" class="btn btn-sm btn-warning">
+                Fijar precios del día
+            </a>
+        </div>
+    @endif
+
     {{-- ===================== Encabezado del módulo ===================== --}}
     <div class="card border-0 shadow-sm overflow-hidden mb-4 caja-encabezado">
         <div class="card-body p-0">

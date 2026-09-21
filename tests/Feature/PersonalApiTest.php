@@ -114,7 +114,11 @@ class PersonalApiTest extends TestCase
             'cargo_id' => $cargo->id,
             'persona_id' => $persona->id,
         ]);
-        Trabajador::factory()->create(['codigo' => 'COD-0008']);
+
+        // Nombre fijo y distinto: con el azar de Faker, «Rosario» podía salir
+        // también en la otra persona y la búsqueda devolvía dos.
+        $otro = Persona::factory()->create(['nombres' => 'Marta']);
+        Trabajador::factory()->create(['codigo' => 'COD-0008', 'persona_id' => $otro->id]);
 
         Sanctum::actingAs($this->admin());
 

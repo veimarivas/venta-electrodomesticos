@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\NotificacionController;
 use App\Http\Controllers\Api\V1\PersonaController;
 use App\Http\Controllers\Api\V1\PersonalController;
 use App\Http\Controllers\Api\V1\PosController;
+use App\Http\Controllers\Api\V1\PrecioController;
 use App\Http\Controllers\Api\V1\ProductoController;
 use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\QrCobroController;
@@ -184,6 +185,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('catalogo.plantilla');
             Route::post('/catalogo/importar', [CatalogoImportController::class, 'importar'])
                 ->name('catalogo.importar');
+        });
+
+        // Precios del día: se fijan al empezar la jornada y son los que ofrece
+        // el punto de venta. Basta con abrir la caja o editar el catálogo.
+        Route::middleware('permission:caja.gestionar|productos.editar')->group(function () {
+            Route::get('/precios-del-dia', [PrecioController::class, 'index'])->name('precios.index');
+            Route::post('/precios-del-dia', [PrecioController::class, 'guardar'])->name('precios.guardar');
         });
 
         // Personal y clientes: también solo consulta. Cada uno con su permiso,

@@ -209,7 +209,8 @@ class ItemCrudTest extends TestCase
             ->assertSet('formularioValido', false)
             ->set('costo', '100')
             ->assertSet('formularioValido', false)
-            ->set('precio', '100')
+            // El precio tiene que superar al costo: iguales ya no vale.
+            ->set('precio', '150')
             ->assertSet('formularioValido', false)
             ->set('fechaIngreso', '2026-08-15')
             ->assertSet('formularioValido', true);

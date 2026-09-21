@@ -11,6 +11,7 @@ use App\Models\Proveedor;
 use App\Models\Unidad;
 use App\Models\VentaDetalle;
 use App\Support\GeneradorCodigoCompra;
+use App\Support\PreciosDelDia;
 use App\Support\ProrrateoDeGastos;
 use App\Support\RecepcionDeCompra;
 use Illuminate\Contracts\View\View;
@@ -811,6 +812,26 @@ class Index extends Component
         $productos = Producto::whereIn('id', collect($datos['lineas'])->pluck('producto_id'))
             ->get()
             ->keyBy('id');
+
+        // El costo unitario no puede alcanzar al precio de venta: se estaría
+        // comprando para perder. Se compara contra el precio del día.
+        $precios = app(PreciosDelDia::class);
+
+        foreach ($datos['lineas'] as $linea) {
+            $producto = $productos->get($linea['producto_id']);
+
+            if ($producto === null) {
+                continue;
+            }
+
+            $precio = $precios->precioVigente($producto->id);
+
+            if ($precio > 0 && (float) $linea['costo_unitario'] >= $precio) {
+                $this->addError('lineas', "El costo de «{$producto->nombre}» no puede ser igual o mayor a su precio de venta.");
+
+                return;
+            }
+        }
 
         try {
             $compra = DB::transaction(function () use ($datos, $productos): Compra {
