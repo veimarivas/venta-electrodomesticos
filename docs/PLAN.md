@@ -31,7 +31,7 @@ flowchart LR
       V[Vendedor / Caja<br/>Navegador]
     end
     subgraph Servidor
-      L[Laravel 12<br/>Web + API]
+      L[Laravel 13<br/>Web + API]
       DB[(MySQL 8)]
       Q[Queue Worker]
       R[Reverb<br/>WebSocket :8080]
@@ -561,6 +561,8 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | GET | `/ventas/{id}` | detalle con unidades, seriales, costos y ganancia |
 | GET | `/ventas/{id}/recibo` | recibo en PDF inline (`ventas.ver`) |
 | **POST** | `/ventas/{id}/anular` | anula la venta con motivo (`ventas.anular`); devuelve unidades al stock |
+| GET | `/ventas/{id}/entregables` | aparatos de la venta que faltan por entregar y los ya repartidos (`ventas.ver`) |
+| **POST** | `/ventas/{id}/entregas` | programa una entrega para unas líneas de la venta (`ventas.ver` + `entregas.crear`) |
 | **PUT** | `/auth/perfil` | actualizar nombre, correo y datos personales del usuario autenticado |
 | **PUT** | `/auth/password` | cambiar contraseña (requiere actual + nueva con confirmación) |
 | GET | `/catalogo/categorias` | árbol de categorías aplanado, con su nivel y conteos |
@@ -626,6 +628,7 @@ Las rutas también van en español, en coherencia con las tablas nuevas.
 | **POST** | `/reparaciones/{id}/entregar` | entregar al cliente con nombre de quien recibe (`reparaciones.recibir`) |
 | GET | `/inventario/stock-bajo` | productos por debajo del mínimo |
 | GET | `/notificaciones` | historial de avisos |
+| GET | `/buscar?termino=` | buscador global de la app: productos, aparatos, ventas, clientes y compras; cada grupo solo si el usuario tiene su permiso |
 
 Rate limiting: 60 req/min por usuario. Versionado en la URL desde el día 1.
 
@@ -741,13 +744,13 @@ Pendientes:
 
 | Herramienta | Versión | Estado |
 |---|---|---|
-| PHP | 8.3.30 | ✅ Laravel 12 requiere ≥ 8.2 |
+| PHP | 8.3.30 | ✅ Laravel 13 requiere ≥ 8.2 |
 | Composer | 2.8.9 | ✅ |
 | Node / npm | 22.20.0 / 11.5.2 | ✅ |
 | Base de datos | **MariaDB 10.11.16** (XAMPP) | ⚠️ ver nota |
 | Flutter | instalado, **416 días de antigüedad** | ⚠️ correr `flutter upgrade` antes de la fase 8 |
 
-> **Nota MariaDB:** el XAMPP trae MariaDB, no MySQL. Laravel 12 la soporta oficialmente y cubre todo lo que necesita este plan (transacciones InnoDB, CTEs recursivos, columnas JSON). Dos detalles: usar el driver `mariadb` en `config/database.php` (no `mysql`) para que las migraciones generen el SQL correcto, y evitar columnas `virtual generated` sobre JSON. Si prefieres MySQL 8 real, instálalo aparte en el puerto 3307 — no es obligatorio.
+> **Nota MariaDB:** el XAMPP trae MariaDB, no MySQL. Laravel 13 la soporta oficialmente y cubre todo lo que necesita este plan (transacciones InnoDB, CTEs recursivos, columnas JSON). Dos detalles: usar el driver `mariadb` en `config/database.php` (no `mysql`) para que las migraciones generen el SQL correcto, y evitar columnas `virtual generated` sobre JSON. Si prefieres MySQL 8 real, instálalo aparte en el puerto 3307 — no es obligatorio.
 
 ---
 
@@ -1057,15 +1060,18 @@ Hasta ahora solo el POS escribía —«la cámara lee la etiqueta más rápido d
 que se teclea un serial»—. Las entregas son el segundo caso y por la misma
 clase de razón: el acto ocurre lejos del mostrador.
 
-Lo que **no** está en la API es **programar** una entrega. Hace falta elegir
-aparatos de una venta y teclear una dirección, y eso se hace con el cliente
-delante. Exponerlo por API sin un flujo pensado para el móvil invita a
-direcciones a medias.
+Programar una entrega también se hace desde el teléfono: en el mostrador el
+cliente acaba de pagar y la dirección se acuerda igual de bien con el móvil en
+la mano. Usa el mismo `ProgramacionDeEntregas` y las mismas reglas que el panel,
+así que lo que se programa desde la app se comporta igual que lo programado
+desde la web.
 
 | Endpoint | Permiso |
 |---|---|
 | `GET /entregas` (filtros `filtro`, `mias`, `buscar`) | `entregas.ver` |
 | `GET /entregas/{entrega}` | `entregas.ver` |
+| `GET /ventas/{venta}/entregables` | `ventas.ver` |
+| `POST /ventas/{venta}/entregas` | `ventas.ver` + `entregas.crear` |
 | `POST /entregas/{entrega}/despachar` | `entregas.gestionar` |
 | `POST /entregas/{entrega}/confirmar` | `entregas.gestionar` |
 | `POST /entregas/{entrega}/fallar` | `entregas.gestionar` |

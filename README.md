@@ -1,10 +1,16 @@
 # Electro Hogar
 
 Sistema de gestión para una tienda de electrodomésticos: catálogo, compras,
-inventario aparato por aparato, punto de venta y reportes. Panel web en Laravel
-y aplicación móvil en Flutter para el mostrador y el almacén. La raíz publica
-además un **escaparate del catálogo** —productos, precios y disponibilidad—,
-abierto a quien no tiene sesión.
+inventario aparato por aparato, punto de venta, servicio técnico y reportes.
+Panel web en Laravel y aplicación móvil en Flutter para el mostrador y el
+almacén. La raíz publica además un **escaparate del catálogo** —productos,
+precios y disponibilidad—, abierto a quien no tiene sesión.
+
+El **panel** comparte un mismo sistema de diseño en todas sus pantallas —una
+banda con degradado, tarjetas de elevación suave, tipografía apretada y el azul
+de acción como única señal de «esto se toca»— para que se lea como una sola
+casa. El **servicio técnico** recibe aparatos escaneando la etiqueta, tanto en
+la web como desde el teléfono.
 
 ## Lo que lo distingue
 

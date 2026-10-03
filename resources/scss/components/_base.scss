@@ -26,12 +26,17 @@ body {
 
 // Los títulos del panel van apretados de interletrado —es lo que le da su
 // aire compacto—; el cuerpo se queda sin tocar, que a tamaño pequeño perjudica
-// la lectura.
+// la lectura. `text-wrap: balance` reparte el texto en dos líneas parejas en vez
+// de dejar una palabra huérfana al final: se lee como un titular, no como un
+// párrafo cortado.
 h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
     color: var(--marca-tinta);
     letter-spacing: -.02em;
+    text-wrap: balance;
 }
+
+p { line-height: 1.6; }
 
 a {
     text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
@@ -82,27 +87,34 @@ button:focus-visible,
 
 .card {
     --vz-card-border-color: var(--marca-linea);
+    --vz-card-cap-bg: transparent;
     border: 1px solid var(--marca-linea);
     border-radius: var(--radio-lg);
     background: var(--marca-superficie);
-    box-shadow: var(--sombra-sm);
-    transition: box-shadow var(--trans-media), border-color var(--trans-media);
+    box-shadow: var(--sombra-card);
+    transition: box-shadow var(--trans-suave), border-color var(--trans-suave);
 
     .card-header {
         border-bottom: 1px solid var(--marca-linea);
         background: transparent;
+        padding: 1rem 1.35rem;
     }
 
     .card-footer {
         border-top: 1px solid var(--marca-linea);
         background: transparent;
+        padding: 1rem 1.35rem;
     }
 
     .card-title {
         color: var(--marca-tinta);
+        font-size: 1rem;
         font-weight: 650;
-        letter-spacing: -.01em;
+        letter-spacing: -.015em;
     }
+
+    // La tarjeta de lista no lleva sombra dura: el contorno y el halo bastan.
+    &.card-borderless { border-color: transparent; }
 }
 
 // ---- Botones ----------------------------------------------------------------
@@ -125,19 +137,60 @@ button:focus-visible,
 }
 
 .btn-sm { border-radius: var(--radio-sm); }
-.btn-lg { border-radius: var(--radio-md); }
+.btn-lg {
+    border-radius: var(--radio-md);
+    padding-inline: 1.35rem;
+}
 
 // El hover que sube no aplica a botones de icono sueltos —en una barra de
 // herramientas se desalinearían entre ellos—.
 .btn:not(.btn-icon):not(:disabled):not(.disabled):hover { transform: translateY(-1px); }
 
-.btn-primary { box-shadow: 0 .35rem .9rem rgba(37, 73, 112, .22); }
-.btn-success { box-shadow: 0 .35rem .9rem rgba(27, 175, 122, .22); }
-.btn-danger  { box-shadow: 0 .35rem .9rem rgba(227, 73, 72, .22); }
+// El botón principal lleva un degradado de dos peldaños y una luz interior en
+// el borde superior: es lo que lo separa de un rectángulo plano y le da el aire
+// de pieza física sin llegar a ser un relieve anticuado.
+// El degradado va como `background-image` translúcido sobre el color base: la
+// luz superior y la sombra inferior dan volumen, pero dejan pasar el color de
+// fondo, así que el hover de Velzon —que cambia `background-color`— sigue
+// notándose. Un degradado opaco lo taparía y el botón parecería muerto.
+.btn-primary {
+    background-color: var(--marca-azul);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, .08));
+    border-color: transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .35rem .9rem rgba(37, 73, 112, .26);
+}
 
-.btn-primary:not(:disabled):not(.disabled):hover { box-shadow: 0 .5rem 1.2rem rgba(37, 73, 112, .28); }
-.btn-success:not(:disabled):not(.disabled):hover { box-shadow: 0 .5rem 1.2rem rgba(27, 175, 122, .28); }
-.btn-danger:not(:disabled):not(.disabled):hover  { box-shadow: 0 .5rem 1.2rem rgba(227, 73, 72, .28); }
+.btn-success {
+    background-color: #1baf7a;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, .08));
+    border-color: transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .35rem .9rem rgba(27, 175, 122, .24);
+}
+
+.btn-danger {
+    background-color: #e34948;
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 52%, rgba(0, 0, 0, .08));
+    border-color: transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .35rem .9rem rgba(227, 73, 72, .24);
+}
+
+.btn-primary:not(:disabled):not(.disabled):hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .55rem 1.3rem rgba(37, 73, 112, .32); }
+.btn-success:not(:disabled):not(.disabled):hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .55rem 1.3rem rgba(27, 175, 122, .30); }
+.btn-danger:not(:disabled):not(.disabled):hover  { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 .55rem 1.3rem rgba(227, 73, 72, .30); }
+
+// Botones claros y translúcidos: el contorno fino es toda la definición que
+// necesitan, así que la sombra se retira.
+.btn-light,
+.btn-outline-secondary,
+.btn-ghost-secondary {
+    border-color: var(--marca-linea);
+    color: var(--marca-tinta);
+
+    &:not(:disabled):not(.disabled):hover {
+        border-color: var(--marca-linea-fuerte);
+        background-color: var(--marca-suave);
+    }
+}
 
 // ---- Campos -----------------------------------------------------------------
 
@@ -155,7 +208,11 @@ button:focus-visible,
     color: var(--marca-tinta);
     transition: border-color var(--trans-rapida), box-shadow var(--trans-rapida), background-color var(--trans-rapida);
 
-    &::placeholder { color: #a7b1bf; }
+    &::placeholder { color: color-mix(in srgb, var(--marca-apagado) 55%, transparent); }
+
+    &:hover:not(:disabled):not([readonly]):not(:focus) {
+        border-color: var(--marca-linea-fuerte);
+    }
 
     &:focus {
         border-color: var(--marca-azul);
@@ -165,6 +222,9 @@ button:focus-visible,
 
     &:disabled, &[readonly] { background-color: var(--marca-suave); }
 }
+
+.form-select-lg,
+.form-control-lg { border-radius: var(--radio-md); }
 
 .input-group-text {
     border-color: var(--marca-linea);
@@ -180,6 +240,10 @@ button:focus-visible,
     &:focus { box-shadow: var(--anillo-foco); }
 }
 
+// El interruptor de Bootstrap lleva el mismo azul de acción en ambos estados;
+// así una preferencia activa se reconoce en cualquier pantalla.
+.form-switch .form-check-input:checked { background-color: var(--marca-azul); }
+
 // ---- Insignias --------------------------------------------------------------
 
 .badge {
@@ -194,6 +258,7 @@ button:focus-visible,
 
 .table {
     --vz-table-border-color: var(--marca-linea);
+    --vz-table-hover-bg: rgba(37, 73, 112, .035);
     color: var(--marca-tinta);
 
     > thead th {
@@ -201,16 +266,34 @@ button:focus-visible,
         background: var(--marca-suave);
         color: var(--marca-apagado);
         font-weight: 650;
-        font-size: .72rem;
-        letter-spacing: .04em;
+        font-size: .7rem;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
 
-    > tbody td { border-bottom-color: var(--marca-linea); }
+    > tbody td {
+        border-bottom-color: var(--marca-linea);
+        vertical-align: middle;
+    }
 
     > tbody tr { transition: background-color var(--trans-media); }
+
+    > tbody > tr:last-child > * { border-bottom-color: transparent; }
 }
 
-.table-hover > tbody > tr:hover > * { background-color: rgba(37, 73, 112, .035); }
+.table-hover > tbody > tr:hover > * { background-color: var(--vz-table-hover-bg); }
+
+// Cabecera fija para listados largos: el nombre de la columna no se pierde al
+// bajar. Se declara como clase explícita para no tocar las tablas que ya
+// calculan su propio alto.
+.table-sticky {
+    > thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+}
 
 // ---- Desplegables -----------------------------------------------------------
 
@@ -254,19 +337,26 @@ button:focus-visible,
 
 // ---- Título de página y migas ----------------------------------------------
 
-// Solo se retoca el título y las migas: el `padding` y los márgenes negativos
-// que trae Velzon se dejan intactos, que de ahí sale el alto de la cabecera.
+// Solo se retoca el título, las migas y el remate inferior: el `padding` y los
+// márgenes negativos que trae Velzon se dejan intactos, que de ahí sale el alto
+// de la cabecera. El filete inferior separa la cabecera del contenido sin
+// convertirse en una franja; es la misma línea fina que usan las tarjetas.
 .page-title-box {
+    padding-bottom: 1rem !important;
+    margin-bottom: 1.5rem !important;
+    border-bottom: 1px solid var(--marca-linea);
+
     h4 {
         color: var(--marca-tinta);
+        font-size: 1.4rem;
         font-weight: 700;
-        letter-spacing: -.02em;
+        letter-spacing: -.025em;
     }
 }
 
 .breadcrumb {
     --vz-breadcrumb-divider-color: color-mix(in srgb, var(--marca-apagado) 60%, transparent);
-    font-size: .84rem;
+    font-size: .82rem;
 
     .breadcrumb-item a {
         color: var(--marca-apagado);
@@ -306,6 +396,118 @@ button:focus-visible,
     border-radius: var(--radio-lg);
     background: var(--marca-superficie);
     box-shadow: var(--sombra-lg);
+}
+
+// ---- Pestañas y filtros -----------------------------------------------------
+// La pestaña activa se marca con la tinta de la marca y un filete inferior:
+// dos señales para el mismo estado, que es lo que la hace legible también sin
+// color. Nada de botones rellenos que competirían con la acción principal.
+
+.nav-tabs {
+    border-bottom: 1px solid var(--marca-linea);
+    gap: .25rem;
+
+    .nav-link {
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: var(--radio-sm) var(--radio-sm) 0 0;
+        color: var(--marca-apagado);
+        font-size: .88rem;
+        font-weight: 600;
+        transition: color var(--trans-rapida), border-color var(--trans-rapida), background-color var(--trans-rapida);
+
+        &:hover { color: var(--marca-tinta); background: var(--marca-suave); }
+
+        &.active {
+            color: var(--marca-azul);
+            border-bottom-color: var(--marca-azul);
+            background: transparent;
+        }
+    }
+}
+
+.nav-pills {
+    gap: .25rem;
+
+    .nav-link {
+        border-radius: var(--radio-md);
+        color: var(--marca-apagado);
+        font-size: .88rem;
+        font-weight: 600;
+
+        &:hover { background: var(--marca-suave); color: var(--marca-tinta); }
+
+        &.active {
+            background: var(--marca-azul);
+            color: #fff;
+            box-shadow: 0 .35rem .9rem rgba(37, 73, 112, .24);
+        }
+    }
+}
+
+// ---- Paginación global ------------------------------------------------------
+// Fuera de los listados con `.crud-paginacion`, la paginación de Laravel trae
+// el aspecto de Bootstrap. Se alinea con el resto: sin bordes, pastilla activa.
+
+.pagination {
+    gap: .2rem;
+
+    .page-link {
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        color: var(--marca-tinta);
+        font-size: .84rem;
+        font-weight: 600;
+        padding: .4rem .72rem;
+        transition: background-color var(--trans-rapida), color var(--trans-rapida), border-color var(--trans-rapida);
+
+        &:hover { background: var(--marca-suave); color: var(--marca-azul); border-color: var(--marca-linea-fuerte); }
+        &:focus { box-shadow: var(--anillo-foco); }
+    }
+
+    .page-item.active .page-link {
+        background: var(--marca-azul);
+        border-color: var(--marca-azul);
+        color: #fff;
+    }
+
+    .page-item.disabled .page-link { opacity: .45; }
+}
+
+// ---- Acordeón ---------------------------------------------------------------
+
+.accordion {
+    --vz-accordion-border-color: var(--marca-linea);
+    --vz-accordion-btn-focus-box-shadow: var(--anillo-foco);
+
+    .accordion-item {
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-md);
+        overflow: hidden;
+
+        + .accordion-item { margin-top: .5rem; }
+    }
+
+    .accordion-button {
+        color: var(--marca-tinta);
+        font-weight: 600;
+
+        &:not(.collapsed) {
+            color: var(--marca-azul);
+            background: color-mix(in srgb, var(--marca-azul) 6%, transparent);
+            box-shadow: none;
+        }
+    }
+}
+
+// ---- Ayuda emergente (tooltips) ---------------------------------------------
+
+.tooltip {
+    --vz-tooltip-bg: var(--marca-noche);
+    --vz-tooltip-color: #fff;
+    --vz-tooltip-border-radius: var(--radio-sm);
+    --vz-tooltip-opacity: 1;
+    font-size: .78rem;
 }
 
 // ---- Movimiento reducido ----------------------------------------------------

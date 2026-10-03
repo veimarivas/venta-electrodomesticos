@@ -15,9 +15,19 @@
     min-height: 100vh;
     background: var(--marca-fondo);
     color: var(--marca-tinta);
-    font-family: Inter, "Segoe UI", system-ui, sans-serif;
+
+    // El escaparate usa el mismo par tipográfico que el panel —Public Sans en
+    // el cuerpo y Poppins en los títulos—, así el catálogo y la administración
+    // se leen como la misma casa en vez de como dos productos distintos.
+    font-family: var(--vz-font-family-primary, "Public Sans", "Segoe UI", system-ui, sans-serif);
+
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    h1, h2, h3, h4, h5, h6,
+    .h1, .h2, .h3, .h4, .h5, .h6 {
+        font-family: var(--vz-font-family-secondary, "Poppins", sans-serif);
+    }
 }
 
 .tienda-main { min-height: 60vh; }
@@ -65,6 +75,22 @@
     color: #fff;
 
     &:hover { background: rgba(255, 255, 255, .16); color: #fff; }
+}
+
+// Botón para la barra CLARA de la tienda. El fantasma (texto blanco) solo se
+// lee sobre fondo oscuro: en tema claro quedaba blanco sobre blanco y el acceso
+// al panel desaparecía. Este toma los tokens de superficie y tinta, así que
+// funciona en los dos temas.
+.tienda-btn-outline {
+    border-color: var(--marca-linea);
+    background: var(--marca-superficie);
+    color: var(--marca-tinta);
+
+    &:hover {
+        border-color: var(--marca-linea-fuerte);
+        background: var(--marca-suave);
+        color: var(--marca-azul);
+    }
 }
 
 // ---- Barra superior ----------------------------------------------------------

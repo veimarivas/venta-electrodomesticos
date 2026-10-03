@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BusquedaController;
 use App\Http\Controllers\Api\V1\CajaController;
 use App\Http\Controllers\Api\V1\CargoController;
 use App\Http\Controllers\Api\V1\CatalogoController;
@@ -78,6 +79,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->name('notificaciones.leida');
         Route::post('/notificaciones/leidas', [NotificacionController::class, 'marcarTodasLeidas'])
             ->name('notificaciones.leidas');
+
+        // Buscador global: productos, aparatos, ventas, clientes y compras.
+        // Cada grupo se cierra con su propio permiso, así que la ruta no lleva
+        // uno: un usuario sin permisos recibe una lista vacía.
+        Route::get('/buscar', [BusquedaController::class, 'index'])->name('buscar');
 
         // ---- Lo que exige permiso -----------------------------------------
         // La app la puede tener un vendedor: los reportes se cierran con el
@@ -451,9 +457,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         });
 
         // Entregas. La otra parte que escribe, y por la misma razón que el POS:
-        // quien reparte lleva el móvil, no el panel. **Programar** una entrega
-        // no está aquí —hace falta elegir aparatos y teclear una dirección, y
-        // eso se hace en el mostrador con el cliente delante—.
+        // quien reparte lleva el móvil, no el panel. Programar también se hace
+        // desde el teléfono, con las mismas reglas del panel.
         Route::middleware('permission:entregas.ver')->group(function () {
             Route::get('/entregas', [EntregaController::class, 'index'])->name('entregas.index');
             // Estática ANTES de `/entregas/{entrega}`: si no, Laravel la toma
@@ -462,6 +467,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('entregas.repartidores');
             Route::get('/entregas/{entrega}', [EntregaController::class, 'show'])->name('entregas.show');
         });
+
+        // Programar una entrega desde la venta. Se lee la venta con
+        // `ventas.ver` y programar exige además `entregas.crear`, igual que en
+        // el panel: quien reparte no decide dónde se lleva.
+        Route::get('/ventas/{venta}/entregables', [EntregaController::class, 'entregables'])
+            ->middleware('permission:ventas.ver')
+            ->name('ventas.entregables');
+
+        Route::post('/ventas/{venta}/entregas', [EntregaController::class, 'programar'])
+            ->middleware(['permission:ventas.ver', 'permission:entregas.crear'])
+            ->name('ventas.entregas.store');
 
         // Cartera. Escribe por lo mismo que las entregas: cobrar una cuota
         // pasa en el mostrador o en la puerta del cliente. Abrir un crédito

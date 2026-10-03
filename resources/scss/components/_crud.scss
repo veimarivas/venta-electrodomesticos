@@ -16,7 +16,8 @@
 .reportes-modulo,
 .dashboard-modulo,
 .proveedores-modulo,
-.compras-modulo {
+.compras-modulo,
+.importar-catalogo {
 
     // Banda superior del módulo.
     .crud-hero {
@@ -82,27 +83,28 @@
         &:hover { transform: translateY(-1px); background: #e6950a; }
     }
 
-    .crud-encabezado { border-radius: 1rem; }
+    .crud-encabezado { border-radius: var(--radio-xl); }
 
     .crud-kpis {
         .card {
-            border-radius: .75rem;
+            border-radius: var(--radio-lg);
             border: 1px solid var(--marca-linea);
-            transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+            box-shadow: var(--sombra-card);
+            transition: transform .2s var(--ease-salida), box-shadow .2s var(--ease-salida), border-color .2s var(--ease-salida);
 
             &:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09);
-                border-color: transparent;
+                transform: translateY(-2px);
+                box-shadow: var(--sombra-card-hover);
+                border-color: var(--marca-linea-fuerte);
             }
         }
     }
 
     .crud-listado {
         overflow: hidden;
-        border-radius: .85rem;
+        border-radius: var(--radio-lg);
         border: 1px solid var(--marca-linea);
-        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .06) !important;
+        box-shadow: var(--sombra-card) !important;
     }
 
     .crud-toolbar {
@@ -3705,5 +3707,190 @@
 
         h5 { letter-spacing: -.01em; }
         p { font-size: .9rem; }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Carga masiva de catálogo (/catalogo/importar)
+// -----------------------------------------------------------------------------
+// Reutiliza la banda y las tarjetas del bloque `.crud-*`; aquí van solo las
+// piezas propias de esta pantalla: el brillo de la banda, la zona de subida y
+// la lista de pasos.
+// -----------------------------------------------------------------------------
+
+.importar-catalogo {
+
+    // Rejilla sutil de puntos de la banda superior, igual que en productos.
+    .crud-hero-glow {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: -1;
+        background-image: radial-gradient(rgba(255, 255, 255, .10) 1px, transparent 1.5px);
+        background-size: 1.15rem 1.15rem;
+        mask-image: radial-gradient(60% 90% at 78% 0%, black 0%, transparent 100%);
+        -webkit-mask-image: radial-gradient(60% 90% at 78% 0%, black 0%, transparent 100%);
+        opacity: .55;
+    }
+
+    // Azulejo del icono sobre la banda oscura, en el lenguaje de vidrio del
+    // resto del catálogo.
+    .crud-tile {
+        background: rgba(255, 255, 255, .16);
+        border: 1px solid rgba(255, 255, 255, .28);
+        box-shadow: 0 .75rem 1.5rem rgba(10, 24, 43, .28), inset 0 1px 0 rgba(255, 255, 255, .35);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    // Cabecera de las tarjetas con un icono en pastilla a juego con la sección.
+    .importar-card-icono {
+        display: inline-grid;
+        place-items: center;
+        width: 1.8rem;
+        height: 1.8rem;
+        margin-right: .45rem;
+        border-radius: .5rem;
+        background: rgba(37, 73, 112, .08);
+        color: var(--marca-azul);
+        font-size: .95rem;
+        vertical-align: middle;
+
+        &--ok {
+            background: var(--estado-ok-suave);
+            color: var(--estado-ok);
+        }
+    }
+
+    // ---- Lista de pasos ----------------------------------------------------
+    // El número va en un círculo y un hilo fino los encadena: se sigue el
+    // procedimiento de un vistazo sin leer la explicación entera.
+    .importar-pasos {
+        list-style: none;
+        counter-reset: paso;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: .95rem;
+    }
+
+    .importar-paso {
+        position: relative;
+        counter-increment: paso;
+        padding-left: 2.6rem;
+        color: var(--marca-apagado);
+        font-size: .86rem;
+        line-height: 1.55;
+
+        &::before {
+            content: counter(paso);
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: grid;
+            place-items: center;
+            width: 1.8rem;
+            height: 1.8rem;
+            border-radius: 50%;
+            background: rgba(37, 73, 112, .08);
+            color: var(--marca-azul);
+            font-size: .76rem;
+            font-weight: 700;
+        }
+
+        &:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: .87rem;
+            top: 2rem;
+            bottom: -.95rem;
+            width: 1px;
+            background: var(--marca-linea);
+        }
+
+        strong { color: var(--marca-tinta); font-weight: 650; }
+
+        code {
+            padding: .1rem .35rem;
+            border-radius: .3rem;
+            background: rgba(37, 73, 112, .06);
+            color: var(--marca-azul);
+            font-size: .8rem;
+        }
+    }
+
+    // ---- Zona de subida ----------------------------------------------------
+    .importar-dropzone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .2rem;
+        padding: 2rem 1.25rem;
+        text-align: center;
+        border: 1.5px dashed var(--marca-linea-fuerte);
+        border-radius: var(--radio-lg);
+        background: linear-gradient(180deg, var(--marca-suave), var(--marca-superficie));
+        cursor: pointer;
+        transition: border-color .2s var(--ease-salida), background-color .2s var(--ease-salida), box-shadow .2s var(--ease-salida);
+
+        &:hover,
+        &:focus-visible {
+            outline: none;
+            border-color: color-mix(in srgb, var(--marca-azul) 55%, var(--marca-linea-fuerte));
+            background: color-mix(in srgb, var(--marca-azul) 4%, var(--marca-superficie));
+            box-shadow: 0 0 0 .22rem rgba(37, 73, 112, .08);
+        }
+
+        &.is-lleno {
+            border-style: solid;
+            border-color: color-mix(in srgb, var(--estado-ok) 45%, var(--marca-linea));
+            background: color-mix(in srgb, var(--estado-ok) 6%, var(--marca-superficie));
+        }
+
+        .importar-dropzone-icono {
+            display: grid;
+            place-items: center;
+            width: 3.4rem;
+            height: 3.4rem;
+            margin-bottom: .55rem;
+            border-radius: 50%;
+            background: var(--marca-superficie);
+            color: var(--estado-ok);
+            font-size: 1.6rem;
+            box-shadow: var(--sombra-sm);
+            transition: transform .2s var(--ease-salida);
+
+            &.is-lleno { color: var(--marca-azul); }
+        }
+
+        &:hover .importar-dropzone-icono { transform: translateY(-2px); }
+
+        .importar-dropzone-titulo {
+            color: var(--marca-tinta);
+            font-weight: 650;
+            font-size: .92rem;
+            word-break: break-word;
+        }
+
+        .importar-dropzone-nota {
+            color: var(--marca-apagado);
+            font-size: .78rem;
+        }
+    }
+
+    // ---- Errores de la importación ----------------------------------------
+    .importar-errores {
+        display: flex;
+        flex-direction: column;
+        gap: .15rem;
+        max-height: 15rem;
+        margin: 0;
+        padding-left: 1.1rem;
+        overflow-y: auto;
+        font-size: .82rem;
+
+        li::marker { color: var(--estado-alerta); }
     }
 }

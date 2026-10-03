@@ -14,8 +14,12 @@
 
 .app-menu.navbar-menu {
 
-    // Mismo gradiente oscuro del login, adaptado a vertical.
-    background: linear-gradient(180deg, #0a182b 0%, #10233c 45%, #1b3757 100%);
+    // Mismo gradiente oscuro del login, adaptado a vertical. El halo dorado de
+    // la esquina es la única concesión decorativa: recuerda el brillo del logo
+    // y evita que una columna tan alta se lea como una pared plana.
+    background:
+        radial-gradient(120% 60% at 100% 0%, rgba(197, 161, 98, .12) 0%, transparent 55%),
+        linear-gradient(180deg, #0a182b 0%, #10233c 45%, #1b3757 100%);
     border-right-color: rgba(255, 255, 255, .06);
 
     // ---- Marca / Logo ----
@@ -90,29 +94,51 @@
     .navbar-nav > .nav-item > .nav-link.menu-link {
         position: relative;
         width: calc(100% - 1.5rem);
-        margin: .1rem .75rem;
-        padding: .5rem .85rem;
-        border-radius: .6rem;
+        margin: .12rem .75rem;
+        padding: .55rem .9rem;
+        border-radius: .7rem;
         font-size: .9rem;
+        font-weight: 500;
         color: rgba(255, 255, 255, .78);
-        transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+        transition: background-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
 
         i {
-            font-size: 1.06rem;
-            min-width: 1.55rem;
+            font-size: 1.08rem;
+            min-width: 1.6rem;
+            transition: color .18s ease, transform .18s ease;
         }
 
         &:hover {
             color: #fff;
             background: rgba(255, 255, 255, .08);
+            transform: translateX(2px);
+
+            i { color: var(--marca-oro-claro); }
         }
 
-        // Activo: píldora translúcida con borde izquierdo ámbar.
+        // Activo: píldora translúcida con borde izquierdo ámbar redondeado. El
+        // remate en pastilla evita el corte recto que dejaba el `inset` y hace
+        // que la señal se lea como una pieza, no como un borde pegado.
         &.active,
         &[aria-expanded='true'] {
             color: #fff;
-            background: rgba(255, 255, 255, .12);
-            box-shadow: 0 .4rem 1rem rgba(10, 24, 43, .24), inset 3px 0 0 #c5a162;
+            background: linear-gradient(90deg, rgba(197, 161, 98, .18), rgba(255, 255, 255, .07));
+            box-shadow: 0 .45rem 1.1rem rgba(10, 24, 43, .28);
+
+            &::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 3px;
+                height: 60%;
+                border-radius: 0 3px 3px 0;
+                background: var(--marca-oro);
+                box-shadow: 0 0 .5rem rgba(197, 161, 98, .7);
+            }
+
+            i { color: var(--marca-oro-claro); }
         }
 
         // Chevron de colapso.

@@ -1,11 +1,17 @@
 {
   "version": 1,
   "skills": {
+    "flutter-animations": {
+      "source": "madteacher/mad-agents-skills",
+      "sourceType": "github",
+      "skillPath": "flutter-animations/SKILL.md",
+      "computedHash": "01e19b69d8091971963db5fa8cffd0d4a0299dafccdb6c6a4d43906e450976c2"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",
       "skillPath": ".agents/skills/impeccable/SKILL.md",
-      "computedHash": "88ee50d100ae257005992819f12cd350198c150723f24fb8c78e9f87ba415095"
+      "computedHash": "bf034d9c0043f23eb3d900d8e66f3d4fe3813681575a0d6bcbbc943522186f65"
     }
   }
 }

@@ -12,9 +12,9 @@ class DashboardController extends Controller
      */
     public function __invoke(): View
     {
-        return view('backend.dashboard.index', [
-            'title' => 'Dashboard',
-            'breadcrumbs' => ['Inicio' => null, 'Dashboard' => null],
-        ]);
+        // Sin `title`: el saludo del panel ya es el encabezado de la pantalla y
+        // repetir «Dashboard» justo encima solo añadía ruido. El nombre de la
+        // pestaña lo sigue fijando la sección `title` de la vista.
+        return view('backend.dashboard.index');
     }
 }

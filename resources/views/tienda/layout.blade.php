@@ -29,8 +29,8 @@
 
                 <div class="tienda-nav-actions">
                     @auth
-                        <a href="{{ route('dashboard') }}" class="tienda-btn tienda-btn-ghost">
-                            <i class="ri-dashboard-3-line"></i> Panel
+                        <a href="{{ route('dashboard') }}" class="tienda-btn tienda-btn-outline">
+                            <i class="ri-dashboard-3-line"></i> Ir al panel
                         </a>
                     @else
                         <a href="{{ route('login') }}" class="tienda-btn tienda-btn-primary">

@@ -23,6 +23,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -59,6 +60,15 @@ class Pos extends Component
      * @var array<int, array{unidad_id: int, precio_lista: string, precio: string, tope_descuento: string, solicitud_id: ?int, solicitud_estado: ?string, precio_aprobado: ?string, entrega: string}>
      */
     public array $carrito = [];
+
+    /**
+     * Clave del cobro en curso, para reintentar sin duplicar la venta.
+     *
+     * Se estrena al abrir el carrito y al vaciarlo: dos intentos del MISMO
+     * cobro comparten clave y el segundo devuelve la venta que ya existe. Un
+     * carrito nuevo es otro cobro y lleva otra clave.
+     */
+    public ?string $claveIdempotencia = null;
 
     // ---- Cabecera ---------------------------------------------------------
 
@@ -180,6 +190,8 @@ class Pos extends Component
      */
     public function mount(): void
     {
+        $this->claveIdempotencia ??= (string) Str::uuid();
+
         if (! auth()->check()) {
             return;
         }
@@ -1308,6 +1320,10 @@ class Pos extends Component
 
         $this->metodoPago = 'efectivo';
         $this->resetValidation();
+
+        // Cada carrito estrena clave: la venta que acaba de registrarse (o la
+        // que se abandonó) no debe reutilizarla en el siguiente cobro.
+        $this->claveIdempotencia = (string) Str::uuid();
     }
 
     public function elegirCliente(int $clienteId): void
@@ -1987,6 +2003,24 @@ class Pos extends Component
             $this->autorizar('creditos.crear');
         }
 
+        // Reintento del mismo cobro —doble clic, o una respuesta que se perdió
+        // y el navegador repitió—: no se registra dos veces. Se muestra la
+        // venta que ya quedó guardada y se deja la caja lista para la próxima.
+        $clave = $this->claveIdempotencia ??= (string) Str::uuid();
+
+        $yaRegistrada = Venta::query()->where('clave_idempotencia', $clave)->first();
+
+        if ($yaRegistrada !== null) {
+            $this->vaciar();
+            $this->ventaRegistradaId = $yaRegistrada->id;
+
+            $this->dispatch('cerrar-modal-confirmar-cobro');
+            $this->dispatch('toast', tipo: 'success', mensaje: "Venta {$yaRegistrada->codigo} ya estaba registrada.");
+            $this->dispatch('abrir-modal-venta-registrada');
+
+            return;
+        }
+
         $this->validate();
 
         if (! $this->ventaValida) {
@@ -2015,6 +2049,7 @@ class Pos extends Component
                     'descuento' => ProrrateoDeGastos::aDecimal($this->descuentoDeLinea($l)),
                 ], $this->carrito),
                 cabecera: [
+                    'clave_idempotencia' => $clave,
                     'cliente_id' => $this->clienteId,
                     'metodo_pago' => $this->metodoPago,
                     'notas' => trim($this->notas) !== '' ? trim($this->notas) : null,

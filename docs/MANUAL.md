@@ -639,8 +639,12 @@ El módulo de taller también está disponible en la app móvil. Desde la secci�
 
 - **Ver reparaciones**: lista con filtros (abiertas, atrasadas, en taller,
   listas, cerradas, todas) y búsqueda por número o cliente.
-- **Recibir**: botón para escanear o teclear el serial/código del aparato,
-  buscar la unidad, observaciones y fecha prometida.
+- **Recibir**: botón **Recibir aparato** (abajo a la derecha). El campo
+  *Serial o código del aparato* lleva un **botón de cámara**: al escanear, el
+  código se escribe en el campo y se busca igual que si se tecleara. Si la
+  lectura coincide con un solo aparato, se elige sola; con dos o más, se
+  pregunta cuál. Después se anota la falla, la fecha prometida y el costo, y se
+  abre la orden. Necesita el permiso `reparaciones.recibir`.
 - **Diagnosticar**: en la ficha de la reparación, el técnico anota el
   diagnóstico y costo estimado.
 - **Marcar lista**: anotar qué se le hizo.
@@ -714,10 +718,15 @@ personas, compras y avisos), **vender desde el mostrador** escaneando la
 etiqueta del aparato, y **mantener los datos**: catálogo, personal y clientes se
 registran y se editan desde el teléfono.
 
-Se queda solo en el panel web: **la papelera de clientes** (restaurar lo
-archivado se hace desde la ficha del propio cliente). Las órdenes de compra,
-en cambio, ya se registran desde el teléfono con las facturas delante (§5 y
-§10).
+En el Resumen, la **lupa** abre el **buscador global**: escribe dos letras y
+aparece, agrupado, lo que coincida en productos, aparatos, ventas, clientes y
+compras. Tocar un resultado abre su ficha —o su venta, si el aparato ya se
+vendió—. Solo salen los grupos que tu cuenta puede ver.
+
+No queda nada exclusivo del panel: la **papelera de clientes** también está en
+el teléfono (el filtro *Archivados* del listado y el botón de restaurar en la
+ficha, igual que productos y categorías), y las órdenes de compra ya se
+registran desde el móvil con las facturas delante (§5 y §10).
 
 ### Mi perfil
 
@@ -1057,15 +1066,21 @@ al abrirla.
 
 ---
 
-### La sesión se cierra sola
+### Cerrar la sesión del teléfono
 
-Si el teléfono pasa **15 minutos sin que nadie lo toque**, la app cierra la
-sesión. Al volver pide usuario y contraseña otra vez, y avisa de por qué:
-*«Se cerró la sesión porque el teléfono estuvo un rato sin usarse»*.
+La sesión **se queda abierta hasta que alguien cierra sesión** (o un 401 la
+invalida). No hay cierre automático por tiempo: el token guardado en el
+almacenamiento seguro sobrevive al cierre de la app, así que reabrirla no vuelve
+a pedir la contraseña.
 
-No es un fallo. El teléfono del mostrador no es de nadie en concreto: se queda
-sobre la caja, y sin esto cualquiera que lo cogiera podría cobrar, cambiar
-precios o mirar el inventario **con la cuenta de otra persona**.
+El teléfono del mostrador no es de nadie en concreto y se queda sobre la caja,
+así que conviene **cerrar sesión al terminar el turno** si la persona no va a
+seguir usándolo: quien lo coja, si no, podría cobrar, cambiar precios o mirar el
+inventario **con la cuenta de otra persona**.
+
+Para que cerrar no cueste teclear la contraseña cada mañana está el
+**reingreso con huella o rostro**: se activa al guardar las credenciales desde
+*Mi perfil*, y al volver a entrar la app las recupera tras la biometría.
 
 - El contador se reinicia con cualquier toque: escribir, desplazar o pulsar.
 - Cerrar la app y volver a abrirla **no** lo reinicia. El plazo se cuenta igual.

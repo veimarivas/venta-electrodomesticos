@@ -207,6 +207,87 @@ class EntregasApiTest extends TestCase
         $this->postJson("/api/v1/entregas/{$entrega->id}/despachar")->assertForbidden();
     }
 
+    // ---- Programar desde el teléfono ---------------------------------------
+
+    public function test_se_listan_los_aparatos_entregables_de_una_venta(): void
+    {
+        $venta = $this->venta('SN-ENTREGA-1');
+        $linea = $venta->detalles->first();
+
+        Sanctum::actingAs($this->repartidor());
+
+        $this->getJson("/api/v1/ventas/{$venta->id}/entregables")
+            ->assertOk()
+            ->assertJsonPath('data.venta_id', $venta->id)
+            ->assertJsonPath('data.lineas.0.venta_detalle_id', $linea->id)
+            ->assertJsonPath('data.lineas.0.serial', 'SN-ENTREGA-1')
+            // Todavía no está en ninguna entrega.
+            ->assertJsonPath('data.lineas.0.programado', false)
+            ->assertJsonPath('data.lineas.0.devuelto', false)
+            ->assertJsonStructure(['data' => ['telefono']]);
+    }
+
+    public function test_se_programa_una_entrega_desde_el_telefono(): void
+    {
+        $venta = $this->venta('SN-ENTREGA-2');
+        $linea = $venta->detalles->first();
+
+        Sanctum::actingAs($this->repartidor());
+
+        $this->postJson("/api/v1/ventas/{$venta->id}/entregas", [
+            'venta_detalle_ids' => [$linea->id],
+            'direccion' => 'Av. Los Andes 123',
+            'referencia' => 'Portón azul',
+            'programada_para' => today()->addDay()->toDateString(),
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.direccion', 'Av. Los Andes 123')
+            ->assertJsonPath('data.estado', 'pendiente')
+            ->assertJsonPath('data.aparatos.0.serial', 'SN-ENTREGA-2');
+
+        $this->assertSame(1, Entrega::count());
+
+        // Y deja de ofrecerse para programar otra vez.
+        $this->getJson("/api/v1/ventas/{$venta->id}/entregables")
+            ->assertOk()
+            ->assertJsonPath('data.lineas.0.programado', true);
+    }
+
+    public function test_un_aparato_ya_repartido_no_se_programa_dos_veces(): void
+    {
+        $venta = $this->venta('SN-ENTREGA-3');
+        $linea = $venta->detalles->first();
+
+        Sanctum::actingAs($this->repartidor());
+
+        $cuerpo = ['venta_detalle_ids' => [$linea->id], 'direccion' => 'Calle 1'];
+
+        $this->postJson("/api/v1/ventas/{$venta->id}/entregas", $cuerpo)->assertOk();
+
+        // El índice único frena el segundo intento: error de negocio (422), no
+        // un 500 que la app contaría como «no hay conexión».
+        $this->postJson("/api/v1/ventas/{$venta->id}/entregas", $cuerpo)
+            ->assertStatus(422)
+            ->assertJsonStructure(['message']);
+
+        $this->assertSame(1, Entrega::count());
+    }
+
+    public function test_programar_desde_el_telefono_exige_los_permisos(): void
+    {
+        $venta = $this->venta('SN-ENTREGA-4');
+        $linea = $venta->detalles->first();
+
+        // Sin rol no tiene ni `ventas.ver` ni `entregas.crear`.
+        Sanctum::actingAs(User::factory()->create(['is_active' => true]));
+
+        $this->getJson("/api/v1/ventas/{$venta->id}/entregables")->assertForbidden();
+        $this->postJson("/api/v1/ventas/{$venta->id}/entregas", [
+            'venta_detalle_ids' => [$linea->id],
+            'direccion' => 'Calle 1',
+        ])->assertForbidden();
+    }
+
     public function test_sin_sesion_la_ruta_existe_pero_pide_credenciales(): void
     {
         // 401 y no 404: es la diferencia que distingue «no subí el código» de

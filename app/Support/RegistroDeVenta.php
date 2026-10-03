@@ -48,6 +48,21 @@ class RegistroDeVenta
             throw new RuntimeException('La venta no tiene ningún aparato.');
         }
 
+        $clave = $cabecera['clave_idempotencia'] ?? null;
+
+        // Reintento idempotente: esa clave ya registró una venta —el cajero no
+        // vio la respuesta y volvió a cobrar, o el navegador repitió la
+        // petición—. Se devuelve la misma y no se toca el inventario otra vez.
+        // Sirve igual para el POS del panel que para la app: la clave la manda
+        // quien cobra.
+        if ($clave !== null) {
+            $yaRegistrada = Venta::query()->where('clave_idempotencia', $clave)->first();
+
+            if ($yaRegistrada !== null) {
+                return $yaRegistrada;
+            }
+        }
+
         try {
             $venta = DB::transaction(function () use ($lineas, $cabecera, $userId): Venta {
                 // lockForUpdate bloquea las filas hasta el commit: si dos
@@ -233,6 +248,12 @@ class RegistroDeVenta
                 return $venta->fresh();
             });
         } catch (QueryException $e) {
+            // Dos reintentos simultáneos con la misma clave: el índice único
+            // frena al segundo y se devuelve la venta que sí quedó registrada.
+            if ($clave !== null && $this->esClaveDuplicada($e)) {
+                return Venta::query()->where('clave_idempotencia', $clave)->firstOrFail();
+            }
+
             // El índice único de venta_detalles.unidad_id es la última línea de
             // defensa contra la doble venta. Si salta, el aparato se vendió en
             // otra caja entre la comprobación y el insert.
@@ -652,5 +673,13 @@ class RegistroDeVenta
     {
         return str_contains($e->getMessage(), 'venta_detalles_unidad_vendida_id_unique')
             || (str_contains($e->getMessage(), 'Duplicate entry') && str_contains($e->getMessage(), 'unidad_vendida_id'));
+    }
+
+    private function esClaveDuplicada(QueryException $e): bool
+    {
+        // MySQL nombra el índice («ventas_clave_idempotencia_unique»); SQLite,
+        // la columna («ventas.clave_idempotencia»). El nombre de la columna
+        // cubre los dos.
+        return str_contains($e->getMessage(), 'clave_idempotencia');
     }
 }

@@ -13,10 +13,13 @@
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    padding: 1.6rem 1.75rem 1.4rem;
-    border-radius: .85rem;
+    padding: 1.7rem 1.9rem 1.5rem;
+    border-radius: var(--radio-xl);
     color: #fff;
-    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+    background:
+        radial-gradient(120% 130% at 100% 0%, rgba(197, 161, 98, .16) 0%, transparent 48%),
+        linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+    box-shadow: var(--sombra-lg);
 
     // Rejilla sutil de puntos (eco del glow de categorías/marcas).
     &::before {
@@ -119,19 +122,34 @@
 .dash-kpi {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--auth-line, var(--marca-linea));
-    border-radius: .75rem;
+    border: 1px solid var(--marca-linea);
+    border-radius: var(--radio-lg);
     background: var(--marca-superficie);
-    transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+    box-shadow: var(--sombra-card);
+    transition: transform .2s var(--ease-salida), box-shadow .2s var(--ease-salida), border-color .2s var(--ease-salida);
+
+    // Un filete dorado que se revela en el borde superior al pasar por encima:
+    // la tarjeta responde a la mirada sin moverse del sitio.
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--marca-oro), transparent 70%);
+        opacity: 0;
+        transition: opacity .2s var(--ease-salida);
+    }
 
     &:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09);
-        border-color: transparent;
+        transform: translateY(-2px);
+        box-shadow: var(--sombra-card-hover);
+        border-color: var(--marca-linea-fuerte);
+
+        &::before { opacity: 1; }
     }
 
     .card-body {
-        padding: 1.15rem 1.25rem;
+        padding: 1.15rem 1.35rem;
     }
 }
 
@@ -197,18 +215,20 @@
 // -----------------------------------------------------------------------------
 .dash-card {
     border: 1px solid var(--marca-linea);
-    border-radius: .8rem;
+    border-radius: var(--radio-lg);
     background: var(--marca-superficie);
-    transition: box-shadow .18s ease-out;
+    box-shadow: var(--sombra-card);
+    transition: box-shadow .2s var(--ease-salida), border-color .2s var(--ease-salida);
 
     &:hover {
-        box-shadow: 0 .6rem 1.5rem rgba(10, 24, 43, .06);
+        box-shadow: var(--sombra-card-hover);
+        border-color: var(--marca-linea-fuerte);
     }
 
     .card-header {
         border-bottom: 1px solid var(--marca-linea);
         background: transparent;
-        padding: 1rem 1.25rem;
+        padding: 1rem 1.35rem;
     }
 
     .card-title {
@@ -922,40 +942,47 @@
 // =============================================================================
 // Topbar / Nav: alineada con la paleta del login
 // =============================================================================
+// Barra superior translúcida: deja intuir el contenido que pasa por debajo al
+// desplazarse. El desenfoque es lo que la convierte en un plano de cristal en
+// vez de una franja opaca pegada al borde.
 #page-topbar {
-    border-bottom: 1px solid var(--marca-linea);
-    background: var(--marca-superficie);
-    box-shadow: 0 1px 3px rgba(10, 24, 43, .04);
+    border-bottom: 1px solid color-mix(in srgb, var(--marca-linea) 80%, transparent);
+    background: color-mix(in srgb, var(--marca-superficie) 82%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow: 0 1px 2px rgba(10, 24, 43, .03);
 }
 
-// Buscador global: bordes redondeados y focus turquesa (eco del login).
+// Buscador global: pastilla con el mismo radio que los campos del panel.
 .app-search {
     .form-control {
         border: 1px solid var(--marca-linea);
-        border-radius: .65rem;
+        border-radius: var(--radio-pill);
         background: var(--marca-suave);
         font-size: .88rem;
         padding: .55rem 1rem .55rem 2.5rem;
         transition: border-color .2s, box-shadow .2s, background .2s;
 
         &::placeholder {
-            color: #a7b1bf;
+            color: color-mix(in srgb, var(--marca-apagado) 60%, transparent);
         }
 
+        &:hover { border-color: var(--marca-linea-fuerte); }
+
         &:focus {
-            border-color: #254970;
-            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .08);
+            border-color: var(--marca-azul);
+            box-shadow: var(--anillo-foco);
             background: var(--marca-superficie);
         }
     }
 
     .search-widget-icon {
-        color: #a7b1bf;
+        color: var(--marca-apagado);
         font-size: 1.1rem;
 
         &.mdi-magnify {
             position: absolute;
-            left: .85rem;
+            left: .9rem;
             top: 50%;
             transform: translateY(-50%);
         }
@@ -965,22 +992,23 @@
 // Botones del topbar: bordes redondeados y hover sutil.
 .header-item {
     .btn-topbar {
-        width: 2.35rem;
-        height: 2.35rem;
-        border-radius: .6rem;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: var(--radio-md);
         color: var(--marca-apagado);
         background: transparent;
         border: 1px solid transparent;
-        transition: background .15s, color .15s, border-color .15s;
+        transition: background .15s, color .15s, border-color .15s, transform .15s;
 
         &:hover {
             color: var(--marca-tinta);
             background: var(--marca-suave);
-            border-color: #e2e7ee;
+            border-color: var(--marca-linea-fuerte);
+            transform: translateY(-1px);
         }
 
-        &:focus {
-            box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .1);
+        &:focus-visible {
+            box-shadow: var(--anillo-foco);
         }
     }
 }
@@ -1076,7 +1104,7 @@
 [data-bs-theme='dark'] {
     #page-topbar {
         border-bottom-color: rgba(255, 255, 255, .06);
-        background: #1a1b20;
+        background: color-mix(in srgb, #1a1d21 82%, transparent);
         box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
     }
 

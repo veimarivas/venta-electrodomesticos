@@ -52,18 +52,18 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
-                        <i class="ri-lightbulb-line align-middle me-1 text-warning"></i>
+                        <span class="importar-card-icono"><i class="ri-lightbulb-line"></i></span>
                         Cómo se usa
                     </h5>
                 </div>
                 <div class="card-body">
-                    <ol class="ps-3 mb-0 text-muted fs-14">
-                        <li class="mb-2">Pulsa <strong>Descargar plantilla</strong> para obtener el Excel con el formato exacto.</li>
-                        <li class="mb-2">Rellena la hoja <strong>Categorias</strong> y, debajo, la hoja <strong>Productos</strong>.</li>
-                        <li class="mb-2">En <em>Categoria padre</em> deja vacío para una categoría principal o escribe el nombre de otra para hacerla subcategoría.</li>
-                        <li class="mb-2">Los productos apuntan a una categoría por su nombre; si usas subcategorías, escribe el padre en <em>Categoria</em> y la hija en <em>Subcategoria</em>.</li>
-                        <li class="mb-2">Las filas de ejemplo empiezan con <code>#</code>: se ignoran. Bórralas o reemplázalas.</li>
-                        <li>Si algo ya existe (mismo nombre), se <strong>actualiza</strong> en lugar de duplicarse.</li>
+                    <ol class="importar-pasos">
+                        <li class="importar-paso">Pulsa <strong>Descargar plantilla</strong> para obtener el Excel con el formato exacto.</li>
+                        <li class="importar-paso">Rellena la hoja <strong>Categorias</strong> y, debajo, la hoja <strong>Productos</strong>.</li>
+                        <li class="importar-paso">En <em>Categoria padre</em> deja vacío para una categoría principal o escribe el nombre de otra para hacerla subcategoría.</li>
+                        <li class="importar-paso">Los productos apuntan a una categoría por su nombre; si usas subcategorías, escribe el padre en <em>Categoria</em> y la hija en <em>Subcategoria</em>.</li>
+                        <li class="importar-paso">Las filas de ejemplo empiezan con <code>#</code>: se ignoran. Bórralas o reemplázalas.</li>
+                        <li class="importar-paso">Si algo ya existe (mismo nombre), se <strong>actualiza</strong> en lugar de duplicarse.</li>
                     </ol>
                 </div>
             </div>
@@ -74,23 +74,29 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
-                        <i class="ri-file-upload-line align-middle me-1"></i>
+                        <span class="importar-card-icono"><i class="ri-file-upload-line"></i></span>
                         Subir archivo
                     </h5>
                 </div>
                 <div class="card-body">
-                    <label for="archivo-catalogo"
-                        class="border rounded-3 d-flex flex-column align-items-center justify-content-center text-center p-4 mb-3"
-                        style="border-style: dashed !important; cursor: pointer;">
-                        <i class="ri-file-excel-2-line fs-1 text-success"></i>
-                        <span class="fw-semibold mt-2">
+                    <label for="archivo-catalogo" class="importar-dropzone mb-3 {{ $archivo ? 'is-lleno' : '' }}">
+                        <span class="importar-dropzone-icono {{ $archivo ? 'is-lleno' : '' }}">
+                            <i class="ri-file-excel-2-line"></i>
+                        </span>
+                        <span class="importar-dropzone-titulo">
                             @if ($archivo)
                                 {{ $archivo->getClientOriginalName() }}
                             @else
                                 Toca para elegir el archivo Excel
                             @endif
                         </span>
-                        <span class="text-muted fs-13">.xlsx o .csv · máximo 5 MB</span>
+                        <span class="importar-dropzone-nota">
+                            @if ($archivo)
+                                Listo para importar
+                            @else
+                                .xlsx o .csv · máximo 5 MB
+                            @endif
+                        </span>
                         <input id="archivo-catalogo" type="file" class="d-none"
                             accept=".xlsx,.csv" wire:model="archivo">
                     </label>
@@ -138,7 +144,7 @@
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-header bg-transparent">
                 <h5 class="card-title mb-0">
-                    <i class="ri-checkbox-circle-line align-middle me-1 text-success"></i>
+                    <span class="importar-card-icono importar-card-icono--ok"><i class="ri-checkbox-circle-line"></i></span>
                     Resultado de la importación
                 </h5>
             </div>
@@ -175,7 +181,7 @@
                             <i class="ri-error-warning-line me-1"></i>
                             {{ count($resultado['errores']) }} fila(s) con problemas
                         </h6>
-                        <ul class="mb-0 ps-3 fs-13">
+                        <ul class="importar-errores">
                             @foreach ($resultado['errores'] as $linea)
                                 <li>{{ $linea }}</li>
                             @endforeach

@@ -106,6 +106,16 @@
                     </button>
                 </div>
 
+                <!-- Ir a la tienda pública. Se abre en otra pestaña para no
+                     perder el panel que se está usando. -->
+                <div class="ms-1 header-item">
+                    <a href="{{ route('tienda.index') }}" target="_blank" rel="noopener"
+                        class="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle"
+                        title="Ver la tienda" aria-label="Ir a la página principal de la tienda">
+                        <i class='bx bx-store fs-22'></i>
+                    </a>
+                </div>
+
                 <!-- Carrito apartado: al lado de las notificaciones, recuerda
                      que hay aparatos reservados si el cajero salió del POS.
                      En el propio POS no se monta: ahí el carrito ya está a la
@@ -241,6 +251,10 @@
                         <a class="dropdown-item" href="{{ route('profile.edit') }}">
                             <i class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
                             <span class="align-middle">Mi perfil</span>
+                        </a>
+                        <a class="dropdown-item" href="{{ route('tienda.index') }}" target="_blank" rel="noopener">
+                            <i class="mdi mdi-storefront text-muted fs-16 align-middle me-1"></i>
+                            <span class="align-middle">Ver la tienda</span>
                         </a>
                         <a class="dropdown-item" href="{{ route('profile.edit') }}#password">
                             <i class="mdi mdi-lock-outline text-muted fs-16 align-middle me-1"></i>

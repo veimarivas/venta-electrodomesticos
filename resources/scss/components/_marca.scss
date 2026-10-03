@@ -63,7 +63,7 @@
     --marca-crema: #e7e2c2;
 
     // ---- Neutros derivados --------------------------------------------------
-    --marca-fondo: #f5f7fa;
+    --marca-fondo: #f4f6fa;
 
     // ---- Superficies y tinta: cambian con el tema -------------------------
     //
@@ -89,7 +89,12 @@
     --marca-suave: #f1f4f8;
 
     /// Bordes y separadores.
-    --marca-linea: #e9edf2;
+    --marca-linea: #e7ecf2;
+
+    /// Borde en reposo elevado: campos y tarjetas al pasar por encima. Un
+    /// peldaño por debajo de `--marca-linea` para que el cambio se note sin
+    /// que el contorno llegue a gritar.
+    --marca-linea-fuerte: #d9e1ea;
 
     /// Texto secundario. Es el único que vale igual en los dos temas: un gris
     /// medio se lee sobre blanco y sobre negro.
@@ -127,6 +132,7 @@
     --marca-superficie: #212529;
     --marca-suave: #2a2d31;
     --marca-linea: #32383e;
+    --marca-linea-fuerte: #3d444c;
     --marca-apagado: #949dab;
 
     // El azul de acción sube un peldaño: sobre fondo oscuro, #254970 se

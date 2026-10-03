@@ -461,6 +461,66 @@ class VentaCrudTest extends TestCase
         Storage::disk('public')->assertExists($venta->comprobante_qr);
     }
 
+    public function test_el_pos_no_duplica_la_venta_si_se_reintenta_el_cobro(): void
+    {
+        // El mismo cobro llega dos veces —doble clic, o una respuesta que se
+        // perdió y el navegador reintentó—. La clave de idempotencia lo frena:
+        // el segundo envío devuelve la venta que ya quedó registrada.
+        $clave = 'cobro-reintentado-abc';
+
+        $unidad = $this->unidadEnStock();
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->set('claveIdempotencia', $clave)
+            ->call('agregar', $unidad->id)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $venta = Venta::first();
+
+        $this->assertSame($clave, $venta->clave_idempotencia);
+
+        // Segundo envío del MISMO cobro: misma clave, carrito con otro aparato.
+        $otra = $this->unidadEnStock();
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->set('claveIdempotencia', $clave)
+            ->call('agregar', $otra->id)
+            ->call('cobrar')
+            ->assertHasNoErrors()
+            ->assertSet('ventaRegistradaId', $venta->id);
+
+        // Sigue habiendo una sola venta, y el segundo aparato no se tocó.
+        $this->assertSame(1, Venta::count());
+        $this->assertSame('en_stock', $otra->fresh()->estado);
+    }
+
+    public function test_registrar_la_venta_es_idempotente_con_la_misma_clave(): void
+    {
+        // La garantía vive en el servicio: el POS del panel y la API la
+        // comparten, y un reintento no puede saltársela.
+        $unidad = $this->unidadEnStock();
+        $otra = $this->unidadEnStock();
+
+        $venta = app(RegistroDeVenta::class)->registrar(
+            [['unidad_id' => $unidad->id, 'precio_unitario' => '1500', 'descuento' => '0']],
+            ['clave_idempotencia' => 'clave-servicio-1'],
+            $this->admin()->id
+        );
+
+        $repetida = app(RegistroDeVenta::class)->registrar(
+            [['unidad_id' => $otra->id, 'precio_unitario' => '1500', 'descuento' => '0']],
+            ['clave_idempotencia' => 'clave-servicio-1'],
+            $this->admin()->id
+        );
+
+        $this->assertSame($venta->id, $repetida->id);
+        $this->assertSame(1, Venta::count());
+        $this->assertSame('en_stock', $otra->fresh()->estado);
+    }
+
     // ---- Búsqueda del mostrador --------------------------------------------
 
     public function test_el_buscador_muestra_los_aparatos_ya_vendidos_con_su_venta(): void
