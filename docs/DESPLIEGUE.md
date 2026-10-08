@@ -2,7 +2,7 @@
 
 > Cómo poner el sistema en el servidor de la tienda y mantenerlo vivo.
 > Para el uso diario, ver [MANUAL.md](MANUAL.md). Para las decisiones de
-> diseño, [PLAN.md](PLAN.md).
+> diseño, [ARQUITECTURA.md](ARQUITECTURA.md).
 
 ---
 

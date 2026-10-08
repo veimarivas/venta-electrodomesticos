@@ -31,7 +31,7 @@ class CompraDetalle extends Model
     {
         return [
             'cantidad' => 'integer',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'costo_unitario' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'costo_real_unitario' => 'decimal:2',

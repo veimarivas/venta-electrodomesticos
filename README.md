@@ -9,8 +9,16 @@ precios y disponibilidad—, abierto a quien no tiene sesión.
 El **panel** comparte un mismo sistema de diseño en todas sus pantallas —una
 banda con degradado, tarjetas de elevación suave, tipografía apretada y el azul
 de acción como única señal de «esto se toca»— para que se lea como una sola
-casa. El **servicio técnico** recibe aparatos escaneando la etiqueta, tanto en
-la web como desde el teléfono.
+casa. La escala vive en tokens (`_marca.scss` y `_sistema.scss`): colores,
+radios, sombras, tipografía, movimiento y el degradado de cabecera
+(`--grad-marca`) salen de ahí, y una capa de unificación
+(`_unificacion.scss`) da una sola forma a las píldoras de estado y a los estados
+vacíos. Cambiar la marca es cambiar un token, no treinta archivos. La **app del
+teléfono** espeja el mismo sistema en `lib/core/tema.dart` —colores, escala de
+espaciado, radios, sombras por brillo y estados—, y sus ocho temas por módulo
+apuntan a esos tokens en vez de reescribirlos, así que las dos caras se ven como
+el mismo producto. El **servicio técnico** recibe aparatos escaneando la
+etiqueta, tanto en la web como desde el teléfono.
 
 ## Lo que lo distingue
 
@@ -22,12 +30,18 @@ responder «¿dónde está *este* televisor?» en vez de «tenemos cuatro».
 
 ## Documentación
 
-| | |
+| Para… | Documento |
 |---|---|
-| [MANUAL.md](docs/MANUAL.md) | Cómo se usa, pantalla por pantalla. Para quien atiende |
-| [DESPLIEGUE.md](docs/DESPLIEGUE.md) | Poner el sistema en el servidor y mantenerlo vivo |
-| [PLAN.md](docs/PLAN.md) | Las decisiones de diseño y por qué se tomaron |
-| [MEJORAS.md](docs/MEJORAS.md) | Qué falta, en qué orden y por qué |
+| Usarlo, pantalla por pantalla (quien atiende) | [MANUAL.md](docs/MANUAL.md) |
+| Ponerlo en el servidor y mantenerlo vivo | [DESPLIEGUE.md](docs/DESPLIEGUE.md) |
+| Levantarlo en local, probarlo y documentar un cambio | [DESARROLLO.md](docs/DESARROLLO.md) |
+| Entender cómo está armado y por qué | [ARQUITECTURA.md](docs/ARQUITECTURA.md) |
+| Los endpoints de la app del teléfono | [API.md](docs/API.md) |
+| Qué se hizo, cuándo y por qué (y qué versión de la app pide qué backend) | [CHANGELOG.md](docs/CHANGELOG.md) |
+| Qué falta, en qué orden | [MEJORAS.md](docs/MEJORAS.md) |
+
+La app del teléfono vive en otro repositorio (`../electronica_hogar_app`), con
+su propio README y su guía de diseño en `docs/`.
 
 ## Puesta en marcha
 

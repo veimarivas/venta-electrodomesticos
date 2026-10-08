@@ -32,7 +32,7 @@ class PagoCompra extends Model
     protected function casts(): array
     {
         return [
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'monto' => 'decimal:2',
             'fecha' => 'date',
         ];

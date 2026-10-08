@@ -1,7 +1,7 @@
 # Manual de uso — Electrónica del Hogar
 
 > Para quien trabaja con el sistema todos los días. Instalación y servidor en
-> [DESPLIEGUE.md](DESPLIEGUE.md); decisiones técnicas en [PLAN.md](PLAN.md).
+> [DESPLIEGUE.md](DESPLIEGUE.md); decisiones técnicas en [ARQUITECTURA.md](ARQUITECTURA.md).
 
 ---
 
@@ -728,10 +728,18 @@ el teléfono (el filtro *Archivados* del listado y el botón de restaurar en la
 ficha, igual que productos y categorías), y las órdenes de compra ya se
 registran desde el móvil con las facturas delante (§5 y §10).
 
+### Mi cuenta y la apariencia
+
+En el Resumen, el **círculo con tus iniciales** (arriba a la derecha) abre el
+menú de tu cuenta:
+
+- **Apariencia**: *Automático* (sigue el modo claro/oscuro del teléfono),
+  *Claro* u *Oscuro*. Cambia al momento y se recuerda aunque cierres sesión.
+- **Mi perfil**, **Administración** (si tu cuenta la tiene) y **Cerrar sesión**.
+
 ### Mi perfil
 
-Desde el encabezado del dashboard, el icono de perfil abre **Mi perfil**,
-donde puedes:
+Desde el menú de la cuenta, **Mi perfil** abre tus datos, donde puedes:
 
 - **Ver tus datos**: nombre, usuario, correo, roles y datos de contacto.
 - **Editar perfil**: tocar el botón «Editar perfil» abre un diálogo con tu

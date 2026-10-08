@@ -48,7 +48,7 @@ class Caja extends Model
             'cerrada_por' => 'integer',
             'abierta_en' => 'datetime',
             'cerrada_en' => 'datetime',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'monto_inicial' => 'decimal:2',
             'monto_declarado' => 'decimal:2',
             'monto_esperado' => 'decimal:2',

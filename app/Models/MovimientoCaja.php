@@ -42,7 +42,7 @@ class MovimientoCaja extends Model
         return [
             'caja_id' => 'integer',
             'user_id' => 'integer',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'monto' => 'decimal:2',
             'created_at' => 'datetime',
         ];

@@ -70,7 +70,7 @@ class Reparacion extends Model
             'tecnico_id' => 'integer',
             'recibida_por' => 'integer',
             'en_garantia' => 'boolean',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'costo' => 'decimal:2',
             'garantia_hasta' => 'date',
             'prometida_para' => 'date',

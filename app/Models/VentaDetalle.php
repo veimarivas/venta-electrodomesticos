@@ -45,7 +45,7 @@ class VentaDetalle extends Model
             'unidad_id' => 'integer',
             'unidad_vendida_id' => 'integer',
             'producto_id' => 'integer',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'precio_unitario' => 'decimal:2',
             'costo_unitario' => 'decimal:2',
             'descuento' => 'decimal:2',

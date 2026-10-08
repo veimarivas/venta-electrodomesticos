@@ -31,7 +31,7 @@ class PrecioProducto extends Model
             'producto_id' => 'integer',
             'user_id' => 'integer',
             'fecha' => 'date',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'precio_venta' => 'decimal:2',
             'costo_referencia' => 'decimal:2',
         ];

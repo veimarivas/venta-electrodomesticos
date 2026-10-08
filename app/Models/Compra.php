@@ -58,7 +58,7 @@ class Compra extends Model
         return [
             'fecha_compra' => 'date',
             'recepcionada_en' => 'datetime',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'subtotal' => 'decimal:2',
             'descuento' => 'decimal:2',
             'impuesto' => 'decimal:2',

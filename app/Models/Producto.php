@@ -37,7 +37,7 @@ class Producto extends Model
         return [
             'categoria_id' => 'integer',
             'marca_id' => 'integer',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'precio_venta' => 'decimal:2',
             // Tope de rebaja en Bs sobre el precio de la unidad. 0 = se cobra
             // el precio de lista, sin margen para negociar en mostrador.

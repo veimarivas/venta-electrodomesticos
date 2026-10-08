@@ -86,7 +86,7 @@ class Venta extends Model
             'caja_id' => 'integer',
             'anulada_en' => 'datetime',
             'primera_devolucion_en' => 'datetime',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'subtotal' => 'decimal:2',
             'descuento' => 'decimal:2',
             'total' => 'decimal:2',

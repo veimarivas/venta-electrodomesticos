@@ -414,7 +414,7 @@ class Index extends Component
 
     /**
      * Convierte la lista plana en un árbol anidado ordenado por posición.
-     * No usa el paquete kalnoy/nestedset (ver PLAN.md): con el volumen de
+     * No usa el paquete kalnoy/nestedset (ver docs/ARQUITECTURA.md, tabla categorias): con el volumen de
      * categorías de un catálogo alcanza un groupBy en memoria.
      *
      * @param  Collection<int, Categoria>  $categorias

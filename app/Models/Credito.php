@@ -49,7 +49,7 @@ class Credito extends Model
             'cliente_id' => 'integer',
             'numero_cuotas' => 'integer',
             'creado_por' => 'integer',
-            // Dinero como decimal:2, nunca float (ver docs/PLAN.md §9).
+            // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'cuota_inicial' => 'decimal:2',
             'total_financiado' => 'decimal:2',
             'primer_vencimiento' => 'date',

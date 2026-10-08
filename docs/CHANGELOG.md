@@ -1,784 +1,626 @@
-# Plan de desarrollo — Sistema de administración de ventas (Electrónica del Hogar)
+# Historial de cambios
 
-> Documento maestro del proyecto. Stack: **Laravel 13 + MariaDB + Velzon (Bootstrap 5) + Reverb** (web/API) y **Flutter 3.x + FCM** (app del administrador).
+> Lo que ya está hecho, de lo más nuevo a lo más antiguo, con el **porqué** de
+> cada decisión. Lo pendiente está en [MEJORAS.md](MEJORAS.md); cómo está
+> armado el sistema, en [ARQUITECTURA.md](ARQUITECTURA.md).
 >
-> **Estado:** las nueve fases implementadas (ver §12). Lo único pendiente son
-> las credenciales de Firebase, sin las cuales los avisos se guardan y se leen
-> por API pero no llegan al teléfono. Guías separadas:
-> **[DESPLIEGUE.md](DESPLIEGUE.md)** y **[MANUAL.md](MANUAL.md)**.
-
----
-
-## 1. Decisiones de arquitectura
-
-| Tema | Decisión | Motivo |
-|---|---|---|
-| Tiempo real web | **Laravel Reverb** (WebSockets self-hosted) + Laravel Echo | Oficial de Laravel, gratis, corre junto al proyecto. Dashboard sin recargar. |
-| Push móvil | **Firebase Cloud Messaging (FCM)** | Única forma de notificar con la app cerrada. |
-| Inventario | **Totalmente serializado** | Cada unidad física = 1 registro `unidades` con serial o código generado. Permite costo real por unidad y trazabilidad compra → venta. |
-| App Flutter | **Solo administrador** (notificaciones + reportes) | Alcance definido: seguimiento de ventas día/semana/mes. |
-| UI web | **Plantilla Velzon** (Bootstrap 5) + Blade + Vite | Es la plantilla que ya tienes comprada. Bootstrap, no Tailwind. |
-| Autenticación | **Laravel Fortify** | Es *headless*: aporta login, throttling, recuperación de contraseña y 2FA sin traer vistas propias, así que las pantallas son las de Velzon sin pelearse con un scaffolding ajeno (Breeze/Jetstream imponen sus vistas en Tailwind). |
-| Roles | **spatie/laravel-permission** | Estándar de facto; el menú lateral se filtra solo según permisos. |
-| API móvil | Laravel Sanctum (tokens) | Estándar, simple, sin OAuth innecesario. |
-| Colas | `database` (dev) → `redis` (producción) | Las notificaciones y broadcasts no deben bloquear la venta. |
-
-### Diagrama general
-
-```mermaid
-flowchart LR
-    subgraph Tienda
-      V[Vendedor / Caja<br/>Navegador]
-    end
-    subgraph Servidor
-      L[Laravel 13<br/>Web + API]
-      DB[(MySQL 8)]
-      Q[Queue Worker]
-      R[Reverb<br/>WebSocket :8080]
-    end
-    subgraph Admin
-      W[Dashboard web<br/>Livewire + Echo]
-      M[App Flutter<br/>Android/iOS]
-    end
-    F[[Firebase FCM]]
-
-    V -->|Registra venta| L
-    L --> DB
-    L -->|evento VentaRegistrada| Q
-    Q -->|broadcast| R
-    Q -->|push| F
-    R -->|WebSocket| W
-    R -->|WebSocket opcional| M
-    F -->|notificación| M
-    M -->|REST /api/v1| L
-```
-
----
-
-## 2. Modelo de datos
-
-### 2.1 Diagrama entidad-relación
-
-> Todo el esquema del negocio está en español; solo las tablas del framework y de spatie (`users`, `roles`, `permissions`…) conservan su nombre original. Ver la nota de nomenclatura en §2.2.
-
-```mermaid
-erDiagram
-    CATEGORIAS ||--o{ CATEGORIAS : "padre/hijo"
-    CATEGORIAS ||--o{ PRODUCTOS : clasifica
-    MARCAS     ||--o{ PRODUCTOS : fabrica
-    PRODUCTOS  ||--o{ UNIDADES : "unidades físicas"
-    PROVEEDORES ||--o{ COMPRAS : provee
-    COMPRAS    ||--o{ COMPRA_DETALLES : detalle
-    COMPRA_DETALLES ||--o{ UNIDADES : "genera N unidades"
-    PERSONAS   ||--o| USERS : "cuenta de acceso"
-    PERSONAS   ||--o| TRABAJADORES : "ficha laboral"
-    PERSONAS   ||--o| CLIENTES : "ficha comercial"
-    CARGOS     ||--o{ TRABAJADORES : ocupa
-    VENTAS     ||--o{ VENTA_DETALLES : detalle
-    VENTA_DETALLES ||--|| UNIDADES : "vende 1 unidad"
-    CLIENTES   ||--o{ VENTAS : compra
-    USERS      ||--o{ VENTAS : registra
-    VENTAS     ||--o| CREDITOS : "plan de cuotas"
-    CLIENTES   ||--o{ CREDITOS : debe
-    CREDITOS   ||--o{ CUOTAS : "vencimientos"
-    VENTAS     ||--o{ ENTREGAS : "envios"
-    ENTREGAS   ||--o{ ENTREGA_DETALLES : detalle
-    VENTA_DETALLES ||--o{ ENTREGA_DETALLES : "viaja en"
-    USERS      ||--o{ ENTREGAS : reparte
-    UNIDADES   ||--o{ REPARACIONES : "pasa por el taller"
-    VENTAS     ||--o{ REPARACIONES : "de la venta"
-    USERS      ||--o{ REPARACIONES : atiende
-    CUOTAS     ||--o{ PAGOS_CREDITO : "se cobra en"
-    CAJAS      ||--o{ PAGOS_CREDITO : "entran al turno"
-    CAJAS      ||--o{ VENTAS : "turno"
-    UNIDADES   ||--o{ MOVIMIENTOS_INVENTARIO : kardex
-    USERS      ||--o{ DISPOSITIVOS : "teléfonos FCM"
-```
-
-### 2.2 Tablas
-
-**`categorias`** — jerarquía padre/hijo con profundidad ilimitada
-```
-id, padre_id (FK self, nullable, onDelete restrict), nombre, slug (unique),
-descripcion, imagen, posicion (int), activo (bool), timestamps, softDeletes
-```
-- Usar el paquete `kalnoy/nestedset` (`_lft`, `_rgt`, `depth`) para consultar árboles y descendientes en 1 query.
-  > **Desvío aplicado (CRUD 2026-08):** `kalnoy/nestedset` no está instalado y su compatibilidad con Laravel 13 no está garantizada. La tabla quedó con `padre_id` + índice `(padre_id, posicion)` y el árbol se arma en memoria (`groupBy` en el componente Livewire, método `Categoria::descendientesIds()` para impedir ciclos). La migración ya está aplicada y los 80 tests pasan; si se vuelve a nestedset, la migración habría que reescribirla.
-- Regla: los productos se asignan **solo a categorías hoja** (validación en el FormRequest).
-
-**`personas`** — datos personales, base del módulo de personal
-```
-id, user_id (FK users, nullable, UNIQUE, nullOnDelete)  -- 1 a 1 con la cuenta
-carnet (unique), nombres, apellido_paterno, apellido_materno (nullable),
-celular (nullable), direccion (nullable), correo (unique nullable),
-fecha_nacimiento (date nullable), timestamps, softDeletes
-```
-> `user_id` es nullable porque se registra gente que no usa el panel (un técnico, un chofer). El índice único impide que una cuenta quede ligada a dos personas.
-
-**`cargos`**
-```
-id, nombre (unique), timestamps
-```
-
-**`trabajadores`** — ficha laboral
-```
-id, persona_id (FK, UNIQUE, cascade), cargo_id (FK, restrictOnDelete),
-codigo (unique), fecha_ingreso (date),
-fecha_baja (date nullable, indexado), motivo_baja (nullable),
-timestamps, softDeletes
-```
-> `unique(persona_id)` fuerza el 1 a 1 con personas. `restrictOnDelete` en `cargo_id` evita borrar un cargo que todavía tiene trabajadores.
+> **Cada cambio de código se anota aquí**, arriba del todo: fecha, qué cambió,
+> por qué y cómo se comprobó. Si toca la app, con su versión (`1.x.y+n`).
 >
-> **La baja es un estado, no un borrado.** `fecha_baja` marca a quien ya no trabaja aquí; la fila permanece siempre porque las ventas, compras y movimientos de inventario que se implementen después seguirán apuntando a ella. Los scopes `activos()` y `dadosDeBaja()` alimentan el filtro del listado, y `reactivar()` reincorpora conservando código y fecha de ingreso original. El `softDeletes` sigue ahí pero **no se usa para la baja**: queda para un borrado administrativo real, si alguna vez hace falta.
-
-**`marcas`**
-```
-id, nombre (unique), slug, logo_ruta, activa, timestamps
-```
-
-**`productos`** — el *modelo* del producto, no la unidad física
-```
-id, categoria_id (FK), marca_id (FK nullable), sku (unique), nombre, slug,
-modelo, descripcion, imagen,
-precio_venta (decimal 12,2)  -- precio de lista sugerido
-descuento_maximo (decimal 12,2, default 0)  -- tope de rebaja en Bs (2026-08-20)
-stock_minimo (int, default 0), meses_garantia (int, default 12),
-activo (bool), timestamps, softDeletes
-```
-> **`descuento_maximo` (2026-08-20):** lo máximo que el mostrador puede rebajar de este producto, en Bs y no en porcentaje — la tienda negocia «hasta 50 Bs menos», no «hasta un 8 %». Por defecto **0**, que significa «se cobra el precio de lista»: sin autorización expresa en la ficha, el POS no deja bajar ni un centavo. El formulario lo valida con `lte:precio` (rebajar más que el precio dejaría vender gratis) y `RegistroDeVenta` lo vuelve a comprobar al cobrar.
-
-> **CRUD aplicado (2026-08):** marcas y productos implementados con el mismo patrón Livewire del resto. Los logos/imágenes se suben con `WithFileUploads` al disco público (`storage/app/public/marcas`, `.../productos`) y se sirven vía `storage:link` (ya ejecutado). `marcas` no lleva softDeletes según el plan; `productos` sí. Productos solo cuelgan de categorías (sin restricción de hoja todavía: la validación de categoría hoja llega con compras).
-
-**`producto_especificaciones`** — características del producto, una por fila *(implementada 2026-09-06)*
-```
-id, producto_id (FK cascade), clave (string 60), valor (string 200, nullable),
-posicion (int, el orden en que se registraron), timestamps
-ÍNDICES: index(producto_id, posicion)
-```
-> Modelo `ProductoEspecificacion`. Reemplaza a la columna JSON `productos.especificaciones`, que tenía un fallo serio de formato: convivían **tres** formatos según por dónde se guardara (objeto `{clave: valor}` del panel, lista de pares del teléfono, y un string de más por un `json_encode` en un seeder que el cast `array` volvía a codificar). El resultado era que al editar un producto, la primera columna salía «0» y el valor traía el JSON entero pegado.
->
-> La tabla normaliza todo: una fila por característica, en orden. `valor` **null** es la bandera de distintivo sin valor («Bluetooth»), que antes se guardaba como `true`. La migración copió lo que había tolerando los tres formatos (`App\Support\Especificaciones::filasDesdeValor`), y el panel, la API y la app ya leen/escriben filas. El teléfono sigue mandando y recibiendo una **lista de pares** `[{clave, valor}]`; el cambio es interno y no tocó el contrato de la API.
-
-**`proveedores`**
-```
-id, nombre, nit (NIT/RUC, unique nullable), contacto, telefono, correo,
-direccion, notas, activo, timestamps, softDeletes
-```
-> **CRUD aplicado (fase 3):** permisos `proveedores.*`, ruta `/proveedores`. Un proveedor con compras registradas **no se puede eliminar** (`restrictOnDelete`): dejaría sin origen el costo de las unidades que trajo. Para esos casos está el interruptor de activo/inactivo, que lo saca del selector de compras nuevas sin tocar el histórico.
-
-**`compras`** — cabecera de compra
-```
-id, proveedor_id (FK), user_id (FK), codigo (unique, ej. COM-2026-0001),
-numero_factura, fecha_compra (date),
-subtotal, descuento, impuesto, flete, otros_gastos, total (decimal 12,2),
-moneda (char 3, default 'BOB'), tipo_cambio (decimal 12,6, default 1),
-estado (enum: draft|received|cancelled), notas, timestamps
-```
-
-**`compra_detalles`** — detalle de compra
-```
-id, compra_id (FK cascade), producto_id (FK),
-cantidad (int), costo_unitario (decimal 12,2), subtotal (decimal 12,2),
-costo_real_unitario (decimal 12,2),  -- costo_unitario + prorrateo de flete/otros gastos
-precio_venta (decimal 12,2),        -- precio con el que saldrán estas unidades
-timestamps
-UNIQUE (compra_id, producto_id)
-```
-> **CRUD aplicado (fase 3):** cabecera + detalle en una sola pantalla (`/compras`), con panel de detalle desplegable. `unique(compra_id, producto_id)` impide repetir un producto en dos líneas de la misma compra: el prorrateo y el conteo de unidades se volverían ambiguos.
->
-> **Estados:** una compra nace en `draft` y se puede editar libremente. Al **recepcionar** pasa a `received` y queda congelada — no se pueden cambiar sus líneas ni sus gastos, porque el costo de unidades que ya están en el almacén (o vendidas) dejaría de coincidir con lo que realmente se pagó. Un borrador sí se puede eliminar; una recepcionada, no.
->
-> El código lo genera `App\Support\GeneradorCodigoCompra` con formato `COM-2026-0001`, correlativo por año y con reintento ante colisiones (misma estrategia que los otros generadores).
-
-**`items`** ⭐ — **la unidad física. Corazón del sistema.**
-```
-id,
-product_id (FK),
-purchase_item_id (FK nullable), purchase_id (FK nullable, denormalizado),
-serial (string 100, unique nullable)       -- serial del fabricante si existe
-internal_code (string 40, unique, NOT NULL) -- SIEMPRE se genera
-unit_cost (decimal 12,2)   -- costo real de ESTA unidad (landed cost)
-sale_price (decimal 12,2)  -- precio con el que salió a venta
-status (enum: in_stock|reserved|sold|returned|damaged|warranty|lost)
-location (string, ej. "Bodega A / Estante 3"),
-warranty_until (date nullable),
-entered_at (datetime), sold_at (datetime nullable),
-notes, timestamps, softDeletes
-
-ÍNDICES: unique(serial), unique(internal_code), index(product_id, status),
-         index(purchase_id), index(status, sold_at)
-```
-
-> **Etiquetas implementadas (fase 3).** `milon/barcode` genera el código de barras en **Code128**, que es obligatorio aquí: el formato `{SKU}-{AAMM}-{correlativo}` lleva letras y guiones, y EAN o UPC solo aceptan dígitos.
->
-> `App\Support\GeneradorEtiquetas` devuelve el SVG ya recortado (la librería lo entrega con prólogo XML y DOCTYPE, que no se pueden incrustar en medio de un HTML). `EtiquetaController` arma la hoja imprimible, con layout propio sin menú.
->
-> - Desde una compra recepcionada: `/etiquetas/compra/{id}` imprime el lote completo de una vez.
-> - Desde el inventario: botón por fila, o selección múltiple con checkbox y "Imprimir etiquetas".
-> - Tres tamaños (50×25, 70×35 y 100×50 mm) y hasta 5 copias por unidad.
->
-> Las medidas van en **milímetros**, no en píxeles: una etiqueta tiene que salir del tamaño real del adhesivo y el píxel depende del DPI. Verificado en el navegador: 70×35 mm renderiza exactamente 265×132 px. Al imprimir se ocultan los controles y el borde punteado de guía (ensuciaría el adhesivo precortado), y `break-inside: avoid` impide que una etiqueta se parta entre dos páginas.
-
-> **Generación de `internal_code`:** siempre se emite, tenga o no serial de fábrica, para poder imprimir una etiqueta con código de barras (Code128) o QR uniforme.
-> Formato: `{SKU_PRODUCTO}-{AAMM}-{correlativo 4 dígitos}` → `TVSAM55-2608-0042`.
-> Se genera en un `Observer`/servicio `ItemCodeGenerator` dentro de una transacción con `lockForUpdate()` sobre un contador, para evitar duplicados con concurrencia.
->
-> **CRUD aplicado (2026-08):** inventario de unidades implementado (`App\Livewire\Items\Index`, ruta `/inventario/items`, permisos `items.*`). `App\Support\GeneradorCodigoItem` genera el `internal_code` por producto y mes (`{SKU}-{AAMM}-{####}`) con reintento ante colisiones; el listado se enlaza desde productos por sesión (sin exponer ids en la URL). Los campos `purchase_item_id`/`purchase_id` quedaron como columnas sin FK (la tabla compras no existe aún). Las unidades vendidas no se pueden eliminar.
-
----
-
-> ### 🇪🇸 Nomenclatura de aquí en adelante
->
-> **Toda la base de datos está en español.** En agosto de 2026 se tradujeron también las tablas que habían nacido en inglés, así que ya no hay mezcla:
->
-> | Antes | Ahora | Modelo |
-> |---|---|---|
-> | `categories` | `categorias` | `Categoria` |
-> | `brands` | `marcas` | `Marca` |
-> | `products` | `productos` | `Producto` |
-> | `items` | `unidades` | `Unidad` |
-> | `suppliers` | `proveedores` | `Proveedor` |
-> | `purchases` | `compras` | `Compra` |
-> | `purchase_items` | `compra_detalles` | `CompraDetalle` |
->
-> Las columnas y los valores de los `enum` también (`in_stock` → `en_stock`, `draft` → `borrador`). **Se quedan en inglés** `users`, `roles`, `permissions`, `notifications`, `jobs` y demás tablas del framework y de spatie: las crea y gestiona código de terceros.
->
-> Como no había datos de producción, no se escribieron migraciones `rename`: se editaron las migraciones originales y se regeneró la base con `migrate:fresh --seed`. Si algún día hay datos reales, este atajo ya no sirve.
->
-> Convenciones para lo nuevo:
-> - Tabla en **plural**, columnas en **singular** y **sin tildes ni ñ** (`direccion`, no `dirección`; `anio`, no `año`): evita problemas de collation y de escapado en las consultas.
-> - Claves foráneas: `{tabla_singular}_id` (`cliente_id`, `venta_id`). Las que apuntan a tablas ya existentes conservan su nombre en inglés (`item_id`, `product_id`, `user_id`).
-> - Los `enum` también en español (`estado: completada|anulada`), porque se muestran al usuario.
-> - Cuando el nombre en español no coincida con la pluralización de Laravel, se declara `protected $table` explícitamente en el modelo.
-
-**`clientes`** — ficha comercial *(implementada 2026-08-16)*
-```
-id, persona_id (FK, UNIQUE, cascade), codigo (unique),
-timestamps, softDeletes
-```
-> Modelo `Cliente`. **Cambió respecto al plan original**, que le daba a la tabla sus propios `nombre`, `documento`, `celular` y `correo`. Ahora sigue la misma forma que `trabajadores`: los datos personales viven en `personas` y aquí solo va lo que hace a alguien cliente. Así una persona puede ser trabajador y cliente a la vez sin que sus datos se dupliquen ni se contradigan, y corregir un celular se hace en un solo sitio.
->
-> `unique(persona_id)` fuerza el 1 a 1. La venta al público sin datos sigue siendo lo habitual en tienda, por eso `cliente_id` es nullable en `ventas`.
-
-**`ventas`** — cabecera de venta
-```
-id, cliente_id (FK nullable), user_id (FK vendedor),
-codigo (unique, ej. VTA-2026-000123), vendida_en (datetime),
-subtotal, descuento, impuesto, total (decimal 12,2),
-costo_total (decimal 12,2),  -- suma de items.unit_cost
-ganancia (decimal 12,2),     -- total - costo_total
-metodo_pago (enum: efectivo|tarjeta|transferencia|qr|mixto),
-qr_cobro_id (FK qrs_cobro nullable, restrictOnDelete),   -- 2026-08-20
-monto_efectivo, monto_qr (decimal 12,2, default 0),      -- 2026-08-20
-comprobante_qr (string nullable),                        -- respaldo del banco
-estado (enum: completada|anulada),
-anulada_en (datetime nullable), motivo_anulacion (nullable),
-notas, timestamps
-
-ÍNDICES: index(vendida_en), index(estado, vendida_en), index(user_id)
-```
-> Modelo `Venta`. `user_id` conserva el nombre en inglés porque apunta a la tabla `users` de Laravel.
->
-> **Las ventas nunca se borran, se anulan** (`estado = anulada` + fecha y motivo), igual que la baja de trabajadores: el histórico y los reportes tienen que seguir cuadrando.
->
-> **Reparto del cobro (2026-08-20).** Con el pago mixto, `metodo_pago` dejó de bastar: no dice cuánto entró por caja y cuánto por el banco, y sin ese dato el arqueo del día no cuadra contra el extracto. `monto_efectivo` y `monto_qr` se llenan **siempre**, también en los métodos puros, para que cualquier reporte sume una sola columna sin condicionales. La migración repartió el total de las ventas ya registradas según su método.
->
-> `credito` nunca llegó a existir en el enum (la venta a crédito no se implementó); en su lugar entró `mixto`.
-
-**`qrs_cobro`** — QR bancarios que la tienda muestra al cobrar *(implementada 2026-08-20)*
-```
-id, nombre, banco (nullable), titular (nullable), imagen,
-fecha_limite (date), activo (bool), notas (nullable),
-timestamps, softDeletes
-
-ÍNDICES: index(activo, fecha_limite)
-```
-> Modelo `QrCobro` (con `$table = 'qrs_cobro'`).
->
-> **La fecha límite no es informativa: es la condición para que el POS lo ofrezca.** Los QR que emite el banco caducan, y pasada la fecha el pago no llega. `scopeVigentes()` (activo + `fecha_limite >= hoy`) es lo único que ve el punto de venta, así que un QR caduca solo, sin que nadie tenga que acordarse de desactivarlo. El día de la fecha límite todavía cuenta: el banco lo acepta hasta el cierre.
->
-> **Se archivan, no se borran** (softDeletes) y su imagen se conserva en disco: las ventas cobradas con ese QR lo referencian, y la imagen es parte del respaldo de ese cobro.
-
-**`venta_detalles`** — 1 fila = 1 unidad física vendida *(implementada 2026-08-16)*
-```
-id, venta_id (FK cascade), unidad_id (FK, indexado),
-unidad_vendida_id (nullable, UNIQUE),  -- guardia de la doble venta
-producto_id (FK), precio_unitario, costo_unitario, descuento,
-ganancia (decimal 12,2), timestamps
-```
-> Modelo `VentaDetalle` (con `$table = 'venta_detalles'`).
->
-> **`unidad_vendida_id` sustituye al `unique(item_id)` del plan original**, que tenía un fallo: con el índice único sobre `unidad_id` a secas, un aparato devuelto tras anular una venta volvía al stock pero **no se podía volver a vender nunca**, porque su línea seguía ocupando el índice. Se comprobó contra la base antes de corregirlo.
->
-> La solución es una columna aparte que copia `unidad_id` mientras la venta está viva y pasa a `NULL` al anularla. En MySQL los `NULL` no chocan entre sí, así que el índice único sigue impidiendo que un aparato esté en dos ventas **completadas** a la vez, pero deja revenderlo si la anterior se anuló. Las líneas nunca se borran: el histórico conserva ambas ventas.
->
-> Sigue siendo una garantía **a nivel de base de datos**, que es lo que importa: no basta con comprobarlo en PHP, porque dos cajeros escaneando el mismo aparato a la vez pasarían la comprobación y solo el índice único frena la segunda venta.
->
-> `costo_unitario` se copia de `unidades.costo_unitario` en el momento de la venta: si mañana cambia el costo del producto, la ganancia histórica no debe moverse.
-
-**`reparaciones`** — orden de servicio técnico *(implementada 2026-08-30)*
-```
-id, codigo (unique, REP-2026-000123), unidad_id (FK),
-venta_id (FK nullable), cliente_id (FK nullable),
-en_garantia (bool), garantia_hasta (date nullable),
-falla_reportada, diagnostico (nullable), trabajo_realizado (nullable),
-estado (recibida|en_reparacion|esperando_repuesto|lista|entregada|irreparable|cancelada),
-costo (decimal 12,2), tecnico_id (FK users nullable), prometida_para (date nullable),
-recibida_en, lista_en (nullable), entregada_en (nullable), entregada_a (nullable),
-estado_unidad_origen, recibida_por (FK users), notas, timestamps
-
-ÍNDICES: index(estado, prometida_para), index(unidad_id, recibida_en)
-```
-> Modelo `Reparacion`. **Ninguna columna nueva en `unidades`**: el estado `garantia` del enum original ya estaba reservado para esto, y la etiqueta pasó de «En garantía» a «En taller» porque por ahí pasan también las reparaciones que el cliente paga.
->
-> **`en_garantia` y `garantia_hasta` se congelan al recibir.** Deducirlos al leer los ataría a `productos.meses_garantia`, que alguien puede cambiar mañana: una orden aceptada como garantía aparecería después como cobrable. Mismo criterio que el costo congelado de la venta.
->
-> **`estado_unidad_origen`** es de dónde volver al salir del taller. Un aparato vendido vuelve a `vendido`; uno de stock que llegó fallado del proveedor, a `en_stock`. Adivinarlo mal devuelve al catálogo un aparato que ya tiene dueño.
->
-> `venta_id` y `cliente_id` son nullables: por el taller pasan también unidades que nunca se vendieron.
->
-> **Con código propio**, al revés que las entregas: el cliente se va sin su aparato y con un papel en la mano, y ese papel necesita un número con el que volver.
-
-**`entregas`** — orden de entrega a domicilio *(implementada 2026-08-29)*
-```
-id, venta_id (FK), cliente_id (FK nullable), direccion, referencia (nullable),
-telefono_contacto (nullable), programada_para (date nullable),
-estado (pendiente|en_ruta|entregada|fallida|cancelada),
-con_instalacion (bool), repartidor_id (FK users nullable),
-salio_en, entregada_en, instalada_en (nullables),
-recibida_por (nullable), motivo_fallo (nullable),
-creado_por (FK users), notas, timestamps
-
-ÍNDICES: index(estado, programada_para), index(repartidor_id)
-```
-> Modelo `Entrega`. **Sin código propio**: en el mostrador una entrega se nombra por su venta, y un correlativo más sería un número que nadie usa.
->
-> Una venta puede tener varias —tres aparatos que no caben en un viaje— y hay ventas que no tienen ninguna, porque el cliente se llevó la licuadora en la mano. `cliente_id` es nullable porque la venta al público también puede necesitar que alguien lleve el aparato a algún sitio.
->
-> `telefono_contacto` se copia y no se lee del cliente: quien recibe puede ser otro —la hija, el portero— y su número no tiene por qué acabar en la ficha del cliente.
->
-> **No hay estado `por_entregar` en `unidades`**: un aparato vendido y aún en el almacén sigue estando `vendido`. Inventarlo obligaría a que todas las consultas de stock lo conocieran, y la pregunta que contestaría —dónde está físicamente— la responde esta tabla.
-
-**`entrega_detalles`** — qué aparatos van en una entrega *(implementada 2026-08-29)*
-```
-id, entrega_id (FK cascade), venta_detalle_id (FK),
-venta_detalle_activo_id (nullable, UNIQUE),  -- guardia del doble reparto
-timestamps
-
-ÍNDICES: unique(entrega_id, venta_detalle_id)
-```
-> Modelo `EntregaDetalle`. Guarda la **línea de venta**, no la unidad: así se sabe de qué venta salió el aparato sin una consulta más, y una unidad devuelta y revendida no confunde las dos entregas.
->
-> `venta_detalle_activo_id` está calcado de `venta_detalles.unidad_vendida_id` y por la misma razón: copia mientras la entrega vive, `NULL` al cancelarla o al devolver el aparato. El índice único impide que un aparato esté en dos entregas **vivas** a la vez, pero deja volver a programarlo si la anterior se canceló.
-
-**`creditos`** — el plan de cuotas de una venta a plazos *(implementada 2026-08-29)*
-```
-id, venta_id (FK, UNIQUE), cliente_id (FK), cuota_inicial, total_financiado,
-numero_cuotas (tinyint), primer_vencimiento (date),
-estado (vigente|pagado|anulado), creado_por (FK users), notas, timestamps
-
-ÍNDICES: index(estado, cliente_id)
-```
-> Modelo `Credito`. **No guarda saldo**: es la suma de lo que falta en las cuotas. Una columna de saldo se desincroniza el día que alguien corrige un pago a mano, y a partir de ahí la cartera miente sin que nadie lo note. En los listados se arma con `withSum` en la misma consulta, para poder ordenar por él sin traer la cartera entera a PHP.
->
-> `cliente_id` se repite aquí aunque la venta ya lo sepa: la cartera se consulta por cliente y ese es el camino corto, y además fija quién firmó.
->
-> `total_financiado` se guarda aunque parezca deducible de `ventas.total`, porque ese total **cambia** si después se devuelve un aparato.
->
-> La **cuota inicial no es una cuota**: es parte del cobro de la venta y vive en `ventas.monto_efectivo`. Se copia aquí para poder leerla sin depender de un total que puede moverse.
-
-**`cuotas`** — cada vencimiento del plan *(implementada 2026-08-29)*
-```
-id, credito_id (FK cascade), numero (tinyint), vence_en (date),
-monto, monto_pagado (default 0), pagada_en (nullable), timestamps
-
-ÍNDICES: unique(credito_id, numero), index(vence_en, pagada_en)
-```
-> Modelo `Cuota`. **El estado no se guarda**, se deduce de `monto_pagado` contra `monto`; el filtro «pendientes» es un `whereColumn` en SQL. Guardarlo obligaría a recordar actualizarlo en los cuatro caminos que tocan el dinero —cobro, corrección, devolución, anulación— y basta olvidarse en uno para que la cartera empiece a mentir.
->
-> Los importes no son todos iguales: `ProrrateoDeGastos::repartir()` carga en las primeras cuotas los centavos que no dividen exactos, así que la suma da el financiado al céntimo.
-
-**`pagos_credito`** — cada imputación de dinero a una cuota *(implementada 2026-08-29)*
-```
-id, credito_id (FK), cuota_id (FK), recibo (indexado),
-caja_id (FK nullOnDelete, nullable), user_id (FK), monto,
-metodo_pago (enum: efectivo|qr|transferencia), comprobante_qr (nullable),
-pagado_en, notas, timestamps
-
-ÍNDICES: index(caja_id, metodo_pago), index(pagado_en)
-```
-> Modelo `PagoCredito` (con `$table = 'pagos_credito'`).
->
-> `cuota_id` es obligatorio: un pago siempre se imputa a una cuota concreta. Una entrega que alcanza para cuota y media son **dos filas con el mismo `recibo`** — una sola fila con el total dejaría sin respuesta qué cuota quedó saldada, que es lo que se discute en el mostrador.
->
-> El número de recibo sale del **id de la primera fila** del grupo: el autoincremento ya garantiza que no se repita, mientras que un `MAX+1` podría dar el mismo número a dos cajeros cobrando a créditos distintos en el mismo instante.
->
-> `caja_id` nullable por la misma razón que en `ventas`: se puede cobrar sin caja abierta, y el cierre lo enseña en vez de sumarlo por su cuenta.
-
-**`movimientos_inventario`** — kardex/auditoría de cada unidad *(implementada 2026-08-16)*
-```
-id, unidad_id (FK cascade), tipo (enum: entrada|salida|ajuste|devolucion|dano|traspaso),
-estado_anterior (nullable), estado_nuevo,
-origen_type + origen_id (morph nullable: Compra, Venta…),
-user_id (FK nullOnDelete), cantidad (siempre 1), notas, created_at
-
-ÍNDICES: index(unidad_id, created_at), index(tipo)
-```
-> Modelo `MovimientoInventario` (con `$table = 'movimientos_inventario'`, porque Laravel pluralizaría a `movimiento_inventarios`).
->
-> Es una tabla de solo escritura: se agregan filas, nunca se editan ni se borran. Por eso lleva `created_at` y no `updated_at` (`public const UPDATED_AT = null`), y hay un test que lo fija.
->
-> **Se añadieron `estado_anterior` y `estado_nuevo`,** que no estaban en el plan original. En un inventario serializado lo que se mueve no es una cantidad —siempre es 1— sino el estado del aparato; sin esas dos columnas el kardex sería ilegible. `cantidad` se conserva igualmente para que los reportes puedan sumar sin casos especiales.
->
-> `user_id` es `nullOnDelete` y nullable: si algún día se borra un usuario el movimiento sigue existiendo, y en seeders o comandos de consola no hay autor.
-
-**`dispositivos`** — teléfonos registrados para las notificaciones push (FCM)
-```
-id, user_id (FK cascade), token (unique), plataforma (enum: android|ios),
-nombre_dispositivo, ultimo_uso_en, timestamps
-```
-> Modelo `Dispositivo`.
-
-**`configuraciones`** — parámetros del sistema (moneda, datos de la tienda, umbrales)
-```
-id, clave (unique), valor (text), tipo (enum: texto|numero|booleano|json),
-descripcion, timestamps
-```
-> Modelo `Configuracion` (con `$table = 'configuraciones'`).
-
-Más: `users`, `notifications` (tabla estándar de Laravel), `jobs`, `failed_jobs`, `personal_access_tokens` — se dejan con su nombre original porque las crea y las gestiona el framework.
-
-### 2.3 Cálculo de costos y ganancias
-
-**Landed cost (costo real por unidad):** al recepcionar una compra, los gastos de la cabecera (`shipping_cost`, `other_costs`, `tax` no recuperable) se prorratean entre las unidades **proporcionalmente al valor** de cada línea:
-
-```
-factor_línea      = subtotal_línea / subtotal_compra
-gasto_línea       = (shipping + other_costs) * factor_línea
-landed_unit_cost  = unit_cost + (gasto_línea / quantity)
-```
-Ese `landed_unit_cost` se copia a cada `items.unit_cost`. Así la ganancia nunca sale inflada.
-
-> **Implementado en fase 3 — el reparto no pierde centavos.**
->
-> Redondear la porción de cada línea por separado casi nunca suma el importe original: un flete de 100 entre tres líneas iguales da 33.33 × 3 = 99.99, y ese centavo que falta se convertiría en ganancia inflada, porque el costo de las unidades saldría por debajo de lo real.
->
-> `App\Support\ProrrateoDeGastos` lo resuelve con el **método del resto mayor**: trabaja en centavos enteros (nunca coma flotante), asigna a cada parte su porción truncada y entrega los centavos sobrantes uno a uno a las partes con mayor resto. La suma del reparto es **siempre** exactamente el importe original. Hay un test que lo comprueba sobre 300 combinaciones aleatorias.
->
-> El reparto se aplica en dos niveles: primero los gastos entre las líneas (ponderado por el valor de cada una), luego el gasto de cada línea entre sus unidades. Así `Σ items.unit_cost` coincide al centavo con `subtotal + gastos prorrateables`.
->
-> `App\Support\RecepcionDeCompra` orquesta todo dentro de una transacción: o se genera el lote completo de unidades y la compra queda recepcionada, o no se crea nada.
->
-> **Detalle:** el impuesto **no** se prorratea (en Bolivia suele ser recuperable); solo `shipping_cost` y `other_costs`.
-
-**Ganancia por venta:** `ventas.ganancia = Σ (venta_detalles.precio_unitario − venta_detalles.costo_unitario)`.
-
-**Ganancia por compra** (lo que pediste: "ver las ganancias correspondientes a esa compra"):
-
-| Métrica | Fórmula |
-|---|---|
-| Inversión | `purchases.total` |
-| Unidades vendidas | `count(items where purchase_id = X and status = 'sold')` |
-| Ingreso realizado | `Σ venta_detalles.precio_unitario` de esas unidades |
-| **Ganancia realizada** | `Σ (precio_unitario − costo_unitario)` de esas unidades |
-| Ganancia potencial | `Σ (items.sale_price − items.unit_cost)` de las que siguen `in_stock` |
-| % recuperado | `ingreso_realizado / purchases.total` |
-| Margen | `ganancia_realizada / ingreso_realizado` |
-
-> **Ya implementado, con una salvedad:** la pantalla de rentabilidad usa hoy `items.sale_price` para el ingreso realizado, porque `venta_detalles` todavía no existe. Al construir ventas hay que cambiarlo a `venta_detalles.precio_unitario`, que es el precio realmente cobrado (con descuentos). Está anotado también en el código.
-
-Todo se resuelve con un `JOIN items ON items.purchase_id` — por eso vale la pena denormalizar `purchase_id` en `items`.
-
----
-
-## 3. Módulos de la aplicación web
-
-1. **Autenticación y roles** — `admin`, `supervisor`, `vendedor` (paquete `spatie/laravel-permission`). Policies por modelo.
-2. **Catálogo** — categorías (árbol drag&drop), marcas, productos.
-3. **Compras** — proveedores, orden de compra, **recepción**: al marcar `received` se generan automáticamente N `items` por línea; pantalla para capturar seriales uno a uno (o dejar en blanco → código autogenerado). Impresión de etiquetas con código de barras.
-4. **Inventario** — buscador de items por serial/código, estados, kardex, ajustes, transferencias.
-5. **Ventas (POS)** — buscar producto → seleccionar unidad disponible (por serial/código escaneado) → cobrar. Transacción atómica: crear `venta` + `venta_detalles`, marcar items como `sold`, registrar el movimiento de inventario y disparar el evento.
-6. **Reportes** — ventas por día/semana/mes, por vendedor, por categoría, top productos, rentabilidad por compra y por proveedor, stock bajo mínimo.
-7. **Dashboard en vivo** — contadores y últimas ventas actualizándose sin recargar.
-8. **Escaparate público** — `GET /` y `GET /producto/{slug}` (`App\Http\Controllers\StorefrontController`). Es la cara «de tienda» del catálogo, abierta a quien **no tiene sesión**.
-
-> **La raíz ya no manda al panel.** Antes `GET /` redirigía a `/dashboard`; ahora muestra el catálogo —los más vendidos y las categorías, la misma fuente que la Vitrina (`App\Support\Vitrina`)—, con buscador, filtros por categoría (incluidas subcategorías), marca y disponibilidad, y ficha de producto con precio, características y relacionados. El acceso del personal sigue en `/login`, y Fortify manda a `/dashboard` al entrar, así que para quien trabaja **nada cambia**.
->
-> El escaparate **nunca expone costos ni ganancia**: solo `precio_venta` y unidades disponibles. Un producto archivado o de una categoría oculta responde 404 aunque alguien tenga el enlace guardado. Reutiliza `App\Support\Vitrina`, así que «qué es recomendado» se sigue tocando en un solo sitio; lo cubre `tests/Feature/TiendaPublicaTest.php`.
-
----
-
-## 4. Tiempo real (dashboard sin recargar)
-
-**Flujo:**
-
-```
-RegistroDeVenta::crear()  →  DB::transaction()  →  event(new VentaRegistrada($venta))
-                                                      ├─ ShouldBroadcast → canal privado `ventas`
-                                                      └─ Listener (encolado) → FCM al administrador
-Dashboard Livewire  ←  Echo escucha `ventas:VentaRegistrada`  →  refresca los contadores
-```
-
-**Backend**
-- `App\Events\VentaRegistrada implements ShouldBroadcast`, canal `PrivateChannel('ventas')`, payload liviano (id, código, total, ganancia, vendedor, productos, hora).
-- `routes/channels.php`: autorizar el canal `ventas` solo a los roles admin y supervisor.
-- El servicio va en `App\Support\RegistroDeVenta`, junto a `RecepcionDeCompra` y los generadores de código, que es donde ya vive la lógica de negocio de este proyecto.
-- Componente Livewire `DashboardEnVivo` con:
-  ```php
-  #[On('echo-private:ventas,VentaRegistrada')]
-  public function alRegistrarseUnaVenta(array $payload) { ... }
-  ```
-
-**Procesos que deben correr en producción** (Supervisor / NSSM en Windows):
-```bash
-php artisan reverb:start --host=0.0.0.0 --port=8080
-php artisan queue:work --tries=3
-php artisan schedule:work
-```
-
----
-
-## 5. API para la app Flutter
-
-Base: `/api/v1`, auth `Sanctum` (Bearer token), respuestas con API Resources.
-
-Las rutas también van en español, en coherencia con las tablas nuevas.
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/auth/login` | correo + contraseña + nombre del dispositivo → token |
-| POST | `/auth/logout` | revoca el token actual |
-| GET | `/auth/perfil` | datos del usuario y su rol |
-| POST | `/dispositivos` | registra el token FCM del teléfono |
-| DELETE | `/dispositivos/{token}` | da de baja el dispositivo |
-| GET | `/dashboard/resumen?rango=hoy\|semana\|mes` | total vendido, nº de ventas, ganancia, ticket promedio y comparativo con el periodo anterior |
-| GET | `/dashboard/grafica?rango=semana\|mes` | serie temporal para la gráfica |
-| GET | `/dashboard/top-productos?rango=` | ranking de los más vendidos |
-| GET | `/dashboard/por-vendedor?rango=` | cuánto vendió cada uno (la ganancia solo con `ver_costos`) |
-| GET | `/dashboard/por-metodo-pago?rango=` | reparto del ingreso, con la etiqueta ya traducida |
-| GET | `/dashboard/inventario` | qué hay en la estantería **ahora** (sin rango; costo solo con `ver_costos`) |
-| GET | `/ventas?desde&hasta&pagina&vendedor_id` | listado paginado |
-| GET | `/ventas/{id}` | detalle con unidades, seriales, costos y ganancia |
-| GET | `/ventas/{id}/recibo` | recibo en PDF inline (`ventas.ver`) |
-| **POST** | `/ventas/{id}/anular` | anula la venta con motivo (`ventas.anular`); devuelve unidades al stock |
-| GET | `/ventas/{id}/entregables` | aparatos de la venta que faltan por entregar y los ya repartidos (`ventas.ver`) |
-| **POST** | `/ventas/{id}/entregas` | programa una entrega para unas líneas de la venta (`ventas.ver` + `entregas.crear`) |
-| **PUT** | `/auth/perfil` | actualizar nombre, correo y datos personales del usuario autenticado |
-| **PUT** | `/auth/password` | cambiar contraseña (requiere actual + nueva con confirmación) |
-| GET | `/catalogo/categorias` | árbol de categorías aplanado, con su nivel y conteos |
-| GET | `/catalogo/marcas` | marcas con sus productos y sus unidades en stock |
-| GET | `/catalogo/productos?buscar&categoria_id&marca_id&solo_disponibles` | listado paginado |
-| GET | `/catalogo/productos/{id}` | ficha con especificaciones y unidades disponibles |
-| **POST** | `/catalogo/categorias` · `/catalogo/categorias/{id}` | alta y edición (el `{id}` es la edición; POST y no PUT por el multipart) |
-| **DELETE** | `/catalogo/categorias/{id}` | baja; se niega si tiene subcategorías |
-| **POST** | `/catalogo/marcas` · `/catalogo/marcas/{id}` | alta y edición, con logo opcional |
-| **DELETE** | `/catalogo/marcas/{id}` | baja **real** (no hay papelera); se niega si tiene productos |
-| **POST** | `/catalogo/productos` · `/catalogo/productos/{id}` | alta y edición, con foto opcional |
-| **DELETE** | `/catalogo/productos/{id}` | baja lógica; las unidades y el histórico se conservan |
-| **POST** | `/catalogo/productos/{id}/restaurar` | la papelera: devuelve el producto al catálogo (`productos.editar`) |
-| **POST** | `/catalogo/categorias/{id}/restaurar` | la papelera del árbol (`categorias.editar`) |
-| GET | `/catalogo/productos?solo_eliminados=1` · `/catalogo/categorias?solo_eliminadas=1` | lo archivado, para poder restaurarlo |
-| GET | `/personal/cargos` | cargos con cuánta gente los ocupa (vigentes y bajas) |
-| **POST** | `/personal/cargos` · `/personal/cargos/{id}` | alta y edición |
-| **DELETE** | `/personal/cargos/{id}` | baja **real**; se niega si alguna vez tuvo trabajadores |
-| **POST** | `/personal/trabajadores` · `/personal/trabajadores/{id}` | alta (persona nueva o existente) y edición de la ficha laboral |
-| **POST** | `/personal/trabajadores/{id}/baja` · `/reactivar` | cierra o reabre la ficha, y con ella la cuenta de acceso |
-| **POST** | `/personas/{id}` | datos personales; **el único sitio donde se editan** |
-| **DELETE** | `/clientes/{id}` | archiva la ficha; su historial se conserva |
-| **POST** | `/clientes/{id}/restaurar` | la devuelve al listado con su código |
-| **POST** | `/clientes/{id}` | editar datos personales del cliente (`clientes.editar`) |
-| GET | `/personal/trabajadores?buscar&cargo_id&estado` | listado paginado |
-| GET | `/personal/trabajadores/{id}` | ficha con su cuenta de acceso y lo que vendió |
-| GET | `/clientes?buscar&estado` | listado paginado con el resumen de compras |
-| GET | `/clientes/{id}` | ficha con sus últimas compras |
-| GET | `/pos/buscar?termino=&escaneado=1` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe |
-| **POST** | `/unidades/{id}/serial` | registra el serial del fabricante leído con la cámara (`unidades.editar`) |
-| GET | `/pos/qrs` | QR de cobro **vigentes**, con su imagen (lo que el mostrador puede usar) |
-| GET | `/qrs-cobro?estado=vigentes\|caducados\|todos` | **todos** los QR, con `vigente` ya resuelto |
-| **POST** | `/qrs-cobro` · `/qrs-cobro/{id}` | alta y edición; la imagen solo es obligatoria al crear |
-| **DELETE** | `/qrs-cobro/{id}` | archiva; su imagen **no** se borra |
-| GET | `/usuarios?buscar&estado&rol` | cuentas de acceso con sus roles |
-| GET | `/usuarios/personas?termino=` | personas que aún no tienen cuenta |
-| **POST** | `/usuarios` · `/usuarios/{id}` | alta y edición; contraseña vacía = no cambiarla |
-| **POST** | `/usuarios/{id}/estado` | activa o desactiva la cuenta |
-| **DELETE** | `/usuarios/{id}` | elimina la cuenta; la persona se conserva |
-| GET | `/roles` · `/roles/permisos` · `/roles/{id}/permisos` | roles, matriz por módulo y lo que tiene marcado |
-| **POST** | `/roles` · `/roles/{id}` · `/roles/{id}/permisos` | alta, nombre y sincronización de permisos |
-| **DELETE** | `/roles/{id}` | baja; se niega si alguien lo tiene asignado |
-| **POST** | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante) |
-| **POST** | `/clientes` | alta de cliente desde cero, cuando no aparece por ningún lado |
-| GET | `/personas/sin-ficha?termino=` | segundo peldaño del buscador: personas ya registradas que aún no son clientes |
-| **POST** | `/clientes/desde-persona` | le abre la ficha de cliente con los datos que ya tiene (restaura la archivada si la hubo) |
-| GET | `/proveedores?buscar&estado` | listado paginado con lo invertido en cada uno |
-| GET | `/proveedores/{id}` | ficha con sus últimas órdenes |
-| **POST** | `/proveedores` · `/proveedores/{id}` | alta y edición |
-| **DELETE** | `/proveedores/{id}` | baja lógica; se niega si tiene compras registradas |
-| GET | `/compras?buscar&proveedor_id&estado&desde&hasta` | listado paginado |
-| GET | `/compras/{id}` | ficha con el desglose y las líneas con su costo real |
-| GET | `/compras/{id}/unidades` | aparatos que entraron con esa compra |
-| **POST** | `/compras/{id}/recepcionar` | recepciona la compra: genera unidades y congela costos (`compras.crear`) |
-| **POST** | `/compras/{id}` | edita una compra **pendiente sin pagos**: proveedor, fecha, factura, total y líneas (`compras.editar`); mismas reglas que el alta (cuadre al centavo) |
-| GET | `/reportes/compras/{id}/rentabilidad` | rentabilidad de una compra |
-| GET | `/reparaciones?buscar&filtro` | listado paginado con filtros (abiertas, atrasadas, en_taller, listas, cerradas, todas) |
-| GET | `/reparaciones/{id}` | ficha completa con historial del kardex |
-| GET | `/reparaciones/buscar-unidad?termino` | buscar unidad por serial o código interno |
-| **POST** | `/reparaciones` | recibir unidad en el taller y abrir orden (`reparaciones.recibir`) |
-| **POST** | `/reparaciones/{id}/diagnosticar` | anotar diagnóstico y costo estimado (`reparaciones.atender`) |
-| **POST** | `/reparaciones/{id}/lista` | marcar como lista para entrega (`reparaciones.atender`) |
-| **POST** | `/reparaciones/{id}/entregar` | entregar al cliente con nombre de quien recibe (`reparaciones.recibir`) |
-| GET | `/inventario/stock-bajo` | productos por debajo del mínimo |
-| GET | `/notificaciones` | historial de avisos |
-| GET | `/buscar?termino=` | buscador global de la app: productos, aparatos, ventas, clientes y compras; cada grupo solo si el usuario tiene su permiso |
-
-Rate limiting: 60 req/min por usuario. Versionado en la URL desde el día 1.
-
----
-
-## 6. App Flutter (administrador)
-
-**Paquetes:** `dio` + `retrofit`, `flutter_riverpod`, `go_router`, `firebase_core`, `firebase_messaging`, `flutter_local_notifications`, `flutter_secure_storage`, `fl_chart`, `intl`.
-
-**Estructura (feature-first):**
-```
-lib/
-├── core/            router, theme, dio_client, interceptors, constants
-├── data/            models (freezed/json_serializable), repositories, api services
-├── features/
-│   ├── auth/        login_screen, auth_controller
-│   ├── dashboard/   dashboard_screen (pestañas Hoy/Semana/Mes), kpi_cards, grafica_ventas
-│   ├── ventas/      ventas_list_screen, venta_detail_screen, filtros por fecha
-│   ├── reportes/    top_productos, rentabilidad_por_compra
-│   └── notificaciones/ history_screen, ajustes
-└── services/        notification_service (FCM), storage_service
-```
-
-**Notificaciones:**
-- Registro del token FCM tras el login → `POST /dispositivos`; refresh en `onTokenRefresh`.
-- *Foreground*: `flutter_local_notifications` muestra el banner.
-- *Background/cerrada*: notificación del sistema; el `data payload` lleva `venta_id` para hacer deep-link al detalle.
-- Canal Android dedicado (`ventas`) con sonido propio.
-
-**Actualización en vivo dentro de la app:** al recibir el push o al hacer *pull-to-refresh* se invalida el provider del dashboard. (Opcional fase 2: `pusher_channels_flutter` apuntando a Reverb para verlo cambiar sin push.)
-
----
-
-## 7. Roadmap por fases
-
-| # | Fase | Entregable | Est. |
+> Las entradas anteriores a 2026-10-06 vienen del antiguo `PLAN.md` y de
+> `MEJORAS.md`. Cuando citan «§2.2» o «§4» se refieren a
+> [ARQUITECTURA.md](ARQUITECTURA.md); «§9» es su §5 (operación y seguridad).
+> Las secciones «Lo que queda» de cada entrada son históricas: lo pendiente hoy
+> está solo en MEJORAS.
+
+## Versiones de la app y backend necesario
+
+Cada APK necesita un backend con sus endpoints. **Se sube el backend antes de
+repartir el APK.** `VENTAS_APP_MINIMA` en el `.env` hace que las versiones
+viejas avisen.
+
+| App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
-| 0 | ✅ **Setup** | Laravel 13, MariaDB, Velzon integrado, Vite con SCSS propio | hecho |
-| 1 | ✅ **Base + Auth** | Login con Fortify, 2FA, roles y permisos, layout admin, menú dinámico, perfil | hecho |
-| 2 | ✅ **Catálogo** | Categorías jerárquicas (árbol), marcas, productos con imágenes | hecho |
-| 3 | ✅ **Compras** | Proveedores, compra + detalle, recepción con landed cost, generación de items, rentabilidad por compra y etiquetas con código de barras | hecho |
-| 4 | ✅ **Inventario** | Buscador por serial, `movimientos_inventario` (kardex), ajustes con motivo, estados | hecho |
-| 5 | ✅ **Ventas** | POS, `clientes`, `ventas` + `venta_detalles`, venta atómica, cálculo de ganancia, anulación | hecho |
-| 6 | ✅ **Reportes + Dashboard live** | Reportes día/semana/mes, rentabilidad por compra/proveedor, Reverb + Echo funcionando | hecho |
-| 7 | ✅ **API + FCM** | Sanctum, endpoints v1, avisos push (falta configurar Firebase) | hecho |
-| 8 | ✅ **Flutter** | APK generado y probado en el emulador contra la API: sesión, dashboard, gráfica y listado de ventas con datos reales | hecho |
-| 9 | ✅ **Cierre** | Seeder de demostración, copias de seguridad, hardening, `docs/DESPLIEGUE.md` y `docs/MANUAL.md` | hecho |
+| 1.26.0+36 | 2026-10-08 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas | sin cambios de API |
+| 1.25.0+35 | 2026-10-05 | Sistema visual unificado | sin cambios de API |
+| 1.24.1+34 | 2026-10-03 | La sesión ya no se cierra sola | `5026ca8` |
+| 1.24.0+33 | 2026-10-03 | Buscador global, recibir en el taller | `5026ca8` |
+| 1.21.0+30 | 2026-09-21 | Precios del día obligatorios | `761f4a5` |
+| 1.20.0+29 | 2026-09-20 | Precio a pérdida, vistas en vivo | `c74634b` |
+| 1.19.0+28 | 2026-09-20 | Precios del día | `df41e89` |
+| 1.18.0+27 | 2026-09-20 | Caja abierta para vender | `e4174f3` |
+| 1.17.0+26 | 2026-09-20 | Histórico de cierres, seriales en lote | `5da29fd` |
+| 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
+| 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
+| 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
 
-**Total ≈ 8 semanas** para un desarrollador a tiempo completo. Al final de la fase 6 ya tienes un sistema usable en la tienda; las fases 7-8 son el complemento móvil.
+## Compras rediseñada, selector de apariencia e inversión por proveedor (2026-10-08)
 
----
+Backend: arreglo en `Reportes::rentabilidadPorProveedor` · app **1.26.0+36**
+(APK generado para probar en un teléfono)
 
-## 8. Pruebas mínimas
+### App
 
-> Se usa **PHPUnit**, no Pest: es lo que trae el esqueleto de Laravel 13 y con lo que están escritos los 365 tests actuales.
+- **Apariencia elegible.** Antes no había botón: la app seguía siempre el tema
+  del teléfono. Ahora el menú de la cuenta (avatar del Resumen) tiene
+  **Automático / Claro / Oscuro**. Se guarda en el teléfono y no se borra al
+  cerrar sesión. Si se elige antes de que termine la lectura de lo guardado,
+  la lectura tardía ya no pisa la elección (3 tests en `apariencia_test.dart`).
+- **Órdenes:** el código de la orden y la etiqueta de estado iban en una fila
+  sin límite junto al importe y **se superponían** en pantallas estrechas.
+  Ahora cada orden tiene dos renglones flexibles: proveedor e importe arriba,
+  código y estado abajo, y al pie fecha, líneas y aparatos con iconos.
+- **Pagos:** el total del período en una `Tarjeta` con `Cifra`; cada pago con
+  proveedor e importe arriba, orden, fecha y quién lo registró abajo. **Tocar un
+  pago abre su orden.** Siluetas en la carga en lugar del aro.
+- **Proveedores:** misma fila de dos renglones (nombre e invertido; contacto y
+  compras o su estado).
+- **Rentabilidad:** una tarjeta de **totales de todos los proveedores** arriba;
+  en cada proveedor, las tres cifras se encogen en vez de cortarse con «…» a
+  360 px, y el porcentaje usa coma decimal.
+- Buscadores, chips y estados vacíos comunes en las cuatro pestañas; las listas
+  dejan sitio al botón «Vender» al final.
+- Compras armaba sus pestañas antes de restaurar la sesión y podía decir «sin
+  permiso» (mismo arreglo que Personas y Administración).
+- «Tu jornada»: las señales de caja y precios se encogen en vez de cortarse a
+  360 px; el selector de apariencia tampoco parte «Automático».
 
-Ya cubiertas:
+### Backend
 
-- ✅ El prorrateo del landed cost suma exactamente el total de la compra, sin centavos perdidos (con barrido de 300 casos aleatorios).
-- ✅ `internal_code` y los códigos correlativos (`COD-`, `COM-`) son únicos y no se reutilizan tras una baja.
-- ✅ La recepción es atómica: si falla a mitad del lote, no queda ninguna unidad creada.
-- ✅ Una compra recepcionada no se puede editar ni eliminar.
-- ✅ Toda unidad tiene su movimiento de entrada en el kardex: no puede existir inventario sin rastro de origen.
-- ✅ El tipo de movimiento se deriva del estado de destino, y un estado que no cambia no genera fila.
-- ✅ Un ajuste sin motivo se rechaza y no toca el inventario.
-- ✅ El kardex no tiene `updated_at`: es de solo escritura.
+- **La inversión por proveedor se subestimaba** cuando dos compras recepcionadas
+  tenían el mismo total: `sum(distinct compras.total)` las contaba una vez. Con
+  un solo join hay una fila por compra, así que basta `sum(compras.total)`. Test
+  `test_la_rentabilidad_por_proveedor_suma_compras_del_mismo_importe`.
 
-- ✅ No se puede vender una unidad que no está `en_stock`.
-- ✅ No se puede vender dos veces la misma unidad (índice único de `venta_detalles.unidad_vendida_id`).
-- ✅ Si una unidad del carrito falla, no queda media venta: ni cabecera ni líneas.
-- ✅ Anular devuelve las unidades a `en_stock`, registra los movimientos en el kardex y permite revenderlas.
-- ✅ El costo se congela al vender: cambiarlo después no mueve la ganancia histórica.
-- ✅ Los totales y la rentabilidad por compra descartan las ventas anuladas.
-- ✅ Los reportes descartan las ventas anuladas y no dividen por cero sin ventas.
-- ✅ El evento `VentaRegistrada` se dispara al registrar una venta y viaja por el canal privado `ventas`.
-- ✅ El canal solo autoriza a quien tiene `reportes.ver`.
+> **Datos de demostración:** en la base local, la rentabilidad mostraba «95 de 8
+> vendidas». No es el reporte: las 63 ventas `DEMO-…` reutilizan los mismos
+> aparatos, cosa que en ventas reales impide el índice único de
+> `venta_detalles.unidad_vendida_id`.
 
-- ✅ El login por API acepta usuario o correo, y una cuenta bloqueada no obtiene token.
-- ✅ Los costos no viajan por API a quien no puede verlos.
-- ✅ Una venta se registra aunque el servidor de WebSockets esté caído, y el aviso llega igual.
-
-- ✅ La demo genera compras, unidades y ventas que cuadran: cada unidad tiene su entrada en el kardex, el costo de las unidades coincide al centavo con lo pagado, y nada se vende antes de haberse comprado.
-- ✅ Las respuestas llevan sus cabeceras de seguridad, y HSTS **no** se manda fuera de producción.
-- ✅ Ninguna pantalla del panel se abre sin iniciar sesión, y una cuenta desactivada pierde la sesión que ya tenía abierta.
-- ✅ El `.env.example` no lleva secretos.
-
-Pendientes:
-
-- Envío real de push FCM (requiere credenciales de Firebase).
-
----
-
-## 9. Operación y seguridad
-
-- `.env` fuera del control de versiones; `APP_DEBUG=false` en producción.
-- Backup diario de MySQL (`spatie/laravel-backup`) con retención de 30 días.
-- `activitylog` de Spatie sobre items, ventas y compras (quién tocó qué).
-- HTTPS obligatorio; Reverb detrás de proxy con `wss://`.
-- Soft deletes en todo lo maestro; las ventas **nunca** se borran, se anulan.
-- Los precios y costos siempre `decimal(12,2)` — nunca `float`.
-
-> **Implementado en la fase 9**, salvo `activitylog`: el kardex ya registra
-> quién movió cada unidad y por qué, que es la auditoría que este negocio
-> necesita. Añadir un segundo registro paralelo sobre las mismas tablas
-> duplicaría la escritura y obligaría a decidir cuál de los dos manda.
->
-> El detalle operativo está en **[DESPLIEGUE.md](DESPLIEGUE.md)**; el uso
-> diario, en **[MANUAL.md](MANUAL.md)**.
+**Cómo se comprobó:** vista previa web a 360 px contra el backend local (las
+cuatro pestañas de Compras y el menú de cuenta), `flutter analyze` (11 avisos
+previos), `flutter test` (169) y `php artisan test`.
 
 ---
 
-## 10. Entorno detectado en esta máquina
+## Personas: filtros legibles y pestañas rediseñadas (2026-10-07)
 
-| Herramienta | Versión | Estado |
+App **1.26.0+36** (sin repartir) · sin cambios de API
+
+Reportado en uso: «al entrar a Personas hay pestañas que no muestran el texto».
+
+- **Causa:** los filtros bajo el buscador («En activo», «Bajas», «Todos»;
+  «Activos», «Archivados», «Todos») son `ChoiceChip`, y el tema de chips del
+  mismo día les daba el color con un `WidgetStateTextStyle`, que el chip no
+  resuelve: el texto caía al negro por defecto y en modo oscuro no se veía.
+  Ahora el color va como `WidgetStateColor` dentro de un `TextStyle`, que sí
+  se resuelve. Arregla también los chips de inventario.
+- **Trabajadores, Cargos y Clientes** con los componentes comunes: buscador con
+  cruz, chips de filtro con icono, filas `FilaTocable` (nuevo: tarjeta del
+  sistema con sombra, onda al tocar y chevrón cuando abre algo), siluetas en
+  la primera carga y estados vacíos con título y qué hacer —según los permisos
+  de la cuenta—. Cargos explica arriba que se edita con una pulsación larga.
+- Las pestañas de Personas se arman también si la pantalla se abre antes de
+  restaurar la sesión (el mismo arreglo que Administración).
+
+**Cómo se comprobó:** vista previa web a 360 y 412 px, en claro y oscuro, contra
+el backend local. `flutter analyze` (11 avisos previos) y `flutter test` (166).
+
+---
+
+## Buscador, filtros, caja y taller con el sistema común (2026-10-07)
+
+App **1.26.0+36** (sigue sin repartir; entra en la misma versión) · sin cambios de API
+
+Continuación de la ronda del día anterior, sobre lo que había quedado pendiente:
+
+- **`CampoDeBusqueda`** común en Ventas, créditos, entregas y taller: lupa,
+  cruz para borrar y el campo del tema. Arregla Ventas en oscuro, donde el
+  campo era blanco fijo con letra clara.
+- **`ChipDeFiltro` y `ChipActivo`** sustituyen las copias de productos,
+  categorías, órdenes, proveedores, pagos y taller. El tema de chips aplica el
+  mismo criterio a los `ChoiceChip` sueltos: sin palomita y con el color de
+  acción, correcto en claro y oscuro.
+- **Caja:** el turno abierto con la banda de la marca; tarjetas y botón del
+  sistema.
+- **Ficha de reparación:** el costo en una `Tarjeta` y el botón «Entregar al
+  cliente» del tema (antes, degradado propio con un azul fuera de paleta).
+
+**Cómo se comprobó:** vista previa web contra el backend local (caja, taller,
+Ventas en claro y oscuro), `flutter analyze` con 11 avisos previos (uno menos
+que antes) y `flutter test` en verde (166). La cuenta de prueba y el soporte web
+temporal se borraron al terminar.
+
+---
+
+## Documentación reorganizada y app más amable (2026-10-06)
+
+Backend: solo documentación y comentarios · app **1.26.0+36** (sin cambios de API)
+
+### Documentación
+
+Había lo mismo escrito tres veces —cada ronda en `MEJORAS.md`, en `PLAN.md` §12
+y en los README— y `PLAN.md` había crecido a 253 KB mezclando plan, referencia de
+la API y bitácora. Ahora cada cosa vive en un solo sitio:
+
+| Antes | Ahora |
+|---|---|
+| `PLAN.md` §1–4, §9, §11 | [ARQUITECTURA.md](ARQUITECTURA.md), corregido: `unidades` en vez de `items`, MariaDB, la app como herramienta completa, colas en `database`, y las tablas que faltaban (`cajas`, `movimientos_caja`, `compra_pagos`, `precios_producto`, `solicitudes_descuento`) |
+| `PLAN.md` §5 (unas 80 rutas) | [API.md](API.md), **regenerada de `route:list`**: 143 rutas con su permiso real |
+| `PLAN.md` §12 + rondas hechas de `MEJORAS.md` | Este CHANGELOG, por fecha, con la tabla de versiones app ↔ backend. Se añadieron las rondas del 2026-09-20 al 2026-10-03, que no estaban documentadas (precios del día, caja obligatoria, crédito desde el teléfono, buscador global) |
+| `PLAN.md` §8, §10, estructura y credenciales | [DESARROLLO.md](DESARROLLO.md), con la tabla de qué documento se toca en cada cambio |
+| `MEJORAS.md` (hecho + pendiente) | [MEJORAS.md](MEJORAS.md) solo con lo pendiente, priorizado: servidor y copias, HTTPS, credenciales, diseño, calidad |
+| README de la app (680 líneas) | README corto + `docs/DECISIONES.md`, `docs/DISENO.md` y `docs/ENTORNO.md` en el repo de la app |
+
+Los comentarios del código que citaban `docs/PLAN.md §9`/`§10` apuntan ahora a
+`ARQUITECTURA.md §5` y `DESARROLLO.md §1`.
+
+### App 1.26.0: más amable y más profesional
+
+Revisada en marcha, en claro y oscuro, a 412 px. El detalle de cada decisión está
+en `docs/DISENO.md` de la app.
+
+- **Resumen:** cabecera con el saludo, la fecha, avisos, buscar y un **menú de
+  cuenta** (iniciales con aro dorado) en vez de cinco iconos sueltos. Nueva
+  sección **«Tu jornada»**: si la caja está abierta y los precios del día
+  listos —lo que bloquea el cobro—, y atajos con nombre a caja, precios,
+  entregas, créditos, taller, inventario y autorizaciones (con el número de
+  pendientes). Indicadores con cifras del mismo tamaño.
+- **Punto de venta vacío:** muestra la misma señal de jornada antes de escanear.
+- **Pestañas en píldora** (`PestanasDeBanda`) en Catálogo, Personas, Compras y
+  Administración: las etiquetas ya no se cortan. Administración pasa a la banda
+  común (antes, franja translúcida casi ilegible).
+- **Modo oscuro de la marca:** fondo y superficies azul noche y el azul de
+  acción con letra oscura; el botón «Vender» era ilegible en oscuro.
+- **Carga con esqueletos** en 22 pantallas que aún usaban el aro centrado.
+- **Las hojas se abren por encima** de la barra inferior y del botón «Vender»,
+  que tapaban los formularios abiertos desde las pestañas.
+- **Ficha de venta:** «Programar entrega» como acción principal y «Anular» al
+  pie, como acción secundaria con su consecuencia escrita.
+
+Arreglos encontrados al revisar:
+
+- La app **se quedaba en el logo** al abrirse con sesión guardada (la ruta `/`
+  leía la sesión una sola vez, mientras cargaba).
+- Administración decía «No tienes permisos» si se abría antes de restaurar la
+  sesión.
+- Un margen negativo salía **«+-1.045,00 Bs»**; ahora «Pérdida 1.045,00 Bs».
+
+**Cómo se comprobó:** la app se compiló para web contra el backend local y se
+recorrió en el navegador (Resumen, Ventas, ficha de venta, Catálogo, Personas,
+Compras, Administración, POS, menú de cuenta; claro y oscuro). `flutter analyze`
+sin errores (los 12 avisos previos) y `flutter test` en verde: **166** (2 nuevos
+para las iniciales y el rol del avatar; el de anular baja hasta el botón, que
+ahora está al pie).
+
+---
+
+## Unificación visual del panel (2026-10-05)
+
+Ronda de consistencia, no de rediseño: el panel tenía **cuatro cabeceras
+distintas** (navy en 17 módulos, azul en créditos/entregas/reparaciones/caja,
+pizarra en kardex, propias en stock y dashboard), la píldora de estado y el icono
+de vacío reimplementados diez veces, y varios módulos con literales fuera de los
+tokens. El objetivo era que todo se leyera como un solo producto, sin cambiar la
+identidad ni la disposición.
+
+### Un token para el degradado de marca
+
+`_sistema.scss` gana `--grad-marca`
+(`linear-gradient(160deg, var(--marca-noche), var(--marca-noche-alta) 55%, var(--marca-azul-hondo))`).
+Todas las bandas de cabecera y de modal lo usan; el literal
+`linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757)` que estaba copiado en
+nueve archivos desaparece. Cambiar la marca es ahora cambiar una línea.
+
+### Estados y modo oscuro
+
+- Créditos, entregas, reparaciones, kardex y caja usaban la paleta Tailwind
+  (índigo/esmeralda/rojo/ámbar). Pasan a `--estado-*`.
+- Los bloques de modo oscuro de personas, roles, trabajadores y usuarios se
+  declaraban bajo `body.dark`, un selector que **nunca se activa** —el toggle
+  pone `data-bs-theme` en `<html>`—. Corregido a `[data-bs-theme='dark']` y
+  alineado a los tokens de superficie/tinta.
+- El dashboard en oscuro forzaba `#0a182b` en sus tarjetas (navy) frente al gris
+  de Velzon del resto; ahora usa `--marca-superficie`.
+
+### Módulos divergentes
+
+- `_kardex.scss`: paleta pizarra/índigo propia, cero tokens → 172 literales a 4.
+- `_qrs-cobro.scss`: reescrito con tokens (53 → 7).
+- `_caja.scss`: 35 → 11, con los degradados de modal semánticos (ingreso/retiro)
+  derivados de `--estado-ok/error`.
+
+### Capa de unificación
+
+`resources/scss/components/_unificacion.scss`, importado el último en
+`app.scss`: agrupa las píldoras de estado (`.producto-estado`, `.credito-estado`,
+`.entrega-estado`, `.unidad-estado`, `.qr-estado-chip`…) y los iconos de vacío
+(`.crud-empty-icon`, `.personas-empty-icon`, `.caja-empty-icon`…) para darles una
+forma común. Solo define tamaño, relleno, radio y tipografía; **nunca color**, que
+sigue viniendo de cada módulo o de `--estado-*` para no romper el modo oscuro.
+
+### Correcciones puntuales
+
+- Perfil y Vitrina pintaban doble cabecera (`x-page-title` del layout **más** su
+  propio hero). Se quitó `title`/`breadcrumbs` de `ProfileController` y
+  `VitrinaController`, como ya hacía el dashboard.
+- Literales de color en `style="…"` (dashboard, POS, perfil) pasan a tokens.
+
+**Verificación:** `npm run build`, `php -l` de los controladores, `php artisan
+view:cache` y el detector de Impeccable (solo 4 avisos, todos preexistentes).
+
+**Pendiente (fase 2):** la unificación **estructural** del HTML —rejillas de
+barra de herramientas, `<x-empty-state>`/`<x-estado-pill>`, `x-sort-icon`, y
+migrar los KPIs del dashboard a `x-stat-card`—. Detalle en
+[MEJORAS.md](MEJORAS.md).
+
+---
+
+## Unificación visual de la app (2026-10-05)
+
+Misma ronda que el panel, del lado del teléfono. Los ocho temas por módulo
+(`dashboard_tema.dart`, `pos_tema.dart`, `catalogo_tema.dart`,
+`compras_tema.dart`, `creditos_tema.dart`, `inventario_tema.dart`,
+`reparaciones_tema.dart`, `ventas_tema.dart`) repetían a mano el trío de acentos,
+sombras propias de dos capas, escalas de radios con nombres distintos y hasta una
+paleta de estado paralela a la del sistema. La decisión fue la misma que en la
+web: **no rediseñar, sino alinear** lo que ya existía.
+
+### Un solo origen para cada valor
+
+`lib/core/tema.dart` es la fuente. Gana una escala de espaciado
+(`espacioXS`…`espacioXXXL`), alias semánticos (`acento*`, `estado*`,
+`avisoTexto`), `sombraElevada(brillo)` y colores de carga. Los temas por módulo
+pasan a **aliasar** el sistema: un cambio de marca ya no deja media app con tonos
+viejos escritos a mano. Los estados de catálogo y compras dejan su paleta propia
+(`#16A34A`/`#D97706`/`#DC2626`) por `Tema.bien/aviso/mal`, y los `heroGradient`
+divergentes pasan a `Tema.degradado`.
+
+### Controles de la marca
+
+Casillas, radios, conmutadores, el foco de los campos, la selección de texto y el
+selector segmentado usan el azul de acción; antes los derivaba Material y
+delataban la plantilla. La barra inferior sube a 68 px.
+
+### Carga y contenido adaptable
+
+- **Esqueletos** (`Esqueleto`/`EsqueletoFicha`) con el alto reservado, en vez del
+  aro centrado, en la carga inicial de Ventas, Productos, Clientes y Órdenes y en
+  las secciones del Resumen. Respeta «reducir movimiento».
+- **Contenido adaptativo**: `margenAdaptativo`/`Contenido` limitan y centran
+  listas, banda de cabecera y formularios a 720 px, y la rejilla de indicadores
+  del Resumen pasa de 2 a 3/4 columnas con `LayoutBuilder`, según el ancho
+  disponible (no el tipo de aparato). Es la guía oficial de Flutter para pantallas
+  grandes.
+
+### Previews del sistema
+
+`lib/core/previews.dart` trae `@Preview` de los componentes compartidos y la
+paleta (`flutter widget-preview start`): se aprueba un componente aislado, con su
+tema claro y oscuro, antes de usarlo en todas las pantallas. No van al APK.
+
+**Skills:** instalados, del pack oficial `flutter/agent-plugins`,
+`flutter-build-responsive-layout`, `flutter-add-widget-preview` y
+`flutter-fix-layout-issues` (en `.agents/skills/`, fuera del control de
+versiones).
+
+**Verificación:** `flutter analyze` sin errores y `flutter test` en verde (164).
+APK **1.25.0+35** generado y verificado (`versionName='1.25.0'`,
+`versionCode='35'`). Sin cambios en la API.
+
+---
+
+## Buscador global, recepción en el taller y sesión estable (2026-10-03)
+
+Backend `5026ca8` · app `ca7c849` (1.24.0+33), `b1886a1` (1.24.1+34)
+
+| | Qué | Nota |
 |---|---|---|
-| PHP | 8.3.30 | ✅ Laravel 13 requiere ≥ 8.2 |
-| Composer | 2.8.9 | ✅ |
-| Node / npm | 22.20.0 / 11.5.2 | ✅ |
-| Base de datos | **MariaDB 10.11.16** (XAMPP) | ⚠️ ver nota |
-| Flutter | instalado, **416 días de antigüedad** | ⚠️ correr `flutter upgrade` antes de la fase 8 |
-
-> **Nota MariaDB:** el XAMPP trae MariaDB, no MySQL. Laravel 13 la soporta oficialmente y cubre todo lo que necesita este plan (transacciones InnoDB, CTEs recursivos, columnas JSON). Dos detalles: usar el driver `mariadb` en `config/database.php` (no `mysql`) para que las migraciones generen el SQL correcto, y evitar columnas `virtual generated` sobre JSON. Si prefieres MySQL 8 real, instálalo aparte en el puerto 3307 — no es obligatorio.
+| ✅ | **Buscador global en la app** | `GET /api/v1/buscar?termino=`: productos, aparatos, ventas, clientes y compras en una sola consulta. Cada grupo solo viaja si la cuenta tiene su permiso, así que un resultado nunca lleva a una pantalla prohibida. En la app vive detrás de la lupa del Resumen. |
+| ✅ | **Recibir un aparato en el taller desde el teléfono** | Se escanea o teclea el serial, se elige entre las coincidencias (se elige sola si hay una) y se abre la orden con la falla, la fecha prometida y el costo. Botón flotante según `reparaciones.recibir`. |
+| ✅ | **Programar entregas desde la ficha de la venta** | Mismas reglas que el panel (`ProgramacionDeEntregas`); el servidor vuelve a comprobarlo todo. |
+| ✅ | **Primer paso del sistema visual común** | Tokens de radios, sombras de dos capas, tipografía y movimiento en el panel y en la app. El escaparate pasa a Public Sans. La unificación completa llegó el 2026-10-05. |
+| ✅ | **La sesión ya no se cierra sola** | El interceptor leía el token del Keystore en cada petición; con varias en paralelo una podía salir sin credencial, recibir 401 y expulsar al login. Ahora el token se cachea en memoria, y un 401 se confirma con `/auth/perfil` antes de borrar la sesión. |
 
 ---
 
-## 11. Paquetes que faltan instalar
+## Precios del día obligatorios para cobrar (2026-09-21)
 
-**Ninguno.** `laravel-notification-channels/fcm` ya está instalado; lo único que falta son las **credenciales de Firebase**. El sistema funciona sin ellas: los avisos se guardan en base de datos y se leen por `GET /api/v1/notificaciones`; lo único que falta es que lleguen al teléfono.
+Backend `761f4a5` · app `1e898d4` (1.21.0+30)
 
-En el `.env`:
+La jornada empieza fijando precios. Hasta que no estén los de hoy, **ni el POS del
+panel ni el de la app dejan cobrar**: muestran el aviso y un atajo a *Precios del
+día*.
 
-```
-FIREBASE_CREDENTIALS=/ruta/al/service-account.json
-FIREBASE_PROJECT_ID=tu-proyecto
-```
-
-`App\Notifications\VentaRegistradaPush::via()` detecta solas las dos cosas y añade el canal `fcm` sin tocar código.
-
-> Ya instalados: `milon/barcode` (fase 3, etiquetas), `laravel/reverb` + `laravel-echo` + `pusher-js` (fase 6, dashboard en vivo), `laravel/sanctum` (fase 7, API), `spatie/laravel-backup` (fase 9, copias), `barryvdh/laravel-dompdf` (2026-08-21, recibo de venta en PDF). `kalnoy/nestedset` se descartó: ver la nota en `categorias`.
+- `PreciosDelDia::listos()`: hay precios de hoy, o no queda nada con stock que
+  fijar.
+- `GET /api/v1/precios-del-dia/estado` (`ventas.crear`): estado liviano para que
+  el POS del teléfono sepa si puede cobrar sin necesitar permisos de catálogo.
+- Pantalla de *Precios del día* rediseñada en las dos caras: indicadores de
+  avance, buscador, filtro de pendientes, imagen, cambio frente a ayer y barra de
+  guardar pegada abajo.
+- Los tests del POS fijan primero el precio del producto, igual que la tienda.
 
 ---
 
-## 12. Lo que ya está implementado
+## Precios del día, caja obligatoria y crédito desde el teléfono (2026-09-20)
 
-### Ronda 2026-09-12: escáner, app a la par y offline
+Backend `df41e89`, `c74634b`, `57f2041`, `e4174f3`, `5da29fd`, `9584083`,
+`67e4b13`, `9f8804d`, `042d09b`, `bc8b1d0` · app 1.16.0 → 1.20.0
+
+### Precios del día
+
+- Tabla **`precios_producto`** (una fila por producto y fecha) con su servicio
+  `PreciosDelDia`. El último registrado es el vigente; si no hay ninguno, el
+  inicial del producto. El POS (panel y API) lo usa como referencia y el precio
+  de cada unidad queda como respaldo.
+- Pantalla en el panel y en la app: productos con stock, precio de la jornada
+  anterior y campo para el de hoy. Al abrir la caja, si faltan precios, lleva
+  directo a fijarlos. API `GET`/`POST /precios-del-dia`.
+- **Validaciones de costo:** precio > costo al registrar una unidad; costo
+  unitario < precio de venta en una compra; el precio del día no puede quedar en
+  el costo o por debajo.
+- Arreglo: la revisión de precios cargaba la categoría en diferido y, con la
+  carga diferida desactivada fuera de producción, saltaba
+  `LazyLoadingViolationException`.
+
+### Aviso de precio a pérdida y vistas en vivo
+
+- Si el costo de una unidad supera su precio, la fila se marca **A pérdida**, el
+  precio sale en rojo y se ofrece editarlo (nunca en una unidad ya vendida: su
+  precio es histórico). La ficha del aparato en la app avisa igual.
+- Evento **`InventarioActualizado`** (canal privado `inventario`) al reservar o
+  liberar una unidad: categorías, marcas, productos, stock y unidades se repintan
+  solas. El sondeo de cada vista es la red de seguridad sin Reverb.
+
+### Vender exige la caja abierta
+
+- Sin turno abierto el botón de cobrar queda apagado, con un atajo para abrir la
+  caja.
+- `motivosParaNoCobrar` lista **por qué** no se puede cobrar (caja cerrada,
+  rebaja pendiente, QR sin respaldo, plan de cuotas incompleto, mixto
+  descuadrado, entrega sin dirección): un botón apagado sin explicación deja al
+  cajero adivinando.
+- Pasadas las 20:00, aviso para cerrar el turno.
+
+### Crédito, caja y compras desde el teléfono
+
+- `POST /pos/cobrar` acepta el **plan de cuotas** (inicial, número de cuotas y
+  primer vencimiento), exige cliente y `creditos.crear`. Una venta a crédito no
+  se guarda en la cola sin conexión.
+- `GET /caja/cierres` (`caja.ver`): histórico de cierres con el descuadre; al
+  cajero no se le enseñan los de sus compañeros.
+- `GET /compras/{compra}/etiquetas`: PDF del lote completo.
+  `POST /compras/{compra}/seriales`: seriales de varias unidades a la vez.
+- Entregas: **Reprogramar** con selector de día. Compras: pestaña de
+  **rentabilidad por proveedor** y tarjeta de rentabilidad en la compra
+  recepcionada (tras `reportes.ver_costos`).
+
+### Panel
+
+- Dashboard: *Más vendidos* como ranking con barra de participación, chips de
+  tendencia en los KPIs, cobertura de stock en bajo mínimo y tiempo relativo en
+  las últimas ventas. `x-viz.cifra` ajusta el tamaño al ancho real de la columna.
+- Rediseño de ventas, caja, autorizaciones, compras y pagos sobre los tokens de
+  marca, con modo oscuro.
+- Logos regenerados desde el nuevo `logo_hogar.png`
+  (`scripts/generar_marca.php` recorta solo); login sin scroll de 320 px a 4K.
+
+---
+
+## Carga masiva del catálogo desde Excel (2026-09-18)
+
+Registrar las categorías, las subcategorías y los productos uno por uno era el
+último trabajo manual que quedaba en el arranque de la tienda. Ahora se sube un
+**Excel relleno** y el catálogo queda armado de una vez, desde el panel y desde
+el teléfono, con la **plantilla descargable** para no adivinar el formato.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Un `.xlsx` con dos hojas** | *Categorias* (nombre, padre, descripción, activo) y *Productos* (categoría, subcategoría, nombre, marca, modelo, precio, rebaja máxima, stock mínimo, garantía, serial, activo y especificaciones). La jerarquía se resuelve dentro del archivo: la subcategoría declara su padre y el producto apunta a la categoría o al padre + hija. |
+| ✅ | **Reimportar actualiza, no duplica** | Categorías por `(padre, nombre)` y productos por `(categoría, nombre)`, sin distinguir mayúsculas. La marca se crea sola si el producto la menciona y no existe. |
+| ✅ | **Las filas malas no tumban al resto** | Se importan las válidas y el resumen dice qué fila falló y por qué. Todo va en una transacción: un fallo inesperado no deja medio catálogo. Las filas de ejemplo empiezan por `#` y se ignoran. |
+| ✅ | **Plantilla y carga en el panel** | *Catálogo → Importar Excel*, con el formato generado al momento y botones en las cabeceras de Productos y Categorías. |
+| ✅ | **La misma función en la app** | `GET /catalogo/plantilla` y `POST /catalogo/importar` (multipart), consumidos desde la hoja de *Catálogo → subir Excel*. El selector de archivos lo aporta `file_picker`. |
+
+### Sin dependencias nuevas en el backend
+
+El `.xlsx` se lee y se escribe con **PHP nativo** (`ZipArchive` + `SimpleXML`),
+sin `phpoffice/phpspreadsheet` ni `maatwebsite/excel`: para una plantilla de
+texto y números no hacía falta el paquete entero, y el proyecto sigue
+instalable sin red. `App\Support\Excel\LectorXlsx` y `EscritorXlsx` están
+probados a ida y vuelta (acentos, caracteres XML y celdas huecas incluidas).
+
+**Tests:** `CatalogoImportTest` (importar, reimportar, filas con error, filas de
+ejemplo, permisos, plantilla y la pantalla del panel) y `ExcelXlsxTest` (ida y
+vuelta del formato).
+
+---
+
+## Aviso de autorización con sonido (2026-09-13)
+
+Cuando un vendedor baja del mínimo autorizado, el administrador tiene que
+enterarse **sin estar mirando la pantalla**: el vendedor está con el cliente
+delante esperando respuesta. El aviso ya se guardaba y ya viajaba por WebSocket,
+pero llegaba mudo y solo lo veía quien tuviera abierta la bandeja.
+
+Ahora **suena en las dos caras** —el panel web y el teléfono— y el aviso queda
+donde tiene que quedar: en la campana del panel y en el historial de avisos de la
+app.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Campana del panel: el aviso se pinta entero** | La campana leía `title` pero las notificaciones guardan `titulo` y `cuerpo`: el aviso de un descuento, de stock o de una cuota salía siempre como «Nueva venta», sin texto. Ahora cada tipo tiene su icono y su color, y se lee el cuerpo. |
+| ✅ | **El aviso se guarda aunque Reverb esté caído** | Laravel emite el broadcast **antes** que los oyentes: con el WebSocket caído, la excepción se llevaba por delante `AvisarSolicitudDeDescuento` y la notificación no llegaba a guardarse —la solicitud aparecía en la bandeja, pero ni la campana ni los avisos de la app la veían—. Si el anuncio falla, el aviso se ejecuta aparte, como ya se hacía con la venta. El mismo arreglo cubre el aviso de stock bajo. |
+| ✅ | **Sonido en el panel, con o sin WebSocket** | Un módulo propio (`resources/js/avisos.js`) escucha el canal privado `autorizaciones` y, **cada 20 s**, sondea `/avisos/recientes`. Así la campana se mueve y suena también cuando Reverb no está corriendo. Los dos caminos deduplican por solicitud, así que el aviso no suena dos veces. El sonido se genera con la **Web Audio API** —sin archivo que versionar— y el contexto se despierta con el primer clic o tecla. |
+| ✅ | **Sonido en la app** | Los avisos locales se preparan **aunque Firebase no esté configurado** (era la causa de que el push «no hiciera nada» sin credenciales). Un **vigía** consulta el historial cada 15 s mientras hay sesión y, cuando aparece una solicitud nueva, la muestra con notificación local y **sonido propio** (canal `autorizaciones`, aparte del de ventas). |
+| ✅ | **El aviso de la app lleva a la bandeja** | El historial de avisos ya entiende el tipo `solicitud_descuento`: icono propio y navegación a `/autorizaciones` (la ruta la manda el servidor en `enlace`). |
+
+### Por qué el aviso no llegaba
+
+`SolicitudDeDescuentoCreada` es un evento `ShouldBroadcastNow`: Laravel lo emite
+por Reverb en la misma petición **y antes** de correr sus oyentes. Con Reverb
+apagado la conexión falla, y esa excepción se llevaba por delante el oyente que
+guarda la notificación. Resultado: la solicitud llegaba a la bandeja, pero ni la
+campana del panel ni los avisos de la app la veían — y sin aviso no hay a qué
+hacer clic para aprobar, sugerir o rechazar—.
+
+`AutorizacionDeDescuento` ahora vuelve a ejecutar el oyente dentro del `catch`: es
+el mismo apaño que `RegistroDeVenta` usa desde el primer día. Y como el panel
+dependía del WebSocket para enterarse, `avisos.js` sondea además
+`/avisos/recientes` cada 20 s. Eso es lo que hace que la campana se mueva y suene
+con Reverb caído, que hoy es el caso.
+
+### Por qué sondea y no solo espera el push
+
+Firebase es opcional y hoy **no está configurado**. Con push, el aviso llega con
+la app cerrada; sin él, el sondeo cada 15 s es lo que hace que suene en el
+mostrador. El vigía está escrito con funciones inyectadas y no con el
+repositorio, así que se prueba sin red ni Firebase.
+
+- El push, cuando se conecte, usa **el mismo canal y el mismo enlace**: no hay
+  que tocar nada, solo poner las credenciales.
+- La **primera vuelta no suena**: toma la foto de lo que ya había. Avisar de todo
+  lo no leído de días atrás sería una alarma que nadie mira.
+- **Solo suenan las solicitudes de descuento.** Las ventas y el stock se ven al
+  abrir la app; hacer sonar el teléfono por cada venta lo volvería ruido de fondo.
+
+**Tests:** `test/avisos_test.dart` cubre el modelo, la traducción del enlace y el
+vigía (foto inicial, aviso de venta sin sonido, sin sesión, fallo de red);
+`PosAutorizacionApiTest` fija el contrato `tipo`/`titulo`/`enlace` que consumen
+las dos pantallas, comprueba que el aviso se guarda con el WebSocket caído y que
+el panel puede leer los avisos recientes por `/avisos/recientes`.
+
+**Lo que queda:** conectar Firebase para que el aviso llegue también con la app
+cerrada (ver [DESPLIEGUE.md](DESPLIEGUE.md) §4).
+
+---
+
+## Carrito apartado: indicador y liberación a los 20 minutos (2026-09-13)
+
+El carrito del POS reserva los aparatos para que otra caja no los venda. Faltaba
+resolver qué pasa cuando el cajero **abandona la venta**: los aparatos seguían
+«en proceso de venta» hasta que corriera `reservas:liberar`, y ese barrido
+depende de `schedule:work`, que en el servidor de la tienda **no está
+corriendo**. Un carrito abierto ayer seguía apartado hoy.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **La reserva dura 20 minutos** | Antes 15. Es lo que aguanta un carrito sin que nadie lo toque. Lo mismo en el panel y en la app: `ReservasDeUnidades::MINUTOS` y `Constantes.minutosDeReserva`. |
+| ✅ | **El barrido ya no depende del planificador** | Un middleware (`LiberarReservasVencidas`) suelta las reservas vencidas antes de cada petición, **una vez por minuto** (marca en caché). Aunque `schedule:work` esté caído, el inventario se corrige solo. |
+| ✅ | **Carrito al lado de las notificaciones** | Si el cajero sale del POS con aparatos apartados, un icono de carrito con su número aparece en la barra superior y lleva de vuelta a la venta. Solo cuenta las reservas **del propio cajero y vigentes**, y no se monta en el propio POS. |
+| ✅ | **El POS retoma el carrito** | Al volver al punto de venta, los aparatos apartados reaparecen con su precio de lista, y una rebaja ya autorizada se recupera con la línea. Antes, el indicador habría llevado a un carrito vacío. |
+
+Una reserva **sin fecha** —un dato a medias— también se suelta: no bloquea nada,
+pero dejaba el aparato pintado como «en proceso de venta».
+
+**Tests:** el barrido, los 20 minutos, la reserva sin fecha, la liberación del
+middleware al entrar, la recuperación del carrito y el indicador propio (y el
+ajeno que no se muestra). El temporizador del carrito en la app usa la misma
+constante de 20 minutos.
+
+**Lo que queda:** nada de esta pieza. El barrido programado sigue existiendo como
+segunda red, pero ya no es la única.
+
+---
+
+## Pantallas, POS y app móvil (2026-09-13)
+
+Ronda de diseño de pantallas y de funciones del mostrador. No cambia reglas de
+negocio existentes: **suma** la autorización de descuentos y la reserva de
+unidades, que era lo que faltaba para vender con varias cajas a la vez sin que
+dos se peleen por el mismo aparato.
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Modo oscuro del panel** | El fondo de página (`--marca-fondo`) no se redefinía en oscuro: el cuerpo quedaba claro y las superficies translúcidas se veían blancas. Se corrigió en la marca. |
+| ✅ | **Vitrina** | Rediseño con barra de búsqueda fija, secciones con conteo y tarjetas más limpias. |
+| ✅ | **Ficha de venta** | El hero no tenía fondo porque el contenedor no entraba en la regla compartida; se rehizo con banda de marca, KPIs y resumen financiero. |
+| ✅ | **Reportes y gráficos** | Productos al liderazgo en barras horizontales, dona con el total al centro, barra apilada real por proveedor y colores de marca. |
+| ✅ | **Unidades** | Interruptor **En stock / Vendidos** siempre visible y tabla que en móvil pasa a tarjetas (sin scroll lateral). |
+| ✅ | **Carrito del POS** | Cada aparato es una tarjeta; el **costo de compra vive tras un ojito** (solo con `reportes.ver_costos`) y el margen se pinta con el ojo encendido. |
+| ✅ | **Autorización de descuentos** | Bajar del mínimo obliga a pedir permiso; el administrador aprueba, sugiere o rechaza y el carrito se actualiza solo. |
+| ✅ | **Entrega directa o a domicilio** | Por aparato, con dirección, enlace de Google Maps, fecha, instalación y quién la lleva; la `Entrega` se crea al cobrar. |
+| ✅ | **Reserva de unidades** | Al entrar al carrito el aparato pasa a `reservado` con un vencimiento de 20 minutos; otra caja no lo puede vender. |
+| ✅ | **Vistas al día** | Stock, Productos y Unidades muestran las reservadas como «en proceso de venta» y se refrescan solos cada 15 s. |
+| ✅ | **App móvil a la par** | Todo lo anterior en el teléfono, más la bandeja de Autorizaciones y la notificación al administrador. |
+
+### Autorización de descuentos
+
+El vendedor rebaja hasta el tope del producto por su cuenta. Bajar más —**sin
+llegar por debajo del costo**— abre una solicitud con la foto del momento:
+precio de lista, tope, costo y precio pedido. El administrador la resuelve desde
+**Ventas → Autorizaciones** (panel) o su pestaña en la app, y puede aprobar el
+importe pedido, **sugerir otro monto** o rechazar con un motivo.
+
+La venta se actualiza sola: el POS del vendedor recibe la resolución por
+WebSocket (y sondea como respaldo), aplica el monto autorizado o vuelve al
+mínimo si se rechazó. Al cobrar, `RegistroDeVenta` no se fía del carrito: busca
+en la base una autorización **aprobada, sin usar y que cubra el precio**, y la
+consume. Vender por debajo del costo se rechaza siempre.
+
+- Permiso nuevo **`ventas.autorizar_descuento`** (el rol `admin` ya lo tiene por
+  `Gate::before`; se puede dar a otro rol desde *Roles y permisos*).
+- Tabla **`solicitudes_descuento`**.
+- Al pedirla, el administrador recibe una **notificación** (campana del panel y
+  avisos de la app) con enlace a la bandeja. El push al teléfono llega cuando
+  Firebase esté configurado.
+
+### Reserva de unidades
+
+Agregar al carrito deja el aparato en **`reservado`** («En proceso de venta»)
+para que otra caja no lo venda. Al quitarlo vuelve al stock. La reserva
+**vence a los 20 minutos**: el POS cierra el carrito abandonado y un barrido
+—programado (`reservas:liberar`, cada minuto con `schedule:work`) y **también
+adelantado por un middleware en cada petición**— devuelve al stock las que
+quedaron colgadas de un carrito que se cerró solo. El indicador del carrito, al
+lado de las notificaciones, avisa de lo apartado y lleva de vuelta al POS.
+
+`RegistroDeVenta` acepta la reserva **del propio vendedor** y la limpia al
+vender; las de los demás siguen bloqueadas.
+
+Las vistas que muestran disponibilidad —**Stock actual**, **Productos** y
+**Unidades**— excluyen las reservadas de lo disponible y las pintan como «en
+proceso de venta»; se refrescan solas cada 15 s, así que lo que pasa en otra
+caja se ve sin recargar.
+
+### Entrega a domicilio
+
+Al cobrar, cada aparato se marca «se lo lleva» o «a domicilio». Si hay alguno a
+domicilio se piden la dirección (obligatoria), referencia, teléfono, fecha,
+instalación y, opcionalmente, un **enlace de Google Maps** del punto y **quién la
+lleva**: el repartidor se puede fijar al programar y no solo al despachar. Se
+guarda el enlace y no coordenadas a propósito —no hace falta clave de Google ni
+un selector de mapa dentro del POS— y se abre con un toque desde la ficha de la
+venta (panel) y desde la pantalla de Entregas (app), para que el repartidor
+llegue sin llamar.
+
+### API y app móvil
+
+El POS de la API es sin estado: la app arma el carrito y manda todo al cobrar.
+Se agregaron `POST /pos/reservar` y `/pos/liberar`, `POST
+/pos/solicitudes-descuento` y su estado, `GET /autorizaciones` y `POST
+/autorizaciones/{id}/resolver`, el `costo_unitario` (solo con permiso) en el
+buscador, y `entrega` por línea en el cobro. La app (repo aparte,
+`venta-electrodomesticos-app`) refleja el mismo flujo.
+
+### Lo que queda
+
+- **Push real**: conectar la cuenta de Firebase (`FIREBASE_CREDENTIALS` en el
+  servidor y `google-services.json` en la app). El resto del circuito ya avisa
+  por la campana y por los avisos de la app.
+- **Procesos del servidor**: `queue:work` (avisos de venta), `schedule:work`
+  (copias y barrido de reservas) y `reverb:start` (tiempo real) tienen que estar
+  corriendo; ver [DESPLIEGUE.md](DESPLIEGUE.md) §4.
+
+---
+
+## Ronda 2026-09-12: escáner, app a la par y offline
 
 Salió de un informe de uso real: **el escáner leía «lo demás» pero no el código
 que imprime el sistema**. El caso terminó destapando una campaña.
 
-#### La etiqueta pasó de Code128 a QR
+### La etiqueta pasó de Code128 a QR
 
 El code128 del código interno (`P001-2609-0001`, ~200 módulos) es demasiado
 denso: MLKit no lo resuelve cuando cada barra fina cae por debajo de ~2 px, cosa
@@ -800,34 +642,34 @@ del mismo dato se lee en cualquier orientación y a mucha menos resolución.
 > EAN-13) y el estado de la cámara se degradaba tras unas cuantas lecturas. Se
 > quitó.
 
-#### Devolución desde el teléfono
+### Devolución desde el teléfono
 
 `POST /api/v1/ventas/{venta}/devolver` usa el mismo `RegistroDeVenta::devolver`
 del panel. En la app, cada aparato de una venta tiene su botón **Devolver** con
 motivo obligatorio; las líneas devueltas se tachan. De paso se cableó el botón
 **Anular**, que estaba sin destino.
 
-#### Movimientos de caja
+### Movimientos de caja
 
 Retiros e ingresos que antes solo cabían en las notas del cierre. Ahora son una
 tabla `movimientos_caja` y entran en el esperado del arqueo: un retiro explica
 un cajón que no cuadra con las ventas, en vez de aparecer como faltante.
 
-#### Comprobantes para el cliente
+### Comprobantes para el cliente
 
 Estado de cuenta del crédito y orden de servicio técnico en PDF, generados al
 vuelo (`ComprobantesDeCliente`). El panel los imprime; la app los abre en un
 visor (`printing`), que también arregló el recibo de venta, que antes solo
 guardaba la ruta del archivo.
 
-#### Versión app↔API
+### Versión app↔API
 
 `GET /api/v1/version` devuelve `app_minima`; la app compara con su propia versión
 y avisa si quedó atrás. `VENTAS_APP_MINIMA` se cambia sin tocar código. Es la
 respuesta al desajuste que ya pasó una vez: un APK nuevo contra un backend viejo
 responde 404 en las rutas que faltan.
 
-#### Cobro idempotente y cola sin conexión
+### Cobro idempotente y cola sin conexión
 
 `ventas.clave_idempotencia` (única) y el POS guardando la misma clave entre
 reintentos: si la respuesta se pierde por un corte de red, reintentar devuelve la
@@ -839,7 +681,7 @@ cajero decida; no reintentan solas.
 > **Cada venta pendiente recuerda de qué usuario es.** Solo ese cajero la
 > sincroniza: de lo contrario otro se llevaría la venta en su nombre.
 
-#### Avisos al cliente y diagnóstico de push
+### Avisos al cliente y diagnóstico de push
 
 `AvisosAlCliente` elige el transporte por `config/avisos.php`: hoy `log` y
 `correo`; WhatsApp/SMS se añade ahí sin tocar los disparadores (despachar una
@@ -847,147 +689,206 @@ entrega, marcar una reparación lista). Y `php artisan push:revisar` dice qué
 falta para que FCM funcione, porque la falta de credenciales no rompe nada y por
 eso mismo nadie la nota.
 
-### Estructura
+---
 
-```
-app/
-├── Http/Controllers/     DashboardController, ProfileController, SearchController
-├── Http/Middleware/      EnsureUserIsActive (alias 'active'), CabecerasDeSeguridad (global)
-├── Listeners/            RecordLastLogin
-├── Providers/            AppServiceProvider, FortifyServiceProvider
-└── Support/              MenuBuilder
-config/
-├── menu.php              ← estructura del sidebar (editar aquí, no el Blade)
-├── velzon.php            ← apariencia de la plantilla (layout, colores, modo)
-├── backup.php            ← qué se respalda y cuánto se conserva
-├── fortify.php           permission.php
-routes/console.php        ← copia de seguridad diaria (necesita schedule:work)
-resources/
-├── scss/                 estilos propios (compilados con Vite)
-├── js/app.js             toasts, confirmaciones, flatpickr
-├── velzon-html/          los 189 HTML originales, como referencia (fuera del webroot)
-└── views/
-    ├── backend/
-    │   ├── layouts/      master, auth, partials (topbar, sidebar, menu-item, customizer…)
-    │   ├── auth/         login, forgot-password, reset-password, 2FA, confirm-password
-    │   ├── dashboard/    profile/  search/
-    └── components/       page-title, card, stat-card
-public/assets/            la plantilla Velzon (CSS, JS, libs, imágenes)
-```
+## Diseño y escaparate público (2026-09-12)
 
-### Credenciales de prueba
+Campaña de diseño sobre las dos caras del producto —el panel y la app— y una
+puerta pública al catálogo. No toca ninguna regla de negocio: es cómo se ve y
+cómo se llega a lo que ya existía.
 
-| Rol | Correo | Contraseña |
+| | Qué | Nota |
 |---|---|---|
-| admin | `admin@electronicahogar.test` | `password` |
-| vendedor | `vendedor@electronicahogar.test` | `password` |
+| ✅ | **Escaparate público del catálogo** | `GET /` deja de redirigir a `/dashboard` y muestra la tienda a quien no tiene sesión: recomendados, catálogo por categorías, buscador, filtros por categoría/marca/disponibilidad y ficha de producto con precio. Reutiliza `App\Support\Vitrina` y **nunca expone costos**. Test: `TiendaPublicaTest` (9). |
+| ✅ | **Sistema de diseño del panel** | `_sistema.scss` centraliza radios, sombras tintadas, movimiento y estados; `_base.scss` pule los componentes de Velzon (botones, tarjetas, campos, tablas, modales) por encima de la plantilla y por debajo de cada módulo. |
+| ✅ | **Vitrina y Stock alineados a la marca** | La Vitrina traía su propia paleta (slate/indigo); ahora usa el azul noche y el oro. Stock pierde el turquesa legado (`#0f766e`) y los acentos verdes del modo oscuro, y sus estados pasan a los tokens del sistema. |
+| ✅ | **Login con movimiento de marca** | La banda respira (halo y anillo muy lentos), el contenido entra por capas y el formulario gana micro-interacciones (etiqueta que se enciende, alerta que se desliza, brillo del botón). |
+| ✅ | **App Flutter: cabeceras de marca** | La `AppBar` de las pantallas de detalle pasa a azul noche con hilo dorado, y las cinco pestañas principales comparten la banda degradada (`EncabezadoDegradado` con `TabBar`). |
 
-> **Antes de abrir la tienda hay que cambiar la del admin y borrar la del
-> vendedor.** Las trae el seeder y están escritas aquí: dejarlas es dejar la
-> puerta abierta. La lista completa de comprobaciones está en
-> [DESPLIEGUE.md §6](DESPLIEGUE.md).
+Piezas de fondo que explican el resto:
 
-Para una base con historia (reportes con datos, gráficas con forma):
+- **El sistema de diseño vive en dos archivos** (`_sistema.scss` y `_base.scss`)
+  en vez de repartirse en treinta. Un módulo nuevo hereda el acabado sin
+  escribir una sola regla.
+- **La app del teléfono gana una transición propia**: las fichas se abren con un
+  desvanecido y las pestañas cambian al instante (`router.dart`), y `Aparecer`
+  (en `core/widgets.dart`) da entrada a los bloques respetando «reducir
+  movimiento».
+- **Avisos se rediseñó** con tarjetas propias, chip por tipo y punto de no leído.
 
-```bash
-php artisan db:seed --class=DemoSeeder
-```
+**Lo que queda de esta pieza:** en la app, un buscador y una píldora de filtro
+compartidos (hoy hay una decena de copias), unificar las fichas de detalle sobre
+`Tarjeta` y rediseñar las pestañas de Administración (usuarios, roles y QR), que
+siguen con `ListTile` plano.
 
-### Cómo levantar el proyecto
+---
 
-```bash
-php artisan serve
-```
+## Dashboard: mejoras de diseño y UX (2026-09-07)
 
-```bash
-npm run dev
-```
-
-Para que el **dashboard en vivo** reciba las ventas hace falta además el servidor de WebSockets:
-
-```bash
-php artisan reverb:start
-```
-
-Sin él la aplicación funciona igual; solo el panel «Ventas en vivo» de Reportes se queda esperando.
-
-### Módulo de personal (personas, trabajadores, cargos)
-
-Las tres tablas están creadas con sus relaciones. El **CRUD de personas** está implementado con **Livewire 4** en `App\Livewire\Personas\Index`:
-
-- Listado de 10 por página, con buscador y ordenamiento; todo se actualiza sin recargar.
-- Alta, edición y borrado en modales de Bootstrap, controlados desde el componente.
-- Validación campo por campo mientras se escribe (`wire:model.live` + `validateOnly`), en español.
-- El botón de guardar sigue a la propiedad computada `formularioValido`: permanece deshabilitado hasta que todo el formulario pasa las reglas.
-- Toast de confirmación en cada operación (SweetAlert2, vía `Livewire.on('toast')`).
-- Permisos `personas.ver|crear|editar|eliminar`: los botones se ocultan en la vista **y** cada método del componente vuelve a comprobar el permiso, porque un componente Livewire es un endpoint invocable.
-
-#### Diseño del listado (rediseño 2026-08)
-
-- **Encabezado (hero):** banda con el degradado del tema, etiqueta tipo chip «Registro de personas», textura decorativa con destellos suaves (pseudo-elementos `::before`/`::after`) y el botón **Nueva persona** como acción principal.
-- **Indicadores:** fila de 4 tarjetas KPI reutilizando el componente `x-stat-card` del dashboard (consistencia visual): Personas registradas, Con correo, Con celular y Cumplen años este mes. Los dos últimos totales se calculan en `render()` con `whereNotNull` y `whereMonth`.
-- **Listado:** barra de herramientas con título + conteo en vivo de resultados y buscador; punto verde sobre el avatar cuando la persona tiene cuenta de acceso (`->with('user')`). Estado vacío con icono en aro degradado del tema.
-- **Modal registrar/editar:** grilla equilibrada (carnet 4 / nombres 8; apellidos y fecha en 4/4/4) y ritmo de secciones más compacto.
-- Los estilos viven en `resources/scss/components/_personas.scss` y se cargan por Vite (`npm run dev` / `npm run build`).
-
-#### Validaciones de personas
-
-| Campo | Regla | Mensaje |
+| | Qué | Nota |
 |---|---|---|
-| Carnet | Solo números, entre 7 y 11 dígitos (`^[0-9]{7,11}$`) | «El carnet debe contener entre 7 y 11 números.» |
-| Nombres | Solo letras (acentos, ñ, espacios, guiones y apóstrofes) | «El nombre solo puede contener letras.» |
-| Apellido paterno / materno | Solo letras y al menos uno de los dos obligatorio (`required_without`) | «Debes registrar al menos un apellido.» |
-| Celular | Exactamente 8 números (`^[0-9]{8}$`) | «El celular debe tener 8 números.» |
+| ✅ | **Imágenes en Bajo mínimo** | El dashboard del panel web y la app Flutter ahora muestran la imagen del producto en la sección de bajo mínimo, facilitando la identificación visual rápida. |
+| ✅ | **Reorganización del dashboard** | Últimas ventas y Más vendidos ahora están en la parte superior, debajo de los KPIs, antes de Bajo mínimo. Esto mejora la jerarquía visual: primero la actividad reciente, luego lo que hay que reponer. |
+| ✅ | **API de stock bajo con imagen** | El endpoint `GET /api/v1/inventario/stock-bajo` ahora incluye la URL de la imagen del producto para la app móvil. |
 
-Detalles:
-- `updated()` revalida **ambos** apellidos al cambiar uno, para que el error de «al menos un apellido» se limpie en el acto (evita errores obsoletos en el bolsón de Livewire).
-- `Persona::iniciales()` cae al apellido materno cuando no hay paterno.
-- Inputs con `maxlength`/`inputmode` (carnet 11, celular 8); los labels de apellidos muestran la pista «(al menos uno)» en lugar del asterisco de obligatorio.
-- `PersonaCrudTest` cubre las reglas nuevas con 4 casos extra; la suite completa pasa 36/36.
+**Lo que queda:** nada de esta pieza.
 
-El **CRUD de cargos** sigue exactamente la misma estructura (permisos `cargos.*`). Un cargo con trabajadores asignados **no se puede eliminar**: la FK es `restrictOnDelete`, así que el componente cuenta primero y avisa, en lugar de dejar que falle la base de datos.
+---
 
-El **módulo de trabajadores** (`App\Livewire\Trabajadores\Index`) resuelve el alta en dos pasos:
+## CRUD completo y órdenes de compra desde el teléfono (2026-09-06)
 
-1. **Buscar a la persona** — buscador en vivo sobre `personas` (mínimo 2 caracteres, máximo 8 resultados). Cada coincidencia muestra o el botón *Asignar*, o la etiqueta *Ya es trabajador* con su código y cargo si ya tiene ficha.
-2. **Ficha laboral** — cargo y fecha de ingreso (prellenada con hoy), más la previsualización del código.
+El catálogo ya se administraba desde la app; faltaban tres piezas y entraron las
+tres:
 
-Si la búsqueda no encuentra a nadie, ofrece registrar a la persona; lo tecleado se reaprovecha (si son solo dígitos va al carnet, si no al nombre) y en ese caso persona y ficha se crean dentro de una misma transacción, para que un fallo no deje una persona suelta.
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Editar una compra pendiente** | Endpoint `POST /compras/{compra}` (`compras.editar`) + botón en la ficha de la orden. Mismas reglas que el alta (cuadre al centavo, productos sin repetir) y dos guardas: no se edita una compra **recepcionada** ni una que ya tenga **pagos** — su total empezó a moverse. |
+| ✅ | **Editar especificaciones del producto** | El formulario del teléfono pasó de conservarlas a editarlas: una fila por característica, mismo formato «clave: valor» que guarda la base. El backend ya lo soportaba. |
+| ✅ | **Papelera desde la app** | Chip «Papelera» en los listados de productos y categorías: lista los archivados (`solo_eliminados`) y los restaura con `POST /…/restaurar` (`productos.editar` / `categorias.editar`). |
 
-**Código correlativo** (`App\Support\GeneradorCodigoTrabajador`): formato `COD-0001`. El correlativo se calcula sobre el máximo existente **incluyendo los archivados**, porque reutilizar el código de alguien dado de baja rompería el histórico. La unicidad la garantiza el índice único de la columna, no el cálculo: ante una colisión por concurrencia se reintenta con el número siguiente.
+El alta de una compra también trabaja desde el teléfono (v1.6.0): la orden se
+registra con su proveedor y sus líneas, con el cuadre al centavo del panel; la
+edición, la recepción y los pagos completan el módulo desde el mostrador.
 
-Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es su identidad en el histórico y los datos personales se corrigen desde el módulo de personas.
+---
 
-**La baja no borra nada.** Marca `fecha_baja` y un motivo opcional; la ficha sigue consultable desde el filtro «Bajas» del listado, atenuada y con botón *Reincorporar* que conserva el código y la fecha de ingreso original. Si se busca a esa persona desde el alta de trabajadores, en vez de *Asignar* aparece *Reincorporar*: crear una ficha nueva chocaría con el índice único de `persona_id` y le haría perder su código.
+## Especificaciones en tabla propia (2026-09-06)
 
-### Usuarios, roles y permisos
+Las características del producto vivían en una columna JSON con un fallo de
+formato: según por dónde se guardara convivían un objeto `{clave: valor}`, una
+lista de pares y un string de más (un `json_encode` en un seeder que el cast
+`array` volvía a codificar). Al editar un producto, el formulario mostraba «0»
+de característica con todo el JSON pegado en el valor.
 
-- **`App\Livewire\Usuarios\Index`** — listado con filtros por rol y estado, alta y edición con asignación de roles (checkboxes), activación/desactivación desde el listado y vínculo opcional con una persona (la relación 1 a 1 de `personas.user_id`). La contraseña se exige al crear; al editar, dejarla vacía significa «no cambiarla».
-- **`App\Livewire\Roles\Index`** — CRUD de roles y matriz de permisos agrupada por módulo (el prefijo antes del punto: `ventas.crear` cae bajo `ventas`), con *marcar/desmarcar todo* por módulo y global.
+Se pasó a la tabla **`producto_especificaciones`** (una fila por característica,
+en orden; `valor` null = distintivo sin valor). La migración copió lo que había
+tolerando los tres formatos y quitó la columna. El contrato de la API no cambió:
+la app sigue mandando y recibiendo una lista de pares `[{clave, valor}]`. Editar
+un producto en el panel, en la app y en la ficha de unidades muestra ahora las
+características tal como se registraron.
 
-**Salvaguardas** (todas con test):
+---
 
-| Situación | Qué pasa |
-|---|---|
-| Quitarte a ti mismo el rol `admin` | Bloqueado |
-| Desactivar o eliminar tu propia cuenta | Bloqueado |
-| Eliminar al único administrador | Bloqueado |
-| Renombrar o eliminar el rol `admin` | Bloqueado — `Gate::before` le da acceso total, su matriz es informativa |
-| Eliminar un rol con usuarios asignados | Bloqueado, avisando cuántos |
-| Permisos inventados enviados desde el navegador | Se descartan: solo se sincronizan los que existen en BD |
+## Recepción por tandas, escáner de seriales y pagos (2026-09-06)
 
-> **Detalle de spatie:** después de tocar roles o permisos hay que llamar a `PermissionRegistrar::forgetCachedPermissions()`. Sin eso los cambios no surten efecto hasta que expire la caché, y el usuario seguiría sin poder entrar aunque su rol ya tenga el permiso.
+Tres piezas que el mostrador pedía a la vez:
 
-> **Detalle de Livewire:** dos formularios distintos enlazados a la misma propiedad (`cargo_id`) no pueden estar a la vez en el DOM — el que está vacío pisa al otro en cada re-render. Por eso el formulario del modal de edición se renderiza solo cuando `paso === 'editar'`.
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Recepción parcial** | La mercadería puede llegar por tandas: se marca cuántas unidades llegaron (o los seriales de las que llegaron) y la compra **sigue pendiente** hasta completar el lote. El costo se reparte sobre el lote completo, así la suma sigue cuadrando al centavo al terminar. Una compra con unidades ya generadas no se puede eliminar. |
+| ✅ | **Escáner de serial** | En la verificación de mercadería de la app, cada campo de serial tiene su botón de cámara: lee el código del fabricante y lo deja en el campo, sin teclearlo. |
+| ✅ | **Pagos a proveedores** | *Compras → Pagos a proveedores* (y una pestaña «Pagos» en la app): el historial de `compra_pagos` con filtros por **hoy / semana / mes / todas** y el total del período. La API `GET /compras/pagos` lo alimenta con su permiso `compras.ver`. |
 
-> **Detalles de Livewire aprendidos aquí** (aplican a los siguientes módulos):
->
-> - `Paginator::useBootstrapFive()` no basta. Livewire trae su propia vista de paginación y usa la de Tailwind por defecto; hay que declarar `protected string $paginationTheme = 'bootstrap';` en cada componente que pagine.
-> - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
-> - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
-> - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+---
 
-### Cobrar cuotas desde el teléfono (2026-08-30)
+## Indicador de serial en la app (2026-09-06)
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Etiqueta visual de serial en listado de productos** | Chip "Serial" en azul cuando `tieneSerial` es true, "Sin serial" en gris cuando es false. Permite identificar rápidamente qué productos requieren registro de serial. Versión de la app: 1.8.0+12. |
+
+**Lo que queda:** nada de esta pieza.
+
+---
+
+## Inventario: etiquetas y estado (2026-09-06)
+
+| | Qué | Nota |
+|---|---|---|
+| ✅ | **Etiquetas sin precio** | La hoja de etiquetas imprimible ya no muestra el precio de venta: la etiqueta va pegada al aparato en el almacén y el precio no debe ir en la caja. |
+| ✅ | **Modal de código de barras** | Botón de código de barras en cada fila de unidades: abre un modal con el SVG Code128 del código interno (el mismo de la etiqueta impresa), sin imprimir. También disponible en la app Flutter (botón *Ver código*). |
+| ✅ | **Tabs separados En stock / Vendidos** | En el inventario de unidades, los tabs *En stock* y *Vendido* van primero y separados con un divisor del resto de estados (Reservado, Devuelto, Dañado, En taller, Perdido). En la app Flutter, los chips de estado siguen el mismo orden. |
+
+**Lo que queda:** nada de esta pieza.
+
+---
+
+## Recepcionar compras desde el teléfono (2026-09-05)
+
+Hecho el 2026-09-05. Desde la ficha de una compra en estado *Borrador*, el botón
+**Recepcionar** genera las unidades físicas del almacén y congela los costos.
+Un diálogo de confirmación explica que la operación es irreversible antes de
+proceder.
+
+La recepción usa el mismo servicio `RecepcionDeCompra` del panel: prorratea flete
+y gastos entre las unidades, genera los códigos internos y registra la entrada
+en el kardex. La compra pasa a *Recepcionada* y su costo queda congelado.
+
+**Lo que queda:** nada de esta pieza. La recepción desde el teléfono está
+completa.
+
+---
+
+## Anular una venta y ver el recibo desde la app (2026-09-05)
+
+Hecho el 2026-09-05. En la ficha de una venta (pantalla de detalle), la barra
+superior ahora muestra un **icono de recibo** y un **botón Anular**.
+
+- **Recibo**: descarga el PDF del recibo (inline) y lo abre con el visor del
+  teléfono. Funciona tanto para ventas completadas como anuladas: el recibo de
+  una venta anulada indica el estado arriba.
+- **Anular**: disponible solo para ventas completadas y con permiso
+  `ventas.anular`. Se pide un motivo (mínimo 4 caracteres) y se confirma en un
+  diálogo. Los aparatos vuelven al stock, se registran los movimientos de kardex
+  y la venta queda marcada como anulada. La acción es irreversible.
+
+En el backend, `VentaController@anular` y `VentaController@recibo` añaden las
+rutas `POST /ventas/{venta}/anular` y `GET /ventas/{venta}/recibo` bajo el
+grupo `auth:sanctum` y los permisos `ventas.anular` y `ventas.ver`
+respectivamente. El recibo se devuelve inline (Content-Type: application/pdf),
+no como base64, para que el visor del teléfono lo abra directamente.
+
+**Lo que queda:** nada de esta pieza.
+
+---
+
+## Editar el propio perfil y la ficha del cliente (2026-09-05)
+
+Hecho el 2026-09-05. La app ahora permite al usuario editar su propio perfil y,
+quien tenga permiso `clientes.editar`, editar los datos de un cliente.
+
+**Perfil propio:**
+- Nuevo endpoint `PUT /auth/perfil` para actualizar campos de `users` (name,
+  email) y de `personas` vinculada (nombres, apellidos, celular, dirección,
+  correo, fecha de nacimiento). No requiere permiso especial: cada uno edita lo
+  suyo.
+- Nuevo endpoint `PUT /auth/password` para cambiar la contraseña (requiere la
+  actual + nueva con confirmación).
+- Nueva pantalla `PantallaPerfil` en Flutter con botón de acceso desde el
+  encabezado del dashboard (icono de perfil). Muestra datos del usuario y su
+  persona, con diálogos para editar perfil y cambiar contraseña.
+- El `ControladorSesion` ahora tiene `actualizarUsuario()` para reflejar los
+  cambios en memoria y en disco sin cerrar sesión.
+
+**Edición de clientes:**
+- Nuevo endpoint `POST /clientes/{cliente}` con permiso `clientes.editar`
+  (requiere también estar autenticado). Actualiza los datos de la persona
+  vinculada al cliente. No requiere `personas.editar`.
+- Flutter ya tenía la pantalla de detalle de cliente con formulario de edición
+  (`HojaPersona`), que ahora usa el nuevo endpoint.
+
+**Tests:** 15 tests en `PerfilYClientesApiTest` (perfil, contraseña, cliente).
+
+**Lo que queda:** nada de esta pieza. La Fase 2 está completa.
+
+---
+
+## Booleanos en multipart/form-data (2026-09-04)
+
+Al enviar un formulario con archivo (multipart) desde la app móvil, los campos
+booleanos (`activa`, `activo`) fallaban con 422: *"El campo debe tener un valor
+verdadero o falso"*. La causa: Dio serializaba `true`/`false` como strings que
+Laravel no aceptaba en el contexto multipart.
+
+**Solución** en `_aplanar()` de `cliente_api.dart`: convertir booleanos a enteros
+`1`/`0` en vez de enviarlos como `bool`. Laravel acepta enteros sin problema.
+También se eliminó el `Content-Type` global `application/json` y se establece
+por petición (`publicar` → JSON, `publicarConArchivo` → multipart) para evitar
+conflictos.
+
+---
+
+## Cobrar cuotas desde el teléfono (2026-08-30)
 
 Tercera parte de la API que escribe, después del POS y las entregas, y por la
 misma clase de razón: cobrar una cuota pasa en el mostrador o en la puerta del
@@ -1005,7 +906,7 @@ no tiene. La separación de los dos permisos se nota aquí: la app deja mirar la
 cartera a quien solo tiene `creditos.ver` y cobrar solo a quien tiene
 `creditos.cobrar`.
 
-#### `cobrar` devuelve el crédito, no el pago
+### `cobrar` devuelve el crédito, no el pago
 
 Tras cobrar, lo que la pantalla necesita repintar es el **saldo y el estado de
 las cuotas**, no la fila que acaba de insertar. Devolver el pago obligaría a
@@ -1015,7 +916,7 @@ Y tampoco se elige la cuota desde el móvil: el servicio imputa de la más
 antigua a la más nueva. Dejar elegir permitiría saldar la de diciembre dejando
 viva la de agosto.
 
-#### El saldo llega por dos caminos y el recurso los distingue
+### El saldo llega por dos caminos y el recurso los distingue
 
 En el listado se suma en SQL con `withSum` —cargar las cuotas de toda la
 cartera para restar dos columnas no cabe en memoria—; en la ficha se calcula
@@ -1034,7 +935,7 @@ devolver null.
 Lo mismo con `esta_en_mora`, que solo se envía si las cuotas están cargadas: su
 accessor las pediría por su cuenta y el lazy loading está deshabilitado.
 
-#### En la app
+### En la app
 
 Dos pantallas colgando de **Ventas**, junto a las entregas: la cartera con sus
 chips —vigentes, vencidos, esta semana— y el estado de cuenta con el plan, los
@@ -1050,11 +951,13 @@ pago supera el saldo del crédito»—: un «algo salió mal» genérico no orie
 nadie en el mostrador. Por eso el controlador traduce los `RuntimeException` a
 422 en vez de dejarlos subir a 500.
 
-### Entregas desde el teléfono (2026-08-30)
+---
+
+## Entregas desde el teléfono (2026-08-30)
 
 La mitad que le faltaba al módulo: quien reparte lleva el móvil, no el panel.
 
-#### La segunda parte de la API que escribe
+### La segunda parte de la API que escribe
 
 Hasta ahora solo el POS escribía —«la cámara lee la etiqueta más rápido de lo
 que se teclea un serial»—. Las entregas son el segundo caso y por la misma
@@ -1077,7 +980,7 @@ desde la web.
 | `POST /entregas/{entrega}/fallar` | `entregas.gestionar` |
 | `POST /entregas/{entrega}/reprogramar` | `entregas.gestionar` |
 
-#### Los errores de negocio son 422, no 500
+### Los errores de negocio son 422, no 500
 
 `ProgramacionDeEntregas` distingue «no se puede hacer eso» de un fallo técnico
 lanzando `RuntimeException`. El controlador la traduce a **422 con su mensaje**.
@@ -1086,12 +989,12 @@ Dejarla subir daría un 500, y el cliente HTTP de la app lo enseñaría como «n
 se pudo conectar con el servidor»: el repartidor creería que no hay red cuando
 lo que pasa es que la entrega ya se confirmó desde el panel.
 
-#### `despachar` sin cuerpo queda a nombre de quien llama
+### `despachar` sin cuerpo queda a nombre de quien llama
 
 Desde el móvil, el que despacha es casi siempre el que se lo lleva. `repartidor_
 id` sigue aceptándose para el caso de quien despacha a otro desde el mostrador.
 
-#### La app: dónde vive la pantalla
+### La app: dónde vive la pantalla
 
 Fuera del `ShellRoute`, colgando de **Ventas** por un icono en su cabecera. La
 barra inferior ya tiene cinco pestañas —el máximo razonable—, y una sexta
@@ -1111,7 +1014,9 @@ lo que falta por llevar.
 - Tras un error, la lista **se refresca igual**: si falló porque otro la movió
   desde el panel, hay que enseñar el estado de verdad.
 
-### Garantía y servicio técnico (2026-08-30)
+---
+
+## Garantía y servicio técnico (2026-08-30)
 
 El sistema sabía decir si un aparato estaba en garantía y ahí terminaba. Cuando
 el cliente volvía con una lavadora que no enciende, empezaba un rastro en papel.
@@ -1121,7 +1026,7 @@ el kardex, el estado `garantia` de `unidades` —reservado desde el primer día,
 la API lo describe como «salió a reparación y no es vendible mientras tanto»— y
 `productos.meses_garantia`. Una tabla nueva y ninguna columna más en `unidades`.
 
-#### La garantía contaba desde el almacén, no desde la venta
+### La garantía contaba desde el almacén, no desde la venta
 
 Es lo primero que salió al mirar el accessor, y era un fallo con cara al
 cliente. `Unidad::garantiaHasta()` contaba `ingresado_en + meses_garantia`: un
@@ -1138,7 +1043,7 @@ mismo que las cuotas: comprado un 31 de enero, un mes vence el 28 de febrero.
 > lo alarga hacia lo que el cliente creía tener. Los recibos ya impresos no se
 > pueden rehacer, pero desde ahora dicen la verdad.
 
-#### La cobertura se congela al recibir
+### La cobertura se congela al recibir
 
 `reparaciones.en_garantia` y `garantia_hasta` se calculan una vez, al abrir la
 orden, y se guardan.
@@ -1151,7 +1056,7 @@ costo.
 En garantía el costo se fuerza a cero y no se acepta otro: un importe guardado
 en una orden de garantía es una promesa rota por escrito.
 
-#### El aparato vuelve al estado del que salió
+### El aparato vuelve al estado del que salió
 
 Entrar al taller pone la unidad en `garantia` y escribe el kardex. Salir la
 devuelve — y **de dónde volver se guarda**, en `estado_unidad_origen`.
@@ -1165,7 +1070,7 @@ tiene dueño.
 > al final de las notas. Funcionaba y era horrible: una cadena mágica dentro de
 > un campo que el usuario lee. Una columna cuesta lo mismo y se explica sola.
 
-#### La máquina de estados
+### La máquina de estados
 
 ```
 recibida ──▶ en_reparacion ⇄ esperando_repuesto ──▶ lista ──▶ entregada
@@ -1182,20 +1087,20 @@ solo — el aparato está en el taller hasta que alguien se lo lleva.
 Y sin arreglo el costo se pone en cero: no se cobra mano de obra que no arregló
 nada.
 
-#### Lo atrasado es lo prometido y no hecho
+### Lo atrasado es lo prometido y no hecho
 
 Una orden `lista` que el cliente no viene a recoger **no está atrasada**: el
 taller cumplió. `scopeAtrasadas` excluye `lista` a propósito, y sin fecha
 prometida no hay atraso — igual que en las entregas.
 
-#### Un aparato no entra dos veces
+### Un aparato no entra dos veces
 
 Se comprueba que no haya otra orden abierta sobre la misma unidad: dos órdenes
 partirían el historial de una misma reparación en dos. Cerrada la anterior, el
 mismo aparato puede volver las veces que haga falta, y cada vuelta es una orden
 más en su historia.
 
-#### Recibir y atender son dos permisos
+### Recibir y atender son dos permisos
 
 `reparaciones.recibir` es aceptar el aparato en el mostrador; `reparaciones.
 atender` es el trabajo del técnico —diagnosticar, dar por lista, declarar sin
@@ -1204,21 +1109,23 @@ arreglo—. El rol `vendedor` tiene el primero y no el segundo.
 **Entregar es la excepción**: lo puede hacer cualquiera de los dos, porque el
 cliente viene a recoger su aparato y no siempre hay alguien del taller delante.
 
-#### Código propio, al revés que las entregas
+### Código propio, al revés que las entregas
 
 Aquí sí hay `REP-2026-000123`. La diferencia con las entregas es que el cliente
 **se va sin su aparato y con un papel en la mano**, y ese papel necesita un
 número con el que volver. `GeneradorCodigoReparacion` tiene la misma forma que
 el de ventas, unicidad garantizada por el índice y reintento ante duplicado.
 
-### Entrega a domicilio e instalación (2026-08-29)
+---
+
+## Entrega a domicilio e instalación (2026-08-29)
 
 Un refrigerador no sale de la tienda en la mano del cliente. Entre cobrar y
 entregar hay días, una dirección, alguien que lo lleva y un cliente que llama
 preguntando — y todo eso vivía en la memoria de quien atiende. La venta
 terminaba al cobrar.
 
-#### No se toca el estado de la unidad
+### No se toca el estado de la unidad
 
 Es la decisión que evita el efecto dominó. Un aparato vendido y todavía en el
 almacén sigue estando `vendido`: salió del stock vendible el día que se cobró, y
@@ -1230,7 +1137,7 @@ bajo—, y la pregunta que ese estado contestaría —¿dónde está físicament
 responde la tabla `entregas`, que es su sitio. Tampoco se escribe kardex: el
 kardex es del inventario, y aquí no se mueve inventario.
 
-#### La entrega se programa desde la ficha de la venta, no desde el POS
+### La entrega se programa desde la ficha de la venta, no desde el POS
 
 En el mostrador lo que urge es cobrar. La dirección, la referencia y el día se
 acuerdan después, con el cliente ya tranquilo y el pago hecho. Y así se puede
@@ -1240,7 +1147,7 @@ sería imposible.
 El precio de meterlo en el POS habría sido cinco campos más en la pantalla más
 densa del sistema, para un dato que en la mitad de las ventas no aplica.
 
-#### Una venta, varias entregas
+### Una venta, varias entregas
 
 Tres aparatos que no caben en un viaje son dos entregas. `entrega_detalles` dice
 qué líneas de venta viajan en cada una.
@@ -1257,7 +1164,7 @@ dos entregas.
 > volver a programarlo si la anterior se canceló. Reusar un patrón que ya
 > estaba probado salió más barato que inventar otro.
 
-#### La máquina de estados
+### La máquina de estados
 
 ```
 pendiente ──despachar──▶ en_ruta ──confirmar──▶ entregada
@@ -1286,7 +1193,7 @@ la salida anterior haría creer que sigue en la calle. La instalación solo se
 marca si se pactó —dar por instalado lo que nadie instaló cierra un trabajo
 pendiente sin hacerlo—.
 
-#### Lo que arrastra de la venta
+### Lo que arrastra de la venta
 
 | Pasa esto | La entrega |
 |---|---|
@@ -1298,20 +1205,22 @@ Un camión saliendo con la caja vacía es peor que no salir, y una entrega viva 
 una venta anulada manda a alguien a llevar un aparato que el cliente nunca llegó
 a tener.
 
-#### Sin código propio
+### Sin código propio
 
 En el mostrador una entrega se nombra por su venta («la entrega de la
 VTA-2026-000123»). Un correlativo más habría sido un número que nadie usa y un
 generador más que mantener.
 
-#### El orden del tablero
+### El orden del tablero
 
 Lo que tiene fecha manda y lo más antiguo primero: es el orden en que hay que
 resolverlas. Las de «cuando se pueda» van al final —`ORDER BY programada_para IS
 NULL`—, que es exactamente su prioridad. Sin fecha pactada **no hay atraso**:
 «cuando se pueda» no se incumple.
 
-### Venta a crédito y cuotas (2026-08-29)
+---
+
+## Venta a crédito y cuotas (2026-08-29)
 
 En electrodomésticos buena parte de lo que se vende se vende a plazos, y el
 sistema solo entendía el pago completo en el momento: **toda la cartera vivía
@@ -1321,7 +1230,7 @@ ya pasó y uno que dice a quién hay que llamar hoy.
 Va después de la devolución a propósito: los dos tocan la tabla de ventas, y
 hacerlos a la vez obligaba a rehacer uno de los dos.
 
-#### Sin interés, y por qué
+### Sin interés, y por qué
 
 La suma de las cuotas es exactamente lo financiado, ni un centavo más. Si la
 tienda quiere cobrar más caro a plazos, sube el **precio pactado** de la línea
@@ -1332,7 +1241,7 @@ Un interés aparte obligaba a decidir si es ingreso, a separarlo del costo en
 cada consulta y a explicárselo a alguien en el mostrador. Se puede añadir más
 tarde sin rehacer nada; añadirlo hoy habría encarecido todo lo demás.
 
-#### La cuota inicial no es una cuota
+### La cuota inicial no es una cuota
 
 Es la decisión que sostiene el resto. La inicial es **parte del cobro de la
 venta**, no del plan: se guarda en `ventas.monto_efectivo`, que es literalmente
@@ -1344,7 +1253,7 @@ el `match`**: `'mixto', 'credito' => monto_efectivo`. Si la inicial hubiera
 vivido dentro del plan de cuotas, el cierre de caja habría necesitado saber qué
 es un crédito, y el arqueo dejaría de ser una consulta sobre ventas.
 
-#### Tres tablas y ninguna columna de saldo
+### Tres tablas y ninguna columna de saldo
 
 | Tabla | Qué guarda |
 |---|---|
@@ -1362,7 +1271,7 @@ cuatro caminos que tocan el dinero.
 En el listado, el saldo se arma con `withSum` en la misma consulta para poder
 ordenar por él sin traer la cartera entera a PHP.
 
-#### Una entrega de dinero puede ser dos filas
+### Una entrega de dinero puede ser dos filas
 
 `pagos_credito.cuota_id` es obligatorio: un pago siempre se imputa a una cuota
 concreta. Si el cliente entrega lo justo para cuota y media, se guardan **dos
@@ -1374,7 +1283,7 @@ primera fila**: el autoincremento ya garantiza que no se repita, mientras que un
 `MAX+1` podría dar el mismo número a dos cajeros cobrando a créditos distintos
 en el mismo instante.
 
-#### La imputación no se elige
+### La imputación no se elige
 
 Siempre de la cuota más antigua a la más nueva. Dejar elegir permitiría saldar
 la de diciembre dejando viva la de agosto, y la mora dejaría de significar nada.
@@ -1387,7 +1296,7 @@ Las cuotas pendientes se leen con `lockForUpdate`: dos cobros simultáneos sobre
 el mismo crédito imputarían los dos a la misma cuota y el cliente acabaría
 pagando de más.
 
-#### La devolución recorta el plan por el final
+### La devolución recorta el plan por el final
 
 Devolver un aparato de una venta a plazos baja la deuda, no el bolsillo. Se
 descuenta **desde la última cuota hacia atrás**: el cliente sigue pagando lo
@@ -1412,7 +1321,7 @@ sistema no mueve dinero por su cuenta.
 > compras: 1000 en 3 cuotas da 333,34 / 333,33 / 333,33 y suma exacto. Dividir y
 > redondear dejaría 999,99, un centavo que nadie sabría a quién cobrar.
 
-#### Fiar y cobrar son dos permisos
+### Fiar y cobrar son dos permisos
 
 `creditos.crear` es autorizar el crédito al vender; `creditos.cobrar` es recibir
 una cuota; `creditos.ver` es consultar la cartera. Al rol `vendedor` le llegan
@@ -1424,7 +1333,7 @@ En el punto de venta, quien no tiene `creditos.crear` ni siquiera ve la opción
 endpoint invocable y esconder un botón no impide mandar el método desde el
 navegador.
 
-#### El aviso diario
+### El aviso diario
 
 `cuotas:avisar`, a las 8:30, avisa de lo que **vence hoy** y de lo que **se
 venció ayer**, a quien tenga `creditos.ver`.
@@ -1435,14 +1344,14 @@ sigue sin pagarse. Una marca en la base habría que mantenerla al corregir un
 pago, y bastaría olvidarse una vez para que una cuota dejara de avisar para
 siempre.
 
-#### Todo o nada
+### Todo o nada
 
 El plan se crea **dentro de la transacción de la venta**. Una venta a crédito
 sin cuotas sería una deuda que nadie sabe cobrar, y unas cuotas sin venta, un
 cobro sin respaldo. Si el plan no pasa sus reglas, la venta no llega a existir y
 el aparato no sale del stock. Hay un test que lo fija.
 
-#### De paso: la ficha de venta con cliente reventaba
+### De paso: la ficha de venta con cliente reventaba
 
 `ventas/show.blade.php` leía `persona->numero_documento`, columna que **no
 existe** —es `carnet`—. Con `Model::shouldBeStrict()` eso no es un valor vacío
@@ -1451,7 +1360,9 @@ respondía 500. No se había visto porque ninguna prueba abría esa pantalla con
 cliente asignado; el crédito la abre siempre, porque a plazos el cliente es
 obligatorio.
 
-### El buscador del topbar busca de verdad (2026-08-29)
+---
+
+## El buscador del topbar busca de verdad (2026-08-29)
 
 `SearchController` devolvía `'results' => []`. Siempre. La caja de búsqueda está
 en la barra superior de todas las pantallas y la gente la usa: un buscador que
@@ -1462,7 +1373,7 @@ Busca las tres cosas que su propio *placeholder* promete: **producto, serial y
 venta**. Nada más, a propósito: clientes o compras habrían añadido resultados
 que no llevan a ninguna pantalla útil.
 
-#### Un resultado nunca revela lo que no se puede ver
+### Un resultado nunca revela lo que no se puede ver
 
 Cada grupo se consulta **solo si el usuario tiene el permiso del módulo**
 (`productos.ver`, `unidades.ver`, `ventas.ver`), y un grupo sin resultados no se
@@ -1470,7 +1381,7 @@ dibuja. Filtrar al pintar habría sido peor que no buscar: la fila «VTA-000123 
 Bs 4.500» ya cuenta que esa venta existe y por cuánto fue, aunque el enlace
 estuviera deshabilitado.
 
-#### El destino de cada resultado
+### El destino de cada resultado
 
 | Resultado | A dónde lleva | Por qué |
 |---|---|---|
@@ -1490,7 +1401,9 @@ estuviera deshabilitado.
 `Venta`, `Cliente` y `Persona`. La búsqueda global no inventa criterios propios:
 usa los mismos que cada listado.
 
-### La prueba que llevaba tiempo en rojo (2026-08-29)
+---
+
+## La prueba que llevaba tiempo en rojo (2026-08-29)
 
 `ProductoCrudTest::test_al_llegar_desde_categorias_...` comprobaba el texto
 «Mostrando productos de», que ya no existe en ninguna vista: el encabezado del
@@ -1500,7 +1413,9 @@ se rompió**; lo que se quedó atrás fue la prueba.
 Una suite con un fallo permanente deja de servir de alarma: cuando salga el
 segundo, nadie lo va a notar. La prueba ahora se ancla al texto vigente.
 
-### Cierre de caja (2026-08-29)
+---
+
+## Cierre de caja (2026-08-29)
 
 El punto de venta cobraba en efectivo desde el primer dia y **nadie cuadraba al
 cerrar** — el propio codigo lo reconocia en un comentario. Sin arqueo, un
@@ -1510,7 +1425,7 @@ atribuir a un dia ni a un turno.
 Un turno es una fila en `cajas`: se abre con su fondo, las ventas se atan a ella
 y al cerrar se cuenta el cajon.
 
-#### Lo delicado: que cuenta como efectivo
+### Lo delicado: que cuenta como efectivo
 
 **No se usa `monto_efectivo` a secas**, y ahi estaba la trampa. `tarjeta` y
 `transferencia` —retiradas del mostrador pero vivas en el historico— guardan el
@@ -1524,7 +1439,7 @@ cajon y **un faltante inventado en cada cierre**.
 | `mixto` | solo su parte en efectivo |
 | `qr`, `tarjeta`, `transferencia` | nada: se cobro fuera de caja |
 
-#### Dos numeros por caminos distintos
+### Dos numeros por caminos distintos
 
 La gracia del arqueo es comparar lo contado a mano contra lo que dicen las
 ventas. Por eso:
@@ -1537,14 +1452,14 @@ ventas. Por eso:
 > tiene: se le pide contar, no comparar. Ver la cifra antes de contar la
 > convierte en la respuesta.
 
-#### El arqueo es una foto, no un calculo vivo
+### El arqueo es una foto, no un calculo vivo
 
 `monto_esperado` y `diferencia` se **guardan calculados** al cerrar. Si mañana
 se anula una venta del turno, el arqueo sigue diciendo lo que se vio esa noche
 —que es justo lo que lo hace util para detectar faltantes—. Hay una prueba que
 anula una venta despues de cerrar y comprueba que el cierre no se mueve.
 
-#### Vender no exige caja abierta
+### Vender no exige caja abierta
 
 `ventas.caja_id` es nulable a proposito: hay ventas anteriores al arqueo, y el
 mostrador debe seguir cobrando aunque nadie haya abierto. **El arqueo es una
@@ -1554,7 +1469,7 @@ ayuda, no un peaje.**
 > horario del turno sin atar a el, el cierre lo dice y deja que alguien lo mire.
 > Un arqueo que se inventa de donde salio el dinero deja de detectar faltantes.
 
-#### Dos permisos, dos trabajos
+### Dos permisos, dos trabajos
 
 `caja.gestionar` abre y cierra el turno —lo tiene el vendedor—; `caja.ver`
 repasa el historico de cierres de todos y sus diferencias, y es de quien
@@ -1564,7 +1479,9 @@ supervisa. Los descuadres de los compañeros no son asunto del cajero.
 > dentro de la transaccion y con `lockForUpdate`: dos pestañas abriendo a la vez
 > dejarian dos cajas abiertas y, a partir de ahi, ninguna cuadraria.
 
-### Devolver un aparato sin anular la venta (2026-08-29)
+---
+
+## Devolver un aparato sin anular la venta (2026-08-29)
 
 Hasta ahora solo se podía deshacer una venta **entera**. Para devolver un aparato
 de una venta de tres había que anularlo todo y volver a cobrar, lo que ensucia
@@ -1573,7 +1490,7 @@ los reportes y descuadra las comisiones del vendedor.
 Va antes que la venta a crédito a propósito: los dos tocan la tabla de ventas, y
 hacerlos a la vez obliga a rehacer uno de los dos. Este es el más chico.
 
-#### `total` pasa a ser el neto
+### `total` pasa a ser el neto
 
 Es la decisión que sostiene todo lo demás. Al devolver, los importes de la venta
 se **recalculan contando solo lo que sigue vendido**.
@@ -1596,7 +1513,7 @@ se **recalculan contando solo lo que sigue vendido**.
 > guardar el acumulado, una devolución borraría el rastro de por cuánto se
 > vendió.
 
-#### La verdad vive en la línea
+### La verdad vive en la línea
 
 `venta_detalles.devuelto_en` es la única marca que decide si un aparato cuenta.
 La cabecera solo guarda el acumulado, para no tener que sumar las líneas cada
@@ -1617,13 +1534,13 @@ vez que se pinta una venta.
 > aparato volvió fallado o si el cliente cambió de idea, que son dos cosas muy
 > distintas cuando hay que reclamarle al proveedor.
 
-#### Va con el permiso de anular, no con uno nuevo
+### Va con el permiso de anular, no con uno nuevo
 
 Devolver una línea es una acción **más pequeña** que anular la venta entera, así
 que quien puede lo más puede lo menos. Un permiso nuevo habría obligado a
 repartirlo a mano en cada rol antes de que nadie pudiera usar la función.
 
-#### Dos cosas que se rompieron por el camino
+### Dos cosas que se rompieron por el camino
 
 > **`loadMissing` en el servicio, no confianza en el llamante.** El proyecto
 > corre con `Model::shouldBeStrict()`: una relación que el llamante no trajo
@@ -1636,7 +1553,7 @@ repartirlo a mano en cada rol antes de que nadie pudiera usar la función.
 > `render()`. El componente no tenía acciones hasta ahora, y por eso nunca se
 > había notado.
 
-#### Y una prueba que llevaba tiempo siendo una moneda al aire
+### Y una prueba que llevaba tiempo siendo una moneda al aire
 
 `ApiV1Test` cuenta avisos después de vender, y `ProductoFactory` pone
 `stock_minimo` **al azar entre 0 y 10**. Con un mínimo mayor que cero, vender la
@@ -1645,7 +1562,9 @@ dos avisos donde la prueba esperaba uno. Pasaba o fallaba según el número que
 saliera. Ahora el ayudante fija `stock_minimo => 0`, que es lo que esa prueba
 quiere decir.
 
-### El modo oscuro dejaba medio panel en claro (2026-08-29)
+---
+
+## El modo oscuro dejaba medio panel en claro (2026-08-29)
 
 Al encender el modo oscuro, varios apartados seguían pintándose como si nada:
 tarjetas blancas, títulos casi negros sobre fondo casi negro, bordes claros.
@@ -1676,7 +1595,7 @@ componentes cinco tokens que cambian solos, declarados en `_marca.scss`:
 > `--marca-azul-texto`, y solo porque el azul `#254970` **como letra** sobre
 > fondo oscuro se confunde con el propio fondo.
 
-#### La sustitución tuvo que ser consciente de la propiedad
+### La sustitución tuvo que ser consciente de la propiedad
 
 Un cambio a ciegas habría roto más de lo que arreglaba: **el mismo literal
 significa cosas distintas según dónde esté**.
@@ -1697,13 +1616,13 @@ propiedad de la declaración, no solo el color.
 > El ancla no se puede quitar del todo: sin ella, `border-color` casaría dentro
 > de la regla de `color` y los bordes acabarían con el token de la tinta.
 
-#### Los estilos en línea de las plantillas se habían quedado atrás
+### Los estilos en línea de las plantillas se habían quedado atrás
 
 La migración de paleta del 2026-08-29 solo tocó `resources/scss/`. Las
 plantillas seguían con **el turquesa y el ámbar viejos** en 38 estilos en línea,
 además de no cambiar con el tema. Ahora usan los mismos tokens.
 
-#### Cinco iconos que no existían
+### Cinco iconos que no existían
 
 Se dibujaban como una caja vacía —es lo que se veía junto a «Ticket promedio» y
 «Valor de catálogo»—. `ri-receipt-line`, `ri-banknote-line`,
@@ -1712,7 +1631,7 @@ versiones de Remix Icon y Boxicons que trae la plantilla. Se cambiaron por el
 equivalente que sí está, y se comprobó el catálogo entero contra la fuente: no
 queda ninguno más.
 
-#### Cómo se comprobó
+### Cómo se comprobó
 
 No a ojo: con un medidor de contraste que recorre el DOM, resuelve el fondo real
 de cada texto —subiendo por los ancestros hasta encontrar uno opaco— y marca lo
@@ -1725,7 +1644,9 @@ Resultado: **0 textos ilegibles en oscuro**, y el modo claro sin cambios.
 > `linear-gradient`, así que los títulos blancos sobre la banda de marca salen
 > como falsos positivos en los dos temas. Se comprobaron a la vista.
 
-### La última sección del menú se quedaba bajo el pliegue (2026-08-29)
+---
+
+## La última sección del menú se quedaba bajo el pliegue (2026-08-29)
 
 «Sistema» —la última sección del menú lateral— quedaba fuera de la pantalla y
 había que buscarla desplazando. Medido en una pantalla de 1366×768, que es la
@@ -1762,9 +1683,11 @@ Se recuperó espacio en cuatro sitios, ninguno drástico por sí solo:
 > razonable; lo que no era razonable es que hiciera falta en una pantalla de
 > 768.
 
-### El stock bajo avisa, y el dashboard dice cuánto deja cada venta (2026-08-29)
+---
 
-#### El stock bajo pasa de listado a aviso
+## El stock bajo avisa, y el dashboard dice cuánto deja cada venta (2026-08-29)
+
+### El stock bajo pasa de listado a aviso
 
 El panel y la app ya listaban los productos bajo mínimo, pero había que **ir a
 mirarlo**, y un listado solo sirve a quien se acuerda de abrirlo. Ahora, además
@@ -1809,7 +1732,7 @@ destino —la venta abre su detalle, el stock la ficha del producto—.
 > hay `venta_id` o `producto_id` funciona con dos tipos y se rompe con el
 > tercero.
 
-#### Ticket promedio y margen en el dashboard web
+### Ticket promedio y margen en el dashboard web
 
 `Reportes::resumen()` ya los calculaba y la app ya los pintaba; el panel no. Se
 añaden en **su propia fila**, no entre los KPI de arriba: aquellos son
@@ -1819,7 +1742,7 @@ leer «Bs 45.000» y «Bs 1.250» como cifras del mismo tipo.
 El margen va tras `reportes.ver_costos`, igual que la ganancia: es el mismo dato
 en porcentaje.
 
-#### Auditoría de permisos
+### Auditoría de permisos
 
 Se repasaron las 83 rutas de la API y las 60 del panel. Las 9 rutas de la API
 sin permiso son correctas —`auth/*`, `dispositivos`, `notificaciones`: recursos
@@ -1849,7 +1772,9 @@ quien no podía entrar al listado veía igualmente los totales—.
 > «Multiple root elements». Lo detectó la prueba, no la vista: renderizando como
 > admin nunca se habría visto.
 
-### La sesión del teléfono se cierra sola (2026-08-29)
+---
+
+## La sesión del teléfono se cierra sola (2026-08-29)
 
 El teléfono del mostrador **no es de nadie en concreto**: se queda sobre la caja
 y quien lo coja entra con la sesión de quien lo dejó —y puede cobrar, tocar
@@ -1914,7 +1839,9 @@ porque ninguno basta solo**:
 > es una medida de seguridad. En rojo parecería un error, y aquí no ha fallado
 > nada.
 
-### El sistema toma los colores del logo (2026-08-29)
+---
+
+## El sistema toma los colores del logo (2026-08-29)
 
 Hasta ahora el sistema era una plantilla con un nombre encima: turquesa de
 acción, ámbar de acento y un login con la inicial «E» en un cuadrado. El logo de
@@ -1958,7 +1885,7 @@ sustituyeron en los 19 parciales SCSS con una tabla de correspondencias fija
 anteriores. Lo nuevo —el login— se escribe contra las variables, no contra
 literales.
 
-#### El login, rediseñado
+### El login, rediseñado
 
 **El logo es ahora la cabecera**, en los dos proyectos, y va **sin marco**: el
 archivo tiene el fondo recortado, así que el dorado cae directo sobre la banda,
@@ -1976,7 +1903,7 @@ no se vea plano sobre el degradado.
   vida»: ese eslogan ya va **dentro** del logotipo, y repetirlo dos centímetros
   más abajo lo gasta.
 
-##### Cómo se adapta al dispositivo
+#### Cómo se adapta al dispositivo
 
 La regla es una sola: **el tamaño se interpola, no salta**. Todo lo que crece
 —el logo, los títulos, los márgenes— usa `clamp()` contra el ancho de la
@@ -2055,7 +1982,7 @@ del logo nunca se deforma.
 > las dos, GD tira el canal alfa y el recorte sale con fondo negro, que sobre la
 > banda azul se ve como un rectángulo.
 
-#### Las imágenes de la marca ahora sí van en el repositorio
+### Las imágenes de la marca ahora sí van en el repositorio
 
 El logo no se veía en el servidor, y la causa era el `.gitignore`: excluía
 `/public/assets` entero —con razón, ahí vive la plantilla Velzon comprada—, así
@@ -2080,7 +2007,7 @@ sigue fuera:
 > nada de dentro: hay que ir destapando nivel por nivel. Es la regla que hace
 > que la mitad de los intentos de «ignorar todo menos esto» no funcionen.
 
-#### El icono de la app
+### El icono de la app
 
 Era el de Flutter por defecto. Ahora sale del logo, con dos juegos:
 
@@ -2108,7 +2035,7 @@ Se regeneran con `android/generar_iconos.php`, que lee `logo_hogar.png` del
 panel. Comprobado dentro del APK: `color/ic_launcher_background` = `#ff0a182b`
 y las dos capas presentes en las cinco densidades.
 
-#### El logo en el menú lateral
+### El logo en el menú lateral
 
 El logotipo no cabe en los 17 px que la plantilla reserva para una marca en
 línea: a esa altura es una raya. La caja de marca se hizo más alta y el logo va
@@ -2140,7 +2067,9 @@ abajo, que es barato a cambio de que la marca se lea con su tira de categorías.
 > en pantallas estrechas o con el tamaño de letra del sistema subido. El texto
 > va en un `Flexible`.
 
-### Inventario y kardex en el teléfono (2026-08-28)
+---
+
+## Inventario y kardex en el teléfono (2026-08-28)
 
 El inventario es el módulo que más se consulta **de pie**: con el aparato en la
 mano, en el almacén, sin un ordenador cerca. Hasta ahora la app solo sabía
@@ -2181,7 +2110,7 @@ haber arreglado la etiqueta: sin código legible, nada de esto sirve.
 > desaparece según el stock del día desconcierta más de lo que ahorra. Se
 > calcula con una sola consulta agrupada, no con siete `count()`.
 
-#### El panel movía el inventario sin dejar rastro
+### El panel movía el inventario sin dejar rastro
 
 Al ir a escribir el ajuste de la API apareció un fallo del panel que llevaba
 tiempo ahí, con su test ya escrito y en rojo: **editar una unidad y cambiarle el
@@ -2213,7 +2142,7 @@ patrón que ya siguen `RegistroDeVenta` y el propio `Kardex`.
 > su anulación tienen `RegistroDeVenta`, que escribe el kardex con la venta como
 > origen: más información de la que un ajuste puede dar.
 
-#### En la app
+### En la app
 
 - **`/inventario`** — listado con buscador, chips de estado con su recuento,
   scroll infinito y el escáner en un botón flotante. Se entra desde el icono de
@@ -2233,7 +2162,9 @@ patrón que ya siguen `RegistroDeVenta` y el propio `Kardex`.
 > incoherencia, no un dato más: el aparato debería haber vuelto al stock. Quien
 > lo vea tiene que saber que hay algo que corregir en el panel.
 
-### La etiqueta impresa se imprimía cortada (2026-08-28)
+---
+
+## La etiqueta impresa se imprimía cortada (2026-08-28)
 
 Segundo informe desde el mostrador: **el código que genera el sistema al
 registrar una unidad no se reconoce al vender**. Esta vez el fallo no estaba ni
@@ -2269,7 +2200,7 @@ el mostrador eso se ve exactamente igual que un escáner roto.
 > norma. Se lee, pero para escanear con teléfono conviene la **mediana**: ahí el
 > módulo dobla su ancho.
 
-#### La coincidencia exacta ya no depende del corte de la lista
+### La coincidencia exacta ya no depende del corte de la lista
 
 `PosController::buscar` calculaba la coincidencia exacta **sobre la lista ya
 filtrada**, que se corta en 12 resultados ordenados por código interno. Un
@@ -2281,7 +2212,7 @@ antepone a la lista. Escanear la etiqueta de la tienda y escanear el código del
 fabricante dan el mismo resultado, que es lo que se pidió: *«al vender puede ser
 que se lea el código o el serial»*.
 
-#### La lectura se limpia antes de buscarse
+### La lectura se limpia antes de buscarse
 
 El servidor compara texto exacto, así que un carácter invisible de más significa
 «no existe». `PantallaEscaner` normaliza ahora lo que devuelve la cámara —y lo
@@ -2291,13 +2222,15 @@ algunos lectores de Code 39 transmiten como si fueran dato. No se toca nada más
 ni mayúsculas ni espacios interiores, porque un serial de fabricante puede
 llevarlos de verdad.
 
-### El escáner explica lo que lee, y registra seriales (2026-08-23)
+---
+
+## El escáner explica lo que lee, y registra seriales (2026-08-23)
 
 Con la app ya instalada en un teléfono real apareció el primer informe de uso:
 «el lector de códigos no funciona al vender». La cámara sí leía; lo que fallaba
 era todo lo que venía después.
 
-#### La app adopta el sistema de diseño del panel (2026-08-23)
+### La app adopta el sistema de diseño del panel (2026-08-23)
 
 La app se veía bien pero **no se veía como el panel**: quien administra usa los
 dos el mismo día y parecían dos productos. El problema no era la estructura
@@ -2333,7 +2266,7 @@ y el estilo del login».
 descargada en caliente: la app se usa en el mostrador y una tienda con mala
 señal no puede quedarse esperando la fuente.
 
-#### Tres bugs reales que aparecieron al mirar el diseño
+### Tres bugs reales que aparecieron al mirar el diseño
 
 Los **tres tests de login** que llevaban semanas dados por «preexistentes» eran
 correctos; lo que fallaba era otra cosa cada vez:
@@ -2354,9 +2287,11 @@ administracion», «Algo salio mal. Intentalo»).
 
 **La suite de Flutter queda en verde por primera vez: 64/64.**
 
-### El 404 de /ventas/qr-cobro, y la administración en el teléfono (2026-08-23)
+---
 
-#### La ruta se comía a la otra
+## El 404 de /ventas/qr-cobro, y la administración en el teléfono (2026-08-23)
+
+### La ruta se comía a la otra
 
 `/ventas/qr-cobro` devolvía 404 con la vista y el componente en su sitio. La
 causa era el **orden de declaración**: `/ventas/{venta}` estaba antes, así que
@@ -2378,7 +2313,7 @@ Es la tercera colisión de este tipo en el proyecto —ya pasó al colgar
 conviene la regla: **las rutas estáticas van antes que las paramétricas**, y el
 parámetro se acota cuando se sabe su forma.
 
-#### Administración desde la app
+### Administración desde la app
 
 Tres módulos que solo existían en el panel:
 
@@ -2409,7 +2344,7 @@ se borra. Tiene acceso total por `Gate::before()`, así que su lista de permisos
 es irrelevante. La app le oculta los botones en vez de dejar que el servidor los
 rechace uno a uno.
 
-#### Dos tropiezos de spatie que solo aparecen en la API
+### Dos tropiezos de spatie que solo aparecen en la API
 
 **`withCount('users')` sobre un rol revienta.** La relación `users()` resuelve el
 modelo desde el `guard_name` del rol, y al construir un `withCount` Eloquent la
@@ -2425,7 +2360,9 @@ tests**, que necesita el guard explícito.
 
 Cubierto por `AdministracionApiTest` (20 casos).
 
-### Proveedores desde el teléfono (2026-08-23)
+---
+
+## Proveedores desde el teléfono (2026-08-23)
 
 Cuarta y última tanda. Con ella, **todo lo que se administra en el panel se
 puede administrar también desde el teléfono**, salvo lo que se dejó a propósito:
@@ -2446,7 +2383,7 @@ y lo saca del listado sin perder nada.
 > dar de alta y editar, pero no borrar; es el único permiso de proveedores que
 > no está en su rol, y el test lo fija para que no se pierda en un refactor.
 
-#### La escritura va en el mismo controlador que la consulta
+### La escritura va en el mismo controlador que la consulta
 
 A diferencia del catálogo —donde los controladores de escritura son nuevos y
 separados—, aquí las tres acciones se añaden a `ProveedorController`. La razón
@@ -2462,12 +2399,14 @@ reutilizando en vez de repitiendo.
 
 Cubierto por `ProveedorEscrituraApiTest` (9 casos).
 
-### Personal y clientes desde el teléfono, y el dashboard al día (2026-08-23)
+---
+
+## Personal y clientes desde el teléfono, y el dashboard al día (2026-08-23)
 
 Tercera y última tanda de escritura, más la puesta al día de los reportes de la
 app contra los del panel.
 
-#### Cargos, trabajadores y clientes
+### Cargos, trabajadores y clientes
 
 | | |
 |---|---|
@@ -2506,7 +2445,7 @@ historial de compras. Crear una ficha nueva se lo partiría en dos y el índice
 > la venta, que es cuando la persona está delante para dar su carnet. Es donde
 > ya vive, con su búsqueda en dos peldaños.
 
-#### El dashboard alcanza al panel
+### El dashboard alcanza al panel
 
 Al panel le sobraban tres análisis que la app no tenía. Se añaden a
 `/dashboard`, con el mismo permiso `reportes.ver`:
@@ -2529,7 +2468,9 @@ Al panel le sobraban tres análisis que la app no tenía. Se añaden a
 
 Cubierto por `PersonasEscrituraApiTest` (17 casos) y `ReportesAppApiTest` (6).
 
-### El catálogo se edita desde el teléfono (2026-08-23)
+---
+
+## El catálogo se edita desde el teléfono (2026-08-23)
 
 Hasta ahora la app solo consultaba el catálogo. Se revierte esa decisión —está
 razonada en el README de la app— porque en la tienda se registran productos con
@@ -2552,7 +2493,7 @@ rechaza entrando por el teléfono, y nadie sabría por qué.
 > el método desde el cliente. Un verbo uniforme en las tres entidades evita esa
 > trampa; el precio es que no es REST de manual.
 
-#### Decisiones que no estaban en el panel
+### Decisiones que no estaban en el panel
 
 **El slug no se pide.** En el panel es un campo visible que se autocompleta al
 escribir el nombre; en el teléfono es un dato técnico que nadie teclea de pie en
@@ -2566,7 +2507,7 @@ una tabla de pares que se llena con calma; lo que sí importaba era que editar e
 precio desde el mostrador **no las borrara**, así que el formulario las manda tal
 cual estaban y lo dice en pantalla.
 
-#### Guardas de borrado, iguales que en el panel
+### Guardas de borrado, iguales que en el panel
 
 - **Categoría con subcategorías: no se borra.** Sus ramas quedarían huérfanas y
   desaparecidas del árbol.
@@ -2579,7 +2520,7 @@ cual estaban y lo dice en pantalla.
   producto solo deja de ofrecerse. **Su imagen no se borra**: restaurarlo desde
   el panel debe devolverlo completo, no sin foto.
 
-#### Tres bugs que cazaron los tests antes de producción
+### Tres bugs que cazaron los tests antes de producción
 
 **Las especificaciones se guardaban en el formato equivocado.** La app las manda
 como lista de pares (así se pintan en orden), pero en la base viven como objeto
@@ -2601,12 +2542,14 @@ escribir el siguiente controlador que escriba y devuelva un recurso.
 
 Cubierto por `CatalogoEscrituraApiTest` (19 casos).
 
-### El POS del teléfono se alinea con el del mostrador (2026-08-23)
+---
+
+## El POS del teléfono se alinea con el del mostrador (2026-08-23)
 
 Con la app ya en uso salieron dos diferencias con el POS web. Ninguna era de
 diseño: eran deudas de cuando la API se escribió antes que las reglas actuales.
 
-#### La app cobraba con métodos que la tienda retiró
+### La app cobraba con métodos que la tienda retiró
 
 `PosController::cobrar` validaba contra `Venta::METODOS_PAGO`, que es la lista
 **histórica** —incluye `tarjeta` y `transferencia`, que existen solo para que el
@@ -2620,7 +2563,7 @@ aceptándolo. Ahora la API valida contra `METODOS_POS` y la app ofrece solo esos
 tres botones; antes los pintaba los cinco, así que el cajero llegaba al 422 con
 el carrito ya armado.
 
-#### El alta de cliente se saltaba un peldaño
+### El alta de cliente se saltaba un peldaño
 
 El POS web busca en dos niveles. Primero clientes; si no hay ninguno, busca en
 **`personas`** —gente que ya está en el sistema porque trabaja aquí o porque
@@ -2662,7 +2605,9 @@ Se añaden los dos endpoints que faltaban:
 Cubierto por `ClienteDesdePersonaApiTest` (6 casos) y uno nuevo en `PosApiTest`
 para los métodos retirados.
 
-### Qué formatos lee el escáner (2026-08-23, tras probar con etiquetas reales)
+---
+
+## Qué formatos lee el escáner (2026-08-23, tras probar con etiquetas reales)
 
 Probando códigos generados en una web salieron seis nombres —Code-11,
 Entrelazado 2 de 5, Code-93, Flattermarken, MSI, Telepen Alpha— y la pregunta de
@@ -2698,7 +2643,7 @@ las barras.
 > confirmar cuando lo leído es de ese tipo. El serial va en otra etiqueta, junto
 > a «S/N».
 
-#### El filtro de formatos descartaba códigos en silencio
+### El filtro de formatos descartaba códigos en silencio
 
 `PantallaEscaner` declaraba una lista de formatos —Code128, Code39, QR, EAN13,
 EAN8— pensando en la etiqueta que imprime el panel. El problema es que **un
@@ -2718,7 +2663,7 @@ avería invisible.
 > los 76 MB). El escáner funciona sin conexión y en teléfonos sin Play Store; si
 > alguna vez falla, no es por el modelo.
 
-#### «No hay resultados» no es una respuesta
+### «No hay resultados» no es una respuesta
 
 El buscador del POS solo mira unidades `en_stock`. Escanear un aparato **ya
 vendido** y escanear la etiqueta de **otra tienda** daban el mismo resultado: una
@@ -2751,7 +2696,7 @@ siempre el código leído en monoespaciada**: es la prueba de que la cámara sí
 funcionó. Sin verlo, «no se puede vender» se confunde con «el lector está roto» y
 se acaba tecleando a mano sin necesidad.
 
-#### Salida manual cuando la etiqueta no se deja leer
+### Salida manual cuando la etiqueta no se deja leer
 
 El escáner tiene ahora un botón de teclado que devuelve el código escrito **por
 el mismo camino** que uno leído, así que quien lo abrió no distingue de dónde
@@ -2759,7 +2704,7 @@ vino. Antes, el botón «Escribirlo a mano» de la pantalla sin cámara solo cer
 el escáner y no llevaba a ninguna parte. Una etiqueta rota o mal impresa dejaba
 el trabajo bloqueado.
 
-#### Registrar el serial con la cámara, desde la ficha del producto
+### Registrar el serial con la cámara, desde la ficha del producto
 
 `POST /unidades/{unidad}/serial`, con permiso `unidades.editar`. Es **la única
 escritura del catálogo desde el teléfono**: el resto de la edición de unidades
@@ -2791,7 +2736,9 @@ Cubierto por `UnidadSerialApiTest` (8 casos: duplicado, mayúsculas, espacios,
 blanco, reescribir el propio, permisos y sesión) y tres casos nuevos en
 `PosApiTest` para el diagnóstico.
 
-### La app del teléfono apunta al servidor de producción (2026-08-23)
+---
+
+## La app del teléfono apunta al servidor de producción (2026-08-23)
 
 El backend quedó publicado en `http://69.62.91.168:8010`, y la
 app móvil se compiló contra esa dirección para instalarla en un teléfono físico.
@@ -2829,7 +2776,7 @@ Comprobado contra el servidor ya publicado, antes de dar el APK por bueno:
 servicio lo captura, devuelve `false` y la app arranca igual, solo sin push. El
 historial de avisos se lee por API y funciona.
 
-#### El APK no compilaba en este equipo: «Unable to establish loopback connection»
+### El APK no compilaba en este equipo: «Unable to establish loopback connection»
 
 Antes de generar nada hubo que resolver un fallo del **equipo**, no del proyecto:
 Gradle moría a los 4 segundos, antes de compilar una sola línea.
@@ -2863,7 +2810,7 @@ Lo que se descartó por el camino, para no repetir el diagnóstico:
   archivo. `JAVA_TOOL_OPTIONS` es la que hereda **toda** JVM hija, que es lo que
   hace falta.
 
-#### Instalar el APK en el teléfono
+### Instalar el APK en el teléfono
 
 `app-release.apk` (76 MB) queda en `build/app/outputs/flutter-apk/`. Se copia al
 teléfono y se instala permitiendo «orígenes desconocidos».
@@ -2881,115 +2828,9 @@ propio referenciado desde un `key.properties` fuera del control de versiones. En
 ese momento también conviene `--split-per-abi`, que baja el APK de 76 MB a unos
 25 MB por arquitectura.
 
-### Punto de venta: precio pactado, descuento autorizado y cobro por QR (2026-08-20)
+---
 
-Cuatro cambios sobre el POS, todos nacidos del mismo problema: **el precio del
-carrito era un campo libre.** El cajero podía escribir cualquier número y la
-venta se registraba sin dejar rastro de que hubo una rebaja ni de quién la
-autorizó.
-
-#### 1. El precio de lista es una referencia, no un campo
-
-El carrito guarda ahora dos importes por línea: `precio_lista` (copiado del
-catálogo, **no editable**) y `precio` (lo que se va a cobrar). El descuento no
-se teclea: **es la resta**. Si la referencia es 400 y se cobra 350, la venta se
-registra con `precio_unitario = 400` y `descuento = 50`.
-
-> **Por qué la resta y no un campo de descuento.** El cajero negocia un precio
-> final con el cliente («te lo dejo en 350»), no un descuento. Pedirle que
-> calcule la diferencia era pedirle una cuenta mental que ya hizo al revés, y
-> que se equivocara significaba un descuento mal registrado. En el histórico
-> se sigue guardando precio y rebaja por separado porque los reportes tienen
-> que poder responder «cuánto dejamos de cobrar».
-
-El precio pactado tiene **techo y suelo**: no puede superar la referencia (eso
-sería un recargo, que este sistema no maneja) ni bajar del tope autorizado del
-producto. Ambos límites se avisan en la propia fila mientras se escribe, y dos
-atajos —*Precio de lista* y *Rebaja máxima*— cubren los dos casos frecuentes.
-
-#### 2. Tope de descuento por producto
-
-`productos.descuento_maximo`, en Bs. Se valida en tres sitios a propósito: en el
-formulario de productos (`lte:precio`), en el POS mientras se teclea, y en
-`RegistroDeVenta` al cobrar. El tercero no es redundante: **el servicio es la
-regla de negocio**, y el componente Livewire es solo una de sus puertas — la API
-es otra.
-
-> **Por defecto 0.** Los productos que ya existían quedaron sin margen de
-> negociación, que es el comportamiento seguro: quien quiera permitir una
-> rebaja tiene que autorizarla en la ficha. `ProductoSeeder` da un 5 % a los
-> productos de ejemplo para que la demo pueda mostrar descuentos.
-
-#### 3. Cobro por QR, pago mixto y respaldo
-
-Módulo nuevo **`App\Livewire\QrsCobro\Index`** (`/ventas/qr-cobro`, menú
-*Ventas › QR de cobro*, permisos `qrs_cobro.*`): registra la imagen del QR con
-su banco, titular y **fecha límite**. Ver la tabla `qrs_cobro` en §2.2.
-
-En el POS, el método de pago pasó de `<select>` a botonera: lo elegido decide
-qué se pide después, así que tiene que verse entero de un vistazo.
-
-| Método | Qué exige el POS |
-|---|---|
-| Efectivo (o tarjeta/transferencia) | Nada más |
-| QR | Un QR vigente + el respaldo del pago |
-| Mixto | Además, el reparto efectivo/QR |
-
-- **La imagen del QR se muestra en pantalla** para que el cliente la escanee,
-  con su fecha de validez a la vista. Si no hay ninguno vigente, el POS lo dice
-  y no deja cobrar por esa vía.
-- **El respaldo del pago se sube en el momento**, antes de cobrar: una foto o
-  captura del comprobante del banco. Sin él no se habilita el botón. Cobrar por
-  QR sin respaldo dejaría la venta imposible de conciliar contra el extracto.
-- **El mixto se completa solo**: al teclear una parte, la otra toma la
-  diferencia (total 300, efectivo 200 → QR 100), y ninguna puede pasarse del
-  total. Funciona en los dos sentidos y **cualquiera de los dos campos se puede
-  corregir después**: al reescribir uno, el otro se rehace. Vaciar uno deja el
-  reparto otra vez sin hacer. La suma tiene que dar *exactamente* el total —
-  quien paga de más recibe cambio (eso es caja, no venta) y quien paga de menos
-  deja una deuda que este sistema no lleva.
-
-> **Los dos campos arrancan vacíos.** Se probó proponer mitad y mitad al elegir
-> «mixto» y es peor: un importe que el sistema escribe es dinero que nadie
-> contó, y basta con que el cajero no mire para que la venta quede repartida
-> mal. Se teclea lo que el cliente entregó en mano y el otro campo aparece.
-
-> **El archivo se guarda antes de abrir la transacción.** Escribir en disco no
-> se deshace con un `rollback`: si la venta falla, es preferible una imagen
-> huérfana e inofensiva que una venta registrada sin su comprobante.
->
-> **La vigencia del QR se revalida al cobrar**, no solo al pintarlo: entre que
-> se abrió el POS y se cobró pudo pasar la medianoche de la fecha límite.
-
-#### 4. Alta de cliente sin salir de la venta
-
-El botón de alta **solo se habilita cuando se buscó y no apareció nadie**
-(`clienteSinResultados`), y `abrirNuevoCliente()` lo vuelve a comprobar en el
-servidor. Sin esa condición, la prisa del mostrador acabaría creando una ficha
-nueva cada vez que el mismo señor vuelve a comprar, y su historial quedaría
-repartido entre varias.
-
-Cuando no aparece, un modal registra persona y ficha en una transacción y **la
-deja ya elegida en la venta en curso**: quien abre ese modal está a media venta
-con el cliente delante. Las reglas son las del módulo de
-clientes recortadas a lo que se puede pedir en mostrador sin frenar la cola
-(carnet, nombres, un apellido y celular opcional); si aquí fueran más laxas, se
-colarían datos que el otro formulario rechaza.
-
-#### Rediseño de la pantalla
-
-Resumen de la venta (código, aparatos y total) en la banda superior, para que el
-total esté a la vista sin bajar a la columna de cobro en pantallas cortas; la
-referencia se lee como etiqueta y no como campo, para que se distinga del input
-que sí se edita; botonera de métodos de pago; avisos en línea para el reparto
-del mixto y el estado del respaldo.
-
-> **Sobre los totales cacheados de Livewire.** Las propiedades `#[Computed]` se
-> cachean por petición. Al reajustar el reparto del mixto tras tocar el carrito
-> hay que soltar esa caché (`unset($this->totalEnCentavos, …)`), o se repartiría
-> el total anterior.
-
-### El POS pregunta antes de romper algo (2026-08-22)
+## El POS pregunta antes de romper algo (2026-08-22)
 
 Cinco cambios en `/ventas/nueva`, todos sobre lo mismo: que el cajero pueda
 comprobar lo que va a pasar **antes** de que pase.
@@ -3031,7 +2872,9 @@ rastro en el histórico y en el kardex.
 > prueba, deadlocks). Se verificó contra una base aparte:
 > `DB_DATABASE=electronica_hogar_test_pos php artisan test`.
 
-### El cobro busca al cliente en dos peldaños (2026-08-21)
+---
+
+## El cobro busca al cliente en dos peldaños (2026-08-21)
 
 El buscador de cliente del POS ya no mira solo la tabla `clientes`. Si no
 encuentra a nadie, busca en **`personas`** y ofrece a quien ya esté ahí; al
@@ -3059,7 +2902,9 @@ Y se rediseñó: pasa de un botón más de la columna a una acción con icono,
 nombre y explicación (`.pos-alta-cliente`, recuadro punteado que se rellena al
 pasar por encima).
 
-### Recibo de venta en PDF (2026-08-21)
+---
+
+## Recibo de venta en PDF (2026-08-21)
 
 Paquete nuevo: **`barryvdh/laravel-dompdf`**. El botón *Descargar recibo (PDF)*
 sale en el modal de venta registrada del POS y, además, en el detalle de cada
@@ -3098,7 +2943,9 @@ El recibo imprime, además de los importes, el **serial y la garantía de cada
 aparato** —es lo que el cliente necesita para reclamar— y, en el pago mixto, el
 reparto entre efectivo y QR.
 
-### Rediseño de Resumen y Ventas en la app (2026-08-21)
+---
+
+## Rediseño de Resumen y Ventas en la app (2026-08-21)
 
 El login se rediseñó aparte (degradado, círculos decorativos, tarjeta blanca
 flotante con sombra en dos capas). Estas dos pantallas adoptan ese mismo
@@ -3132,7 +2979,9 @@ soportaba y la app no usaba.
 > este emulador (Android 16, edge-to-edge) no surte efecto; al login rediseñado
 > le pasa lo mismo.
 
-### Punto de venta en el teléfono, con escáner (2026-08-21)
+---
+
+## Punto de venta en el teléfono, con escáner (2026-08-21)
 
 La app deja de ser solo de consulta: **se puede vender desde el mostrador con la
 cámara**. Y la razón es esa cámara — lee un serial de doce caracteres en un
@@ -3144,7 +2993,7 @@ segundo, y teclearlo con el cliente delante cuesta bastante más.
 > después (ver secciones correspondientes). Editar catálogo sigue siendo cosa
 > del panel.
 
-#### API
+### API
 
 `PosController` con tres rutas tras `ventas.crear`, más `POST /clientes` tras
 `clientes.crear`.
@@ -3169,7 +3018,7 @@ segundo, y teclearlo con el cliente delante cuesta bastante más.
 > literalmente: la app la agrega sola. Con una búsqueda parcial no viene, y
 > entonces se elige de la lista.
 
-#### App
+### App
 
 `lib/features/pos/` — `ControladorPos` (StateNotifier) es el espejo del
 componente Livewire: carrito en memoria, precio de lista como techo, tope de
@@ -3191,7 +3040,7 @@ tecleando el serial.
 > la animación de salida, así que la pantalla marca el código como entregado
 > antes de cerrarse. Y el carrito ignora un aparato que ya está dentro.
 
-#### Probado en el emulador (2026-08-21)
+### Probado en el emulador (2026-08-21)
 
 Venta completa desde el teléfono: se buscó `CABHDMI21-2608-0003`, entró sola al
 carrito por coincidencia exacta, y se cobró en efectivo → **VTA-2026-000019, Bs
@@ -3207,13 +3056,125 @@ QR vigente y mantiene *Cobrar* deshabilitado hasta que se adjunta el respaldo.
 > (`http://10.0.2.2:8000` en el emulador, la IP de la red local en un móvil
 > físico).
 
-### Compras en la app: proveedores y órdenes (2026-08-20)
+---
+
+## Punto de venta: precio pactado, descuento autorizado y cobro por QR (2026-08-20)
+
+Cuatro cambios sobre el POS, todos nacidos del mismo problema: **el precio del
+carrito era un campo libre.** El cajero podía escribir cualquier número y la
+venta se registraba sin dejar rastro de que hubo una rebaja ni de quién la
+autorizó.
+
+### 1. El precio de lista es una referencia, no un campo
+
+El carrito guarda ahora dos importes por línea: `precio_lista` (copiado del
+catálogo, **no editable**) y `precio` (lo que se va a cobrar). El descuento no
+se teclea: **es la resta**. Si la referencia es 400 y se cobra 350, la venta se
+registra con `precio_unitario = 400` y `descuento = 50`.
+
+> **Por qué la resta y no un campo de descuento.** El cajero negocia un precio
+> final con el cliente («te lo dejo en 350»), no un descuento. Pedirle que
+> calcule la diferencia era pedirle una cuenta mental que ya hizo al revés, y
+> que se equivocara significaba un descuento mal registrado. En el histórico
+> se sigue guardando precio y rebaja por separado porque los reportes tienen
+> que poder responder «cuánto dejamos de cobrar».
+
+El precio pactado tiene **techo y suelo**: no puede superar la referencia (eso
+sería un recargo, que este sistema no maneja) ni bajar del tope autorizado del
+producto. Ambos límites se avisan en la propia fila mientras se escribe, y dos
+atajos —*Precio de lista* y *Rebaja máxima*— cubren los dos casos frecuentes.
+
+### 2. Tope de descuento por producto
+
+`productos.descuento_maximo`, en Bs. Se valida en tres sitios a propósito: en el
+formulario de productos (`lte:precio`), en el POS mientras se teclea, y en
+`RegistroDeVenta` al cobrar. El tercero no es redundante: **el servicio es la
+regla de negocio**, y el componente Livewire es solo una de sus puertas — la API
+es otra.
+
+> **Por defecto 0.** Los productos que ya existían quedaron sin margen de
+> negociación, que es el comportamiento seguro: quien quiera permitir una
+> rebaja tiene que autorizarla en la ficha. `ProductoSeeder` da un 5 % a los
+> productos de ejemplo para que la demo pueda mostrar descuentos.
+
+### 3. Cobro por QR, pago mixto y respaldo
+
+Módulo nuevo **`App\Livewire\QrsCobro\Index`** (`/ventas/qr-cobro`, menú
+*Ventas › QR de cobro*, permisos `qrs_cobro.*`): registra la imagen del QR con
+su banco, titular y **fecha límite**. Ver la tabla `qrs_cobro` en §2.2.
+
+En el POS, el método de pago pasó de `<select>` a botonera: lo elegido decide
+qué se pide después, así que tiene que verse entero de un vistazo.
+
+| Método | Qué exige el POS |
+|---|---|
+| Efectivo (o tarjeta/transferencia) | Nada más |
+| QR | Un QR vigente + el respaldo del pago |
+| Mixto | Además, el reparto efectivo/QR |
+
+- **La imagen del QR se muestra en pantalla** para que el cliente la escanee,
+  con su fecha de validez a la vista. Si no hay ninguno vigente, el POS lo dice
+  y no deja cobrar por esa vía.
+- **El respaldo del pago se sube en el momento**, antes de cobrar: una foto o
+  captura del comprobante del banco. Sin él no se habilita el botón. Cobrar por
+  QR sin respaldo dejaría la venta imposible de conciliar contra el extracto.
+- **El mixto se completa solo**: al teclear una parte, la otra toma la
+  diferencia (total 300, efectivo 200 → QR 100), y ninguna puede pasarse del
+  total. Funciona en los dos sentidos y **cualquiera de los dos campos se puede
+  corregir después**: al reescribir uno, el otro se rehace. Vaciar uno deja el
+  reparto otra vez sin hacer. La suma tiene que dar *exactamente* el total —
+  quien paga de más recibe cambio (eso es caja, no venta) y quien paga de menos
+  deja una deuda que este sistema no lleva.
+
+> **Los dos campos arrancan vacíos.** Se probó proponer mitad y mitad al elegir
+> «mixto» y es peor: un importe que el sistema escribe es dinero que nadie
+> contó, y basta con que el cajero no mire para que la venta quede repartida
+> mal. Se teclea lo que el cliente entregó en mano y el otro campo aparece.
+
+> **El archivo se guarda antes de abrir la transacción.** Escribir en disco no
+> se deshace con un `rollback`: si la venta falla, es preferible una imagen
+> huérfana e inofensiva que una venta registrada sin su comprobante.
+>
+> **La vigencia del QR se revalida al cobrar**, no solo al pintarlo: entre que
+> se abrió el POS y se cobró pudo pasar la medianoche de la fecha límite.
+
+### 4. Alta de cliente sin salir de la venta
+
+El botón de alta **solo se habilita cuando se buscó y no apareció nadie**
+(`clienteSinResultados`), y `abrirNuevoCliente()` lo vuelve a comprobar en el
+servidor. Sin esa condición, la prisa del mostrador acabaría creando una ficha
+nueva cada vez que el mismo señor vuelve a comprar, y su historial quedaría
+repartido entre varias.
+
+Cuando no aparece, un modal registra persona y ficha en una transacción y **la
+deja ya elegida en la venta en curso**: quien abre ese modal está a media venta
+con el cliente delante. Las reglas son las del módulo de
+clientes recortadas a lo que se puede pedir en mostrador sin frenar la cola
+(carnet, nombres, un apellido y celular opcional); si aquí fueran más laxas, se
+colarían datos que el otro formulario rechaza.
+
+### Rediseño de la pantalla
+
+Resumen de la venta (código, aparatos y total) en la banda superior, para que el
+total esté a la vista sin bajar a la columna de cobro en pantallas cortas; la
+referencia se lee como etiqueta y no como campo, para que se distinga del input
+que sí se edita; botonera de métodos de pago; avisos en línea para el reparto
+del mixto y el estado del respaldo.
+
+> **Sobre los totales cacheados de Livewire.** Las propiedades `#[Computed]` se
+> cachean por petición. Al reajustar el reparto del mixto tras tocar el carrito
+> hay que soltar esa caché (`unset($this->totalEnCentavos, …)`), o se repartiría
+> el total anterior.
+
+---
+
+## Compras en la app: proveedores y órdenes (2026-08-20)
 
 Quinta pestaña — *Compras*, con **Órdenes · Proveedores**. Cierra el recorrido:
 de quién compramos, qué le compramos y en qué se convirtió esa compra dentro
 del almacén.
 
-#### API
+### API
 
 `ProveedorController` (`/proveedores`) y `CompraController` (`/compras`), tras
 `proveedores.ver` y `compras.ver`. Recursos `ProveedorResource`,
@@ -3249,7 +3210,7 @@ del almacén.
 > hace un `join` con `unidades`, que también tiene una columna `estado`. Sin
 > cualificarla (`compras.estado`), MySQL rechaza la consulta por ambigua.
 
-#### App
+### App
 
 `lib/features/compras/`. La ficha de la orden es la que carga con la
 explicación: estado (borrador / recepcionada / anulada) con una nota de qué
@@ -3261,7 +3222,7 @@ su margen. Los aparatos recibidos se piden aparte, al desplegar la sección.
 > `personas.dart` y ya lo usaban tres módulos; dejarlo ahí obligaba a que
 > «compras» importara «personas» para paginar.
 
-#### Probado en el emulador (2026-08-20)
+### Probado en el emulador (2026-08-20)
 
 APK reinstalado en la AVD `Medium_Phone` contra el backend real: 1 proveedor
 (*Distribuidora Central SRL*, Bs 30,3 k en 3 compras) y las tres órdenes con su
@@ -3270,13 +3231,15 @@ aparatos y quedó congelada», los importes y sus cuatro líneas con costo real,
 precio de venta, margen y unidades; la sección de aparatos recibidos llega con
 «19 en total · 17 todavía en stock». Ninguna excepción en `logcat`.
 
-### Personas en la app: trabajadores, cargos y clientes (2026-08-20)
+---
+
+## Personas en la app: trabajadores, cargos y clientes (2026-08-20)
 
 Misma forma que el catálogo: endpoints de consulta en la API v1 y una pestaña
 con solapas en la app. Quinta entrada de la barra inferior — *Personas*, con
 **Trabajadores · Cargos · Clientes**.
 
-#### API
+### API
 
 `PersonalController` (`/personal/cargos`, `/personal/trabajadores`) y
 `ClienteController` (`/clientes`), cada uno tras **su** permiso: quien lleva las
@@ -3305,7 +3268,7 @@ y `ClienteResource`.
 > `whereRaw('1 = 0')` lo dice explícitamente en vez de dejar la consulta abierta
 > a todas las ventas de la tienda.
 
-#### App
+### App
 
 `lib/features/personas/`. Las solapas **se arman según los permisos**: enseñar
 una pestaña que solo puede responder «no tienes permiso» es peor que no
@@ -3325,7 +3288,7 @@ enseñarla. Con las tres cerradas, la pantalla lo dice y ya.
 > una nota que explica por qué siguen ahí. Es la misma regla del panel: el
 > histórico apunta a ellas.
 
-#### Probado en el emulador (2026-08-20)
+### Probado en el emulador (2026-08-20)
 
 `flutter build apk --debug` + `flutter install` sobre la AVD `Medium_Phone`
 (Android 16, API 36). Con sesión de admin contra el backend real: las tres
@@ -3345,13 +3308,15 @@ excepción en `logcat` — solo el aviso conocido de Firebase sin configurar.
 > Para no repetirlo en cada build conviene dejarla fija:
 > `setx JAVA_TOOL_OPTIONS "-Djdk.net.unixdomain.tmpdir=C:\java-tmp"`.
 
-### Catálogo en la app: categorías, marcas y productos (2026-08-20)
+---
+
+## Catálogo en la app: categorías, marcas y productos (2026-08-20)
 
 La app del administrador solo consultaba ventas y el resumen. Ahora también el
 catálogo, que es lo que se pregunta con el cliente delante: **«¿queda alguno?»**
 y **«¿a cuánto lo vendemos?»**.
 
-#### API: `/api/v1/catalogo/*`
+### API: `/api/v1/catalogo/*`
 
 `App\Http\Controllers\Api\V1\CatalogoController`, cerrado con
 `permission:productos.ver`, y tres recursos nuevos (`CategoriaResource`,
@@ -3381,7 +3346,7 @@ y **«¿a cuánto lo vendemos?»**.
 > dejan puestos con `setAttribute`. La bandera de «ficha completa» es una
 > propiedad del propio Resource, no un atributo del modelo, por lo mismo.
 
-#### App: cuarta pestaña «Catálogo»
+### App: cuarta pestaña «Catálogo»
 
 `lib/features/catalogo/` — una pantalla con `TabBar` de tres pestañas
 (Categorías · Marcas · Productos) y la ficha del producto apilada encima, fuera
@@ -3413,13 +3378,15 @@ del `ShellRoute`, para que la barra inferior no estorbe.
 > **Elegir categoría suelta la marca, y al revés.** Cruzar los dos filtros da a
 > menudo un listado vacío sin que se vea por qué.
 
-### Fase 9 — Cierre (2026-08-16)
+---
+
+## Fase 9 — Cierre (2026-08-16)
 
 Dos documentos nuevos, hermanos de este: **`docs/DESPLIEGUE.md`** (poner el
 sistema en el servidor y mantenerlo vivo) y **`docs/MANUAL.md`** (usarlo). Este
 archivo sigue siendo el del *por qué*.
 
-#### Seeder de demostración
+### Seeder de demostración
 
 **`Database\Seeders\DemoSeeder`**, aparte de `DatabaseSeeder` y a mano:
 
@@ -3463,7 +3430,7 @@ cada venta igual a la de sus líneas, ventas repartidas en el tiempo y ninguna
 en el futuro, nada vendido antes de comprarse, y las anuladas con su devolución
 registrada.
 
-#### Copias de seguridad
+### Copias de seguridad
 
 `spatie/laravel-backup`, programado en `routes/console.php`: limpieza a la
 01:30, copia a las 02:00 y vigilancia a las 08:00. **Requiere
@@ -3490,7 +3457,7 @@ tienda opera sin copias creyendo que las tiene.
 > es añadir un disco en `config/backup.php`; si sale del edificio, hace falta
 > `BACKUP_ARCHIVE_PASSWORD`, porque el ZIP lleva dentro el `.env`.
 
-#### Hardening
+### Hardening
 
 **`App\Http\Middleware\CabecerasDeSeguridad`**, en el stack global —no ruta por
 ruta: una cabecera que hay que acordarse de poner acaba faltando justo en la
@@ -3514,7 +3481,9 @@ qué cambia en producción. `SeguridadTest` comprueba que `APP_KEY`,
 `DB_PASSWORD`, `REVERB_APP_SECRET` y `BACKUP_ARCHIVE_PASSWORD` siguen vacías:
 es el archivo que sí se versiona.
 
-### Fase 8 — App Flutter (2026-08-16)
+---
+
+## Fase 8 — App Flutter (2026-08-16)
 
 Proyecto **`../electronica_hogar_app`**, hermano de este repositorio (no dentro: `htdocs` es raíz web de Apache y el código fuente de la app no tiene por qué ser servible). Flutter 3.47, `com.electronicahogar`, plataformas Android/iOS/Windows.
 
@@ -3536,7 +3505,7 @@ Estructura *feature-first* como preveía §6, con los nombres en español igual 
 
 > **Firebase es opcional en tiempo de ejecución.** `Firebase.initializeApp()` va en `try/catch`: sin `google-services.json` la app arranca igual y solo se queda sin push. El historial de avisos se lee por API y sigue funcionando. Así se puede desarrollar y probar sin cuenta de Firebase.
 
-#### El APK ya compila (2026-08-17)
+### El APK ya compila (2026-08-17)
 
 Con el SDK de Android instalado, la compilación destapó cuatro problemas
 encadenados. Ninguno daba un mensaje que apuntara a su causa, así que quedan
@@ -3563,7 +3532,7 @@ anotados con lo que realmente los provocaba.
 (`build\app\outputs\flutter-apk\app-debug.apk`, 166 MB — es un build de
 depuración, el de release pesa mucho menos).
 
-#### Probada de extremo a extremo (2026-08-18)
+### Probada de extremo a extremo (2026-08-18)
 
 Con espacio liberado en C:, la AVD `Medium_Phone` arranca y la app **habla con
 el backend**: sesión persistida, dashboard con ingresos, ganancia, margen,
@@ -3602,7 +3571,7 @@ teléfono real por USB sí:
 `flutter run --dart-define=API_URL=http://<IP-del-PC>:8000/api/v1`, y esa IP
 tiene que estar en `network_security_config.xml`.
 
-#### Dos huecos del proyecto Android, corregidos (2026-08-17)
+### Dos huecos del proyecto Android, corregidos (2026-08-17)
 
 Los dos habrían dejado la app instalada y muda, con un error de red que no
 explica nada:
@@ -3619,7 +3588,7 @@ explica nada:
   http contra cualquier servidor, y por ahí viajan el token de sesión y las
   cifras de ventas.
 
-#### Los espacios de `C:\Users\Veimar Rivas`, tercera vez
+### Los espacios de `C:\Users\Veimar Rivas`, tercera vez
 
 Este equipo tiene el perfil de usuario en una ruta con espacio, y ya van tres
 herramientas distintas que se rompen por eso. **La solución de fondo es un
@@ -3660,7 +3629,9 @@ perfil sin espacios**; lo de abajo son parches.
 **Sigue faltando:** Visual Studio con «Desktop development with C++», solo para
 la versión de escritorio.
 
-### Fase 7 — API v1 y avisos push (2026-08-16)
+---
+
+## Fase 7 — API v1 y avisos push (2026-08-16)
 
 **Sanctum por token.** `/api/v1`, versionada en la URL desde el primer día. 17 rutas, todas en español. Los controladores viven en `App\Http\Controllers\Api\V1` y las respuestas pasan por API Resources.
 
@@ -3674,7 +3645,7 @@ la versión de escritorio.
 
 > **Un fallo que salió al probar con `curl`:** el admin no tiene permisos asignados —los recibe todos por `Gate::before`—, así que `getAllPermissions()` devolvía una lista **vacía** y la app habría escondido todas las pantallas justo al usuario que puede todo. `UsuarioResource` ahora devuelve el catálogo completo para el admin y añade `es_admin`.
 
-#### Avisos push
+### Avisos push
 
 `App\Notifications\VentaRegistradaPush` sale por dos canales:
 
@@ -3685,7 +3656,7 @@ Esta notificación **sí va encolada**, a diferencia del broadcast del dashboard
 
 > **Falta para que salga el push de verdad:** instalar `composer require laravel-notification-channels/fcm` y poner `FIREBASE_CREDENTIALS` en el `.env` con el JSON de la cuenta de servicio. Sin eso el sistema queda funcional y guarda los avisos; solo no llegan al teléfono.
 
-#### Dos fallos encadenados encontrados probando la API con `curl`
+### Dos fallos encadenados encontrados probando la API con `curl`
 
 **1. Con Reverb caído, la venta fallaba.** `ShouldBroadcastNow` habla con el servidor de WebSockets en la misma petición; apagado, la excepción de conexión subía hasta el mostrador y le decía al cajero que la venta había fallado **cuando ya estaba cobrada y guardada** — con el riesgo evidente de cobrar dos veces. El `dispatch` va ahora en `try/catch`: que el panel no se entere es un problema menor.
 
@@ -3693,7 +3664,9 @@ Esta notificación **sí va encolada**, a diferencia del broadcast del dashboard
 
 > Los dos tienen test: uno apunta la conexión de broadcast a un puerto donde no escucha nadie y comprueba que la venta se registra igual; el otro, que el supervisor recibe su aviso en esas mismas condiciones.
 
-### Fase 6 — Reportes y dashboard en vivo (2026-08-16)
+---
+
+## Fase 6 — Reportes y dashboard en vivo (2026-08-16)
 
 **`App\Support\Reportes`** concentra las consultas. Vive fuera del componente Livewire para que la misma lógica sirva luego a la API de la app Flutter sin duplicarse. Regla que atraviesa todo el archivo: **las ventas anuladas no cuentan** — devolvieron su mercadería al stock y su dinero al cliente, así que sumarlas inflaría todos los indicadores.
 
@@ -3709,7 +3682,7 @@ Pantalla única en `/reportes` (permiso `reportes.ver`), con atajos de período 
 
 > **La ganancia solo se muestra a quien tiene `reportes.ver_costos`.** El precio de compra no es información de mostrador; sin ese permiso, esas tarjetas y columnas se sustituyen por datos de volumen.
 
-#### Sistema de visualización de datos (2026-08-16)
+### Sistema de visualización de datos (2026-08-16)
 
 Las gráficas no se maquetaron a ojo: siguen el método de la skill `dataviz`, que fija el orden **forma → color → validación → marcas → interacción → accesibilidad**. Vive en `resources/scss/components/_viz.scss` y en los componentes Blade `resources/views/components/viz/`.
 
@@ -3746,7 +3719,7 @@ Pasa banda de luminosidad, piso de croma, separación bajo daltonismo (peor par 
 
 > **El dashboard dejó de ser una maqueta.** Antes tenía ceros escritos a mano y un `<div>` de ApexCharts sin datos. Ahora es `App\Livewire\Dashboard\Panel`, lee de `App\Support\Reportes` —la misma fuente que Reportes— y añade la alerta de **stock bajo mínimo**, que es lo que lo hace accionable: sin ella habría que ir producto por producto para saber qué reponer.
 
-#### Tiempo real (Reverb + Echo)
+### Tiempo real (Reverb + Echo)
 
 Instalados `laravel/reverb`, `laravel-echo` y `pusher-js`. El flujo es el previsto en §4:
 
@@ -3768,7 +3741,7 @@ php artisan queue:work --tries=3
 
 > **Detalle de pruebas encontrado aquí:** `phpunit.xml` fija `BROADCAST_CONNECTION=null`, y ese driver **no comprueba la autorización de canales** — un test que golpee `/broadcasting/auth` devolverá 200 aunque el usuario no tenga permiso. Para probar la denegación de verdad hay que forzar un driver real con `config(['broadcasting.default' => 'reverb'])`. Solo se prueba el camino de denegación: el de permiso concedido llegaría a firmar la respuesta con el cliente de Pusher, que no existe en pruebas.
 
-#### Dos fallos reales del tiempo real, encontrados probándolo en el navegador (2026-08-16)
+### Dos fallos reales del tiempo real, encontrados probándolo en el navegador (2026-08-16)
 
 El panel no se movía y había que recargar. La cadena se verificó tramo a tramo con el navegador abierto: Echo conectado ✓, suscrito a `private-ventas` ✓, Reverb aceptando el evento ✓, el evento **llegando al navegador** ✓… y nadie recogiéndolo. Eran dos cosas distintas:
 
@@ -3778,7 +3751,9 @@ El panel no se movía y había que recargar. La cadena se verificó tramo a tram
 
 > Ninguno de los dos fallos lo habría detectado un test de PHP: los dos viven en el tramo navegador. Ahora hay dos tests que fijan lo que sí es comprobable —que el evento sea `ShouldBroadcastNow` y que ambos componentes escuchen el nombre con punto—, pero la verificación de la cadena entera se hace abriendo el navegador.
 
-### Fase 5 — Ventas: POS, venta atómica y anulación (2026-08-16)
+---
+
+## Fase 5 — Ventas: POS, venta atómica y anulación (2026-08-16)
 
 **`App\Support\RegistroDeVenta`** concentra las dos operaciones que mueven dinero e inventario a la vez.
 
@@ -3798,7 +3773,9 @@ El panel no se movía y había que recargar. La cadena se verificó tramo a tram
 
 > **Pendiente del plan resuelto:** la rentabilidad por compra ya no usa `unidades.precio_venta` para el ingreso realizado, sino `venta_detalles.precio_unitario − descuento`, que es lo realmente cobrado, y descarta las ventas anuladas. La ganancia potencial sí sigue usando `unidades.precio_venta`: lo que queda en stock no se ha vendido, así que su precio de lista es la única estimación disponible.
 
-### Fase 4 — Inventario: kardex, ajustes y buscador por serial (2026-08-16)
+---
+
+## Fase 4 — Inventario: kardex, ajustes y buscador por serial (2026-08-16)
 
 El inventario está serializado: cada fila de `unidades` es un aparato concreto. El kardex es su historia.
 
@@ -3825,7 +3802,9 @@ El inventario está serializado: cada fila de `unidades` es un aparato concreto.
 
 **El ajuste exige motivo** (`required|min:4`) y permiso `inventario.ajustar`. Un ajuste sin explicación no sirve de auditoría, que es exactamente para lo que existe el kardex. Ajustar al mismo estado se rechaza con un error, no en silencio.
 
-### Módulo de clientes (2026-08-16)
+---
+
+## Módulo de clientes (2026-08-16)
 
 `App\Livewire\Clientes\Index`, calcado del de trabajadores porque el problema es el mismo: una ficha que cuelga 1 a 1 de `personas`.
 
@@ -3839,7 +3818,9 @@ El inventario está serializado: cada fila de `unidades` es un aparato concreto.
 
 > **Ajuste en el menú:** el grupo *Ventas* tenía `'permission' => 'ventas.ver'`, así que quien solo pudiera ver clientes no veía ni la sección. Ahora el permiso lo declara cada hijo y `MenuBuilder` descarta el grupo si se queda sin ítems visibles.
 
-### Cuentas de acceso de los trabajadores (2026-08-16)
+---
+
+## Cuentas de acceso de los trabajadores (2026-08-16)
 
 Desde el listado de trabajadores se crea la cuenta de acceso de quien todavía no la tiene, y se reinicia la contraseña de quien ya la tiene. La lógica vive en **`App\Support\CuentaDeTrabajador`** (mismo patrón que `GeneradorCodigoTrabajador`), no en el componente.
 
@@ -3866,7 +3847,9 @@ Notas de diseño:
 - **No puedes darte de baja a ti mismo.** Desactivar la propia cuenta cerraría la sesión en el acto (el middleware `active` expulsa a las cuentas inactivas) y dejaría al administrador fuera a mitad de la operación. Mismo criterio que las salvaguardas del módulo de Usuarios.
 - El modal de baja lo advierte antes de confirmar.
 
-### Inicio de sesión con usuario o correo (2026-08-16)
+---
+
+## Inicio de sesión con usuario o correo (2026-08-16)
 
 `FortifyServiceProvider::registerAuthentication()` instala un `Fortify::authenticateUsing()` propio. Fortify busca por una sola columna (`config/fortify.php`: `'username' => 'email'`), pero a los trabajadores se les entrega un nombre de usuario tipo `jperezlopez` y un correo que puede ser interno: pedirles memorizar el correo no tenía sentido.
 
@@ -3879,24 +3862,9 @@ Notas de diseño:
 
 **Listado sin scroll horizontal (2026-08-16).** La tabla pasó de siete columnas a cinco: el código va bajo el nombre del trabajador y la fecha de ingreso junto al cargo. Queda **Trabajador · Cargo e ingreso · Cuenta · Estado · Acciones**. Se aplica `table-layout: fixed` con anchos por columna (28/22/18/16/16 %) — sin eso los porcentajes no mandan y `text-truncate` no tiene contra qué recortar. Por debajo de 992 px vuelve a `table-layout: auto` y, si hace falta, `.table-responsive` hace su trabajo.
 
-### Catálogo: categorías y productos
+---
 
-**`App\Livewire\Categorias\Index`** — árbol de categorías (padre/hijo por `padre_id`, sin `kalnoy/nestedset`: con el volumen de un catálogo alcanza un `groupBy` en memoria).
-
-- **Reordenar arrastrando (2026-08-16).** Cada fila lleva su id, el de su padre y su profundidad; el asa de arrastre es lo único `draggable`, así los botones y la selección de texto siguen funcionando. Al soltar, la franja de la fila de destino decide el resultado: 20 % superior → hermana antes, 60 % central → subcategoría, 20 % inferior → hermana después. `moverCategoria(id, padreId, indice)` reescribe `padre_id` y las `posicion` correlativas de todos los hermanos en una transacción, y rechaza mover una categoría dentro de sí misma o de una descendiente (misma regla que el selector del formulario).
-- Implementado con la API nativa de HTML5 (sin SortableJS: el árbol anidado requería lógica propia de zonas de todos modos). Los listeners van **por delegación en `document`**, porque Livewire reemplaza el `<tbody>` en cada actualización y unos listeners atados a las filas se perderían.
-- El arrastre se desactiva mientras hay búsqueda activa: ahí la tabla es una lista plana sin jerarquía y no existe un «antes/después».
-
-**`App\Livewire\Productos\Index`** — catálogo con filtros, paginación y modal de alta/edición.
-
-- **Contexto de categoría (2026-08-16).** Al entrar desde una categoría (viaja por sesión, nunca en la URL), el encabezado muestra su ruta de ancestros y su nombre en lugar de un genérico «Productos», y los KPIs pasan a ser los de esa rama — dejarlos globales contradiría a la tabla de debajo.
-- **Se incluyen las categorías hijas.** El filtro es por la rama completa (`[$categoria->id, ...$categoria->descendientesIds()]`); si no, un padre con todo repartido entre subcategorías se vería vacío. Aparecen además chips de las subcategorías directas con su conteo.
-- **El filtro de marcas se acota a la rama**: solo las que tienen productos ahí (`whereHas('productos')`). Al cambiar de categoría se suelta la marca filtrada si ya no aplica, porque su opción desaparece del selector y el listado quedaría vacío sin explicación. **El selector del modal NO se acota**: el primer producto de una marca en esa categoría tiene que poder elegirla.
-- **Columna «Disponibles»**: unidades en estado `en_stock` (`withCount` + `scopeDisponibles`). Reservadas, vendidas, dañadas, en garantía y perdidas no cuentan. El color avisa del nivel contra el `stock_minimo` del producto.
-- **Modal con categoría fija.** Al crear desde una categoría no hay selector: un bloque de solo lectura informa dónde se registrará. Al **editar** el selector sigue estando, si no sería imposible reclasificar un producto.
-- **Especificaciones como repetidor** (antes un textarea de líneas `clave: valor`). Una fila por característica, con botones `type="button"` para agregar y quitar: solo tocan el arreglo en memoria, el producto se guarda una sola vez al final. En base siguen siendo el mismo objeto JSON, así que no hizo falta migración; una fila con característica y valor vacío se guarda como bandera (`true`), igual que antes una línea sin dos puntos.
-
-### Inventario: unidades físicas (2026-08-16)
+## Inventario: unidades físicas (2026-08-16)
 
 **`App\Livewire\Unidades\Index`** — cada unidad física con su código interno y su serial. Al entrar desde un producto (viaja por sesión, nunca en la URL):
 
@@ -3911,7 +3879,9 @@ Notas de diseño:
 
 > **Trampa de Blade encontrada aquí:** el `@foreach ($productos as $producto)` del selector de filtros pisaba la variable `$producto` de la ficha y la dejaba apuntando al último producto de la lista — la ficha salía siempre, incluso en el inventario completo. En PHP la variable de un `foreach` sobrevive al bucle. Las variables de iteración del listado se llaman ahora `$opcionProducto`, y hay un test de regresión.
 
-### Compras: registro en un solo paso (2026-08-16)
+---
+
+## Compras: registro en un solo paso (2026-08-16)
 
 El registro manual de unidades sirve para regularizar el stock que ya existe. El flujo normal es el contrario: **la compra genera las unidades sola**.
 
@@ -3939,7 +3909,7 @@ Detalles:
 - Al elegir un producto se agrega como fila del detalle y los filtros se limpian, para buscar el siguiente renglón de la factura desde cero.
 - El pie del modal dice cuántas unidades se van a generar antes de confirmar.
 
-#### Qué se captura en cada producto (2026-08-16)
+### Qué se captura en cada producto (2026-08-16)
 
 | Dato | De dónde sale |
 |---|---|
@@ -3956,7 +3926,7 @@ Detalles:
 
 > **El reparto no pierde centavos.** `RecepcionDeCompra` reparte el **subtotal** de la línea entre las piezas con `ProrrateoDeGastos::repartir()`, en vez de multiplicar el costo unitario redondeado por la cantidad. Con 1000 Bs entre 3 piezas, el promedio guardado es 333,33 pero las unidades reciben 333,34 / 333,33 / 333,33: suman exactamente 1000. Multiplicar el promedio habría dado 999,99 y roto el cuadre contra la factura. Hay un test que lo fija.
 
-#### Registro de seriales desde la compra (2026-08-16)
+### Registro de seriales desde la compra (2026-08-16)
 
 El código interno lo pone el sistema, pero el **serial del fabricante** viene en la caja y se teclea después, con los aparatos delante. Al entrar a una compra aparece el botón **Registrar seriales**, que abre un panel con todas las unidades que generó, agrupadas por producto: código interno fijo a la izquierda, campo de serial a la derecha. No hay que entrar al módulo de inventario ni editar unidad por unidad.
 
@@ -3966,21 +3936,101 @@ El código interno lo pone el sistema, pero el **serial del fabricante** viene e
 - Solo se aceptan ids de unidades de esa compra — el componente es un endpoint invocable.
 - Permiso `unidades.editar`.
 
-### Ajustes hechos sobre la plantilla
+---
 
-- **Menú desde configuración.** El sidebar sale de `config/menu.php` a través de `App\Support\MenuBuilder`: resuelve rutas, oculta lo que el usuario no tiene permitido, marca la rama activa y descarta los títulos de sección que se quedan sin ítems. Los módulos aún no implementados apuntan a `#` en lugar de reventar con `RouteNotFoundException`.
-- **`assets/js/plugins.js` no se carga.** Usa `document.writeln()` con rutas relativas (`assets/libs/…`) que se rompen en cualquier ruta anidada como `/inventario/items`, y descarga toastify desde un CDN externo. Sus librerías las provee Vite.
-- **Los date pickers usan `data-datepicker`, no `data-provider="flatpickr"`.** El `app.js` de Velzon recorre todo elemento con `data-provider` y lee `data-date-format` sin comprobar que exista: lanzaba un `TypeError` que cortaba el resto de su inicialización (entre otras cosas, el botón *back to top* dejaba de funcionar).
-- **El panel de personalización se incluye siempre**, aunque su botón sea condicional (`VELZON_CUSTOMIZER=true`): `app.js` enlaza listeners a sus controles sin comprobar si existen.
-- **Sin Tailwind.** Venía en el esqueleto de Laravel 13; su *preflight* pisa los estilos de Bootstrap. Vite compila SCSS propio que se carga encima de la plantilla.
-- **`bg-opacity-15` no existe en Bootstrap** (solo `10/25/50/75/100`). El chip de la cabecera de personas quedaba con texto blanco sobre fondo blanco; el fondo translúcido ahora se declara en SCSS (`rgba(255,255,255,.16)`).
+## Módulo de personal (personas, trabajadores, cargos) (origen, sin fecha)
 
-### Faltantes de la copia de la plantilla
+Las tres tablas están creadas con sus relaciones. El **CRUD de personas** está implementado con **Livewire 4** en `App\Livewire\Personas\Index`:
 
-Dos archivos que Velzon referencia en su CSS no están en lo que se copió:
+- Listado de 10 por página, con buscador y ordenamiento; todo se actualiza sin recargar.
+- Alta, edición y borrado en modales de Bootstrap, controlados desde el componente.
+- Validación campo por campo mientras se escribe (`wire:model.live` + `validateOnly`), en español.
+- El botón de guardar sigue a la propiedad computada `formularioValido`: permanece deshabilitado hasta que todo el formulario pasa las reglas.
+- Toast de confirmación en cada operación (SweetAlert2, vía `Livewire.on('toast')`).
+- Permisos `personas.ver|crear|editar|eliminar`: los botones se ocultan en la vista **y** cada método del componente vuelve a comprobar el permiso, porque un componente Livewire es un endpoint invocable.
 
-- `assets/fonts/hkgrotesk-*.woff` — la fuente secundaria. Provocaba un 404 por página; se apunta `--vz-font-family-secondary` a Poppins en `resources/scss/app.scss` (revertible: si copias los archivos, borra esa línea).
-- `assets/images/cover-pattern.png` — trama decorativa de la pantalla de login.
-- `assets/images/demo/*.png` — miniaturas de temas del personalizador; se reemplazaron por bloques vacíos.
+### Diseño del listado (rediseño 2026-08)
 
-Si tienes el paquete original de Velzon a mano, copiar esos archivos a `public/assets/` los restaura sin más cambios.
+- **Encabezado (hero):** banda con el degradado del tema, etiqueta tipo chip «Registro de personas», textura decorativa con destellos suaves (pseudo-elementos `::before`/`::after`) y el botón **Nueva persona** como acción principal.
+- **Indicadores:** fila de 4 tarjetas KPI reutilizando el componente `x-stat-card` del dashboard (consistencia visual): Personas registradas, Con correo, Con celular y Cumplen años este mes. Los dos últimos totales se calculan en `render()` con `whereNotNull` y `whereMonth`.
+- **Listado:** barra de herramientas con título + conteo en vivo de resultados y buscador; punto verde sobre el avatar cuando la persona tiene cuenta de acceso (`->with('user')`). Estado vacío con icono en aro degradado del tema.
+- **Modal registrar/editar:** grilla equilibrada (carnet 4 / nombres 8; apellidos y fecha en 4/4/4) y ritmo de secciones más compacto.
+- Los estilos viven en `resources/scss/components/_personas.scss` y se cargan por Vite (`npm run dev` / `npm run build`).
+
+### Validaciones de personas
+
+| Campo | Regla | Mensaje |
+|---|---|---|
+| Carnet | Solo números, entre 7 y 11 dígitos (`^[0-9]{7,11}$`) | «El carnet debe contener entre 7 y 11 números.» |
+| Nombres | Solo letras (acentos, ñ, espacios, guiones y apóstrofes) | «El nombre solo puede contener letras.» |
+| Apellido paterno / materno | Solo letras y al menos uno de los dos obligatorio (`required_without`) | «Debes registrar al menos un apellido.» |
+| Celular | Exactamente 8 números (`^[0-9]{8}$`) | «El celular debe tener 8 números.» |
+
+Detalles:
+- `updated()` revalida **ambos** apellidos al cambiar uno, para que el error de «al menos un apellido» se limpie en el acto (evita errores obsoletos en el bolsón de Livewire).
+- `Persona::iniciales()` cae al apellido materno cuando no hay paterno.
+- Inputs con `maxlength`/`inputmode` (carnet 11, celular 8); los labels de apellidos muestran la pista «(al menos uno)» en lugar del asterisco de obligatorio.
+- `PersonaCrudTest` cubre las reglas nuevas con 4 casos extra; la suite completa pasa 36/36.
+
+El **CRUD de cargos** sigue exactamente la misma estructura (permisos `cargos.*`). Un cargo con trabajadores asignados **no se puede eliminar**: la FK es `restrictOnDelete`, así que el componente cuenta primero y avisa, en lugar de dejar que falle la base de datos.
+
+El **módulo de trabajadores** (`App\Livewire\Trabajadores\Index`) resuelve el alta en dos pasos:
+
+1. **Buscar a la persona** — buscador en vivo sobre `personas` (mínimo 2 caracteres, máximo 8 resultados). Cada coincidencia muestra o el botón *Asignar*, o la etiqueta *Ya es trabajador* con su código y cargo si ya tiene ficha.
+2. **Ficha laboral** — cargo y fecha de ingreso (prellenada con hoy), más la previsualización del código.
+
+Si la búsqueda no encuentra a nadie, ofrece registrar a la persona; lo tecleado se reaprovecha (si son solo dígitos va al carnet, si no al nombre) y en ese caso persona y ficha se crean dentro de una misma transacción, para que un fallo no deje una persona suelta.
+
+**Código correlativo** (`App\Support\GeneradorCodigoTrabajador`): formato `COD-0001`. El correlativo se calcula sobre el máximo existente **incluyendo los archivados**, porque reutilizar el código de alguien dado de baja rompería el histórico. La unicidad la garantiza el índice único de la columna, no el cálculo: ante una colisión por concurrencia se reintenta con el número siguiente.
+
+Al editar un trabajador solo se cambian cargo y fecha de ingreso: el código es su identidad en el histórico y los datos personales se corrigen desde el módulo de personas.
+
+**La baja no borra nada.** Marca `fecha_baja` y un motivo opcional; la ficha sigue consultable desde el filtro «Bajas» del listado, atenuada y con botón *Reincorporar* que conserva el código y la fecha de ingreso original. Si se busca a esa persona desde el alta de trabajadores, en vez de *Asignar* aparece *Reincorporar*: crear una ficha nueva chocaría con el índice único de `persona_id` y le haría perder su código.
+
+---
+
+## Usuarios, roles y permisos (origen, sin fecha)
+
+- **`App\Livewire\Usuarios\Index`** — listado con filtros por rol y estado, alta y edición con asignación de roles (checkboxes), activación/desactivación desde el listado y vínculo opcional con una persona (la relación 1 a 1 de `personas.user_id`). La contraseña se exige al crear; al editar, dejarla vacía significa «no cambiarla».
+- **`App\Livewire\Roles\Index`** — CRUD de roles y matriz de permisos agrupada por módulo (el prefijo antes del punto: `ventas.crear` cae bajo `ventas`), con *marcar/desmarcar todo* por módulo y global.
+
+**Salvaguardas** (todas con test):
+
+| Situación | Qué pasa |
+|---|---|
+| Quitarte a ti mismo el rol `admin` | Bloqueado |
+| Desactivar o eliminar tu propia cuenta | Bloqueado |
+| Eliminar al único administrador | Bloqueado |
+| Renombrar o eliminar el rol `admin` | Bloqueado — `Gate::before` le da acceso total, su matriz es informativa |
+| Eliminar un rol con usuarios asignados | Bloqueado, avisando cuántos |
+| Permisos inventados enviados desde el navegador | Se descartan: solo se sincronizan los que existen en BD |
+
+> **Detalle de spatie:** después de tocar roles o permisos hay que llamar a `PermissionRegistrar::forgetCachedPermissions()`. Sin eso los cambios no surten efecto hasta que expire la caché, y el usuario seguiría sin poder entrar aunque su rol ya tenga el permiso.
+
+> **Detalle de Livewire:** dos formularios distintos enlazados a la misma propiedad (`cargo_id`) no pueden estar a la vez en el DOM — el que está vacío pisa al otro en cada re-render. Por eso el formulario del modal de edición se renderiza solo cuando `paso === 'editar'`.
+
+> **Detalles de Livewire aprendidos aquí** (aplican a los siguientes módulos):
+>
+> - `Paginator::useBootstrapFive()` no basta. Livewire trae su propia vista de paginación y usa la de Tailwind por defecto; hay que declarar `protected string $paginationTheme = 'bootstrap';` en cada componente que pagine.
+> - Esa vista incluye su propio «Mostrando X a Y de Z». Si el pie ya muestra un resumen propio, hay que ocultarla (lo hace `.paginacion-compacta p.small`).
+> - **Nunca uses una capa `position-absolute` como indicador de carga sobre una tabla.** `wire:target` solo acepta *métodos*; si se le pasa una propiedad, la directiva se ignora, la capa se queda con `display:block` y bloquea todos los clics de la tabla. El indicador correcto es un spinner en línea más `wire:loading.class="opacity-50"` sobre la tabla: atenúa sin interceptar el puntero.
+> - Los listados paginados necesitan un desempate estable (`->orderBy('id')` al final); si no, dos filas con el mismo apellido pueden saltar de página y aparecer duplicadas.
+
+---
+
+## Catálogo: categorías y productos (origen, sin fecha)
+
+**`App\Livewire\Categorias\Index`** — árbol de categorías (padre/hijo por `padre_id`, sin `kalnoy/nestedset`: con el volumen de un catálogo alcanza un `groupBy` en memoria).
+
+- **Reordenar arrastrando (2026-08-16).** Cada fila lleva su id, el de su padre y su profundidad; el asa de arrastre es lo único `draggable`, así los botones y la selección de texto siguen funcionando. Al soltar, la franja de la fila de destino decide el resultado: 20 % superior → hermana antes, 60 % central → subcategoría, 20 % inferior → hermana después. `moverCategoria(id, padreId, indice)` reescribe `padre_id` y las `posicion` correlativas de todos los hermanos en una transacción, y rechaza mover una categoría dentro de sí misma o de una descendiente (misma regla que el selector del formulario).
+- Implementado con la API nativa de HTML5 (sin SortableJS: el árbol anidado requería lógica propia de zonas de todos modos). Los listeners van **por delegación en `document`**, porque Livewire reemplaza el `<tbody>` en cada actualización y unos listeners atados a las filas se perderían.
+- El arrastre se desactiva mientras hay búsqueda activa: ahí la tabla es una lista plana sin jerarquía y no existe un «antes/después».
+
+**`App\Livewire\Productos\Index`** — catálogo con filtros, paginación y modal de alta/edición.
+
+- **Contexto de categoría (2026-08-16).** Al entrar desde una categoría (viaja por sesión, nunca en la URL), el encabezado muestra su ruta de ancestros y su nombre en lugar de un genérico «Productos», y los KPIs pasan a ser los de esa rama — dejarlos globales contradiría a la tabla de debajo.
+- **Se incluyen las categorías hijas.** El filtro es por la rama completa (`[$categoria->id, ...$categoria->descendientesIds()]`); si no, un padre con todo repartido entre subcategorías se vería vacío. Aparecen además chips de las subcategorías directas con su conteo.
+- **El filtro de marcas se acota a la rama**: solo las que tienen productos ahí (`whereHas('productos')`). Al cambiar de categoría se suelta la marca filtrada si ya no aplica, porque su opción desaparece del selector y el listado quedaría vacío sin explicación. **El selector del modal NO se acota**: el primer producto de una marca en esa categoría tiene que poder elegirla.
+- **Columna «Disponibles»**: unidades en estado `en_stock` (`withCount` + `scopeDisponibles`). Reservadas, vendidas, dañadas, en garantía y perdidas no cuentan. El color avisa del nivel contra el `stock_minimo` del producto.
+- **Modal con categoría fija.** Al crear desde una categoría no hay selector: un bloque de solo lectura informa dónde se registrará. Al **editar** el selector sigue estando, si no sería imposible reclasificar un producto.
+- **Especificaciones como repetidor** (antes un textarea de líneas `clave: valor`). Una fila por característica, con botones `type="button"` para agregar y quitar: solo tocan el arreglo en memoria, el producto se guarda una sola vez al final. En base siguen siendo el mismo objeto JSON, así que no hizo falta migración; una fila con característica y valor vacío se guarda como bandera (`true`), igual que antes una línea sin dos puntos.
