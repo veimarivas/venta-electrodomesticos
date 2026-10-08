@@ -222,7 +222,10 @@ class Reportes
                     ->where('compras.estado', '=', 'recepcionada')
                     ->whereNull('compras.deleted_at');
             })
-            ->selectRaw('coalesce(sum(distinct compras.total), 0) as invertido')
+            // Sin `distinct`: con un solo join a compras hay una fila por
+            // compra, y `sum(distinct …)` contaba una sola vez dos compras
+            // del mismo importe (dos pedidos de 5.000 Bs sumaban 5.000).
+            ->selectRaw('coalesce(sum(compras.total), 0) as invertido')
             ->selectRaw('count(distinct compras.id) as compras')
             ->groupBy('proveedores.id', 'proveedores.nombre')
             ->orderByDesc('invertido')

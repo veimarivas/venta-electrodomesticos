@@ -371,6 +371,27 @@ class ApiV1Test extends TestCase
         $this->getJson('/api/v1/reportes/proveedores')->assertOk();
     }
 
+    public function test_la_rentabilidad_por_proveedor_suma_compras_del_mismo_importe(): void
+    {
+        // Dos pedidos de 5.000 al mismo proveedor son 10.000 invertidos. Con
+        // `sum(distinct total)` se contaban una sola vez.
+        $compra = Compra::factory()->recepcionada()->create(['total' => 5000]);
+        Compra::factory()->recepcionada()->create([
+            'total' => 5000,
+            'proveedor_id' => $compra->proveedor_id,
+        ]);
+
+        Sanctum::actingAs($this->admin());
+
+        $fila = collect($this->getJson('/api/v1/reportes/proveedores')
+            ->assertOk()
+            ->json('proveedores'))
+            ->firstWhere('id', $compra->proveedor_id);
+
+        $this->assertSame(2, $fila['compras']);
+        $this->assertEquals(10000, $fila['invertido']);
+    }
+
     public function test_la_rentabilidad_de_una_compra_trae_sus_totales(): void
     {
         $compra = Compra::factory()->create(['total' => 1000]);
