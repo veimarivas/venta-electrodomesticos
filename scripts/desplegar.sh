@@ -17,18 +17,61 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
-RAIZ="$(pwd)"
+# El paso 2 hace `git pull`, que puede reescribir este mismo archivo mientras
+# bash lo va leyendo. Se ejecuta desde una copia temporal para que el pull no
+# cambie el script a medio camino.
+if [[ -z "${DESPLIEGUE_RAIZ:-}" ]]; then
+    DESPLIEGUE_RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
+    copia="$(mktemp)"
+    cp "$0" "$copia"
+    DESPLIEGUE_RAIZ="$DESPLIEGUE_RAIZ" exec bash "$copia" "$@"
+fi
+
+RAIZ="$DESPLIEGUE_RAIZ"
+cd "$RAIZ"
 USUARIO_WEB="${USUARIO_WEB:-www-data}"
 
 paso() { printf '\n\033[1;34m== %s\033[0m\n' "$1"; }
 aviso() { printf '\033[1;33mAVISO:\033[0m %s\n' "$1"; }
 
+# Ejecutado como root, cada `php artisan` puede crear el log del día con dueño
+# root, y entonces la web (PHP-FPM) ya no puede escribirlo: la página muestra
+# «Permission denied». Por eso los permisos se dejan bien al empezar y al
+# terminar —también si el script falla a medias—.
+arreglar_permisos() {
+    if [[ "$(id -u)" == "0" ]] && id "$USUARIO_WEB" >/dev/null 2>&1; then
+        chown -R "$USUARIO_WEB":"$USUARIO_WEB" "$RAIZ/storage" "$RAIZ/bootstrap/cache"
+        chmod -R ug+rwX "$RAIZ/storage" "$RAIZ/bootstrap/cache"
+    fi
+}
+trap arreglar_permisos EXIT
+
 paso "Proyecto: $RAIZ"
 git log -1 --oneline
+arreglar_permisos
+
+# Una caché de paquetes de un `composer install` con dependencias de
+# desarrollo hace que artisan busque paquetes que aquí no están
+# (`Class "Laravel\Pail\PailServiceProvider" not found`). Se borra; composer la
+# vuelve a generar en el paso 2.
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
 
 # ---------------------------------------------------------------------------
 paso "1/5 Copia de seguridad de la base"
+# Una ruta de Windows en DB_DUMP_BINARY_PATH (copiada del .env de desarrollo)
+# hace fallar la copia con «C:/xampp/mysql/bin/mariadb-dump: not found».
+RUTA_DUMP="$(grep -E '^DB_DUMP_BINARY_PATH=' .env | cut -d= -f2- | tr -d '"' || true)"
+if [[ "$RUTA_DUMP" == *:* || "$RUTA_DUMP" == *\\* ]]; then
+    echo "DB_DUMP_BINARY_PATH en .env es una ruta de Windows: $RUTA_DUMP"
+    echo "En el servidor debe ser la carpeta de mariadb-dump/mysqldump, por ejemplo:"
+    echo "  DB_DUMP_BINARY_PATH=$(dirname "$(command -v mariadb-dump || command -v mysqldump || echo /usr/bin/x)")"
+    echo "Corrígelo, ejecuta 'php artisan config:clear' y vuelve a lanzar el script."
+    exit 1
+fi
+
+# Composer primero, por si vendor/ quedó a medias: artisan no arranca sin él.
+composer install --no-dev --optimize-autoloader --no-interaction --quiet
+
 # Si algo sale mal, esta es la copia a la que se vuelve.
 if ! php artisan backup:run --only-db; then
     if [[ "${SALTAR_COPIA:-0}" == "1" ]]; then
@@ -55,7 +98,7 @@ php artisan down --render=errors::503 --retry=15
 
 # Si algo falla dentro del corte, se avisa y se levanta el sitio: una tienda
 # caída es peor que un despliegue a medio revisar.
-trap 'aviso "falló un paso con el sitio en mantenimiento; se levanta igual. Revisa el error de arriba."; php artisan up' ERR
+trap 'aviso "falló un paso con el sitio en mantenimiento; se levanta igual. Revisa el error de arriba."; arreglar_permisos; php artisan up' ERR
 
 php artisan migrate --force
 php artisan optimize:clear
@@ -64,10 +107,8 @@ php artisan route:cache
 php artisan view:cache
 php artisan storage:link >/dev/null 2>&1 || true
 
-# Los permisos, si se despliega como root: PHP-FPM tiene que poder escribir.
-if [[ "$(id -u)" == "0" ]] && id "$USUARIO_WEB" >/dev/null 2>&1; then
-    chown -R "$USUARIO_WEB":"$USUARIO_WEB" storage bootstrap/cache
-fi
+# Antes de abrir: PHP-FPM tiene que poder escribir logs y cachés.
+arreglar_permisos
 
 php artisan up
 trap - ERR
