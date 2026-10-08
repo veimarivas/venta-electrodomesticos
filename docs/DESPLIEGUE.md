@@ -87,6 +87,18 @@ nueva responde **404 aunque su archivo ya esté en el servidor**.
 
 El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 
+> **Todo esto lo hace un solo script**, en el orden de abajo:
+>
+> ```bash
+> cd /var/www/electro_hogar && bash scripts/desplegar.sh
+> ```
+>
+> Copia de la base → `git pull` + `composer` + `npm` con el sitio en pie →
+> mantenimiento solo para migrar y rehacer cachés → reinicio de la cola y de
+> los servicios `ventas-*` (avisa si no existen) → comprobación de `/up` y de
+> `/api/v1/version`. Si un paso falla dentro del corte, levanta el sitio igual
+> y avisa. Los pasos a mano siguen abajo por si hace falta hacerlos sueltos.
+
 > **Lo lento va ANTES de bajar el sitio.** `composer install` y `npm ci` tardan
 > minutos y son justo lo que puede fallar —red, disco, una versión de Node—. Si
 > el sitio ya está en mantenimiento cuando revientan, la tienda se queda caída
