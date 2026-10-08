@@ -6,7 +6,7 @@
 .reparaciones-modulo {
 
     .reparaciones-hero {
-        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -63,25 +63,27 @@
         &:hover { transform: translateY(-1px); }
     }
 
-    .reparaciones-encabezado { border-radius: 1rem; }
+    .reparaciones-encabezado { border-radius: var(--radio-xl); }
 
     .reparaciones-kpis {
         .card {
-            border-radius: 1rem;
-            border-color: var(--vz-border-color);
+            border-radius: var(--radio-lg);
+            border-color: var(--marca-linea);
+            box-shadow: var(--sombra-card);
         }
     }
 
     .reparaciones-listado {
         overflow: hidden;
-        border-radius: 1rem;
-        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
+        border-radius: var(--radio-lg);
+        border: 1px solid var(--marca-linea);
+        box-shadow: var(--sombra-card) !important;
     }
 
     .reparaciones-toolbar {
         padding-inline: 1.5rem;
-        border-bottom: 1px solid var(--vz-border-color);
-        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+        border-bottom: 1px solid var(--marca-linea);
+        .card-title { color: var(--marca-tinta); font-weight: 650; }
     }
 
     .reparaciones-busqueda {
@@ -101,22 +103,25 @@
 
         thead th {
             letter-spacing: 0.04em;
-            font-weight: 600;
-            background-color: var(--vz-light);
-            border-bottom: 0;
+            font-weight: 650;
+            font-size: .7rem;
+            color: var(--marca-apagado);
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
             white-space: nowrap;
+            text-transform: uppercase;
         }
 
         tbody td {
-            padding-top: 0.85rem;
-            padding-bottom: 0.85rem;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
         }
 
         tbody tr {
-            transition: background-color .16s ease-out, box-shadow .16s ease-out;
+            transition: background-color .18s ease-out, box-shadow .18s ease-out;
             &:hover {
-                box-shadow: inset 2px 0 0 var(--vz-primary);
-                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+                box-shadow: inset 3px 0 0 var(--marca-azul);
+                background-color: rgba(37, 73, 112, .035);
             }
         }
 
@@ -146,45 +151,45 @@
     }
 
     .rep-estado-recibida {
-        color: #0ea5e9;
-        background: rgba(14, 165, 233, .12);
-        .rep-estado-dot { background: #0ea5e9; }
+        color: var(--estado-info);
+        background: var(--estado-info-suave);
+        .rep-estado-dot { background: var(--estado-info); }
     }
 
     .rep-estado-en-reparacion {
-        color: #6366f1;
-        background: rgba(99, 102, 241, .12);
-        .rep-estado-dot { background: #6366f1; }
+        color: var(--marca-azul-texto);
+        background: color-mix(in srgb, var(--marca-azul-texto) 12%, transparent);
+        .rep-estado-dot { background: var(--marca-azul-texto); }
     }
 
     .rep-estado-esperando {
-        color: #f59e0b;
-        background: rgba(245, 158, 11, .12);
-        .rep-estado-dot { background: #f59e0b; }
+        color: var(--estado-alerta);
+        background: var(--estado-alerta-suave);
+        .rep-estado-dot { background: var(--estado-alerta); }
     }
 
     .rep-estado-lista {
-        color: #10b981;
-        background: rgba(16, 185, 129, .12);
-        .rep-estado-dot { background: #10b981; }
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        .rep-estado-dot { background: var(--estado-ok); }
     }
 
     .rep-estado-entregada {
-        color: #059669;
-        background: rgba(5, 150, 105, .12);
-        .rep-estado-dot { background: #059669; }
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        .rep-estado-dot { background: var(--estado-ok); }
     }
 
     .rep-estado-irreparable {
-        color: #6b7280;
-        background: rgba(107, 114, 128, .12);
-        .rep-estado-dot { background: #6b7280; }
+        color: var(--marca-apagado);
+        background: color-mix(in srgb, var(--marca-apagado) 12%, transparent);
+        .rep-estado-dot { background: var(--marca-apagado); }
     }
 
     .rep-estado-cancelada {
-        color: #ef4444;
-        background: rgba(239, 68, 68, .12);
-        .rep-estado-dot { background: #ef4444; }
+        color: var(--estado-error);
+        background: var(--estado-error-suave);
+        .rep-estado-dot { background: var(--estado-error); }
     }
 
     // Botones de acciones
@@ -206,18 +211,18 @@
         }
     }
 
-    .btn-accion-info { color: #0ea5e9; border-color: rgba(14, 165, 233, .25); }
-    .btn-accion-info:hover { background: rgba(14, 165, 233, .08); color: #0284c7; }
+    .btn-accion-info { color: var(--estado-info); border-color: color-mix(in srgb, var(--estado-info) 25%, transparent); }
+    .btn-accion-info:hover { background: color-mix(in srgb, var(--estado-info) 8%, transparent); color: color-mix(in srgb, var(--estado-info) 82%, #000); }
 
-    .btn-accion-success { color: #10b981; border-color: rgba(16, 185, 129, .25); }
-    .btn-accion-success:hover { background: rgba(16, 185, 129, .08); color: #059669; }
+    .btn-accion-success { color: var(--estado-ok); border-color: color-mix(in srgb, var(--estado-ok) 25%, transparent); }
+    .btn-accion-success:hover { background: color-mix(in srgb, var(--estado-ok) 8%, transparent); color: color-mix(in srgb, var(--estado-ok) 82%, #000); }
 
-    .btn-accion-warning { color: #f59e0b; border-color: rgba(245, 158, 11, .25); }
-    .btn-accion-warning:hover { background: rgba(245, 158, 11, .08); color: #d97706; }
+    .btn-accion-warning { color: var(--estado-alerta); border-color: color-mix(in srgb, var(--estado-alerta) 25%, transparent); }
+    .btn-accion-warning:hover { background: color-mix(in srgb, var(--estado-alerta) 8%, transparent); color: color-mix(in srgb, var(--estado-alerta) 82%, #000); }
 
-    .btn-accion-secondary { color: #6b7280; border-color: rgba(107, 114, 128, .25); }
-    .btn-accion-secondary:hover { background: rgba(107, 114, 128, .08); color: #4b5563; }
+    .btn-accion-secondary { color: var(--marca-apagado); border-color: color-mix(in srgb, var(--marca-apagado) 25%, transparent); }
+    .btn-accion-secondary:hover { background: color-mix(in srgb, var(--marca-apagado) 8%, transparent); color: color-mix(in srgb, var(--marca-apagado) 75%, #000); }
 
-    .btn-accion-danger { color: #ef4444; border-color: rgba(239, 68, 68, .25); }
-    .btn-accion-danger:hover { background: rgba(239, 68, 68, .08); color: #dc2626; }
+    .btn-accion-danger { color: var(--estado-error); border-color: color-mix(in srgb, var(--estado-error) 25%, transparent); }
+    .btn-accion-danger:hover { background: color-mix(in srgb, var(--estado-error) 8%, transparent); color: color-mix(in srgb, var(--estado-error) 82%, #000); }
 }

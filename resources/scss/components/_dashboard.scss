@@ -18,7 +18,7 @@
     color: #fff;
     background:
         radial-gradient(120% 130% at 100% 0%, rgba(197, 161, 98, .16) 0%, transparent 48%),
-        linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        var(--grad-marca);
     box-shadow: var(--sombra-lg);
 
     // Rejilla sutil de puntos (eco del glow de categorías/marcas).
@@ -858,64 +858,64 @@
 // Dark mode
 [data-bs-theme='dark'] {
     .dash-kpi {
-        border-color: rgba(255, 255, 255, .08);
-        background: #0a182b;
+        border-color: var(--marca-linea);
+        background: var(--marca-superficie);
 
-        &:hover { border-color: transparent; }
+        &:hover { border-color: var(--marca-linea-fuerte); }
     }
 
-    .dash-kpi-label { color: rgba(255, 255, 255, .55); }
-    .dash-kpi-valor { color: #e8ecf1; }
-    .dash-kpi-nota { color: rgba(255, 255, 255, .45); }
+    .dash-kpi-label { color: var(--marca-apagado); }
+    .dash-kpi-valor { color: var(--marca-tinta); }
+    .dash-kpi-nota { color: var(--marca-apagado); }
 
     .dash-card {
-        border-color: rgba(255, 255, 255, .08);
-        background: #0a182b;
+        border-color: var(--marca-linea);
+        background: var(--marca-superficie);
 
-        .card-header { border-bottom-color: rgba(255, 255, 255, .06); }
-        .card-title { color: #e8ecf1; }
+        .card-header { border-bottom-color: var(--marca-linea); }
+        .card-title { color: var(--marca-tinta); }
     }
 
     .dash-ver-todas {
-        border-color: rgba(255, 255, 255, .12);
+        border-color: var(--marca-linea);
         background: transparent;
-        color: rgba(255, 255, 255, .6);
+        color: var(--marca-apagado);
 
         &:hover {
-            border-color: #1baf7a;
-            color: #1baf7a;
+            border-color: var(--estado-ok);
+            color: var(--estado-ok);
         }
     }
 
     .dash-saldo-item {
-        span { color: rgba(255, 255, 255, .5); }
-        strong { color: #e8ecf1; }
+        span { color: var(--marca-apagado); }
+        strong { color: var(--marca-tinta); }
     }
 
-    .dash-alerta { border-bottom-color: rgba(255, 255, 255, .06); }
-    .dash-alerta-nombre { color: #e8ecf1; }
-    .dash-alerta-marca { color: rgba(255, 255, 255, .4); }
+    .dash-alerta { border-bottom-color: var(--marca-linea); }
+    .dash-alerta-nombre { color: var(--marca-tinta); }
+    .dash-alerta-marca { color: var(--marca-apagado); }
 
     .dash-ventas-lista .dash-venta {
-        border-bottom-color: rgba(255, 255, 255, .06);
+        border-bottom-color: var(--marca-linea);
 
         &:hover { background: rgba(37, 73, 112, .06); }
     }
 
     .dash-ventas-lista .dash-venta.esta-nueva {
-        background: rgba(27, 175, 122, .1);
+        background: var(--estado-ok-suave);
     }
 
-    .dash-venta-codigo { color: #e8ecf1; }
-    .dash-venta-meta { color: rgba(255, 255, 255, .45); }
-    .dash-venta-monto { color: #1baf7a; }
+    .dash-venta-codigo { color: var(--marca-tinta); }
+    .dash-venta-meta { color: var(--marca-apagado); }
+    .dash-venta-monto { color: var(--estado-ok); }
 
-    .dash-venta-pill { color: #6fd7a8; }
+    .dash-venta-pill { color: var(--estado-ok); }
 
-    .dash-tend--sube { color: #6fd7a8; }
-    .dash-tend--baja { color: #f0a1a0; }
+    .dash-tend--sube { color: var(--estado-ok); }
+    .dash-tend--baja { color: var(--estado-error); }
 
-    .dash-top-fila { border-bottom-color: rgba(255, 255, 255, .06); }
+    .dash-top-fila { border-bottom-color: var(--marca-linea); }
 
     .dash-top-enlace {
         &:hover { background: rgba(255, 255, 255, .04); }
@@ -923,20 +923,20 @@
     }
 
     .dash-top-puesto {
-        background: rgba(255, 255, 255, .06);
-        color: rgba(255, 255, 255, .6);
+        background: var(--marca-suave);
+        color: var(--marca-apagado);
     }
 
     .dash-top-nombre,
     .dash-top-ingreso,
-    .dash-top-unidades { color: #e8ecf1; }
+    .dash-top-unidades { color: var(--marca-tinta); }
 
-    .dash-top-unidades em { color: rgba(255, 255, 255, .45); }
+    .dash-top-unidades em { color: var(--marca-apagado); }
 
     .dash-top-pista,
-    .dash-stock-pista { background: rgba(255, 255, 255, .08); }
+    .dash-stock-pista { background: var(--marca-suave); }
 
-    .dash-resumen--card { border-top-color: rgba(255, 255, 255, .08); }
+    .dash-resumen--card { border-top-color: var(--marca-linea); }
 }
 
 // =============================================================================
@@ -1056,15 +1056,15 @@
 // Dropdown de notificaciones.
 .dropdown-menu-lg {
     border: 1px solid var(--marca-linea);
-    border-radius: .75rem;
-    box-shadow: 0 .75rem 2rem rgba(10, 24, 43, .12);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-lg);
     overflow: hidden;
 }
 
 // Header del dropdown de notificaciones.
 .dropdown-head {
-    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757) !important;
-    border-radius: .75rem .75rem 0 0 !important;
+    background: var(--grad-marca) !important;
+    border-radius: var(--radio-lg) var(--radio-lg) 0 0 !important;
 }
 
 // Items de notificación.
@@ -1103,18 +1103,18 @@
 // Dark mode topbar
 [data-bs-theme='dark'] {
     #page-topbar {
-        border-bottom-color: rgba(255, 255, 255, .06);
-        background: color-mix(in srgb, #1a1d21 82%, transparent);
+        border-bottom-color: var(--marca-linea);
+        background: color-mix(in srgb, var(--marca-fondo) 82%, transparent);
         box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
     }
 
     .app-search .form-control {
-        border-color: rgba(255, 255, 255, .08);
+        border-color: var(--marca-linea);
         background: rgba(255, 255, 255, .04);
-        color: #e8ecf1;
+        color: var(--marca-tinta);
 
         &:focus {
-            border-color: #254970;
+            border-color: var(--vz-primary);
             background: rgba(255, 255, 255, .06);
         }
     }
@@ -1133,21 +1133,21 @@
         border-color: rgba(255, 255, 255, .12);
     }
 
-    .topbar-user .user-name-text { color: #e8ecf1; }
+    .topbar-user .user-name-text { color: var(--marca-tinta); }
 
     .dropdown-menu-lg {
-        border-color: rgba(255, 255, 255, .08);
-        background: #0a182b;
+        border-color: var(--marca-linea);
+        background: var(--marca-superficie);
     }
 
     .notification-item {
-        border-bottom-color: rgba(255, 255, 255, .06);
+        border-bottom-color: var(--marca-linea);
 
         &:hover { background: rgba(255, 255, 255, .04); }
     }
 
     .dropdown-header {
-        color: #e8ecf1;
-        border-bottom-color: rgba(255, 255, 255, .06);
+        color: var(--marca-tinta);
+        border-bottom-color: var(--marca-linea);
     }
 }

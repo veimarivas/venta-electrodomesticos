@@ -6,7 +6,7 @@
 
     // HERO
     .personas-hero {
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -58,26 +58,27 @@
     }
 
     .personas-nueva-hero {
-        border-radius: .65rem; font-weight: 600; padding-inline: 1.1rem;
-        background: #c5a162; color: var(--marca-tinta); border: 0;
+        border-radius: var(--radio-md); font-weight: 600; padding-inline: 1.1rem;
+        background: var(--marca-oro); color: var(--marca-tinta); border: 0;
         box-shadow: 0 .6rem 1.6rem rgba(0, 0, 0, .18);
         transition: background .2s, box-shadow .2s, transform .15s;
-        &:hover { background: #b8935a; transform: translateY(-1px); color: var(--marca-tinta); }
+        &:hover { background: color-mix(in srgb, var(--marca-oro) 88%, #000); transform: translateY(-1px); color: var(--marca-tinta); }
     }
 
-    .personas-encabezado { border-radius: .85rem; }
+    .personas-encabezado { border-radius: var(--radio-xl); }
 
     // KPIs
     .personas-kpis {
         .card {
-            border-radius: .75rem; border: 1px solid #dfe6ee;
-            transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
-            &:hover { transform: translateY(-3px); box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09) !important; border-color: transparent; }
+            border-radius: var(--radio-lg); border: 1px solid var(--marca-linea);
+            box-shadow: var(--sombra-card);
+            transition: transform .2s var(--ease-salida), box-shadow .2s var(--ease-salida), border-color .2s var(--ease-salida);
+            &:hover { transform: translateY(-2px); box-shadow: var(--sombra-card-hover) !important; border-color: var(--marca-linea-fuerte); }
         }
     }
 
     // LISTADO
-    .personas-listado { overflow: hidden; border-radius: .85rem; border: 1px solid #e9edf2; }
+    .personas-listado { overflow: hidden; border-radius: var(--radio-lg); border: 1px solid var(--marca-linea); box-shadow: var(--sombra-card) !important; }
 
     .personas-toolbar {
         padding-inline: 1.5rem; border-bottom: 1px solid var(--marca-linea);
@@ -150,8 +151,8 @@
     .modal-persona-content,
     .modal-eliminar-content {
         overflow: hidden;
-        border-radius: .85rem;
-        box-shadow: 0 1.25rem 3.5rem rgba(10, 24, 43, 0.18);
+        border-radius: var(--radio-xl);
+        box-shadow: var(--sombra-xl);
     }
 
     .modal-persona-content {
@@ -175,7 +176,7 @@
         position: relative;
         isolation: isolate;
         overflow: hidden;
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
 
         .modal-title { color: #fff; font-weight: 600; letter-spacing: -.01em; }
         small { color: rgba(255, 255, 255, 0.7) !important; }
@@ -191,7 +192,7 @@
 
     // Icono de cabecera: tile de vidrio
     .modal-persona-icon {
-        color: #254970;
+        color: var(--marca-azul-texto);
         background: rgba(255, 255, 255, .92);
         border: 1px solid rgba(255, 255, 255, .55);
         box-shadow: 0 .4rem 1rem rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .9);
@@ -209,7 +210,7 @@
     // Modal REGISTRO → teal
     .modal-registrar-persona {
         .modal-persona-header {
-            background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+            background: var(--grad-marca);
         }
     }
 
@@ -308,7 +309,7 @@
         flex: 0 0 auto;
         border: 0;
         background: var(--marca-superficie);
-        box-shadow: 0 -1px 0 #edf0f4;
+        box-shadow: 0 -1px 0 var(--marca-linea);
     }
 
     // Pista de estado del formulario
@@ -344,7 +345,7 @@
     }
 
     .modal-eliminar-content {
-        overflow: hidden; border-radius: .85rem;
+        overflow: hidden; border-radius: var(--radio-xl);
         h5 { color: var(--marca-tinta); font-weight: 650; letter-spacing: -.01em; }
         p { font-size: .9rem; }
     }
@@ -375,38 +376,38 @@
 // ========================================================================
 // DARK MODE
 // ========================================================================
-body.dark {
+[data-bs-theme='dark'] {
     .personas-modulo {
-        .personas-listado { background: #192a38; border-color: #1b3757; }
-        .personas-toolbar { border-bottom-color: #1b3757 !important; .card-title { color: #e8ecf1; } }
+        .personas-listado { background: var(--marca-superficie); border-color: var(--marca-linea); }
+        .personas-toolbar { border-bottom-color: var(--marca-linea) !important; .card-title { color: var(--marca-tinta); } }
         .personas-busqueda {
-            border-color: #254970 !important; background: #0e1f36 !important;
-            &:focus { border-color: #254970 !important; background: #162636 !important; }
+            border-color: var(--marca-linea) !important; background: var(--marca-suave) !important;
+            &:focus { border-color: var(--vz-primary) !important; background: var(--marca-superficie) !important; }
         }
-        .search-box .search-icon { color: #5c6b7a; }
+        .search-box .search-icon { color: var(--marca-apagado); }
         .tabla-personas {
-            thead th { background: #0e1f36 !important; color: var(--marca-apagado); border-bottom-color: #1b3757; }
-            tbody tr { &:hover { background: rgba(37, 73, 112,.06); box-shadow: inset 3px 0 0 #254970; } }
-            tbody td { border-bottom-color: #1b3757; color: #d5dde8; }
-            a { color: #8ab4f8; &:hover { color: #aecbfa; } }
+            thead th { background: var(--marca-suave) !important; color: var(--marca-apagado); border-bottom-color: var(--marca-linea); }
+            tbody tr { &:hover { background: rgba(37, 73, 112,.06); box-shadow: inset 3px 0 0 var(--marca-azul); } }
+            tbody td { border-bottom-color: var(--marca-linea); color: var(--marca-tinta); }
+            a { color: var(--vz-link-color); &:hover { color: var(--vz-link-hover-color); } }
         }
-        .col-codigo { background: rgba(255,255,255,.05) !important; color: #d5dde8; border-color: rgba(255,255,255,.08) !important; }
-        .persona-cuenta-dot { border-color: #192a38; }
-        .personas-kpis .card { border-color: #1b3757; background: #0e1f36; &:hover { box-shadow: 0 .75rem 1.75rem rgba(0,0,0,.2); } }
+        .col-codigo { background: rgba(255,255,255,.05) !important; color: var(--marca-tinta); border-color: var(--marca-linea) !important; }
+        .persona-cuenta-dot { border-color: var(--marca-superficie); }
+        .personas-kpis .card { border-color: var(--marca-linea); background: var(--marca-superficie); &:hover { box-shadow: var(--sombra-card-hover); } }
         .personas-empty-icon { background: linear-gradient(135deg, rgba(87, 146, 191,.08), rgba(99,179,237,.08)) !important; box-shadow: inset 0 0 0 1px rgba(87, 146, 191,.15) !important; }
-        .persona-accion-editar, .persona-accion-eliminar { border-color: #1b3757; background: #0e1f36; }
+        .persona-accion-editar, .persona-accion-eliminar { border-color: var(--marca-linea); background: var(--marca-superficie); }
 
         // Dark modals
-        .modal-persona-content, .modal-eliminar-content { background: #192a38; }
-        .modal-persona-body { background: #0e1f36; color: #d5dde8; }
-        .modal-persona-footer { background: #192a38; box-shadow: 0 -1px 0 #1b3757; }
-        .modal-section-title { color: #e8ecf1; i { color: #5792bf; background: rgba(87, 146, 191, .1); } }
-        .form-label { color: #b0bec5; }
-        .form-control, .form-select { background: #0e1f36; border-color: #254970; color: #d5dde8; &:focus { border-color: #254970 !important; background: #162636 !important; } }
-        .input-group-text { background: #162636 !important; border-color: #254970; color: #5792bf; }
-        .modal-cancelar { background: #1b3757 !important; border-color: #2f4a5e !important; color: #b0bec5 !important; &:hover { background: #2f4a5e !important; color: #e8ecf1 !important; } }
-        .modal-pista-guardar { background: #0e1f36; border-color: #254970; color: var(--marca-apagado); }
-        .modal-pista-ok { color: #5792bf; background: rgba(87, 146, 191, .08); border-color: rgba(87, 146, 191, .25); }
-        .modal-eliminar-body { color: #d5dde8; }
+        .modal-persona-content, .modal-eliminar-content { background: var(--marca-superficie); }
+        .modal-persona-body { background: var(--marca-superficie); color: var(--marca-tinta); }
+        .modal-persona-footer { background: var(--marca-superficie); box-shadow: 0 -1px 0 var(--marca-linea); }
+        .modal-section-title { color: var(--marca-tinta); i { color: var(--marca-azul-claro); background: rgba(87, 146, 191, .1); } }
+        .form-label { color: var(--marca-apagado); }
+        .form-control, .form-select { background: var(--marca-superficie); border-color: var(--marca-linea); color: var(--marca-tinta); &:focus { border-color: var(--vz-primary) !important; background: var(--marca-superficie) !important; } }
+        .input-group-text { background: var(--marca-suave) !important; border-color: var(--marca-linea); color: var(--marca-azul-claro); }
+        .modal-cancelar { background: var(--marca-suave) !important; border-color: var(--marca-linea) !important; color: var(--marca-apagado) !important; &:hover { background: var(--marca-linea) !important; color: var(--marca-tinta) !important; } }
+        .modal-pista-guardar { background: var(--marca-suave); border-color: var(--marca-linea); color: var(--marca-apagado); }
+        .modal-pista-ok { color: var(--marca-azul-claro); background: rgba(87, 146, 191, .08); border-color: rgba(87, 146, 191, .25); }
+        .modal-eliminar-body { color: var(--marca-tinta); }
     }
 }

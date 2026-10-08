@@ -9,7 +9,7 @@
     padding: 2rem 1.75rem 1.5rem;
     border-radius: .85rem;
     color: #fff;
-    background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+    background: var(--grad-marca);
 
     &::before {
         content: '';

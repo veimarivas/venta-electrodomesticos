@@ -261,7 +261,7 @@
                                     </form>
                                 @else
                                     <div class="profile-alert profile-alert--warning d-flex align-items-center gap-2 p-3 rounded-3 mb-3"
-                                        style="color: #c98500; background: rgba(201, 133, 0, .06); border: 1px solid rgba(201, 133, 0, .2);">
+                                        style="color: var(--estado-alerta-texto); background: var(--estado-alerta-suave); border: 1px solid color-mix(in srgb, var(--estado-alerta) 35%, transparent);">
                                         <i class="ri-alert-line fs-18"></i>
                                         <span>La verificación en dos pasos no está activada. Te recomendamos activarla para mayor seguridad.</span>
                                     </div>

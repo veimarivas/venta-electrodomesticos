@@ -6,7 +6,7 @@
 
     // ── Hero decorado ────────────────────────────────────────────────────────
     .caja-hero {
-        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -74,8 +74,8 @@
     }
 
     .caja-hero-stat--abierta {
-        background: rgba(16, 185, 129, .15);
-        border-color: rgba(16, 185, 129, .25);
+        background: rgba(27, 175, 122, .15);
+        border-color: rgba(27, 175, 122, .25);
     }
 
     .caja-hero-stat-label {
@@ -94,7 +94,7 @@
         font-variant-numeric: tabular-nums;
     }
 
-    .caja-hero-stat-value--ok { color: #86e0b3; }
+    .caja-hero-stat-value--ok { color: var(--estado-ok); }
 
     .caja-chip {
         display: inline-flex;
@@ -169,11 +169,11 @@
     }
 
     .caja-turno-hero--abierta {
-        background: linear-gradient(112deg, #26375f 0%, #10b981 58%, color-mix(in srgb, #10b981 72%, #06b6d4) 100%);
+        background: linear-gradient(112deg, var(--marca-noche) 0%, var(--estado-ok) 100%);
     }
 
     .caja-turno-hero--cerrada {
-        background: linear-gradient(112deg, #374151 0%, #6b7280 58%, color-mix(in srgb, #6b7280 72%, #9ca3af) 100%);
+        background: linear-gradient(112deg, var(--marca-noche) 0%, var(--marca-azul) 100%);
     }
 
     .caja-turno-estado {
@@ -227,11 +227,11 @@
     }
 
     .caja-nueva-hero--retiro {
-        background: rgba(239, 68, 68, .2);
-        border-color: rgba(239, 68, 68, .35);
+        background: rgba(227, 73, 72, .2);
+        border-color: rgba(227, 73, 72, .35);
 
         &:hover {
-            background: rgba(239, 68, 68, .32);
+            background: rgba(227, 73, 72, .32);
         }
     }
 
@@ -257,13 +257,13 @@
     }
 
     .caja-kpi--ok {
-        background: rgba(16, 185, 129, .12);
-        border-color: rgba(16, 185, 129, .2);
+        background: rgba(27, 175, 122, .12);
+        border-color: rgba(27, 175, 122, .2);
     }
 
     .caja-kpi--mal {
-        background: rgba(239, 68, 68, .12);
-        border-color: rgba(239, 68, 68, .2);
+        background: rgba(227, 73, 72, .12);
+        border-color: rgba(227, 73, 72, .2);
     }
 
     .caja-kpi-icon {
@@ -320,7 +320,7 @@
             flex-shrink: 0;
             font-size: 1rem;
             margin-top: .05rem;
-            color: #fbbf24;
+            color: var(--estado-alerta);
         }
 
         strong { font-weight: 700; }
@@ -522,19 +522,19 @@
     }
 
     .caja-estado--cuadra {
-        color: #10b981;
-        background: rgba(16, 185, 129, .1);
-        border-color: rgba(16, 185, 129, .18);
+        color: var(--estado-ok);
+        background: rgba(27, 175, 122, .1);
+        border-color: rgba(27, 175, 122, .18);
     }
 
     .caja-estado--falta {
-        color: #ef4444;
-        background: rgba(239, 68, 68, .1);
-        border-color: rgba(239, 68, 68, .18);
+        color: var(--estado-error);
+        background: rgba(227, 73, 72, .1);
+        border-color: rgba(227, 73, 72, .18);
     }
 
     .caja-estado--sobra {
-        color: #f59e0b;
+        color: var(--estado-alerta);
         background: rgba(245, 158, 11, .1);
         border-color: rgba(245, 158, 11, .18);
     }
@@ -582,19 +582,19 @@
     }
 
     .caja-modal-header--abrir {
-        background: linear-gradient(135deg, #26375f 0%, #1b3757 50%, #254970 100%);
+        background: var(--grad-marca);
     }
 
     .caja-modal-header--cerrar {
-        background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #6b7280 100%);
+        background: var(--grad-marca);
     }
 
     .caja-modal-header--ingreso {
-        background: linear-gradient(135deg, #065f46 0%, #047857 50%, #10b981 100%);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--estado-ok) 55%, #000) 0%, var(--estado-ok) 100%);
     }
 
     .caja-modal-header--retiro {
-        background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--estado-error) 55%, #000) 0%, var(--estado-error) 100%);
     }
 
     .caja-modal-icon {

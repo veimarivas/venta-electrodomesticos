@@ -336,7 +336,7 @@
                             @php $t = $tendencia($this->comparativoMes['variacion']['ganancia']); @endphp
                             <div class="min-w-0">
                                 <span class="dash-kpi-label">Ganancia del mes</span>
-                                <span class="dash-kpi-valor" style="color: #1baf7a;">Bs {{ number_format($mes['ganancia'], 2, ',', '.') }}</span>
+                                <span class="dash-kpi-valor" style="color: var(--estado-ok);">Bs {{ number_format($mes['ganancia'], 2, ',', '.') }}</span>
                                 <span class="dash-kpi-nota d-flex align-items-center flex-wrap gap-2">
                                     Margen neto
                                     <span class="dash-tend {{ $t['clase'] }}"><i class="{{ $t['icono'] }}"></i>{{ $t['texto'] }}</span>
@@ -436,7 +436,7 @@
                                 @if ($puedeVerCostos)
                                     <div class="dash-saldo-item">
                                         <span>Ganancia del mes</span>
-                                        <strong style="color: #1baf7a;">
+                                        <strong style="color: var(--estado-ok);">
                                             Bs {{ number_format($mes['ganancia'], 2, ',', '.') }}
                                         </strong>
                                     </div>
@@ -485,7 +485,7 @@
                         @if ($puedeVerCostos)
                             <li class="dash-saldo-item">
                                 <span>Ganancia potencial</span>
-                                <strong style="color: #1baf7a;">
+                                <strong style="color: var(--estado-ok);">
                                     Bs {{ number_format($inv['potencial'], 2, ',', '.') }}
                                 </strong>
                             </li>

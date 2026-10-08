@@ -641,7 +641,7 @@
         display: flex;
         align-items: center;
         padding: 1rem 1.25rem;
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
         color: #fff;
     }
 

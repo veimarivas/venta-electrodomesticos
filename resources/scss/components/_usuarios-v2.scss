@@ -1,4 +1,4 @@
-﻿// Usuarios v2: alineado con dashboard y categorías
+// Usuarios v2: alineado con dashboard y categorías
 // Los estilos base los hereda de _personas-v2.scss (clase .personas-modulo)
 
 .usuarios-modulo {
@@ -58,15 +58,15 @@
 
 
 // DARK MODE
-body.dark {
+[data-bs-theme='dark'] {
     .usuarios-modulo {
         .tarjeta-rol {
-            background: #0e1f36; border-color: #254970;
+            background: var(--marca-superficie); border-color: #254970;
             &:hover { border-color: #254970; background: rgba(37, 73, 112, .06); }
             &.seleccionado { border-color: #254970; background: rgba(37, 73, 112, .08); box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); }
             .form-check-input:checked { background-color: #254970; border-color: #254970; }
         }
         .fila-inactiva { background-color: rgba(132, 148, 167, .06); h6 { color: var(--marca-apagado); } }
-        .form-select { background: #0e1f36; border-color: #254970; color: #d5dde8; &:focus { border-color: #254970; box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); } }
+        .form-select { background: var(--marca-superficie); border-color: #254970; color: var(--marca-tinta); &:focus { border-color: #254970; box-shadow: 0 0 0 .2rem rgba(37, 73, 112, .12); } }
     }
 }

@@ -18,9 +18,9 @@ class VitrinaController extends Controller
     {
         $datos = Vitrina::datos();
 
+        // Sin `title`: la propia vitrina trae su cabecera; pasar título aquí
+        // pintaba una segunda cabecera encima.
         return view('backend.catalogo.vitrina', [
-            'title' => 'Vitrina',
-            'breadcrumbs' => ['Inicio' => null, 'Catálogo' => null, 'Vitrina' => null],
             'recomendados' => $datos['recomendados'],
             'categorias' => $datos['categorias'],
             'hayVentas' => $datos['recomendados']->isNotEmpty(),

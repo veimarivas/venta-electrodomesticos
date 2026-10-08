@@ -6,7 +6,7 @@
 .creditos-modulo {
 
     .creditos-hero {
-        background: linear-gradient(112deg, #26375f 0%, var(--vz-primary) 58%, color-mix(in srgb, var(--vz-primary) 72%, var(--vz-info)) 100%);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -55,25 +55,27 @@
         backdrop-filter: blur(6px);
     }
 
-    .creditos-encabezado { border-radius: 1rem; }
+    .creditos-encabezado { border-radius: var(--radio-xl); }
 
     .creditos-kpis {
         .card {
-            border-radius: 1rem;
-            border-color: var(--vz-border-color);
+            border-radius: var(--radio-lg);
+            border-color: var(--marca-linea);
+            box-shadow: var(--sombra-card);
         }
     }
 
     .creditos-listado {
         overflow: hidden;
-        border-radius: 1rem;
-        box-shadow: 0 .75rem 2.25rem rgba(10, 24, 43, .08) !important;
+        border-radius: var(--radio-lg);
+        border: 1px solid var(--marca-linea);
+        box-shadow: var(--sombra-card) !important;
     }
 
     .creditos-toolbar {
         padding-inline: 1.5rem;
-        border-bottom: 1px solid var(--vz-border-color);
-        .card-title { color: var(--vz-heading-color); font-weight: 650; }
+        border-bottom: 1px solid var(--marca-linea);
+        .card-title { color: var(--marca-tinta); font-weight: 650; }
     }
 
     .creditos-busqueda {
@@ -93,22 +95,25 @@
 
         thead th {
             letter-spacing: 0.04em;
-            font-weight: 600;
-            background-color: var(--vz-light);
-            border-bottom: 0;
+            font-weight: 650;
+            font-size: .7rem;
+            color: var(--marca-apagado);
+            background-color: var(--marca-suave);
+            border-bottom: 1px solid var(--marca-linea);
             white-space: nowrap;
+            text-transform: uppercase;
         }
 
         tbody td {
-            padding-top: 0.85rem;
-            padding-bottom: 0.85rem;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
         }
 
         tbody tr {
-            transition: background-color .16s ease-out, box-shadow .16s ease-out;
+            transition: background-color .18s ease-out, box-shadow .18s ease-out;
             &:hover {
-                box-shadow: inset 2px 0 0 var(--vz-primary);
-                background-color: color-mix(in srgb, var(--vz-primary) 4%, white);
+                box-shadow: inset 3px 0 0 var(--marca-azul);
+                background-color: rgba(37, 73, 112, .035);
             }
         }
 
@@ -138,27 +143,27 @@
     }
 
     .credito-estado-al-dia {
-        color: #6366f1;
-        background: rgba(99, 102, 241, .12);
-        .credito-estado-dot { background: #6366f1; }
+        color: var(--estado-info);
+        background: var(--estado-info-suave);
+        .credito-estado-dot { background: var(--estado-info); }
     }
 
     .credito-estado-vencido {
-        color: #ef4444;
-        background: rgba(239, 68, 68, .12);
-        .credito-estado-dot { background: #ef4444; }
+        color: var(--estado-error);
+        background: var(--estado-error-suave);
+        .credito-estado-dot { background: var(--estado-error); }
     }
 
     .credito-estado-pagado {
-        color: #10b981;
-        background: rgba(16, 185, 129, .12);
-        .credito-estado-dot { background: #10b981; }
+        color: var(--estado-ok);
+        background: var(--estado-ok-suave);
+        .credito-estado-dot { background: var(--estado-ok); }
     }
 
     .credito-estado-anulado {
-        color: #6b7280;
-        background: rgba(107, 114, 128, .12);
-        .credito-estado-dot { background: #6b7280; }
+        color: var(--marca-apagado);
+        background: color-mix(in srgb, var(--marca-apagado) 12%, transparent);
+        .credito-estado-dot { background: var(--marca-apagado); }
     }
 
     // Código de venta

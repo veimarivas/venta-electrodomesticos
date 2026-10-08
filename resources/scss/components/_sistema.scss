@@ -61,6 +61,14 @@
     --anillo-foco: 0 0 0 .2rem rgba(37, 73, 112, .26);
     --anillo-foco-oro: 0 0 0 .2rem rgba(197, 161, 98, .32);
 
+    // ---- Degradado de marca -----------------------------------------------
+    // La banda oscura del panel —cabeceras de módulo y cabeceras de modal—
+    // usa SIEMPRE este degradado. Antes cada módulo escribía su propia
+    // versión (unos navy, otros azul, otros pizarra) y por eso las pantallas
+    // parecían productos distintos. Con un token, cambiar la marca es
+    // cambiar una línea y todas las cabeceras se mueven juntas.
+    --grad-marca: linear-gradient(160deg, var(--marca-noche), var(--marca-noche-alta) 55%, var(--marca-azul-hondo));
+
     // ---- Estados (badges, alertas y gráficas) -----------------------------
     // Los valores de color coinciden con `_viz.scss`: un estado se ve igual en
     // una tabla, en una alerta y en una gráfica.

@@ -1,4 +1,4 @@
-﻿// Roles v2: alineado con dashboard y categorías
+// Roles v2: alineado con dashboard y categorías
 // Los estilos base los hereda de _personas-v2.scss (clase .personas-modulo)
 
 .roles-modulo {
@@ -33,7 +33,7 @@
 
         .progress-bar {
             border-radius: 1rem;
-            background: linear-gradient(90deg, #254970, #14b8a6);
+            background: linear-gradient(90deg, #254970, var(--marca-azul-claro));
         }
     }
 
@@ -92,11 +92,11 @@
 
 
 // DARK MODE
-body.dark {
+[data-bs-theme='dark'] {
     .roles-modulo {
-        .tarjeta-rol-permisos { background: #0e1f36; border-color: #1b3757; &:hover { border-color: transparent; } &.rol-protegido { border-color: rgba(227, 73, 72, .2); } .card-footer { border-top-color: #1b3757; } }
-        .barra-permisos { background: #1b3757; .progress-bar { background: linear-gradient(90deg, #254970, #5792bf); } }
-        .modulo-permisos { background: #0e1f36; border-color: #1b3757; &.con-permisos { border-color: rgba(87, 146, 191, .25); box-shadow: inset 3px 0 0 #254970; } h6 { color: #d5dde8; } }
-        .chip-permiso { background: #162636; border-color: #254970; color: var(--marca-apagado); &:hover { border-color: #254970; color: #5792bf; background: rgba(37, 73, 112, .08); } &.activo { background: #254970; border-color: #254970; color: #fff; } }
+        .tarjeta-rol-permisos { background: var(--marca-superficie); border-color: #1b3757; &:hover { border-color: transparent; } &.rol-protegido { border-color: rgba(227, 73, 72, .2); } .card-footer { border-top-color: #1b3757; } }
+        .barra-permisos { background: #1b3757; .progress-bar { background: linear-gradient(90deg, #254970, var(--marca-azul-claro)); } }
+        .modulo-permisos { background: var(--marca-superficie); border-color: #1b3757; &.con-permisos { border-color: rgba(87, 146, 191, .25); box-shadow: inset 3px 0 0 #254970; } h6 { color: var(--marca-tinta); } }
+        .chip-permiso { background: var(--marca-suave); border-color: #254970; color: var(--marca-apagado); &:hover { border-color: #254970; color: var(--marca-azul-claro); background: rgba(37, 73, 112, .08); } &.activo { background: #254970; border-color: #254970; color: #fff; } }
     }
 }

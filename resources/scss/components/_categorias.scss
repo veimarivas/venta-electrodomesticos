@@ -11,7 +11,7 @@
 
     // Banda superior del módulo: gradiente oscuro alineado con el login.
     .categorias-hero {
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -71,42 +71,44 @@
 
     // Acción principal del encabezado: botón ámbar (accent del login).
     .categorias-nueva-hero {
-        border-radius: .65rem;
+        border-radius: var(--radio-md);
         font-weight: 600;
         padding-inline: 1.1rem;
-        background: #c5a162;
+        background: var(--marca-oro);
         color: var(--marca-tinta);
         border: 0;
         box-shadow: 0 .6rem 1.6rem rgba(0, 0, 0, .18);
 
         &:hover {
-            background: #b8935a;
+            background: color-mix(in srgb, var(--marca-oro) 88%, #000);
             transform: translateY(-1px);
             color: var(--marca-tinta);
         }
     }
 
-    .categorias-encabezado { border-radius: .85rem; }
+    .categorias-encabezado { border-radius: var(--radio-xl); }
 
     // Indicadores: tarjetas con bordes del login.
     .categorias-kpis {
         .card {
-            border-radius: .75rem;
+            border-radius: var(--radio-lg);
             border: 1px solid var(--marca-linea);
-            transition: transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+            box-shadow: var(--sombra-card);
+            transition: transform .2s var(--ease-salida), box-shadow .2s var(--ease-salida), border-color .2s var(--ease-salida);
 
             &:hover {
-                transform: translateY(-3px);
-                box-shadow: 0 .75rem 1.75rem rgba(10, 24, 43, .09) !important;
-                border-color: transparent;
+                transform: translateY(-2px);
+                box-shadow: var(--sombra-card-hover) !important;
+                border-color: var(--marca-linea-fuerte);
             }
         }
     }
 
     .categorias-listado {
         overflow: hidden;
-        border-radius: .85rem;
+        border-radius: var(--radio-lg);
         border: 1px solid var(--marca-linea);
+        box-shadow: var(--sombra-card) !important;
     }
 
     .categorias-listado .card-body {
@@ -431,7 +433,7 @@
         position: relative;
         isolation: isolate;
         overflow: hidden;
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
 
         .modal-title { color: #fff; font-weight: 600; letter-spacing: -.01em; }
         small { color: rgba(255, 255, 255, 0.7) !important; }

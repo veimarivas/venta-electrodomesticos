@@ -12,9 +12,9 @@ class ProfileController extends Controller
      */
     public function edit(): View
     {
+        // Sin `title`: la cabecera del perfil ya es el encabezado de la
+        // pantalla; pasar título aquí pintaba una segunda cabecera encima.
         return view('backend.profile.edit', [
-            'title' => 'Mi perfil',
-            'breadcrumbs' => ['Inicio' => route('dashboard'), 'Mi perfil' => null],
             'user' => auth()->user(),
         ]);
     }

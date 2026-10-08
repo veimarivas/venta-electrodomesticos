@@ -21,7 +21,7 @@
 
     // Banda superior del módulo.
     .crud-hero {
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
         position: relative;
         overflow: hidden;
         isolation: isolate;
@@ -72,15 +72,15 @@
     }
 
     .crud-nueva-hero {
-        border-radius: .65rem;
+        border-radius: var(--radio-md);
         font-weight: 600;
         padding-inline: 1.1rem;
-        background: #c5a162;
+        background: var(--marca-oro);
         color: var(--marca-tinta);
         border: 0;
         box-shadow: 0 .6rem 1.6rem rgba(0, 0, 0, .18);
 
-        &:hover { transform: translateY(-1px); background: #e6950a; }
+        &:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--marca-oro) 88%, #000); }
     }
 
     .crud-encabezado { border-radius: var(--radio-xl); }
@@ -326,7 +326,7 @@
     .modal-crud-header {
         color: #fff;
         border: 0;
-        background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+        background: var(--grad-marca);
 
         .modal-title { color: #fff; font-weight: 600; }
         small { color: rgba(255, 255, 255, 0.72) !important; }
@@ -1484,7 +1484,7 @@
     // -------------------------------------------------------------------------
     .pos-modal-cliente {
         .pos-modal-cliente-header {
-            background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+            background: var(--grad-marca);
             padding: 1.25rem 1.5rem;
         }
 
@@ -1754,7 +1754,7 @@
     // -------------------------------------------------------------------------
     .pos-modal-cliente {
         .modal-crud-header {
-            background: linear-gradient(160deg, #0a182b, #10233c 55%, #1b3757);
+            background: var(--grad-marca);
         }
 
         .pos-modal-cliente-icono {

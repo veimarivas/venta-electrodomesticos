@@ -1289,7 +1289,7 @@
                                         @if ($u?->producto?->marca) · {{ $u->producto->marca->nombre }} @endif
                                     </div>
                                     @if ($descuentoLinea > 0)
-                                        <div class="fs-11" style="color: #c62828;">
+                                        <div class="fs-11" style="color: var(--estado-error);">
                                             Referencia Bs {{ number_format((float) $linea['precio_lista'], 2, ',', '.') }}
                                             · rebaja Bs {{ number_format($descuentoLinea, 2, ',', '.') }}
                                         </div>

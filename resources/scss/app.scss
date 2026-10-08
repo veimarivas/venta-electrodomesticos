@@ -49,6 +49,11 @@
 @use 'components/autorizaciones';
 @use 'components/precios';
 
+// Capa de unificación: va la ÚLTIMA para dar una sola forma a los elementos
+// que cada módulo reimplementó (píldoras de estado, iconos de vacío). Solo
+// toca forma y tamaño, nunca color.
+@use 'components/unificacion';
+
 // Flatpickr no viene incluido en este build de Velzon, se agrega vía npm.
 @use 'flatpickr/dist/flatpickr.min.css';
 
