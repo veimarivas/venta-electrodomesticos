@@ -214,6 +214,76 @@
         </div>
     </div>
 
+    {{-- Verificación asignada: quien registra la compra (el administrador) se
+         la pasa a un vendedor para que verifique la mercadería. El vendedor
+         ve solo esta compra, sin sus costos, desde «Por verificar». --}}
+    @if ($compra->puede_recepcionarse || $compra->verificador)
+        <div class="compras-show-seccion mb-4">
+            <div class="compras-show-seccion-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="compras-show-seccion-icon">
+                        <i class="ri-user-received-2-line"></i>
+                    </div>
+                    <h5 class="mb-0">Verificación de la mercadería</h5>
+                </div>
+                @if ($compra->verificador)
+                    <span class="compras-show-status-badge compras-show-status-info">
+                        <i class="ri-user-line me-1"></i>
+                        Asignada a {{ $compra->verificador->name }}
+                        @if ($compra->asignada_en) · {{ $compra->asignada_en->format('d/m H:i') }} @endif
+                    </span>
+                @endif
+            </div>
+            <div class="compras-show-seccion-body">
+                @if ($compra->puede_recepcionarse)
+                    @can('compras.editar')
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label" for="verificador">¿Quién la verifica?</label>
+                                <select id="verificador" class="form-select @error('verificadorId') is-invalid @enderror"
+                                    wire:model="verificadorId">
+                                    <option value="">— Elige un vendedor —</option>
+                                    @foreach ($this->verificadores as $usuario)
+                                        <option value="{{ $usuario->id }}">{{ $usuario->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('verificadorId')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-primary"
+                                    wire:click="asignarVerificador" wire:loading.attr="disabled">
+                                    <i class="ri-send-plane-line align-bottom me-1"></i>
+                                    {{ $compra->verificador ? 'Cambiar asignación' : 'Asignar' }}
+                                </button>
+                                @if ($compra->verificador)
+                                    <button type="button" class="btn btn-light" wire:click="quitarVerificador">
+                                        Quitar
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Verá solo esta compra —productos y cantidades, sin costos— y le llega un aviso.
+                            @if ($this->verificadores->isEmpty())
+                                <strong>Ninguna cuenta activa tiene el permiso «verificar compras».</strong>
+                            @endif
+                        </small>
+                    @else
+                        <p class="text-muted mb-0">
+                            {{ $compra->verificador ? 'La verifica '.$compra->verificador->name.'.' : 'Sin asignar.' }}
+                        </p>
+                    @endcan
+                @else
+                    <p class="text-muted mb-0">
+                        Estaba asignada a {{ $compra->verificador?->name }}. La compra ya no tiene nada pendiente.
+                    </p>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- Líneas de productos --}}
     <div class="compras-show-seccion mb-4">
         <div class="compras-show-seccion-header">
@@ -313,6 +383,8 @@
                 </p>
 
                 @foreach ($this->lineas as $linea)
+                    {{-- Solo lo que falta recibir: una línea completa no se vuelve a verificar. --}}
+                    @continue (! array_key_exists($linea->id, $seriales) && ! array_key_exists($linea->id, $verificadas))
                     <div class="compras-show-recepcion-linea mb-3">
                         <div class="d-flex align-items-center gap-2 mb-2">
                             <h6 class="mb-0">{{ $linea->producto->nombre }}</h6>
@@ -343,7 +415,7 @@
                                 <input class="form-check-input" type="checkbox"
                                     wire:model="verificadas.{{ $linea->id }}" id="verif-{{ $linea->id }}">
                                 <label class="form-check-label" for="verif-{{ $linea->id }}">
-                                    Confirmo que llegaron las {{ $linea->cantidad }} unidades
+                                    Confirmo que llegaron las unidades que faltaban
                                 </label>
                             </div>
                         @endif

@@ -83,6 +83,23 @@
     }
 }
 
+// ---- Campo con prefijo en error ---------------------------------------------
+// Los formularios ponen el icono o «Bs» en un `input-group-text` pegado al
+// campo, sin borde entre los dos. Al fallar la validación, Bootstrap pinta de
+// rojo solo el campo y el prefijo se quedaba gris: el marco salía partido. El
+// color sale del token de estado, así que vale igual en claro y en oscuro.
+.input-group:has(> .is-invalid) > .input-group-text {
+    border-color: var(--estado-error);
+    color: var(--estado-error);
+}
+
+.input-group.has-validation > .invalid-feedback {
+    // Debajo del grupo entero, a todo el ancho, y partiendo en líneas antes
+    // que salirse en una tablet en vertical.
+    flex-basis: 100%;
+    white-space: normal;
+}
+
 // ---- Cabeceras de módulo ----------------------------------------------------
 // Los clones azules ya se pintaron con `--grad-marca` en sus propios archivos;
 // aquí solo se iguala el brillo decorativo para que el degradado respire igual

@@ -251,6 +251,114 @@
         &.is-invalid { background: var(--estado-error-suave); }
     }
 
+    // ---- Venta por cantidad (productos sin serial) ----------------------------
+    .pos-cantidad {
+        display: inline-flex;
+        align-items: stretch;
+        max-width: 9rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-sm);
+        overflow: hidden;
+        background: var(--marca-superficie);
+    }
+
+    .pos-cantidad-btn {
+        display: grid;
+        place-items: center;
+        width: 2.1rem;
+        padding: 0;
+        border: 0;
+        background: var(--marca-suave);
+        color: var(--marca-azul-texto);
+        font-size: 1rem;
+        transition: background var(--trans-rapida);
+
+        &:hover:not(:disabled) { background: var(--vz-primary-bg-subtle); }
+        &:focus-visible { outline: none; box-shadow: inset var(--anillo-foco); }
+        &:disabled { color: var(--marca-apagado); opacity: .5; }
+    }
+
+    .pos-cantidad-input {
+        width: 3.4rem;
+        min-width: 0;
+        border: 0;
+        border-radius: 0;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--marca-tinta);
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        &:focus { box-shadow: none; }
+    }
+
+    .pos-linea-chip-cantidad {
+        color: var(--marca-azul-texto);
+        background: var(--vz-primary-bg-subtle);
+    }
+
+    // Las cajas concretas que salen, para entregar justo esas.
+    .pos-linea-codigos {
+        display: block;
+        margin-top: .3rem;
+        font-size: .7rem;
+        color: var(--marca-apagado);
+        line-height: 1.5;
+
+        code { font-size: .68rem; }
+    }
+
+    .pos-linea-campo-importe .pos-linea-valor { color: var(--marca-tinta); }
+
+    // ---- Referencias a la vista solo un momento --------------------------------
+    // El cliente mira esta pantalla: el precio de lista y el mínimo no se
+    // pintan fijos. El botón los enseña unos segundos y se borran solos.
+    .pos-referencias {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem;
+        margin-top: .3rem;
+    }
+
+    .pos-referencia-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        padding: .15rem .5rem;
+        border: 1px solid var(--marca-linea);
+        border-radius: var(--radio-pill);
+        background: transparent;
+        color: var(--marca-apagado);
+        font-size: .68rem;
+        font-weight: 600;
+        line-height: 1.4;
+        transition: color var(--trans-rapida), border-color var(--trans-rapida), background var(--trans-rapida);
+
+        &:hover,
+        &[aria-expanded="true"] {
+            color: var(--marca-azul-texto);
+            border-color: color-mix(in srgb, var(--vz-primary) 40%, transparent);
+            background: var(--vz-primary-bg-subtle);
+        }
+
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .pos-referencia-dato {
+        display: inline-block;
+        margin-top: .25rem;
+        padding: .15rem .45rem;
+        border-radius: var(--radio-xs);
+        font-size: .7rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        color: var(--marca-tinta);
+        background: var(--marca-suave);
+    }
+
+    [x-cloak] { display: none !important; }
+
     .pos-linea-acciones {
         display: flex;
         flex-wrap: wrap;

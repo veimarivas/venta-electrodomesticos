@@ -130,6 +130,47 @@ class Venta extends Model
         return $this->hasMany(VentaDetalle::class);
     }
 
+    /**
+     * Las líneas tal como las ve el cliente en el recibo: el precio final de
+     * cada cosa, sin precio de lista ni rebaja (son datos internos, y al
+     * vender por encima de la lista confundirían).
+     *
+     * Las unidades de un producto sin serial vendidas al mismo precio se juntan
+     * («3 × Cable HDMI»); las que llevan serial van una por una, con su S/N y
+     * su garantía, que es lo que se reclama. Necesita `detalles.unidad` y
+     * `detalles.producto` cargados.
+     *
+     * @return \Illuminate\Support\Collection<int, object{nombre: string, cantidad: int, unitario: float, importe: float, codigo: ?string, serial: ?string, garantia_hasta: ?\Carbon\CarbonInterface, devuelto: bool}>
+     */
+    public function lineasDelRecibo(): \Illuminate\Support\Collection
+    {
+        return $this->detalles
+            ->groupBy(fn (VentaDetalle $d): string => $d->unidad?->serial === null
+                && ! ($d->producto?->tiene_serial ?? true)
+                && ! $d->estaDevuelto()
+                    ? 'p'.$d->producto_id.'-'.$d->netoEnCentavos()
+                    : 'd'.$d->id)
+            ->map(function (\Illuminate\Support\Collection $grupo): object {
+                /** @var VentaDetalle $primero */
+                $primero = $grupo->first();
+                $unitario = $primero->netoEnCentavos() / 100;
+
+                return (object) [
+                    'nombre' => $primero->producto?->nombre ?? 'Producto',
+                    'cantidad' => $grupo->count(),
+                    'unitario' => $unitario,
+                    'importe' => $unitario * $grupo->count(),
+                    // En una línea agrupada no se imprime cada código: son
+                    // iguales para el cliente y alargarían el ticket.
+                    'codigo' => $grupo->count() === 1 ? $primero->unidad?->codigo_interno : null,
+                    'serial' => $primero->unidad?->serial,
+                    'garantia_hasta' => $primero->unidad?->garantia_hasta,
+                    'devuelto' => $primero->estaDevuelto(),
+                ];
+            })
+            ->values();
+    }
+
     /** Plan de cuotas, si se vendió a crédito. */
     public function credito(): HasOne
     {

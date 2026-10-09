@@ -2,10 +2,12 @@
 
 namespace App\Support;
 
+use App\Models\Compra;
 use App\Models\PrecioProducto;
 use App\Models\Producto;
 use App\Models\Unidad;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -120,17 +122,114 @@ class PreciosDelDia
 
         return $this->conStock()->map(function (Producto $producto) use ($fecha, $hoy): object {
             $registradoHoy = $hoy->get($producto->id);
+            // Lo que se enseña para decidir: la jornada anterior o el inicial.
+            $anterior = $this->anterior($producto->id, $fecha) ?? (float) $producto->precio_venta;
+            $costo = $this->costoReferencia($producto);
 
             return (object) [
                 'producto' => $producto,
                 'precio_inicial' => (float) $producto->precio_venta,
-                // Lo que se enseña para decidir: la jornada anterior o el inicial.
-                'precio_anterior' => $this->anterior($producto->id, $fecha) ?? (float) $producto->precio_venta,
+                'precio_anterior' => $anterior,
                 'precio_hoy' => $registradoHoy === null ? null : (float) $registradoHoy->precio_venta,
-                'costo' => $this->costoReferencia($producto),
+                'costo' => $costo,
                 'disponibles' => (int) ($producto->disponibles ?? 0),
+                'sugerencia' => $this->sugerencia($producto, $anterior, $costo, $fecha),
             ];
         });
+    }
+
+    /**
+     * Sugerencia de precio por una compra nueva.
+     *
+     * Cuando entra mercadería de un producto con otro costo, al día siguiente
+     * se propone mover el precio en la misma proporción que el costo: así se
+     * mantiene el margen con el que se venía vendiendo. Una licuadora que costó
+     * 800 y se vende a 1100 y vuelve a comprarse a 850 sugiere
+     * 1100 × 850 / 800 = 1168,75 → **1169**.
+     *
+     * Solo es una propuesta: el precio no cambia hasta que alguien la aplica y
+     * confirma la jornada. Mientras tanto se vende al precio vigente.
+     *
+     * Cuenta la compra recibida **desde el día de la última confirmación y
+     * hasta ayer**: lo recibido hoy se sugiere mañana, y lo que ya estaba en
+     * stock cuando se confirmó una jornada anterior no se vuelve a sugerir.
+     * Se compara contra el lote anterior del mismo producto; sin lote anterior
+     * (unidades dadas de alta a mano), contra el costo con el que se confirmó.
+     *
+     * @param  float  $precioBase  El precio vigente antes de hoy.
+     * @param  float  $costoMaximo  Mayor costo en stock: el sugerido tiene que superarlo.
+     */
+    public function sugerencia(Producto $producto, float $precioBase, float $costoMaximo, ?CarbonInterface $fecha = null): ?object
+    {
+        $fecha ??= now();
+
+        $base = PrecioProducto::query()
+            ->where('producto_id', $producto->id)
+            ->whereDate('fecha', '<', $fecha)
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->first();
+
+        // Un lote = las unidades de una línea de compra. Las tandas de una
+        // recepción por partes son el mismo lote: mismo costo.
+        $lotes = Unidad::query()
+            ->where('producto_id', $producto->id)
+            ->whereNotNull('compra_detalle_id')
+            ->where('ingresado_en', '<', $fecha->copy()->startOfDay())
+            ->selectRaw('compra_detalle_id, compra_id, MAX(ingresado_en) as recibido_en, AVG(costo_unitario) as costo')
+            ->groupBy('compra_detalle_id', 'compra_id')
+            ->orderByDesc('recibido_en')
+            ->limit(2)
+            ->get();
+
+        $nuevo = $lotes->first();
+
+        if ($nuevo === null) {
+            return null;
+        }
+
+        $recibidoEn = Carbon::parse($nuevo->recibido_en);
+
+        if ($base !== null && $recibidoEn->lt($base->fecha->copy()->startOfDay())) {
+            return null;
+        }
+
+        $costoNuevo = round((float) $nuevo->costo, 2);
+        $costoAnterior = round((float) ($lotes->get(1)?->costo ?? $base?->costo_referencia ?? 0), 2);
+
+        // Sin costo con el que comparar, o sin margen que conservar, no hay
+        // proporción que aplicar.
+        if ($costoAnterior <= 0 || $precioBase <= $costoAnterior) {
+            return null;
+        }
+
+        $variacion = ($costoNuevo - $costoAnterior) / $costoAnterior;
+
+        // Medio por ciento es ruido del prorrateo, no un cambio de costo.
+        if (abs($variacion) < 0.005) {
+            return null;
+        }
+
+        // Al Bs entero y hacia arriba: el margen nunca queda por debajo del de
+        // antes por un redondeo.
+        $sugerido = (float) ceil(round($precioBase * $costoNuevo / $costoAnterior, 2));
+
+        // Ya está en ese precio (otra tanda del mismo lote) o el sugerido no
+        // cubriría un aparato más caro que sigue en stock: nada que proponer.
+        if (abs($sugerido - $precioBase) < 1 || $sugerido <= $costoMaximo) {
+            return null;
+        }
+
+        return (object) [
+            'tipo' => $sugerido > $precioBase ? 'sube' : 'baja',
+            'precio_sugerido' => $sugerido,
+            'precio_base' => $precioBase,
+            'costo_anterior' => $costoAnterior,
+            'costo_nuevo' => $costoNuevo,
+            'variacion_costo' => round($variacion * 100, 1),
+            'compra_codigo' => Compra::query()->whereKey($nuevo->compra_id)->value('codigo'),
+            'recibida_en' => $recibidoEn->toDateString(),
+        ];
     }
 
     /**

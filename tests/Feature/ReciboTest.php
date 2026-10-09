@@ -57,6 +57,61 @@ class ReciboTest extends TestCase
         );
     }
 
+    /** El HTML del recibo antes de pasar a PDF, para leer qué imprime. */
+    private function htmlDelRecibo(Venta $venta): string
+    {
+        $venta->load(['detalles.unidad', 'detalles.producto', 'cliente.persona', 'user', 'qrCobro']);
+
+        return view('backend.ventas.recibo', [
+            'venta' => $venta,
+            'metodosPago' => Venta::METODOS_PAGO,
+            'tienda' => config('app.nombre_comercial'),
+        ])->render();
+    }
+
+    public function test_el_recibo_lleva_el_nombre_comercial_y_solo_el_total(): void
+    {
+        // Lista 1500, se cobró 1400: el cliente no debe ver la lista ni la rebaja.
+        $venta = $this->vender(1500, 100);
+        $html = $this->htmlDelRecibo($venta);
+
+        $this->assertStringContainsString('Electrogar', $html);
+        $this->assertStringNotContainsString('Electrónica del Hogar', $html);
+        $this->assertStringNotContainsString('Subtotal', $html);
+        $this->assertStringNotContainsString('Descuento', $html);
+        $this->assertStringNotContainsString('1.500,00', $html);
+        // El precio final de la línea y el total.
+        $this->assertStringContainsString('1.400,00', $html);
+        $this->assertStringContainsString('TOTAL', $html);
+    }
+
+    public function test_el_recibo_junta_las_unidades_sin_serial(): void
+    {
+        $producto = Producto::factory()->create(['nombre' => 'Cable HDMI', 'precio_venta' => 50, 'tiene_serial' => false]);
+
+        $unidades = Unidad::factory()->count(3)->create([
+            'producto_id' => $producto->id,
+            'estado' => 'en_stock',
+            'serial' => null,
+            'costo_unitario' => 20,
+            'precio_venta' => 50,
+        ]);
+
+        $venta = app(RegistroDeVenta::class)->registrar(
+            $unidades->map(fn (Unidad $u) => ['unidad_id' => $u->id, 'precio_unitario' => '50', 'descuento' => '0'])->all(),
+            [],
+            $this->admin()->id,
+        );
+
+        $html = $this->htmlDelRecibo($venta);
+
+        // Una línea «3 × Cable HDMI» de 150, con el precio por unidad debajo.
+        $this->assertSame(1, substr_count($html, 'Cable HDMI'));
+        $this->assertMatchesRegularExpression('/3\s*×\s*Cable HDMI/u', $html);
+        $this->assertStringContainsString('150,00', $html);
+        $this->assertStringContainsString('P/U 50,00', $html);
+    }
+
     public function test_descarga_el_recibo_en_pdf(): void
     {
         $venta = $this->vender();

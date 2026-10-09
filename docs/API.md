@@ -43,8 +43,9 @@
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| GET | `/caja` | turno abierto con su esperado, ventas y movimientos | `caja.gestionar o caja.ver` |
+| GET | `/caja` | turno abierto con su esperado, ventas y movimientos; `obligatoria` (¿hace falta turno para vender?) y `puede_configurar` | `caja.gestionar o caja.ver` |
 | POST | `/caja/abrir` | abre el turno con su fondo inicial | `caja.gestionar` |
+| POST | `/caja/obligatoria` | `obligatoria: bool` — exigir o no la caja abierta para vender | `ajustes.editar` |
 | POST | `/caja/cerrar` | cierra el turno con lo contado; guarda la foto del cierre | `caja.gestionar` |
 | GET | `/caja/cierres` | histórico de cierres con su descuadre (no se recalcula) | `caja.ver` |
 | POST | `/caja/movimientos` | ingreso o retiro durante el turno; entra en el esperado | `caja.gestionar` |
@@ -91,6 +92,8 @@
 | GET | `/compras` | listado paginado | `compras.ver` |
 | POST | `/compras` | registra una orden de compra con sus líneas (cuadre al centavo) | `compras.crear` |
 | GET | `/compras/pagos` | historial de pagos a proveedores con filtro de período y total | `compras.ver` |
+| GET | `/compras/verificadores` | usuarios activos que pueden verificar compras (`id`, `nombre`) | `compras.editar` |
+| POST | `/compras/{compra}/asignar` | `verificador_id` (o null para quitar): encarga la verificación y avisa al vendedor | `compras.editar` |
 | GET | `/compras/{compra}` | ficha con el desglose y las líneas con su costo real | `compras.ver` |
 | POST | `/compras/{compra}` | edita una compra **pendiente sin pagos**: proveedor, fecha, factura, total y líneas (`compras.editar`); mismas reglas que el alta (cuadre al centavo) | `compras.editar` |
 | DELETE | `/compras/{compra}` | elimina una compra pendiente sin unidades generadas | `compras.eliminar` |
@@ -101,6 +104,17 @@
 | POST | `/compras/{compra}/recepcionar` | recepciona la compra: genera unidades y congela costos (`compras.crear`) | `compras.crear` |
 | POST | `/compras/{compra}/seriales` | seriales de varias unidades de la compra a la vez | `unidades.editar` |
 | GET | `/compras/{compra}/unidades` | aparatos que entraron con esa compra | `compras.ver` |
+
+## /compras-por-verificar
+
+Lo que ve el vendedor al que se le asignó una compra: **sin costos ni pagos**.
+Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/compras-por-verificar` | `pendientes` y las últimas `verificadas` del usuario | `compras.verificar o compras.crear` |
+| GET | `/compras-por-verificar/{compra}` | ficha: proveedor, factura y `lineas` (`id`, `producto`, `tiene_serial`, `cantidad`, `recibidas`, `faltan`) | `compras.verificar o compras.crear` · 403 si no es suya |
+| POST | `/compras-por-verificar/{compra}/recepcionar` | `lineas[]`: `{linea_id, seriales[]}` o `{linea_id, cantidad_verificada}`; se puede por tandas | `compras.verificar o compras.crear` |
 
 ## /creditos
 
@@ -142,6 +156,15 @@
 | POST | `/entregas/{entrega}/fallar` | no se pudo entregar, con motivo | `entregas.gestionar` |
 | POST | `/entregas/{entrega}/reprogramar` | nueva fecha (o «cuando se pueda») | `entregas.gestionar` |
 
+## /gastos
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/gastos?fecha=` | gastos del día; `meta`: `total`, `por_metodo`, `categorias`, `metodos`, `personas`, `caja_abierta` | `gastos.ver` |
+| POST | `/gastos` | alta (multipart, `comprobante` opcional): concepto, categoría, monto, `metodo_pago` (qr, efectivo, transferencia), `beneficiario_id`, `de_caja` 1/0 | `gastos.crear` |
+| POST | `/gastos/{gasto}` | edición | `gastos.editar` |
+| DELETE | `/gastos/{gasto}` | archiva (borrado lógico) | `gastos.eliminar` |
+
 ## /inventario
 
 | Método | Ruta | Qué hace | Permiso / notas |
@@ -182,11 +205,12 @@
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| GET | `/pos/buscar` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe | `ventas.crear` |
-| POST | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante) | `ventas.crear` |
+| GET | `/pos/buscar` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe. Cada aparato trae `tiene_serial`; uno **sin serial** sale una sola vez por producto con `disponibles` | `ventas.crear` |
+| POST | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante). Sin techo: el precio puede pasar de la lista (se registra lo cobrado, sin descuento); la referencia es el precio del día | `ventas.crear` |
 | POST | `/pos/liberar` | devuelve al stock una unidad reservada del carrito | `ventas.crear` |
 | GET | `/pos/qrs` | QR de cobro **vigentes**, con su imagen (lo que el mostrador puede usar) | `ventas.crear` |
 | POST | `/pos/reservar` | aparta una unidad 20 minutos para que otra caja no la venda | `ventas.crear` |
+| POST | `/pos/reservar-cantidad` | venta por cantidad de un producto **sin serial**: `producto_id`, `cantidad`, `excluir` (las del carrito) → aparta las más antiguas; `meta.mensaje` si no había tantas. 422 si el producto lleva serial | `ventas.crear` |
 | POST | `/pos/solicitudes-descuento` | pide autorización para bajar del mínimo (nunca del costo) | `ventas.crear` |
 | GET | `/pos/solicitudes-descuento/{solicitud}` | estado de la solicitud (el carrito la sondea) | `ventas.crear` |
 
@@ -194,7 +218,7 @@
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| GET | `/precios-del-dia` | productos con stock, precio de ayer y el de hoy si ya está | `caja.gestionar o productos.editar` |
+| GET | `/precios-del-dia` | productos con stock, precio de ayer y el de hoy si ya está; `sugerencia` (o `null`) cuando llegó una compra con otro costo: `tipo` sube/baja, `precio_sugerido`, `costo_anterior`, `costo_nuevo`, `variacion_costo` (%), `compra_codigo`, `recibida_en`. `meta.sugerencias` las cuenta. No se aplica sola | `caja.gestionar o productos.editar` |
 | POST | `/precios-del-dia` | guarda los precios de la jornada (nunca en el costo o por debajo) | `caja.gestionar o productos.editar` |
 | GET | `/precios-del-dia/estado` | ¿se puede cobrar hoy? (precios listos) | `ventas.crear` |
 
@@ -236,6 +260,8 @@
 |---|---|---|---|
 | GET | `/reportes/compras/{compra}/rentabilidad` | rentabilidad de una compra | `reportes.ver` |
 | GET | `/reportes/proveedores` | rentabilidad por proveedor | `reportes.ver` |
+| GET | `/reportes/resumen-diario?fecha=` | ingresos y egresos del día por concepto y medio, neto y efectivo del día | `reportes.seguimiento` |
+| GET | `/reportes/vendedores?desde=&hasta=&vendedor_id=` | por vendedor: ventas, unidades, descuento, sobreprecio, detalle por producto y desvíos de la lista | `reportes.seguimiento` |
 
 ## /roles
 

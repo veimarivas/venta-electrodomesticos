@@ -77,6 +77,23 @@ class CajaController extends Controller
         ]);
     }
 
+    /**
+     * Enciende o apaga «la caja es obligatoria para vender» (`ajustes.editar`).
+     */
+    public function obligatoria(Request $request): JsonResponse
+    {
+        $datos = $request->validate(['obligatoria' => ['required', 'boolean']]);
+
+        app(\App\Support\Ajustes::class)->exigirCaja((bool) $datos['obligatoria'], (int) $request->user()->id);
+
+        return response()->json([
+            'message' => $datos['obligatoria']
+                ? 'Ahora hace falta abrir la caja para vender.'
+                : 'Listo: se puede vender sin abrir caja.',
+            'data' => $this->estado($request->user()),
+        ]);
+    }
+
     public function abrir(Request $request): JsonResponse
     {
         $datos = $request->validate([
@@ -194,6 +211,10 @@ class CajaController extends Controller
         return [
             'puede_gestionar' => $usuario->can('caja.gestionar'),
             'puede_ver' => $puedeVer,
+            // ¿Hace falta el turno abierto para vender? Un interruptor del
+            // administrador; apagado, la app deja cobrar sin caja.
+            'obligatoria' => app(\App\Support\Ajustes::class)->cajaObligatoria(),
+            'puede_configurar' => $usuario->can('ajustes.editar'),
             'abierta' => $abierta === null ? null : [
                 'id' => $abierta->id,
                 'monto_inicial' => (float) $abierta->monto_inicial,

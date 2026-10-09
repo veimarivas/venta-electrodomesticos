@@ -44,11 +44,73 @@ class Show extends Component
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $boucher = null;
 
+    // ---- Verificación asignada ---------------------------------------------
+
+    /** A quién se le asigna verificar la mercadería (id de usuario). */
+    public ?int $verificadorId = null;
+
     public function mount(Compra $compra): void
     {
         abort_unless(auth()->user()?->can('compras.ver') ?? false, 403);
 
-        $this->compra = $compra->load(['proveedor', 'detalles.producto', 'user', 'pagos.user']);
+        $this->compra = $compra->load(['proveedor', 'detalles.producto', 'user', 'pagos.user', 'verificador']);
+        $this->verificadorId = $compra->verificador_id;
+    }
+
+    /**
+     * Quiénes pueden verificar una compra asignada: las cuentas activas con
+     * `compras.verificar` (de fábrica, los vendedores).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \App\Models\User>
+     */
+    #[Computed]
+    public function verificadores(): Collection
+    {
+        return \App\Models\User::permission('compras.verificar')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
+     * Asigna la verificación a un vendedor: verá **solo esta compra**, sin sus
+     * costos, y podrá verificar lo que llegó. Le llega un aviso.
+     */
+    public function asignarVerificador(): void
+    {
+        $this->autorizar('compras.editar');
+
+        if (! $this->compra->puede_recepcionarse) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Esta compra ya no tiene nada que verificar.');
+
+            return;
+        }
+
+        $usuario = $this->verificadores->firstWhere('id', $this->verificadorId);
+
+        if ($usuario === null) {
+            $this->addError('verificadorId', 'Elige a quién se le asigna.');
+
+            return;
+        }
+
+        $this->compra->update(['verificador_id' => $usuario->id, 'asignada_en' => now()]);
+        $this->compra->load('verificador');
+
+        rescue(fn () => $usuario->notify(new \App\Notifications\CompraAsignadaPush($this->compra)), report: false);
+
+        $this->dispatch('toast', tipo: 'success', mensaje: "{$usuario->name} ya puede verificar esta compra.");
+    }
+
+    public function quitarVerificador(): void
+    {
+        $this->autorizar('compras.editar');
+
+        $this->compra->update(['verificador_id' => null, 'asignada_en' => null]);
+        $this->compra->load('verificador');
+        $this->verificadorId = null;
+
+        $this->dispatch('toast', tipo: 'info', mensaje: 'Se quitó la asignación.');
     }
 
     #[Computed]
@@ -61,20 +123,32 @@ class Show extends Component
     {
         $this->autorizar('compras.crear');
 
-        // Carga el estado inicial por línea: los que llevan serial, tantos
-        // campos vacíos como cantidad; los demás, sin marcar.
+        // Carga el estado inicial por línea: los que llevan serial, un campo
+        // vacío por cada aparato que falta recibir; los demás, sin marcar.
         $this->seriales = [];
         $this->verificadas = [];
 
         foreach ($this->lineas as $linea) {
+            $restantes = $this->restantes($linea);
+
+            if ($restantes <= 0) {
+                continue;
+            }
+
             if ($linea->producto->tiene_serial) {
-                $this->seriales[$linea->id] = array_fill(0, $linea->cantidad, '');
+                $this->seriales[$linea->id] = array_fill(0, $restantes, '');
             } else {
                 $this->verificadas[$linea->id] = false;
             }
         }
 
         $this->mostrarRecepcion = true;
+    }
+
+    /** Cuántos aparatos de la línea faltan por recibir. */
+    private function restantes(CompraDetalle $linea): int
+    {
+        return max($linea->cantidad - $linea->unidades()->count(), 0);
     }
 
     /**
@@ -97,7 +171,12 @@ class Show extends Component
             if ($linea->producto->tiene_serial) {
                 $verificacion[$linea->id] = ['seriales' => $this->seriales[$linea->id] ?? []];
             } else {
-                $verificacion[$linea->id] = ['verificada' => (bool) ($this->verificadas[$linea->id] ?? false)];
+                // `RecepcionDeCompra` lee cuántas llegaron (`cantidad_verificada`).
+                // Antes se mandaba `verificada` y el servicio no la leía: una
+                // compra sin serial no se podía recepcionar desde el panel.
+                $verificacion[$linea->id] = [
+                    'cantidad_verificada' => ($this->verificadas[$linea->id] ?? false) ? $this->restantes($linea) : 0,
+                ];
             }
         }
 

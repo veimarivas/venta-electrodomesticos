@@ -168,8 +168,14 @@ class Index extends Component
             'marcaId.exists' => 'La marca elegida ya no existe.',
             'precio.required' => 'El precio de venta es obligatorio.',
             'precio.numeric' => 'El precio debe ser un número.',
-            'descuentoMaximo.lte' => 'El descuento máximo no puede superar al precio de venta.',
-            'descuentoMaximo.numeric' => 'El descuento máximo debe ser un número.',
+            // Con el tope concreto: «no puede superar al precio» obligaba a ir a
+            // mirar el otro campo para saber hasta dónde se podía.
+            'descuentoMaximo.lte' => is_numeric($this->precio)
+                ? 'La rebaja no puede pasar del precio: como mucho Bs '.number_format((float) $this->precio, 2, ',', '.').'.'
+                : 'Escribe primero el precio de venta.',
+            'descuentoMaximo.numeric' => 'La rebaja debe ser un número.',
+            'descuentoMaximo.min' => 'La rebaja no puede ser negativa.',
+            'descuentoMaximo.required' => 'Escribe la rebaja (0 si no se autoriza ninguna).',
             'imagen.image' => 'El archivo debe ser una imagen.',
             'imagen.mimes' => 'La imagen debe ser JPG, PNG o WebP.',
             'imagen.max' => 'La imagen no puede pesar más de 3 MB.',
@@ -223,6 +229,13 @@ class Index extends Component
         // que no está en CAMPOS pero sí tiene regla con comodín.
         if (in_array($campo, self::CAMPOS, true) || str_starts_with($campo, 'especificaciones.')) {
             $this->validateOnly($campo);
+        }
+
+        // La rebaja se mide contra el precio: si el precio cambia, el error de
+        // la rebaja tiene que aparecer o irse en el acto, no al guardar.
+        if ($campo === 'precio' && $this->descuentoMaximo !== '' && $this->descuentoMaximo !== null) {
+            $this->resetValidation('descuentoMaximo');
+            $this->validateOnly('descuentoMaximo');
         }
     }
 

@@ -132,7 +132,13 @@ class ProductoController extends Controller
         ], [
             'slug.regex' => 'El slug solo puede contener minúsculas, números y guiones.',
             'slug.unique' => 'Ya existe un producto con este slug.',
-            'descuento_maximo.lte' => 'La rebaja máxima no puede superar al precio.',
+            // Con el tope concreto, igual que el panel: así la app lo pinta
+            // bajo el campo sin que haya que mirar el precio para entenderlo.
+            'descuento_maximo.lte' => is_numeric($request->input('precio_venta'))
+                ? 'La rebaja no puede pasar del precio: como mucho Bs '
+                    .number_format((float) $request->input('precio_venta'), 2, ',', '.').'.'
+                : 'La rebaja máxima no puede superar al precio.',
+            'descuento_maximo.min' => 'La rebaja no puede ser negativa.',
         ]);
 
         $this->especificacionesNuevas = $datos['especificaciones'] ?? [];

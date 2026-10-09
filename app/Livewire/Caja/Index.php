@@ -241,6 +241,22 @@ class Index extends Component
         $this->dispatch('toast', tipo: 'success', mensaje: "{$etiqueta} de caja registrado.");
     }
 
+    /**
+     * Enciende o apaga «la caja es obligatoria para vender». Solo quien tiene
+     * `ajustes.editar` (de fábrica, el administrador).
+     */
+    public function alternarObligatoria(): void
+    {
+        abort_unless(auth()->user()?->can('ajustes.editar') ?? false, 403);
+
+        $ajustes = app(\App\Support\Ajustes::class);
+        $ajustes->exigirCaja(! $ajustes->cajaObligatoria(), (int) auth()->id());
+
+        $this->dispatch('toast', tipo: 'success', mensaje: $ajustes->cajaObligatoria()
+            ? 'Ahora hace falta abrir la caja para vender.'
+            : 'Listo: se puede vender sin abrir caja.');
+    }
+
     public function render(): View
     {
         $abierta = $this->arqueo()->abierta();
@@ -261,6 +277,7 @@ class Index extends Component
             : null;
 
         return view('livewire.caja.index', [
+            'cajaObligatoria' => app(\App\Support\Ajustes::class)->cajaObligatoria(),
             'abierta' => $abierta,
             'cierres' => $cierres,
             'puedeGestionar' => $this->puedeGestionar(),

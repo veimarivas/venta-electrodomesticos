@@ -68,6 +68,34 @@
         </div>
     </div>
 
+    {{-- ===================== ¿La caja es obligatoria? ===================== --}}
+    {{-- Un interruptor del administrador. Apagado, se vende sin abrir turno y
+         el control del día lo da el resumen diario de ingresos y gastos. --}}
+    @can('ajustes.editar')
+        <div class="caja-ajuste mb-4">
+            <div class="form-check form-switch form-switch-lg mb-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="caja-obligatoria"
+                    wire:click="alternarObligatoria" @checked($cajaObligatoria)>
+                <label class="form-check-label fw-semibold" for="caja-obligatoria">
+                    Exigir caja abierta para vender
+                </label>
+            </div>
+            <small class="text-muted">
+                @if ($cajaObligatoria)
+                    Encendido: el punto de venta no cobra hasta que alguien abre el turno, en el panel y en el teléfono.
+                @else
+                    Apagado: se vende sin abrir turno. La caja sigue disponible para quien quiera usarla, y el cierre del día
+                    se revisa en <a href="{{ route('reportes.resumen-diario') }}">Resumen del día</a>.
+                @endif
+            </small>
+        </div>
+    @elseif (! $cajaObligatoria)
+        <div class="alert alert-info mb-4">
+            <i class="ri-information-line me-1"></i>
+            La caja no es obligatoria: se puede vender sin abrir turno.
+        </div>
+    @endif
+
     {{-- ===================== Estado del turno ===================== --}}
     @if ($abierta)
         <div class="card border-0 shadow-sm caja-turno-card mb-4">

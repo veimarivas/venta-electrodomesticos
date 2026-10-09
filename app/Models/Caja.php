@@ -81,6 +81,12 @@ class Caja extends Model
         return $this->hasMany(MovimientoCaja::class)->latest('id');
     }
 
+    /** Gastos pagados con efectivo del cajón durante el turno. */
+    public function gastos(): HasMany
+    {
+        return $this->hasMany(Gasto::class);
+    }
+
     protected function estaAbierta(): Attribute
     {
         return Attribute::get(fn (): bool => $this->estado === 'abierta');

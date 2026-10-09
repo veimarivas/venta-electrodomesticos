@@ -71,6 +71,7 @@
                                 @php
                                     $vendible = $unidad->esVendible();
                                     $venta = $unidad->ventaDetalle?->venta;
+                                    $porCantidad = $vendible && ! ($unidad->producto?->tiene_serial ?? true);
                                 @endphp
 
                                 {{-- Los no vendibles también se listan: con la etiqueta
@@ -85,10 +86,16 @@
                                             {{ $unidad->producto?->nombre ?? 'Producto' }}
                                         </span>
                                         <span class="d-block text-muted fs-12 text-truncate">
-                                            <code>{{ $unidad->codigo_interno }}</code>
-                                            @if ($unidad->serial) · Serial {{ $unidad->serial }} @endif
+                                            @if ($porCantidad)
+                                                {{-- Sin serial: se vende por cantidad, el aparato concreto lo elige el sistema. --}}
+                                                <span class="pos-resultado-cantidad">
+                                                    <i class="ri-stack-line"></i> {{ $this->disponiblesDe($unidad->producto_id) }} disponibles
+                                                </span>
+                                            @else
+                                                <code>{{ $unidad->codigo_interno }}</code>
+                                                @if ($unidad->serial) · Serial {{ $unidad->serial }} @endif
+                                            @endif
                                             @if ($unidad->producto?->marca) · {{ $unidad->producto->marca->nombre }} @endif
-
                                         </span>
 
                                         @unless ($vendible)
@@ -104,16 +111,12 @@
                                             </span>
                                         @endunless
                                     </span>
+                                    {{-- Solo el precio de referencia: la rebaja autorizada
+                                         no se enseña aquí, la pantalla la ve el cliente. --}}
                                     <span class="text-end flex-shrink-0">
                                         <span class="d-block fw-semibold fs-13">
-                                            Bs {{ number_format((float) $unidad->precio_venta, 2, ',', '.') }}
+                                            Bs {{ number_format($vendible ? $this->referenciaDe($unidad) : (float) $unidad->precio_venta, 2, ',', '.') }}
                                         </span>
-                                        @if ($vendible && (float) ($unidad->producto?->descuento_maximo ?? 0) > 0)
-                                            <span class="d-block text-muted fs-11">
-                                                Rebaja hasta Bs
-                                                {{ number_format((float) $unidad->producto->descuento_maximo, 2, ',', '.') }}
-                                            </span>
-                                        @endif
                                     </span>
                                     <span class="flex-shrink-0" style="color: {{ $vendible ? 'var(--marca-azul)' : 'var(--marca-apagado)' }};">
                                         <i class="{{ $vendible ? 'ri-add-circle-line' : 'ri-forbid-2-line' }} fs-18"></i>
@@ -190,43 +193,57 @@
                         </div>
                     @else
                         <div class="pos-lineas">
-                            @foreach ($carrito as $indice => $linea)
+                            @foreach ($this->tarjetasDelCarrito() as $numero => $tarjeta)
                                 @php
+                                    $indice = $tarjeta['indice'];
+                                    $indicesGrupo = $tarjeta['indices'];
+                                    $linea = $carrito[$indice];
+                                    $porCantidad = (bool) ($linea['sin_serial'] ?? false);
+                                    $cantidad = count($indicesGrupo);
+                                    $productoId = (int) ($linea['producto_id'] ?? 0);
+
                                     $u = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
                                     $lista = (float) $linea['precio_lista'];
                                     $tope = (float) $linea['tope_descuento'];
-                                    $descuentoCentavos = $this->descuentoDeLinea($linea);
-                                    $descuento = $descuentoCentavos / 100;
-                                    $topeCentavos = (int) round($tope * 100);
                                     $minimo = max($lista - $tope, 0);
-                                    $cobrado = $lista - $descuento;
-                                    $costo = (float) ($u?->costo_unitario ?? 0);
-                                    $margen = $cobrado - $costo;
+                                    $precioActual = is_numeric($linea['precio'] ?? '') ? (float) $linea['precio'] : 0.0;
+                                    $importe = $precioActual * $cantidad;
 
-                                    // Autorización: el precio baja del mínimo pero
-                                    // no del costo, así que necesita permiso.
-                                    $precioActual = (float) ($linea['precio'] ?? 0);
+                                    // En una línea por cantidad manda el aparato más caro:
+                                    // ninguno puede salir por debajo de lo que costó.
+                                    $costo = collect($indicesGrupo)
+                                        ->map(fn ($i) => (float) ($this->unidadesDelCarrito[$carrito[$i]['unidad_id']]?->costo_unitario ?? 0))
+                                        ->max() ?? 0.0;
+                                    $margen = $precioActual - $costo;
+
+                                    // Autorización: el precio baja del mínimo pero no del
+                                    // costo, así que necesita permiso. En una línea por
+                                    // cantidad, cada unidad lleva la suya.
                                     $bajoMinimo = ($lista - $precioActual) > $tope;
-                                    $estadoSolicitud = $linea['solicitud_estado'] ?? null;
-                                    $aprobado = ($linea['precio_aprobado'] ?? null) !== null
-                                        ? (float) $linea['precio_aprobado']
-                                        : null;
-                                    $cubierto = $estadoSolicitud === 'aprobada'
-                                        && $aprobado !== null
-                                        && $precioActual >= $aprobado;
-                                    $requiereAutorizacion = $bajoMinimo
-                                        && $precioActual >= $costo
-                                        && ! $cubierto;
+                                    $lineasGrupo = collect($indicesGrupo)->map(fn ($i) => $carrito[$i]);
+                                    $estadoSolicitud = $lineasGrupo->contains(fn ($l) => ($l['solicitud_estado'] ?? null) === 'pendiente')
+                                        ? 'pendiente'
+                                        : ($linea['solicitud_estado'] ?? null);
+                                    $cubierto = $lineasGrupo->every(fn ($l) => ($l['solicitud_estado'] ?? null) === 'aprobada'
+                                        && ($l['precio_aprobado'] ?? null) !== null
+                                        && $precioActual >= (float) $l['precio_aprobado']);
+                                    $aprobado = $cubierto ? (float) $lineasGrupo->min('precio_aprobado') : null;
+                                    $requiereAutorizacion = $bajoMinimo && $precioActual >= $costo && ! $cubierto;
+
+                                    $errorPrecio = collect($indicesGrupo)
+                                        ->map(fn ($i) => $errors->first('carrito.'.$i.'.precio'))
+                                        ->filter()
+                                        ->first();
+                                    $masEnStock = $porCantidad ? $this->disponiblesDe($productoId) : 0;
                                 @endphp
 
-                                <article
-                                    class="pos-linea @error('carrito.'.$indice.'.precio') pos-linea-con-error @enderror"
-                                    wire:key="carrito-{{ $indice }}-{{ $linea['unidad_id'] }}">
+                                <article class="pos-linea @if ($errorPrecio) pos-linea-con-error @endif"
+                                    wire:key="carrito-{{ $porCantidad ? 'p'.$productoId : 'u'.$linea['unidad_id'] }}">
 
                                     {{-- Cabecera: qué aparato es, para comprobarlo
                                          contra el que se tiene en la mano. --}}
                                     <div class="pos-linea-cabecera">
-                                        <span class="pos-linea-num">{{ $indice + 1 }}</span>
+                                        <span class="pos-linea-num">{{ $numero + 1 }}</span>
 
                                         <div class="pos-linea-media">
                                             @if ($u?->producto?->imagen)
@@ -239,14 +256,20 @@
                                         <div class="pos-linea-info min-w-0">
                                             <h6 class="pos-linea-nombre">{{ $u?->producto?->nombre ?? 'Producto' }}</h6>
                                             <div class="pos-linea-chips">
-                                                <span class="pos-linea-chip pos-linea-chip-codigo">
-                                                    <i class="ri-barcode-line"></i>
-                                                    <code>{{ $u?->codigo_interno }}</code>
-                                                </span>
-                                                @if ($u?->serial)
-                                                    <span class="pos-linea-chip">
-                                                        <i class="ri-fingerprint-line"></i> {{ $u->serial }}
+                                                @if ($porCantidad)
+                                                    <span class="pos-linea-chip pos-linea-chip-cantidad">
+                                                        <i class="ri-stack-line"></i> Sin serial · por cantidad
                                                     </span>
+                                                @else
+                                                    <span class="pos-linea-chip pos-linea-chip-codigo">
+                                                        <i class="ri-barcode-line"></i>
+                                                        <code>{{ $u?->codigo_interno }}</code>
+                                                    </span>
+                                                    @if ($u?->serial)
+                                                        <span class="pos-linea-chip">
+                                                            <i class="ri-fingerprint-line"></i> {{ $u->serial }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                                 @if ($u?->producto?->marca)
                                                     <span class="pos-linea-chip">
@@ -268,37 +291,66 @@
                                                         <i class="ri-shield-check-line"></i> Garantía {{ $u->garantia_hasta->format('d/m/Y') }}
                                                     </span>
                                                 @endif
-                                                @if ($u?->ubicacion)
+                                                @if (! $porCantidad && $u?->ubicacion)
                                                     <span class="pos-linea-chip">
                                                         <i class="ri-map-pin-line"></i> {{ $u->ubicacion }}
                                                     </span>
                                                 @endif
                                             </div>
+                                            @if ($porCantidad)
+                                                {{-- Las cajas que hay que entregar: las elige el sistema,
+                                                     las más antiguas del almacén. --}}
+                                                <small class="pos-linea-codigos">
+                                                    Entregar:
+                                                    @foreach ($indicesGrupo as $i)
+                                                        <code>{{ $this->unidadesDelCarrito[$carrito[$i]['unidad_id']]?->codigo_interno }}</code>@if (! $loop->last), @endif
+                                                    @endforeach
+                                                </small>
+                                            @endif
                                         </div>
 
                                         <button type="button" class="pos-linea-quitar"
                                             wire:click="confirmarQuitar({{ $indice }})"
-                                            title="Quitar del carrito"
-                                            aria-label="Quitar {{ $u?->codigo_interno }}">
+                                            title="{{ $porCantidad ? 'Quitar la línea' : 'Quitar del carrito' }}"
+                                            aria-label="Quitar {{ $porCantidad ? $u?->producto?->nombre : $u?->codigo_interno }}">
                                             <i class="ri-close-line"></i>
                                         </button>
                                     </div>
 
-                                    {{-- Cifras de la línea. El costo solo se pinta
-                                         con el ojito encendido: apagado, el dato
-                                         ni siquiera viaja al navegador. --}}
+                                    {{-- Cifras de la línea. El costo solo se pinta con
+                                         el ojito encendido: apagado, el dato ni siquiera
+                                         viaja al navegador. La referencia y el mínimo no
+                                         se ven fijos: el cliente mira esta pantalla. --}}
                                     <div class="pos-linea-cuerpo">
-                                        <div class="pos-linea-campo">
-                                            <span class="pos-linea-campo-label">Referencia</span>
-                                            <span class="pos-linea-valor">Bs {{ number_format($lista, 2, ',', '.') }}</span>
-                                            <small class="pos-linea-nota">
-                                                @if ($tope > 0)
-                                                    Mín. Bs {{ number_format($minimo, 2, ',', '.') }}
-                                                @else
-                                                    Sin descuento
-                                                @endif
-                                            </small>
-                                        </div>
+                                        @if ($porCantidad)
+                                            <div class="pos-linea-campo pos-linea-campo-cantidad">
+                                                <label class="pos-linea-campo-label" for="v-cantidad-{{ $productoId }}">Cantidad</label>
+                                                <div class="pos-cantidad">
+                                                    <button type="button" class="pos-cantidad-btn"
+                                                        wire:click="cambiarCantidad({{ $productoId }}, {{ $cantidad - 1 }})"
+                                                        @disabled($cantidad <= 1)
+                                                        aria-label="Una menos">
+                                                        <i class="ri-subtract-line"></i>
+                                                    </button>
+                                                    <input type="number" min="1" step="1" inputmode="numeric"
+                                                        id="v-cantidad-{{ $productoId }}"
+                                                        class="form-control text-center pos-cantidad-input"
+                                                        value="{{ $cantidad }}"
+                                                        wire:key="cantidad-{{ $productoId }}-{{ $cantidad }}"
+                                                        wire:change="cambiarCantidad({{ $productoId }}, $event.target.value)"
+                                                        aria-label="Cantidad de {{ $u?->producto?->nombre }}">
+                                                    <button type="button" class="pos-cantidad-btn"
+                                                        wire:click="cambiarCantidad({{ $productoId }}, {{ $cantidad + 1 }})"
+                                                        @disabled($masEnStock === 0)
+                                                        aria-label="Una más">
+                                                        <i class="ri-add-line"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="pos-linea-nota">
+                                                    {{ $masEnStock === 0 ? 'No quedan más' : $masEnStock.' más en stock' }}
+                                                </small>
+                                            </div>
+                                        @endif
 
                                         @if ($puedeVerCostos && $mostrarCosto)
                                             <div class="pos-linea-campo pos-linea-campo-costo">
@@ -312,26 +364,62 @@
                                             </div>
                                         @endif
 
-                                        <div class="pos-linea-campo pos-linea-campo-precio">
-                                            <label class="pos-linea-campo-label" for="v-precio-{{ $indice }}">Precio a cobrar</label>
+                                        {{-- Precio pactado. Los botones de referencia enseñan
+                                             el dato unos segundos debajo, sin tocar el precio,
+                                             y se borra solo al salir del campo. --}}
+                                        <div class="pos-linea-campo pos-linea-campo-precio"
+                                            x-data="{ ver: null, reloj: null,
+                                                mostrar(que) { this.ver = que; clearTimeout(this.reloj); this.reloj = setTimeout(() => this.ver = null, 4000) },
+                                                ocultar() { this.ver = null; clearTimeout(this.reloj) } }"
+                                            x-on:click.outside="ocultar()">
+                                            <label class="pos-linea-campo-label" for="v-precio-{{ $indice }}">
+                                                {{ $porCantidad ? 'Precio unitario' : 'Precio a cobrar' }}
+                                            </label>
                                             <div class="pos-linea-input">
                                                 <span class="pos-linea-input-prefijo">Bs</span>
-                                                <input type="number" step="0.01" min="0.01" max="{{ $lista }}"
+                                                <input type="number" step="0.01" min="0.01"
                                                     id="v-precio-{{ $indice }}"
                                                     wire:model.live.debounce.500ms="carrito.{{ $indice }}.precio"
-                                                    class="form-control text-end @error('carrito.'.$indice.'.precio') is-invalid @enderror"
-                                                    aria-label="Precio a cobrar de {{ $u?->codigo_interno }}">
+                                                    x-on:blur="ocultar()"
+                                                    class="form-control text-end @if ($errorPrecio) is-invalid @endif"
+                                                    aria-label="Precio a cobrar de {{ $u?->producto?->nombre }}">
                                             </div>
-                                        </div>
-
-                                        <div class="pos-linea-campo">
-                                            <span class="pos-linea-campo-label">Descuento</span>
-                                            @if ($descuento > 0)
-                                                <span class="pos-descuento-badge">
-                                                    − Bs {{ number_format($descuento, 2, ',', '.') }}
+                                            <div class="pos-referencias">
+                                                <button type="button" class="pos-referencia-btn"
+                                                    x-on:mousedown.prevent
+                                                    x-on:click="mostrar('lista')"
+                                                    x-bind:aria-expanded="ver === 'lista'">
+                                                    <i class="ri-price-tag-3-line"></i> Precio de lista
+                                                </button>
+                                                @if ($tope > 0)
+                                                    <button type="button" class="pos-referencia-btn"
+                                                        x-on:mousedown.prevent
+                                                        x-on:click="mostrar('minimo')"
+                                                        x-bind:aria-expanded="ver === 'minimo'">
+                                                        <i class="ri-arrow-down-circle-line"></i> Rebaja máxima
+                                                    </button>
+                                                @endif
+                                            </div>
+                                            <span class="pos-referencia-dato" x-show="ver === 'lista'" x-transition.opacity x-cloak role="status">
+                                                Referencia: Bs {{ number_format($lista, 2, ',', '.') }}
+                                            </span>
+                                            @if ($tope > 0)
+                                                <span class="pos-referencia-dato" x-show="ver === 'minimo'" x-transition.opacity x-cloak role="status">
+                                                    Mínimo: Bs {{ number_format($minimo, 2, ',', '.') }}
+                                                    (−{{ number_format($tope, 2, ',', '.') }})
                                                 </span>
                                             @else
-                                                <span class="pos-linea-valor pos-linea-valor-tenue">—</span>
+                                                <span class="pos-referencia-dato" x-show="ver === 'minimo'" x-cloak></span>
+                                            @endif
+                                        </div>
+
+                                        <div class="pos-linea-campo pos-linea-campo-importe">
+                                            <span class="pos-linea-campo-label">Importe</span>
+                                            <span class="pos-linea-valor">Bs {{ number_format($importe, 2, ',', '.') }}</span>
+                                            @if ($porCantidad)
+                                                <small class="pos-linea-nota">
+                                                    {{ $cantidad }} × Bs {{ number_format($precioActual, 2, ',', '.') }}
+                                                </small>
                                             @endif
                                         </div>
                                     </div>
@@ -340,7 +428,7 @@
                                     <div class="pos-linea-entrega">
                                         <span class="pos-linea-campo-label"><i class="ri-truck-line"></i> Entrega</span>
                                         <div class="pos-entrega-toggle" role="group"
-                                            aria-label="Tipo de entrega de {{ $u?->codigo_interno }}">
+                                            aria-label="Tipo de entrega de {{ $u?->producto?->nombre }}">
                                             <button type="button"
                                                 class="pos-entrega-opcion @if (($linea['entrega'] ?? 'directa') === 'directa') is-activo @endif"
                                                 wire:click="marcarEntrega({{ $indice }}, 'directa')">
@@ -355,7 +443,7 @@
                                     </div>
 
                                     {{-- Autorización de descuento bajo el mínimo. --}}
-                                    @if ($cubierto)
+                                    @if ($cubierto && $bajoMinimo)
                                         <div class="pos-linea-autorizacion pos-linea-autorizacion-ok">
                                             <i class="ri-shield-check-line"></i>
                                             Autorizado por el administrador hasta
@@ -388,10 +476,8 @@
                                                     Cancelar
                                                 </button>
                                             @else
-                                                <span>
-                                                    Por debajo del mínimo (Bs {{ number_format($minimo, 2, ',', '.') }}):
-                                                    necesita autorización.
-                                                </span>
+                                                {{-- Sin el importe del mínimo: el cliente mira la pantalla. --}}
+                                                <span>Por debajo del mínimo autorizado: necesita autorización.</span>
                                                 @if ($puedeAutorizar)
                                                     {{-- Quien vende y puede autorizar no se
                                                          manda una solicitud a sí mismo. --}}
@@ -413,26 +499,11 @@
                                         </div>
                                     @endif
 
-                                    {{-- Atajos y el error de la línea. --}}
-                                    @if ($descuento > 0 || ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos) || $errors->has('carrito.'.$indice.'.precio'))
+                                    @if ($errorPrecio)
                                         <div class="pos-linea-acciones">
-                                            @if ($descuento > 0)
-                                                <button type="button" class="pos-carrito-accion-desc"
-                                                    wire:click="quitarDescuento({{ $indice }})">
-                                                    <i class="ri-refresh-line"></i> Precio de lista
-                                                </button>
-                                            @endif
-                                            @if ($topeCentavos > 0 && $descuentoCentavos < $topeCentavos)
-                                                <button type="button" class="pos-carrito-accion-desc pos-carrito-accion-max"
-                                                    wire:click="aplicarDescuentoMaximo({{ $indice }})">
-                                                    <i class="ri-price-tag-3-line"></i> Rebaja máxima
-                                                </button>
-                                            @endif
-                                            @error('carrito.'.$indice.'.precio')
-                                                <small class="text-danger fs-11">
-                                                    <i class="ri-error-warning-line align-bottom me-1"></i>{{ $message }}
-                                                </small>
-                                            @enderror
+                                            <small class="text-danger fs-11">
+                                                <i class="ri-error-warning-line align-bottom me-1"></i>{{ $errorPrecio }}
+                                            </small>
                                         </div>
                                     @endif
                                 </article>
@@ -441,8 +512,8 @@
 
                         <div class="pos-carrito-footer">
                             <i class="ri-information-line align-bottom me-1"></i>
-                            La <strong style="color: var(--marca-tinta);">referencia</strong> es el precio de lista del aparato. Lo que se teclea es el
-                            precio pactado con el cliente; la diferencia queda registrada como descuento.
+                            Se teclea el <strong style="color: var(--marca-tinta);">precio pactado</strong> por unidad, también por
+                            encima de la lista. «Precio de lista» y «Rebaja máxima» enseñan el dato unos segundos y no cambian el precio.
                         </div>
                     @endif
                 </div>
@@ -878,17 +949,10 @@
                     @endif
 
                     {{-- ---------- Totales ---------- --}}
+                    {{-- Solo el total: el cliente mira esta pantalla, y el precio de
+                         referencia y la rebaja son datos internos. Cobrar por
+                         encima o por debajo de la lista da igual aquí. --}}
                     <div class="pos-totales">
-                        <div class="pos-total-linea">
-                            <span>Subtotal (precios de referencia)</span>
-                            <strong>Bs {{ number_format($this->subtotalEnCentavos / 100, 2, ',', '.') }}</strong>
-                        </div>
-                        <div class="pos-total-linea">
-                            <span>Descuentos</span>
-                            <strong class="pos-descuento-valor">
-                                − Bs {{ number_format($this->descuentoEnCentavos / 100, 2, ',', '.') }}
-                            </strong>
-                        </div>
                         <div class="pos-total-linea pos-total-final">
                             <span>Total a cobrar</span>
                             <strong>Bs {{ number_format($this->totalEnCentavos / 100, 2, ',', '.') }}</strong>
@@ -921,7 +985,7 @@
                     {{-- Un botón apagado sin explicación deja al cajero
                          adivinando. El primer caso es el que más se olvida:
                          abrir la caja al empezar la jornada. --}}
-                    @if ($carrito !== [] && ! $this->cajaAbierta)
+                    @if ($carrito !== [] && $this->faltaCaja)
                         <div class="pos-aviso pos-aviso--caja mt-3">
                             <i class="ri-lock-2-line"></i>
                             <div>
@@ -1127,10 +1191,6 @@
                                     <span class="pos-modal-exito-dato-valor">{{ $venta->qrCobro->nombre }}</span>
                                 </div>
                             @endif
-                            <div class="pos-modal-exito-dato">
-                                <span class="pos-modal-exito-dato-etiqueta">Descuento</span>
-                                <span class="pos-modal-exito-dato-valor">Bs {{ number_format((float) $venta->descuento, 2, ',', '.') }}</span>
-                            </div>
                             <div class="pos-modal-exito-dato" style="border-bottom: 0;">
                                 <span class="pos-modal-exito-dato-etiqueta pos-modal-exito-total-label">Total cobrado</span>
                                 <span class="pos-modal-exito-dato-valor pos-modal-exito-total-valor">Bs {{ number_format((float) $venta->total, 2, ',', '.') }}</span>
@@ -1188,15 +1248,31 @@
                         <span class="avatar-title rounded-circle fs-1"><i class="ri-close-circle-line"></i></span>
                     </div>
 
-                    <h5 class="mb-2">¿Quitar este aparato?</h5>
+                    @php
+                        $lineaQuitar = $quitarIndice !== null ? ($carrito[$quitarIndice] ?? null) : null;
+                        $cantidadQuitar = ($lineaQuitar['sin_serial'] ?? false)
+                            ? collect($carrito)->filter(fn ($l) => ($l['sin_serial'] ?? false) && (int) $l['producto_id'] === (int) $lineaQuitar['producto_id'])->count()
+                            : 1;
+                    @endphp
+
+                    <h5 class="mb-2">
+                        {{ $cantidadQuitar > 1 ? '¿Quitar los '.$cantidadQuitar.' de esta línea?' : '¿Quitar este aparato?' }}
+                    </h5>
 
                     @if ($this->lineaAQuitar)
                         <div class="pos-modal-aparato mb-3">
-                            <div class="fw-semibold">{{ $this->lineaAQuitar->producto?->nombre ?? 'Producto' }}</div>
-                            <div class="text-muted fs-12">
-                                <code>{{ $this->lineaAQuitar->codigo_interno }}</code>
-                                @if ($this->lineaAQuitar->serial) · S/N {{ $this->lineaAQuitar->serial }} @endif
+                            <div class="fw-semibold">
+                                @if ($cantidadQuitar > 1) {{ $cantidadQuitar }} × @endif
+                                {{ $this->lineaAQuitar->producto?->nombre ?? 'Producto' }}
                             </div>
+                            @if ($cantidadQuitar === 1)
+                                <div class="text-muted fs-12">
+                                    <code>{{ $this->lineaAQuitar->codigo_interno }}</code>
+                                    @if ($this->lineaAQuitar->serial) · S/N {{ $this->lineaAQuitar->serial }} @endif
+                                </div>
+                            @else
+                                <div class="text-muted fs-12">Para llevarse menos, baja la cantidad en vez de quitar la línea.</div>
+                            @endif
                         </div>
                     @endif
 
@@ -1271,32 +1347,35 @@
                 </div>
 
                 <div class="modal-body modal-crud-body p-4">
+                    {{-- Lo que se lleva y a cuánto, sin referencia ni rebaja: el
+                         repaso se hace con el cliente delante. --}}
                     <div class="pos-confirmar-lista">
-                        @foreach ($carrito as $indice => $linea)
+                        @foreach ($this->tarjetasDelCarrito() as $numero => $tarjeta)
                             @php
+                                $linea = $carrito[$tarjeta['indice']];
+                                $cantidadLinea = count($tarjeta['indices']);
                                 $u = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
-                                $descuentoLinea = $this->descuentoDeLinea($linea) / 100;
+                                $unitario = (float) ($linea['precio'] ?? 0);
                             @endphp
                             <div class="pos-confirmar-item" wire:key="confirmar-{{ $linea['unidad_id'] }}">
-                                <span class="pos-carrito-item-num">{{ $indice + 1 }}</span>
+                                <span class="pos-carrito-item-num">{{ $numero + 1 }}</span>
                                 <div class="min-w-0 flex-grow-1">
                                     <div class="fw-semibold text-truncate">
+                                        @if ($cantidadLinea > 1) {{ $cantidadLinea }} × @endif
                                         {{ $u?->producto?->nombre ?? 'Producto' }}
                                     </div>
                                     <div class="text-muted fs-12 text-truncate">
-                                        <code>{{ $u?->codigo_interno }}</code>
-                                        @if ($u?->serial) · S/N {{ $u->serial }} @endif
+                                        @if ($cantidadLinea > 1)
+                                            Bs {{ number_format($unitario, 2, ',', '.') }} c/u
+                                        @else
+                                            <code>{{ $u?->codigo_interno }}</code>
+                                            @if ($u?->serial) · S/N {{ $u->serial }} @endif
+                                        @endif
                                         @if ($u?->producto?->marca) · {{ $u->producto->marca->nombre }} @endif
                                     </div>
-                                    @if ($descuentoLinea > 0)
-                                        <div class="fs-11" style="color: var(--estado-error);">
-                                            Referencia Bs {{ number_format((float) $linea['precio_lista'], 2, ',', '.') }}
-                                            · rebaja Bs {{ number_format($descuentoLinea, 2, ',', '.') }}
-                                        </div>
-                                    @endif
                                 </div>
                                 <div class="text-end fw-semibold flex-shrink-0">
-                                    Bs {{ number_format((float) $linea['precio'], 2, ',', '.') }}
+                                    Bs {{ number_format($unitario * $cantidadLinea, 2, ',', '.') }}
                                 </div>
                             </div>
                         @endforeach

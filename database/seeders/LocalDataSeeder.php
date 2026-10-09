@@ -40,7 +40,9 @@ class LocalDataSeeder extends Seeder
             'productos' => ['ver', 'crear', 'editar', 'eliminar'],
             'unidades' => ['ver', 'crear', 'editar', 'eliminar'],
             'proveedores' => ['ver', 'crear', 'editar', 'eliminar'],
-            'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar'],
+            'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar', 'verificar'],
+            'gastos' => ['ver', 'crear', 'editar', 'eliminar'],
+            'ajustes' => ['editar'],
             'inventario' => ['ver', 'ajustar'],
             'stock' => ['ver'],
             'caja' => ['ver', 'gestionar'],
@@ -50,7 +52,7 @@ class LocalDataSeeder extends Seeder
             'reparaciones' => ['ver', 'recibir', 'atender'],
             'qrs_cobro' => ['ver', 'crear', 'editar', 'eliminar'],
             'clientes' => ['ver', 'crear', 'editar', 'eliminar'],
-            'reportes' => ['ver', 'ver_costos'],
+            'reportes' => ['ver', 'ver_costos', 'seguimiento'],
             'usuarios' => ['ver', 'crear', 'editar', 'eliminar'],
             'roles' => ['ver', 'crear', 'editar', 'eliminar'],
         ];
@@ -106,6 +108,7 @@ class LocalDataSeeder extends Seeder
             'reparaciones.ver', 'reparaciones.recibir',
             'qrs_cobro.ver',
             'clientes.ver', 'clientes.crear',
+            'compras.verificar',
         ]);
     }
 

@@ -91,6 +91,26 @@ return [
         ],
     ],
 
+    // Las compras que el administrador le encargó verificar al vendedor. Va
+    // suelto y no dentro de Compras: el vendedor no tiene el módulo de
+    // Compras, solo esto.
+    [
+        'label' => 'Por verificar',
+        'icon' => 'ri-checkbox-multiple-line',
+        'route' => 'compras.verificaciones',
+        'active' => 'verificar-compras*',
+        'permission' => 'compras.verificar',
+    ],
+
+    // Gastos de la tienda (comida, fletes, servicios). Solo el administrador.
+    [
+        'label' => 'Gastos',
+        'icon' => 'ri-wallet-3-line',
+        'route' => 'gastos.index',
+        'active' => 'gastos*',
+        'permission' => 'gastos.ver',
+    ],
+
     [
         'label' => 'Inventario',
         'icon' => 'ri-barcode-box-line',
@@ -149,8 +169,26 @@ return [
         'label' => 'Reportes',
         'icon' => 'ri-line-chart-line',
         'route' => 'reportes.index',
-        'active' => 'reportes*',
+        'active' => 'reportes',
         'permission' => 'reportes.ver',
+    ],
+
+    // El cierre del día en dinero y el seguimiento de cada vendedor: del
+    // administrador (`reportes.seguimiento`).
+    [
+        'label' => 'Resumen del día',
+        'icon' => 'ri-calendar-check-line',
+        'route' => 'reportes.resumen-diario',
+        'active' => 'reportes/resumen-diario*',
+        'permission' => 'reportes.seguimiento',
+    ],
+
+    [
+        'label' => 'Ventas por vendedor',
+        'icon' => 'ri-user-star-line',
+        'route' => 'reportes.vendedores',
+        'active' => 'reportes/vendedores*',
+        'permission' => 'reportes.seguimiento',
     ],
 
     ['type' => 'title', 'label' => 'Sistema'],

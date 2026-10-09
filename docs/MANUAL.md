@@ -60,20 +60,33 @@ contraseña inicial es tu carnet y la conoce quien te dio de alta.
 1. **Escanea o teclea** el serial o el código interno del aparato. También
    busca por SKU o por nombre.
 2. Sale en la lista; pulsa y entra al carrito. Repite con cada aparato.
-3. **Teclea el precio pactado** con el cliente. El de al lado, el de
-   *referencia*, es el precio de lista y no se toca: la diferencia entre los
-   dos se registra sola como descuento (referencia 400, cobras 350 → descuento
-   50).
+3. **Teclea el precio pactado** con el cliente. Por debajo del precio de lista,
+   la diferencia se registra sola como descuento (lista 400, cobras 350 →
+   descuento 50). **Por encima también se puede** —un cliente frecuente, una
+   institución—: se registra lo cobrado, sin descuento.
 4. Elige el **cliente** (opcional: la venta al público sin datos es lo normal)
    y el **método de pago**.
 5. **Cobrar.**
 
+**Varias unidades del mismo producto.** Los productos **sin serial** (cables,
+accesorios, pequeños) se venden por cantidad: salen una sola vez en el buscador
+con cuántos quedan, y en el carrito la línea trae **− cantidad +**. El precio
+que se teclea es **por unidad** y vale para todas; el **importe** de la línea
+es cantidad × precio. Las cajas las elige el sistema —las que llevan más tiempo
+en el almacén— y la línea dice cuáles entregar (*Entregar: ITEM-…*). Los
+productos **con serial** se siguen escaneando uno por uno, porque su garantía
+va atada al aparato exacto.
+
 **Cuánto se puede rebajar lo decide el producto.** Cada producto tiene un
-descuento máximo en Bs (*Catálogo → Productos*); el punto de venta no deja bajar
-de ahí, y avisa en la misma fila con el precio mínimo. Si el producto no tiene
-descuento autorizado, se cobra el precio de lista. Tampoco se puede cobrar *por
-encima* de la referencia. Dos atajos bajo el precio: *Precio de lista* deshace
-la rebaja y *Rebaja máxima* aplica el tope de una vez.
+descuento máximo en Bs (*Catálogo → Productos*); bajar de ahí pide autorización
+(ver abajo), y por debajo del costo no se vende nunca.
+
+> **El cliente mira la pantalla.** Por eso el precio de lista y el mínimo ya no
+> se ven fijos en el carrito, y el resumen de cobro enseña solo el **Total a
+> cobrar**. Bajo el precio están los botones **Precio de lista** y **Rebaja
+> máxima**: enseñan el dato unos segundos («Mínimo: Bs 1.050 (−50)») y se borra
+> solo, o al salir del campo. **No cambian el precio**: el que vale es el que
+> tecleas.
 
 **Métodos de pago.** *Efectivo* no pide nada más. *QR* muestra en pantalla la
 imagen del QR de la tienda para que el cliente la escanee, y **exige subir el
@@ -222,10 +235,18 @@ Al terminar la venta, el mismo recuadro que confirma el cobro trae **Descargar
 recibo (PDF)**. Se abre en otra pestaña, así que puedes imprimirlo o mandarlo
 por WhatsApp y seguir vendiendo sin cerrar nada.
 
-Sale en formato de ticket (80 mm, el rollo del mostrador) y lleva el código de
-la venta, el cliente, cada aparato con su **serial y su garantía**, el desglose
-de descuentos y, si el pago fue mixto, cuánto se cobró en efectivo y cuánto por
-QR.
+Sale en formato de ticket (80 mm, el rollo del mostrador) con el nombre
+**Electrogar** arriba, y lleva el código de la venta, el cliente, cada aparato
+con su **serial y su garantía** y, si el pago fue mixto, cuánto se cobró en
+efectivo y cuánto por QR.
+
+Cada línea lleva **el precio final al que se vendió** y al pie solo el
+**TOTAL**: ni precio de lista, ni descuento, ni subtotal. Son datos internos, y
+vendiendo por encima de la lista confundirían. Lo vendido por cantidad sale en
+una línea: *3 × Cable HDMI · 150,00 · P/U 50,00*.
+
+> El nombre del recibo (también el de la orden de servicio y el estado de
+> cuenta) sale de `TIENDA_NOMBRE` en el `.env`, aparte del nombre del panel.
 
 ¿Se perdió el papel, o el cliente vuelve pidiéndolo para la garantía? El mismo
 botón está en *Ventas → Historial*, dentro del detalle de cada venta. Las ventas
@@ -354,10 +375,18 @@ cuánto.
 > te propone la cifra esperada: si te la enseñara, cerrar sería darle a aceptar
 > y no estarías cuadrando nada.
 
-> **Para vender hay que abrir la caja.** Al empezar la jornada, abre el turno
-> con su fondo; hasta entonces el botón de cobrar queda apagado y la pantalla lo
-> dice. Así ninguna venta se queda fuera del cuadre. Lo mismo en el panel y en
-> el teléfono.
+> **Para vender hay que abrir la caja** (si el administrador lo exige). Al
+> empezar la jornada, abre el turno con su fondo; hasta entonces el botón de
+> cobrar queda apagado y la pantalla lo dice. Así ninguna venta se queda fuera
+> del cuadre. Lo mismo en el panel y en el teléfono.
+>
+> El administrador puede apagarlo en *Caja → Exigir caja abierta para vender*
+> (panel y teléfono). Con la caja apagada se vende sin abrir turno, y el control
+> del día pasa al **Resumen del día** (ver Reportes).
+
+> **Pagaste algo con dinero del cajón.** El administrador lo anota en *Gastos*
+> con método *Efectivo* y marca *Salió del cajón*: el esperado del arqueo baja
+> solo.
 
 > **A partir de las 20:00 el sistema te recuerda cerrar.** Con la caja abierta,
 > el punto de venta enseña un aviso con un atajo para ir a cerrar el turno.
@@ -365,9 +394,6 @@ cuánto.
 > **El cierre no se mueve.** Si mañana se anula una venta de ese turno, el
 > arqueo sigue diciendo lo que se vio esa noche. Es lo que hace que sirva para
 > encontrar un faltante.
-
-> **Pagaste algo con dinero de la caja.** Anótalo en las notas del cierre; así
-> la diferencia queda explicada.
 
 Quien atiende puede **abrir y cerrar** su turno. El **histórico de cierres** de
 todos, con sus diferencias, es de quien supervisa, y ahora también se repasa
@@ -417,6 +443,13 @@ activa, porque ahí la lista es plana y no hay «antes» ni «después».
   dashboard y de la app.
 - **Especificaciones**: una fila por característica (pantalla → 55", panel →
   QLED).
+- **Imagen**: *Tomar foto* abre la cámara trasera en un teléfono o tablet (en
+  un PC sin cámara abre el selector de archivos) y *Elegir de galería* busca
+  una ya guardada. La foto se ve al momento en el recuadro, antes de guardar.
+
+> Si la rebaja máxima pasa del precio, el campo se marca en rojo y dice el tope
+> («como mucho Bs 100,00»). Al corregir el precio o la rebaja, el aviso se va
+> solo.
 
 La columna **Disponibles** cuenta solo unidades en stock; vendidas, dañadas o en
 garantía no suman.
@@ -428,20 +461,47 @@ así que se **fija al empezar la jornada**. Al **abrir la caja**, si faltan
 precios por revisar, el sistema lleva directo a *Ventas → Precios del día* (o se
 entra desde la propia pantalla de Caja, que avisa mientras haya pendientes).
 
-> **Hasta que no se guarden los precios del día, el punto de venta no cobra.**
-> El botón de cobrar queda apagado con un aviso y un atajo para fijarlos; lo
-> mismo en el panel y en el teléfono. Es la primera tarea de la jornada: abrir la
-> caja, revisar los precios y guardar.
+> **Hasta que no se confirmen los precios del día, el punto de venta no
+> cobra.** El botón de cobrar queda apagado con un aviso y un atajo para
+> confirmarlos; lo mismo en el panel y en el teléfono. Es la primera tarea de la
+> jornada: abrir la caja, revisar los precios y confirmar.
 
 Ahí salen los productos **con stock**, cada uno con el **precio de la jornada
-anterior** (o el inicial, si nunca se fijó) y un campo para el de hoy. Se
-guarda, y ese precio es el que ofrece el punto de venta. **El último registrado
-manda**: el precio que trae cada aparato queda solo como respaldo.
+anterior** (o el inicial, si nunca se fijó) **ya escrito** en el campo de hoy.
+Si no hay nada que cambiar, basta con **Confirmar sin cambios**: todo se sigue
+vendiendo al precio de ayer. Lo que se cambie y se confirme es lo que ofrece el
+punto de venta desde ese momento. **El último confirmado manda**: el precio que
+trae cada aparato queda solo como respaldo.
 
 - Queda un **historial por fecha**: cada jornada deja su precio.
 - El precio **no puede quedar en o por debajo del costo**; el sistema lo
-  rechaza.
+  rechaza y marca en rojo el producto que lo impide.
+- Cada fila enseña el **margen** con el precio escrito y cuánto sube o baja
+  frente a ayer; la flecha ↺ lo devuelve al de ayer.
+- Arriba se filtra por *Pendientes*, *Con sugerencia* o *Cambiados*, y la barra
+  de abajo resume cuántos suben, cuántos bajan y cuántos quedan igual.
 - Se revisa igual desde el teléfono (*Caja → icono de precios*).
+
+#### Sugerencias cuando llega mercadería con otro costo
+
+Si se recibe una compra de un producto **a otro costo**, al **día siguiente**
+la pantalla lo propone: mover el precio en la misma proporción que el costo,
+para que el margen siga siendo el mismo.
+
+> La licuadora LG LK50 costó 800 y se vende a 1100. Llega otra tanda a 850
+> (+6,3 %). Al día siguiente sale: *«Compra COM-… del 07/10: costo Bs 800 →
+> Bs 850. Para conservar el margen, subir a **Bs 1.169**»* (1100 × 850 ÷ 800,
+> redondeado al Bs hacia arriba). Si la compra sale más barata, propone bajar.
+
+- **La sugerencia nunca se aplica sola.** Se pulsa *Aplicar* (o *Aplicar
+  todas*) y después se confirma la jornada. Si no se aplica, el producto se
+  sigue vendiendo al precio de ayer.
+- Se compara contra la **compra anterior** del mismo producto. Un cambio de
+  costo de menos del 0,5 % no se sugiere: es redondeo del flete repartido.
+- Lo recibido **hoy** se sugiere **mañana**. La sugerencia sigue a la vista
+  hasta que se confirma esa jornada; en la siguiente ya no vuelve a salir.
+- La pantalla se abre en el filtro *Con sugerencia* cuando hay alguna, para que
+  sea lo primero que se decide.
 
 > **Comprar y vender también respetan el costo.** Al registrar un aparato, el
 > precio tiene que ser mayor que su costo; y en una compra, el costo unitario
@@ -497,6 +557,23 @@ lista para imprimir.
 > que costó — con lo que la ganancia sale inflada. El flete y los gastos se
 > reparten entre las unidades **al centavo**, en proporción a lo que vale cada
 > línea.
+
+### Encargar la verificación a un vendedor
+
+Las compras las registra **solo el administrador**; el vendedor no ve el módulo
+de Compras. Pero quien abre las cajas suele ser el vendedor, así que se le
+puede encargar:
+
+1. En la ficha de la compra pendiente, *Encargar la verificación* → elige el
+   vendedor → *Asignar y avisar*. Le llega un aviso al teléfono.
+2. El vendedor la ve en **Por verificar** (en el panel, en el menú lateral; en
+   el teléfono, en el inicio). Solo ve **esa** compra, sin costos ni pagos.
+3. Escanea o escribe el serial de cada aparato, o cuenta las unidades de lo que
+   no lleva serial, y pulsa *Registrar lo que llegó*. Si llegó menos, registra
+   lo que hay: el resto queda pendiente para otra tanda.
+
+Cuando se verifica todo, la compra queda recepcionada y sus unidades entran al
+stock, igual que si la hubiera recepcionado el administrador.
 
 ### Seriales
 
@@ -679,6 +756,34 @@ es donde tiene contexto.
 > él, esas tarjetas se sustituyen por datos de volumen: el precio de compra no
 > es información de mostrador.
 
+### Ventas por vendedor
+
+*Reportes → Ventas por vendedor* (y «Por vendedor» en el teléfono). Para cada
+vendedor, en el período elegido: cuántas ventas y unidades, cuánto vendió,
+**cuánto rebajó** y **cuánto cobró por encima** del precio del día, y el
+balance entre ambos. Al abrirlo sale el detalle por producto y la lista de
+ventas que se apartaron del precio, con un toque para ir a la venta. Solo el
+administrador.
+
+### Gastos
+
+*Gastos.* Lo que se paga en el día que no es una compra a proveedor: comida,
+transporte, servicios, insumos, personal… Cada gasto lleva **monto, método**
+(QR, efectivo o transferencia), **para quién** (un vendedor, un administrador
+o la tienda) y, si se quiere, la foto del comprobante. Arriba se ve el total
+del día por método. Solo el administrador los anota.
+
+### Resumen del día
+
+*Reportes → Resumen del día.* El cierre del día en dinero, con o sin caja:
+
+- **Entró:** ventas (en efectivo, por QR, otros medios), cuotas cobradas e
+  ingresos a la caja. Lo vendido a crédito se muestra aparte: todavía no entró.
+- **Salió:** compras pagadas ese día, gastos (por categoría, por persona y uno
+  por uno), retiros de la caja y devoluciones.
+- **Neto** del día y, aparte, el **efectivo**: lo que debería haber de más o de
+  menos en billetes.
+
 ---
 
 ## 9. Personal y accesos
@@ -848,10 +953,13 @@ El botón **Vender** aparece en cualquier pantalla de la app, abajo a la derecha
    código coincide con un serial, entra solo al carrito; si no, sale una lista
    para elegir. También se puede teclear el serial, el código, el SKU o el
    nombre.
-2. **Toca el precio** para cambiarlo al que pactaste con el cliente. La
-   *referencia* es el precio de lista y es el máximo; por abajo, el límite es el
-   descuento autorizado del producto, con atajos para *precio de lista* y
-   *rebaja máxima*. La diferencia se registra sola como descuento.
+2. **Toca el precio** para cambiarlo al que pactaste con el cliente; también
+   se puede por encima de la lista. Por abajo, el límite es el descuento
+   autorizado del producto. Los botones *Precio de lista* y *Rebaja máxima*
+   enseñan el dato unos segundos debajo, sin cambiar el precio. En el carrito no
+   se ve la referencia ni la rebaja, y abajo solo el total.
+   Los productos **sin serial** van en una línea con **− cantidad +**: el precio
+   es por unidad y las cajas las elige el sistema, las más antiguas.
 3. **Cobrar** lleva a la pantalla de cobro: cliente, método de pago y notas.
    El cliente se busca por nombre, carnet o código, y funciona igual que en el
    panel, en dos peldaños:
@@ -1014,7 +1122,8 @@ ficha de un producto también hay un lápiz arriba. Las opciones que no puedes u
 no aparecen: dependen de tus permisos.
 
 Al registrar un producto se piden nombre, SKU, categoría, precio y rebaja máxima;
-lo demás es opcional. Puedes elegir una foto de la galería y editar las
+lo demás es opcional. La foto se **toma con la cámara** (*Tomar foto*) o se
+elige de la *Galería*, y antes de guardar se ve en miniatura. Puedes editar las
 **especificaciones** —una fila por característica, con «clave» y «valor»—, igual
 que en el panel.
 

@@ -35,7 +35,7 @@ class RegistroDeVenta
     ) {}
 
     /**
-     * @param  array<int, array{unidad_id: int, precio_unitario: string, descuento?: string}>  $lineas
+     * @param  array<int, array{unidad_id: int, precio_unitario: string, descuento?: string, precio_lista?: string}>  $lineas
      * @param  array<string, mixed>  $cabecera  cliente_id, metodo_pago, notas,
      *                                          qr_cobro_id, monto_efectivo,
      *                                          monto_qr, comprobante_qr
@@ -152,6 +152,12 @@ class RegistroDeVenta
                     $detalles[] = [
                         'unidad' => $unidad,
                         'precio' => $precio,
+                        // La lista del momento: con ella el seguimiento por
+                        // vendedor mide la rebaja o lo cobrado de más. Si quien
+                        // llama no la manda, era el precio unitario.
+                        'lista' => isset($linea['precio_lista'])
+                            ? ProrrateoDeGastos::aCentavos($linea['precio_lista'])
+                            : $precio,
                         'descuento' => $descuento,
                         'costo' => $costo,
                         'autorizacion' => $autorizacion,
@@ -196,6 +202,7 @@ class RegistroDeVenta
                         'unidad_vendida_id' => $unidad->id,
                         'producto_id' => $unidad->producto_id,
                         'precio_unitario' => ProrrateoDeGastos::aDecimal($detalle['precio']),
+                        'precio_lista' => ProrrateoDeGastos::aDecimal($detalle['lista']),
                         'costo_unitario' => ProrrateoDeGastos::aDecimal($detalle['costo']),
                         'descuento' => ProrrateoDeGastos::aDecimal($detalle['descuento']),
                         'ganancia' => ProrrateoDeGastos::aDecimal(

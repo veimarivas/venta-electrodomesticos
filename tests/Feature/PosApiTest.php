@@ -262,7 +262,7 @@ class PosApiTest extends TestCase
         $this->assertSame('50.00', $detalle->descuento);
     }
 
-    public function test_no_se_puede_cobrar_por_encima_del_precio_de_referencia(): void
+    public function test_se_puede_cobrar_por_encima_del_precio_de_referencia(): void
     {
         $unidad = $this->unidadEnStock(precio: 400, descuentoMaximo: 100);
 
@@ -271,9 +271,80 @@ class PosApiTest extends TestCase
         $this->postJson('/api/v1/pos/cobrar', [
             'lineas' => [['unidad_id' => $unidad->id, 'precio' => 500]],
             'metodo_pago' => 'efectivo',
-        ])->assertStatus(422);
+        ])->assertCreated();
 
-        $this->assertSame(0, Venta::count());
+        $detalle = Venta::firstOrFail()->detalles()->firstOrFail();
+
+        // Por encima de la lista se registra lo cobrado, sin descuento.
+        $this->assertSame('500.00', $detalle->precio_unitario);
+        $this->assertSame('0.00', $detalle->descuento);
+    }
+
+    public function test_la_api_reserva_por_cantidad_los_mas_antiguos(): void
+    {
+        $producto = \App\Models\Producto::factory()->create(['precio_venta' => 50, 'tiene_serial' => false]);
+
+        $unidades = collect(range(1, 4))->map(fn (int $i) => Unidad::factory()->create([
+            'producto_id' => $producto->id,
+            'estado' => 'en_stock',
+            'serial' => null,
+            'costo_unitario' => 20,
+            'ingresado_en' => now()->subDays(10 - $i),
+        ]));
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson('/api/v1/pos/reservar-cantidad', [
+            'producto_id' => $producto->id,
+            'cantidad' => 2,
+            'excluir' => [$unidades[0]->id],
+        ])
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.unidad_id', $unidades[1]->id)
+            ->assertJsonPath('data.1.unidad_id', $unidades[2]->id)
+            ->assertJsonPath('data.0.tiene_serial', false)
+            ->assertJsonPath('meta.mensaje', null);
+
+        // Pedir más de lo que queda devuelve lo que hay y lo dice.
+        $this->postJson('/api/v1/pos/reservar-cantidad', [
+            'producto_id' => $producto->id,
+            'cantidad' => 5,
+        ])
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.reservadas', 2);
+    }
+
+    public function test_la_api_no_reserva_por_cantidad_un_producto_con_serial(): void
+    {
+        $unidad = $this->unidadEnStock(precio: 400);
+        $unidad->producto->update(['tiene_serial' => true]);
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->postJson('/api/v1/pos/reservar-cantidad', [
+            'producto_id' => $unidad->producto_id,
+            'cantidad' => 2,
+        ])->assertStatus(422);
+    }
+
+    public function test_el_buscador_junta_las_unidades_sin_serial(): void
+    {
+        $producto = \App\Models\Producto::factory()->create(['nombre' => 'Cable HDMI 2 m', 'tiene_serial' => false]);
+
+        Unidad::factory()->count(3)->create([
+            'producto_id' => $producto->id,
+            'estado' => 'en_stock',
+            'serial' => null,
+        ]);
+
+        Sanctum::actingAs($this->vendedor());
+
+        $this->getJson('/api/v1/pos/buscar?termino=Cable HDMI')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.disponibles', 3);
     }
 
     public function test_el_tope_de_descuento_del_producto_se_respeta(): void

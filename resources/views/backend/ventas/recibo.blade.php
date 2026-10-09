@@ -141,32 +141,33 @@
 
     <div class="separador"></div>
 
+    {{-- El precio final de cada cosa, y nada más: ni precio de lista ni
+         rebaja. Son datos internos, y vendiendo por encima de la lista
+         confundirían al cliente. --}}
     <table class="lineas">
-        @foreach ($venta->detalles as $detalle)
-            @php
-                $importe = (float) $detalle->precio_unitario - (float) $detalle->descuento;
-            @endphp
+        @foreach ($venta->lineasDelRecibo() as $linea)
             <tr>
-                <td>{{ $detalle->producto?->nombre ?? 'Producto' }}</td>
+                <td>
+                    @if ($linea->cantidad > 1) {{ $linea->cantidad }} × @endif
+                    {{ $linea->nombre }}
+                    @if ($linea->devuelto) <span class="tenue">(devuelto)</span> @endif
+                </td>
                 <td class="derecha fuerte" style="width: 34%">
-                    {{ number_format($importe, 2, ',', '.') }}
+                    {{ number_format($linea->importe, 2, ',', '.') }}
                 </td>
             </tr>
             <tr>
                 <td colspan="2" class="detalle">
-                    {{ $detalle->unidad?->codigo_interno }}
-                    @if ($detalle->unidad?->serial)
-                        · S/N {{ $detalle->unidad->serial }}
+                    @if ($linea->cantidad > 1)
+                        P/U {{ number_format($linea->unitario, 2, ',', '.') }}
+                    @else
+                        {{ $linea->codigo }}
+                        @if ($linea->serial)
+                            · S/N {{ $linea->serial }}
+                        @endif
                     @endif
-                    @if ((float) $detalle->descuento > 0)
-                        {{-- La rebaja se imprime: el cliente tiene que ver que
-                             el precio de lista era otro. --}}
-                        <br>
-                        Precio {{ number_format((float) $detalle->precio_unitario, 2, ',', '.') }}
-                        · Descuento −{{ number_format((float) $detalle->descuento, 2, ',', '.') }}
-                    @endif
-                    @if ($detalle->unidad?->garantia_hasta)
-                        <br>Garantía hasta {{ $detalle->unidad->garantia_hasta->format('d/m/Y') }}
+                    @if ($linea->garantia_hasta)
+                        <br>Garantía hasta {{ $linea->garantia_hasta->format('d/m/Y') }}
                     @endif
                 </td>
             </tr>
@@ -176,16 +177,6 @@
     <div class="separador"></div>
 
     <table class="totales">
-        <tr>
-            <td class="tenue">Subtotal</td>
-            <td class="derecha">Bs {{ number_format((float) $venta->subtotal, 2, ',', '.') }}</td>
-        </tr>
-        @if ((float) $venta->descuento > 0)
-            <tr>
-                <td class="tenue">Descuentos</td>
-                <td class="derecha">− Bs {{ number_format((float) $venta->descuento, 2, ',', '.') }}</td>
-            </tr>
-        @endif
         <tr class="total-final">
             <td>TOTAL</td>
             <td class="derecha">Bs {{ number_format((float) $venta->total, 2, ',', '.') }}</td>

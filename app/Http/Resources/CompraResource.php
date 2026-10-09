@@ -51,6 +51,10 @@ class CompraResource extends JsonResource
             'proveedor' => $this->proveedor?->nombre,
             'proveedor_id' => $this->proveedor_id,
             'registrada_por' => $this->user?->name,
+            // A quién se le asignó verificar la mercadería, si a alguien.
+            'verificador_id' => $this->verificador_id,
+            'verificador' => $this->whenLoaded('verificador', fn () => $this->verificador?->name),
+            'asignada_en' => $this->asignada_en?->toIso8601String(),
 
             // Desglose. `gastos_prorrateables` es el dato que explica por qué
             // el costo de una unidad no es el que figura en su línea.

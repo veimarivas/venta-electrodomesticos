@@ -17,6 +17,9 @@
 .dashboard-modulo,
 .proveedores-modulo,
 .compras-modulo,
+.precios-modulo,
+.gastos-modulo,
+.resumen-modulo,
 .importar-catalogo {
 
     // Banda superior del módulo.
@@ -1187,6 +1190,15 @@
         );
 
         &:hover { transform: none; box-shadow: none; }
+    }
+
+    // Producto sin serial en el buscador: cuántos quedan, no un código.
+    .pos-resultado-cantidad {
+        display: inline-flex;
+        align-items: center;
+        gap: .2rem;
+        font-weight: 600;
+        color: var(--marca-azul-texto);
     }
 
     .pos-resultado-estado {
@@ -2508,6 +2520,14 @@
         align-items: center;
         gap: 1rem;
         flex-wrap: wrap;
+
+        // «Tomar foto» y «Elegir de galería»: se parten en dos líneas antes
+        // que encogerse en una tablet en vertical.
+        .crud-upload-acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
 
         .crud-upload-preview {
             width: 4.5rem;

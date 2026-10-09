@@ -23,7 +23,9 @@ class PrecioController extends Controller
     {
         $servicio = app(PreciosDelDia::class);
 
-        $filas = $servicio->paraRevisar()->map(fn ($fila): array => [
+        $revision = $servicio->paraRevisar();
+
+        $filas = $revision->map(fn ($fila): array => [
             'producto_id' => $fila->producto->id,
             'nombre' => $fila->producto->nombre,
             'categoria' => $fila->producto->categoria?->nombre,
@@ -35,6 +37,9 @@ class PrecioController extends Controller
             'precio_inicial' => $fila->precio_inicial,
             'precio_anterior' => $fila->precio_anterior,
             'precio_hoy' => $fila->precio_hoy,
+            // Propuesta por una compra con otro costo. No se aplica sola: el
+            // precio solo cambia si se manda en el guardado.
+            'sugerencia' => $fila->sugerencia === null ? null : (array) $fila->sugerencia,
         ])->values();
 
         return response()->json([
@@ -42,6 +47,7 @@ class PrecioController extends Controller
             'meta' => [
                 'pendientes' => $servicio->pendientes(),
                 'definidos' => $servicio->definidos(),
+                'sugerencias' => $revision->whereNotNull('sugerencia')->count(),
             ],
         ]);
     }

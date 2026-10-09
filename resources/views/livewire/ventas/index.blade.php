@@ -484,7 +484,7 @@
 
                                 {{-- Tienda --}}
                                 <div class="recibo-center">
-                                    <div class="recibo-tienda">{{ config('app.name') }}</div>
+                                    <div class="recibo-tienda">{{ config('app.nombre_comercial') }}</div>
                                     <div class="recibo-titulo">RECIBO DE VENTA</div>
                                     <div class="recibo-codigo">{{ $rv->codigo }}</div>
                                 </div>
@@ -516,24 +516,28 @@
                                 <div class="recibo-separador"></div>
 
                                 {{-- Líneas --}}
+                                {{-- Precio final por línea, sin lista ni rebaja: es lo
+                                     mismo que el PDF que se le da al cliente. --}}
                                 <table class="recibo-lineas">
-                                    @foreach ($rv->detalles as $detalle)
-                                        @php
-                                            $importe = (float) $detalle->precio_unitario - (float) $detalle->descuento;
-                                        @endphp
+                                    @foreach ($rv->lineasDelRecibo() as $linea)
                                         <tr>
-                                            <td>{{ $detalle->producto?->nombre ?? 'Producto' }}</td>
-                                            <td class="recibo-importe">{{ number_format($importe, 2, ',', '.') }}</td>
+                                            <td>
+                                                @if ($linea->cantidad > 1) {{ $linea->cantidad }} × @endif
+                                                {{ $linea->nombre }}
+                                                @if ($linea->devuelto) <span class="recibo-tenue">(devuelto)</span> @endif
+                                            </td>
+                                            <td class="recibo-importe">{{ number_format($linea->importe, 2, ',', '.') }}</td>
                                         </tr>
                                         <tr>
                                             <td colspan="2" class="recibo-detalle-linea">
-                                                {{ $detalle->unidad?->codigo_interno }}
-                                                @if ($detalle->unidad?->serial) · S/N {{ $detalle->unidad->serial }} @endif
-                                                @if ((float) $detalle->descuento > 0)
-                                                    <br>Precio {{ number_format((float) $detalle->precio_unitario, 2, ',', '.') }} · Descuento −{{ number_format((float) $detalle->descuento, 2, ',', '.') }}
+                                                @if ($linea->cantidad > 1)
+                                                    P/U {{ number_format($linea->unitario, 2, ',', '.') }}
+                                                @else
+                                                    {{ $linea->codigo }}
+                                                    @if ($linea->serial) · S/N {{ $linea->serial }} @endif
                                                 @endif
-                                                @if ($detalle->unidad?->garantia_hasta)
-                                                    <br>Garantía hasta {{ $detalle->unidad->garantia_hasta->format('d/m/Y') }}
+                                                @if ($linea->garantia_hasta)
+                                                    <br>Garantía hasta {{ $linea->garantia_hasta->format('d/m/Y') }}
                                                 @endif
                                             </td>
                                         </tr>
@@ -544,16 +548,6 @@
 
                                 {{-- Totales --}}
                                 <table class="recibo-totales">
-                                    <tr>
-                                        <td class="recibo-tenue">Subtotal</td>
-                                        <td class="recibo-valor">Bs {{ number_format((float) $rv->subtotal, 2, ',', '.') }}</td>
-                                    </tr>
-                                    @if ((float) $rv->descuento > 0)
-                                        <tr>
-                                            <td class="recibo-tenue">Descuentos</td>
-                                            <td class="recibo-valor text-danger">− Bs {{ number_format((float) $rv->descuento, 2, ',', '.') }}</td>
-                                        </tr>
-                                    @endif
                                     <tr class="recibo-total-final">
                                         <td>TOTAL</td>
                                         <td class="recibo-valor">Bs {{ number_format((float) $rv->total, 2, ',', '.') }}</td>

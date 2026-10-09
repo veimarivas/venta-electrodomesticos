@@ -99,6 +99,13 @@ El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 > `/api/v1/version`. Si un paso falla dentro del corte, levanta el sitio igual
 > y avisa. Los pasos a mano siguen abajo por si hace falta hacerlos sueltos.
 
+> **Actualización del 2026-10-09 (verificación, gastos, resúmenes, caja
+> opcional):** trae 5 migraciones. La última crea los permisos nuevos
+> (`compras.verificar`, `gastos.*`, `reportes.seguimiento`, `ajustes.editar`)
+> y da `compras.verificar` al rol vendedor: **no hace falta correr el
+> seeder**. La caja sigue obligatoria hasta que el administrador la apague.
+> Sube el backend antes de repartir la app 1.26.0+36.
+
 > **Lo lento va ANTES de bajar el sitio.** `composer install` y `npm ci` tardan
 > minutos y son justo lo que puede fallar —red, disco, una versión de Node—. Si
 > el sitio ya está en mantenimiento cuando revientan, la tienda se queda caída
@@ -312,6 +319,9 @@ REVERB_SCHEME=https
   disco en semanas.
 - **`SESSION_SECURE_COOKIE=true`** solo si hay HTTPS; con `false` la cookie de
   sesión viaja en claro y basta estar en la misma red wifi para copiarla.
+- **`TIENDA_NOMBRE`** (por defecto *Electrogar*) es el nombre que se imprime en
+  los documentos del cliente: recibo, orden de servicio y estado de cuenta.
+  `APP_NAME` sigue rotulando el panel; cambiar uno no toca el otro.
 
 Después de cada cambio del `.env` o de un despliegue:
 

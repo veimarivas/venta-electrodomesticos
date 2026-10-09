@@ -630,7 +630,7 @@
                                 <label for="precio" class="form-label">
                                     Precio de venta (Bs) <span class="text-danger">*</span>
                                 </label>
-                                <div class="input-group">
+                                <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0">Bs</span>
                                     <input type="number" id="precio" wire:model.live.debounce.400ms="precio"
                                         step="0.01" min="0"
@@ -646,7 +646,7 @@
                                 <label for="descuentoMaximo" class="form-label">
                                     Descuento máximo (Bs)
                                 </label>
-                                <div class="input-group">
+                                <div class="input-group has-validation">
                                     <span class="input-group-text bg-light border-end-0"><i
                                             class="ri-price-tag-3-line"></i></span>
                                     <input type="number" id="descuentoMaximo"
@@ -803,11 +803,24 @@
                                     </div>
 
                                     <div class="flex-grow-1 min-w-0">
-                                        <input type="file" wire:model="imagen"
-                                            accept="image/jpeg,image/png,image/webp"
-                                            class="form-control @error('imagen') is-invalid @enderror">
+                                        {{-- Dos entradas al mismo campo. «Tomar foto» pide la
+                                             cámara trasera (capture) en teléfonos y tablets: el
+                                             producto se registra con la caja delante. En un PC
+                                             sin cámara el navegador abre el selector de archivos. --}}
+                                        <div class="crud-upload-acciones">
+                                            <label class="btn btn-soft-primary mb-0" for="imagen_camara">
+                                                <i class="ri-camera-line align-bottom me-1"></i> Tomar foto
+                                            </label>
+                                            <label class="btn btn-light mb-0" for="imagen_galeria">
+                                                <i class="ri-image-add-line align-bottom me-1"></i> Elegir de galería
+                                            </label>
+                                        </div>
+                                        <input type="file" id="imagen_camara" wire:model="imagen"
+                                            accept="image/*" capture="environment" class="visually-hidden">
+                                        <input type="file" id="imagen_galeria" wire:model="imagen"
+                                            accept="image/jpeg,image/png,image/webp" class="visually-hidden">
                                         @error('imagen')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            <div class="text-danger fs-12 mt-1">{{ $message }}</div>
                                         @enderror
                                         <div wire:loading wire:target="imagen" class="form-text text-primary">
                                             <span class="spinner-border spinner-border-sm me-1" role="status"></span>

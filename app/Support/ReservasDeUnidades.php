@@ -55,6 +55,63 @@ class ReservasDeUnidades
         return $afectadas === 1;
     }
 
+    /**
+     * Reserva varias unidades de un producto **sin serial**, las más antiguas
+     * primero. Es la venta por cantidad: «tres cables HDMI» no obliga a escanear
+     * tres etiquetas, y entre aparatos idénticos sale primero el que lleva más
+     * tiempo en el almacén.
+     *
+     * Los productos con serial no pasan por aquí: su garantía va atada al
+     * aparato concreto, así que se siguen escaneando uno por uno.
+     *
+     * Puede devolver menos de las pedidas si no hay tantas libres; la reserva
+     * de cada una sigue siendo atómica, así que dos cajas que pidan a la vez se
+     * reparten lo que hay sin pisarse.
+     *
+     * @param  array<int, int>  $excluir  Las que ya están en el carrito.
+     * @return array<int, int> Ids de las unidades reservadas.
+     */
+    public function reservarCantidad(int $productoId, int $cantidad, int $userId, array $excluir = []): array
+    {
+        if ($cantidad <= 0) {
+            return [];
+        }
+
+        $candidatas = Unidad::query()
+            ->where('producto_id', $productoId)
+            ->whereNotIn('id', $excluir)
+            ->where(function ($query): void {
+                $query->where('estado', 'en_stock')
+                    ->orWhere(function ($query): void {
+                        $query->where('estado', 'reservado')
+                            ->where(function ($query): void {
+                                $query->whereNull('reservado_hasta')
+                                    ->orWhere('reservado_hasta', '<', now());
+                            });
+                    });
+            })
+            ->orderBy('ingresado_en')
+            ->orderBy('id')
+            // Holgura por si otra caja se lleva alguna entre la consulta y la
+            // reserva: así no hay que volver a consultar.
+            ->limit($cantidad + 10)
+            ->pluck('id');
+
+        $reservadas = [];
+
+        foreach ($candidatas as $id) {
+            if (count($reservadas) === $cantidad) {
+                break;
+            }
+
+            if ($this->reservar((int) $id, $userId)) {
+                $reservadas[] = (int) $id;
+            }
+        }
+
+        return $reservadas;
+    }
+
     /** Extiende la reserva de unas unidades del propio usuario. */
     public function refrescar(array $unidadIds, int $userId): void
     {

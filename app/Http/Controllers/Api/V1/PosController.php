@@ -91,6 +91,13 @@ class PosController extends Controller
             $unidades = $unidades->prepend($exacta);
         }
 
+        // Un producto sin serial sale una sola vez: sus unidades son iguales y
+        // se venden por cantidad. Las que llevan serial siguen una por una,
+        // porque el cajero tiene que elegir el aparato exacto.
+        $unidades = $unidades
+            ->unique(fn (Unidad $u): string => ($u->producto?->tiene_serial ?? true) ? 'u'.$u->id : 'p'.$u->producto_id)
+            ->values();
+
         return response()->json([
             'data' => $unidades->map(fn (Unidad $u): array => $this->aparato($u))->values(),
             'meta' => [
@@ -329,22 +336,22 @@ class PosController extends Controller
                 ], 422);
             }
 
-            $lista = ProrrateoDeGastos::aCentavos($unidad->precio_venta);
+            // La referencia es el precio del día del producto, la misma que
+            // enseña el buscador y que usa el POS del panel. Antes se leía el
+            // precio que trae la unidad, y con precios del día distintos el
+            // descuento que calculaba el teléfono no era el que se registraba.
+            $lista = ProrrateoDeGastos::aCentavos($this->precioDeReferencia($unidad));
             $cobrado = ProrrateoDeGastos::aCentavos($linea['precio']);
 
-            // El precio de lista es el techo: cobrar por encima sería un
-            // recargo, y este sistema no los maneja.
-            if ($cobrado > $lista) {
-                return response()->json([
-                    'message' => "El aparato {$unidad->codigo_interno} no se puede cobrar por encima de su precio de referencia.",
-                ], 422);
-            }
-
+            // Sin techo: se puede cobrar por encima de la referencia (clientes
+            // frecuentes, instituciones). Entonces se registra lo cobrado como
+            // precio unitario y la línea no lleva descuento.
             $lineas[] = [
                 'unidad_id' => $unidad->id,
-                'precio_unitario' => ProrrateoDeGastos::aDecimal($lista),
+                'precio_unitario' => ProrrateoDeGastos::aDecimal(max($lista, $cobrado)),
+                'precio_lista' => ProrrateoDeGastos::aDecimal($lista),
                 // El tope autorizado lo vuelve a comprobar RegistroDeVenta.
-                'descuento' => ProrrateoDeGastos::aDecimal($lista - $cobrado),
+                'descuento' => ProrrateoDeGastos::aDecimal(max($lista - $cobrado, 0)),
             ];
         }
 
@@ -443,13 +450,7 @@ class PosController extends Controller
      */
     private function aparato(Unidad $unidad): array
     {
-        // El precio de referencia es el del día (el último registrado del
-        // producto); el que trae la unidad es solo respaldo.
-        $precio = app(PreciosDelDia::class)->precioVigente($unidad->producto_id);
-
-        if ($precio <= 0) {
-            $precio = (float) $unidad->precio_venta;
-        }
+        $precio = $this->precioDeReferencia($unidad);
 
         $tope = (float) ($unidad->producto?->descuento_maximo ?? 0);
 
@@ -472,7 +473,25 @@ class PosController extends Controller
             'precio_minimo' => round(max($precio - $tope, 0), 2),
             'costo_unitario' => $puedeVerCostos ? (float) $unidad->costo_unitario : null,
             'puede_ver_costos' => $puedeVerCostos,
+            // Sin serial se vende por cantidad: la app agrupa estas unidades
+            // en una línea y pide más con `reservar-cantidad`.
+            'tiene_serial' => (bool) ($unidad->producto?->tiene_serial ?? true),
+            // Cuántas hay libres para vender, para no pedir de más.
+            'disponibles' => ($unidad->producto?->tiene_serial ?? true)
+                ? null
+                : Unidad::query()->where('producto_id', $unidad->producto_id)->disponibles()->count(),
         ];
+    }
+
+    /**
+     * Precio de referencia: el del día (el último registrado del producto); el
+     * que trae la unidad es solo respaldo.
+     */
+    private function precioDeReferencia(Unidad $unidad): float
+    {
+        $precio = app(PreciosDelDia::class)->precioVigente($unidad->producto_id);
+
+        return $precio > 0 ? $precio : (float) $unidad->precio_venta;
     }
 
     /**
@@ -501,6 +520,56 @@ class PosController extends Controller
         }
 
         return response()->json(['data' => $this->aparato($unidad->refresh())]);
+    }
+
+    /**
+     * Reserva varias unidades de un producto sin serial, las más antiguas
+     * primero. Es la venta por cantidad del teléfono: la app pide «N más» y
+     * recibe los aparatos concretos que quedaron apartados para esta caja.
+     *
+     * Los productos con serial se rechazan: su garantía va atada al aparato
+     * exacto, así que se escanean uno por uno.
+     */
+    public function reservarCantidad(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'cantidad' => ['required', 'integer', 'min:1', 'max:50'],
+            // Las que la app ya tiene en el carrito, para no devolverlas.
+            'excluir' => ['nullable', 'array', 'max:200'],
+            'excluir.*' => ['integer'],
+        ]);
+
+        $producto = \App\Models\Producto::findOrFail($datos['producto_id']);
+
+        if ($producto->tiene_serial) {
+            return response()->json([
+                'message' => 'Este producto lleva serial: escanea cada aparato para que la garantía quede en el correcto.',
+            ], 422);
+        }
+
+        $ids = app(ReservasDeUnidades::class)->reservarCantidad(
+            $producto->id,
+            (int) $datos['cantidad'],
+            (int) $request->user()->id,
+            $datos['excluir'] ?? [],
+        );
+
+        $unidades = Unidad::with('producto.marca')->whereIn('id', $ids)->orderBy('ingresado_en')->orderBy('id')->get();
+
+        return response()->json([
+            'data' => $unidades->map(fn (Unidad $u): array => $this->aparato($u))->values(),
+            'meta' => [
+                'pedidas' => (int) $datos['cantidad'],
+                'reservadas' => $unidades->count(),
+                // Si no alcanzó, la app lo dice con el número exacto.
+                'mensaje' => $unidades->count() < (int) $datos['cantidad']
+                    ? ($unidades->isEmpty()
+                        ? "No quedan más unidades de «{$producto->nombre}» disponibles."
+                        : "Solo quedaban {$unidades->count()} más de «{$producto->nombre}».")
+                    : null,
+            ],
+        ]);
     }
 
     /** Suelta la reserva de los aparatos que salieron del carrito. */

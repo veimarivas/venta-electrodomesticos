@@ -25,6 +25,9 @@ use App\Http\Controllers\Api\V1\ProveedorController;
 use App\Http\Controllers\Api\V1\QrCobroController;
 use App\Http\Controllers\Api\V1\ReparacionController;
 use App\Http\Controllers\Api\V1\ReporteController;
+use App\Http\Controllers\Api\V1\GastoController;
+use App\Http\Controllers\Api\V1\SeguimientoController;
+use App\Http\Controllers\Api\V1\VerificacionCompraController;
 use App\Http\Controllers\Api\V1\RolController;
 use App\Http\Controllers\Api\V1\TrabajadorController;
 use App\Http\Controllers\Api\V1\UnidadController;
@@ -236,6 +239,25 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('/proveedores/{proveedor}', [ProveedorController::class, 'destroy'])
             ->middleware('permission:proveedores.eliminar')->name('proveedores.destroy');
 
+        // Compras asignadas para verificar: lo único de Compras que ve el
+        // vendedor, sin costos. Quien administra compras también puede.
+        Route::middleware('permission:compras.verificar|compras.crear')->group(function () {
+            Route::get('/compras-por-verificar', [VerificacionCompraController::class, 'index'])
+                ->name('compras.verificar.index');
+            Route::get('/compras-por-verificar/{compra}', [VerificacionCompraController::class, 'show'])
+                ->name('compras.verificar.show');
+            Route::post('/compras-por-verificar/{compra}/recepcionar', [VerificacionCompraController::class, 'recepcionar'])
+                ->name('compras.verificar.recepcionar');
+        });
+
+        // Asignar la verificación a un vendedor (le llega un aviso).
+        Route::middleware('permission:compras.editar')->group(function () {
+            Route::get('/compras/verificadores', [VerificacionCompraController::class, 'verificadores'])
+                ->name('compras.verificadores');
+            Route::post('/compras/{compra}/asignar', [VerificacionCompraController::class, 'asignar'])
+                ->name('compras.asignar');
+        });
+
         Route::middleware('permission:compras.ver')->group(function () {
             // La ruta estática va ANTES que `/compras/{compra}`: si no, Laravel
             // tomaría «pagos» como el id de una compra y respondería 404.
@@ -408,6 +430,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Reserva del carrito: bloquea el aparato mientras se vende, para
             // que otra caja no lo tome.
             Route::post('/pos/reservar', [PosController::class, 'reservar'])->name('pos.reservar');
+            // Venta por cantidad de productos sin serial: N más, los más antiguos.
+            Route::post('/pos/reservar-cantidad', [PosController::class, 'reservarCantidad'])->name('pos.reservar-cantidad');
             Route::post('/pos/liberar', [PosController::class, 'liberar'])->name('pos.liberar');
             // Descuento por debajo del mínimo: el vendedor pide el suyo y
             // consulta el estado mientras espera.
@@ -449,6 +473,28 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/caja/cierres', [CajaController::class, 'cierres'])
             ->middleware('permission:caja.ver')
             ->name('caja.cierres');
+
+        // ¿Hace falta caja para vender? Interruptor del administrador.
+        Route::post('/caja/obligatoria', [CajaController::class, 'obligatoria'])
+            ->middleware('permission:ajustes.editar')
+            ->name('caja.obligatoria');
+
+        // Gastos de la tienda y el seguimiento del administrador.
+        Route::get('/gastos', [GastoController::class, 'index'])
+            ->middleware('permission:gastos.ver')->name('gastos.index');
+        Route::post('/gastos', [GastoController::class, 'store'])
+            ->middleware('permission:gastos.crear')->name('gastos.store');
+        Route::post('/gastos/{gasto}', [GastoController::class, 'update'])
+            ->middleware('permission:gastos.editar')->name('gastos.update');
+        Route::delete('/gastos/{gasto}', [GastoController::class, 'destroy'])
+            ->middleware('permission:gastos.eliminar')->name('gastos.destroy');
+
+        Route::middleware('permission:reportes.seguimiento')->group(function () {
+            Route::get('/reportes/resumen-diario', [SeguimientoController::class, 'resumenDiario'])
+                ->name('reportes.resumen-diario');
+            Route::get('/reportes/vendedores', [SeguimientoController::class, 'vendedores'])
+                ->name('reportes.vendedores');
+        });
 
         Route::middleware('permission:caja.gestionar')->group(function () {
             Route::post('/caja/abrir', [CajaController::class, 'abrir'])->name('caja.abrir');

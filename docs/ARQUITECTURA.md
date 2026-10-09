@@ -189,7 +189,10 @@ numero_factura, fecha_compra (date),
 subtotal, descuento, impuesto, flete, otros_gastos, total (decimal 12,2),
 moneda (char 3, default 'BOB'), tipo_cambio (decimal 12,6, default 1),
 estado (enum: draft|received|cancelled), notas, timestamps
+verificador_id (FK users, null on delete), asignada_en   -- 2026-10-09
+INDEX (verificador_id, estado)
 ```
+> **Verificación encargada (2026-10-09):** el administrador asigna un usuario con `compras.verificar` para que recepcione la compra sin ver costos (`Compra::esVerificadaPor()`, `scopeAsignadasA`). El vendedor no tiene `compras.ver`.
 
 **`compra_detalles`** — detalle de compra
 ```
@@ -322,8 +325,11 @@ id, venta_id (FK cascade), unidad_id (FK, indexado),
 unidad_vendida_id (nullable, UNIQUE),  -- guardia de la doble venta
 producto_id (FK), precio_unitario, costo_unitario, descuento,
 ganancia (decimal 12,2), timestamps
+precio_lista (decimal 12,2, nullable)  -- 2026-10-09: precio del día al vender
 ```
 > Modelo `VentaDetalle` (con `$table = 'venta_detalles'`).
+>
+> **`precio_lista` (2026-10-09):** lo que decía la lista cuando se vendió, para que `SeguimientoDeVendedores` mida rebajas y sobreprecios por vendedor. La migración rellena las filas viejas con su `precio_unitario` (no cuentan como desvío).
 >
 > **`unidad_vendida_id` sustituye al `unique(item_id)` del plan original**, que tenía un fallo: con el índice único sobre `unidad_id` a secas, un aparato devuelto tras anular una venta volvía al stock pero **no se podía volver a vender nunca**, porque su línea seguía ocupando el índice. Se comprobó contra la base antes de corregirlo.
 >
@@ -463,7 +469,7 @@ abierta_en, cerrada_en (nullable),
 monto_inicial, monto_declarado (nullable), monto_esperado (nullable),
 diferencia (nullable), estado ('abierta'|'cerrada'), notas, timestamps
 ```
-> Al cerrar se guarda una **foto** (`monto_esperado`, `diferencia`) que no se mueve aunque después se anule una venta del turno. `ventas.caja_id` ata cada venta a su turno. Vender exige un turno abierto (2026-09-20).
+> Al cerrar se guarda una **foto** (`monto_esperado`, `diferencia`) que no se mueve aunque después se anule una venta del turno. `ventas.caja_id` ata cada venta a su turno. Vender exige un turno abierto (2026-09-20) **mientras el ajuste `caja_obligatoria` esté encendido** (2026-10-09; la API de cobro no lo exige, por las ventas sin conexión).
 
 **`movimientos_caja`** — ingresos y retiros durante el turno *(implementada 2026-09-12)*
 ```
@@ -479,6 +485,22 @@ imagen (boucher, nullable), fecha, notas, timestamps
 ```
 > Una compra con pagos ya no se edita: su total empezó a moverse.
 
+**`gastos`** — gastos de la tienda *(implementada 2026-10-09)*
+```
+id, fecha (date), concepto, categoria (comida|transporte|servicios|insumos|personal|otros),
+monto (decimal 12,2), metodo_pago (qr|efectivo|transferencia),
+beneficiario_id (FK users nullable: para quién; null = la tienda),
+caja_id (FK cajas nullable: salió del cajón), comprobante, notas,
+user_id (FK), timestamps, deleted_at
+```
+> `RegistroDeGastos` ata el gasto al turno abierto solo si es en efectivo, de hoy y marcado *de caja*; entonces `ArqueoDeCaja` lo resta del esperado. `ResumenDiario` los suma todos, sea cual sea el método.
+
+**`ajustes`** — interruptores del negocio *(implementada 2026-10-09)*
+```
+id, clave (unique), valor, user_id (FK nullable), timestamps
+```
+> Se lee con `App\Support\Ajustes` (caché por petición). Hoy guarda `caja_obligatoria` ('1' por defecto).
+
 **`precios_producto`** — el precio del día *(implementada 2026-09-20)*
 ```
 id, producto_id (FK), user_id (FK), fecha (date, indexada),
@@ -486,6 +508,8 @@ precio_venta (decimal 12,2), costo_referencia (decimal 12,2), notas,
 timestamps — UNIQUE(producto_id, fecha)
 ```
 > Una fila por producto y jornada. El último registrado es el vigente; sin ninguno, el inicial del producto. `PreciosDelDia::listos()` decide si el POS puede cobrar. El precio nunca queda en el costo o por debajo.
+>
+> **Sugerencia por compra nueva (2026-10-08).** `PreciosDelDia::sugerencia()` se calcula al leer, **sin tabla propia**: compara el último lote recibido (unidades agrupadas por `compra_detalle_id`, recibidas desde el día de la última confirmación y hasta ayer) con el lote anterior —o, sin lote anterior, con el `costo_referencia` de la última confirmación— y propone `precio vigente × costo nuevo ÷ costo anterior`, redondeado al Bs hacia arriba. Guardarla obligaría a recordar borrarla al confirmar; deducirla hace que desaparezca sola cuando la jornada siguiente queda confirmada. Nunca escribe en `precios_producto`: solo lo hace quien confirma.
 
 **`solicitudes_descuento`** — autorización para bajar del mínimo *(implementada 2026-09-12)*
 ```

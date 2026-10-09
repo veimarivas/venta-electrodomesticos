@@ -21,7 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
-| 1.26.0+36 | 2026-10-08 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas | sin cambios de API |
+| 1.26.0+36 | 2026-10-09 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas, foto del producto con la cámara, sugerencias de precio, venta por cantidad, precio por encima de la lista, referencias ocultas, verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor, caja opcional | el del 2026-10-09 (con uno del 2026-10-08 vende, pero «Por verificar», gastos y los resúmenes dan 404; con uno anterior además cobrar por encima de la lista da 422) |
 | 1.25.0+35 | 2026-10-05 | Sistema visual unificado | sin cambios de API |
 | 1.24.1+34 | 2026-10-03 | La sesión ya no se cierra sola | `5026ca8` |
 | 1.24.0+33 | 2026-10-03 | Buscador global, recibir en el taller | `5026ca8` |
@@ -33,6 +33,257 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor y caja opcional (2026-10-09)
+
+Backend: 5 migraciones (`ajustes`, `gastos`, `compras.verificador_id`,
+`venta_detalles.precio_lista`, permisos nuevos) y endpoints nuevos (ver
+[API.md](API.md)) · app **1.26.0+36** (sin repartir; entra en la misma
+versión)
+
+Pedido del dueño. Decisiones tomadas con él: va en **panel y app**; la caja
+**deja de ser obligatoria** (es un interruptor del administrador); los gastos
+llevan **método de pago** (casi todo se paga por QR, así que el resumen no
+puede mirar solo el efectivo); y gastos, resumen del día y ventas por vendedor
+son **solo del administrador**.
+
+- **El vendedor no ve Compras.** Recibe el permiso nuevo `compras.verificar`
+  (y no `compras.ver`). En la ficha de una compra pendiente el administrador
+  elige *Encargar la verificación* → un vendedor; el vendedor recibe un aviso
+  (`CompraAsignadaPush`, base + FCM) y la compra le aparece en **Por
+  verificar** (panel `/verificar-compras`, app «Por verificar» en el inicio).
+  Ahí solo ve **esa** compra, sin costos ni pagos: escanea o escribe los
+  seriales, o cuenta las unidades de lo que no lleva serial, y registra lo que
+  llegó (por tandas, como la recepción normal). `Compra::esVerificadaPor()`
+  exige ser el asignado *y* tener el permiso.
+- **Ventas por vendedor** (`/reportes/vendedores`, app «Por vendedor»): por
+  vendedor y período, ventas, unidades, total, cuánto **rebajó** y cuánto
+  **cobró por encima** de la lista, con el detalle por producto y las ventas
+  que se apartaron de la lista. Para saber la lista de cada venta, cada línea
+  guarda ahora `precio_lista` (el precio del día al venderla); las ventas
+  viejas se rellenan con su precio cobrado, así que no cuentan como desvío.
+  Las líneas devueltas no cuentan.
+- **Caja opcional.** `Ajustes` (tabla `ajustes`, clave
+  `caja_obligatoria`, por defecto «sí» para no cambiar nada al migrar). Con la
+  caja apagada el punto de venta del panel y la app cobran sin turno abierto;
+  el interruptor está en la Caja (panel y app) y pide `ajustes.editar`. La API
+  de cobro **no** exige la caja a propósito: las ventas que la app guardó sin
+  conexión se sincronizan más tarde y no deben rebotar; la app lo controla
+  antes de cobrar.
+- **Gastos** (`/gastos`, app «Gastos»): fecha, concepto, categoría (comida,
+  transporte, servicios, insumos, personal, otros), monto, método (QR,
+  efectivo, transferencia), para quién (un vendedor, un administrador o la
+  tienda), comprobante con foto y notas. Un gasto en efectivo de hoy puede
+  marcarse *salió del cajón*: queda atado al turno abierto y baja el esperado
+  del arqueo (no deja sacar más de lo que hay). Archivar es borrado lógico.
+- **Resumen del día** (`/reportes/resumen-diario`, app «Resumen del día»):
+  ingresos (ventas por medio de pago, cuotas cobradas, ingresos a la caja) y
+  egresos (compras pagadas ese día, gastos por categoría, por persona y en
+  detalle, retiros de la caja, devoluciones), el neto y, aparte, el efectivo
+  del día. No depende de la caja: con la caja apagada es el control del día.
+- **Arreglo de paso:** la recepción del panel mandaba `verificada` para las
+  líneas sin serial y el servicio espera `cantidad_verificada`, así que una
+  compra con productos sin serial no se podía recepcionar desde el panel.
+  Ahora manda la cantidad que falta y solo muestra las líneas incompletas.
+
+Comprobado: `tests/Feature/SeguimientoYVerificacionTest.php` (14 pruebas:
+el vendedor solo ve su compra y sin costos, verificación por tandas en panel y
+API, asignación con aviso, venta sin caja, solo el admin cambia la caja, el
+gasto del cajón baja el esperado, 403 del vendedor en gastos, cifras del
+resumen y del seguimiento) y la suite completa (999; la única que falló,
+`MenuBuilderTest`, pedía que el vendedor no vea «Compras»: por eso «Por
+verificar» va suelto en el menú y no dentro de Compras). App: `flutter analyze` sin
+avisos nuevos, `test/seguimiento_test.dart` (8 pruebas de modelos y de
+`permiteVender`) y `flutter test` completo (187).
+
+## Venta: por cantidad, sin techo de precio, referencias ocultas y recibo «Electrogar» (2026-10-08)
+
+Backend: `POST /api/v1/pos/reservar-cantidad` (nueva), `/pos/buscar` y
+`/pos/cobrar` cambiados, recibo y punto de venta del panel · app **1.26.0+36**
+(sin repartir)
+
+Pedido de la tienda, en un plan por módulos. Dos decisiones se tomaron con el
+dueño antes de empezar: la venta por cantidad es **solo para productos sin
+serial** (los que llevan serial se siguen escaneando, por la garantía), y los
+botones de referencia **solo enseñan el dato**, no lo aplican.
+
+### 1. Registro de productos
+
+- **1.1 Foto con la cámara en el panel.** El formulario de producto tiene
+  *Tomar foto* (`capture="environment"`: cámara trasera en teléfono y tablet;
+  en un PC abre el selector) y *Elegir de galería*, con la vista previa que ya
+  había. En la app quedó hecho el mismo día (entrada «Foto del producto con la
+  cámara»).
+- **1.2 Error de la rebaja máxima.** En el panel, el prefijo del campo se
+  quedaba gris con el campo en rojo (marco partido), al grupo le faltaba
+  `has-validation` y el error no se recalculaba al cambiar el precio. Ahora el
+  marco sale entero en rojo (regla común en `_unificacion.scss`), el error se
+  rehace al tocar cualquiera de los dos campos y dice el tope: «como mucho Bs
+  100,00». La API da el mismo mensaje. En la app, la fila precio/rebaja se
+  desalineaba al salir el error bajo un solo campo y el mensaje se cortaba en
+  una línea: ahora va alineada arriba, el error parte en varias líneas y se
+  valida mientras se escribe. Revisado a 1366 y 768 px.
+
+### 2. Venta
+
+- **2.1 Referencias a la vista solo un momento.** En el carrito ya no se ven
+  fijos el precio de lista, el «Mín. Bs …» ni la columna de descuento; tampoco
+  la «Rebaja hasta Bs …» del buscador. *Precio de lista* y *Rebaja máxima*
+  enseñan el dato bajo el botón («Mínimo: Bs 45,00 (−5,00)») y se borra a los
+  4 s o al salir del campo, sin cambiar el precio. En el panel es estado local
+  de Alpine (sin ir al servidor); en la app, un `Timer` en la hoja de precio,
+  que ya no se cierra al pulsarlos. El aviso de autorización dice «por debajo
+  del mínimo autorizado» sin el importe.
+- **2.2 Sin techo de precio.** Se quitó la regla en el panel (`Pos`), la API
+  (`PosController::cobrar`) y la app (`LineaDelCarrito`). Por encima de la
+  lista la línea se registra con **precio unitario = lo cobrado y descuento 0**
+  (nunca un descuento negativo), así reportes y devoluciones siguen igual. El
+  piso del costo y el tope de rebaja con autorización no cambian.
+  **Arreglo de paso:** la API tomaba como referencia el precio que trae la
+  unidad y no el precio del día, así que el descuento que registraba el
+  teléfono podía no ser el que veía; ahora usa el del día, como el panel.
+- **2.3 Venta por cantidad (sin serial).** `ReservasDeUnidades::reservarCantidad`
+  aparta N unidades del producto, las más antiguas primero, de forma atómica.
+  El buscador enseña el producto una vez con «N disponibles». La línea del
+  carrito agrupa sus unidades con **− cantidad +**, precio por unidad e
+  importe, y dice qué cajas entregar. Precio, entrega y autorización se aplican
+  a toda la línea (cada unidad sigue llevando su autorización en el servidor:
+  se pide una vez y se manda por todas). La API suma
+  `POST /pos/reservar-cantidad` y los campos `tiene_serial` y `disponibles`.
+
+### 3. Cobro
+
+- **3.1** El resumen de cobro, el repaso antes de cobrar y la ventana de venta
+  registrada enseñan solo el **total**; sin «Subtotal (precios de referencia)»
+  ni «Descuentos». En la app, igual en la pantalla de cobro y en la barra del
+  carrito.
+
+### 4. Recibo
+
+- **4.1** El recibo dice **Electrogar**. Sale de `TIENDA_NOMBRE` (nuevo en
+  `.env.example`, por defecto *Electrogar*), aparte de `APP_NAME`, para no
+  renombrar el panel. Lo usan también la orden de servicio y el estado de
+  cuenta, que son los otros documentos del cliente.
+- **4.2** Cada línea lleva el **precio final** y al pie solo el **TOTAL**: sin
+  «Precio · Descuento», «Subtotal» ni «Descuentos». Las unidades sin serial al
+  mismo precio se juntan: «3 × Cable HDMI · 150,00 · P/U 50,00»
+  (`Venta::lineasDelRecibo()`, compartido por el PDF y el recibo en pantalla).
+
+**Cómo se comprobó:** pruebas nuevas en el backend —cobrar por encima de la
+lista (panel y API), venta por cantidad (agrupa, FIFO, bajar devuelve al stock,
+no pide más de lo que hay, con serial no agrupa), resumen sin descuentos,
+reserva por cantidad en la API (y 422 con serial), buscador agrupado, recibo
+con «Electrogar» y sin desglose, recibo agrupado, mensaje de la rebaja— y la
+suite completa. En la app, `pos_test.dart` (por encima de la lista, cantidad,
+precio de línea, bajar, sin stock, reelegir la misma unidad, compatibilidad con
+un backend anterior); `flutter test` (179) y `flutter analyze` con los 11
+avisos previos. En el panel, contra una base aparte ya borrada: buscador con
+«6 disponibles», línea de 3 cables a Bs 60 (sobre una lista de 50) cobrada por
+Bs 180 con líneas 60,00/0,00, la referencia apareciendo y yéndose a los 4 s sin
+tocar el precio, el recibo resultante, y el formulario de producto a 1366 y
+768 px.
+
+---
+
+## Precios del día: confirmar la jornada y sugerencias por compra nueva (2026-10-08)
+
+Backend: `PreciosDelDia::sugerencia()`, pantalla `/precios-del-dia` rediseñada,
+campo nuevo en `GET /api/v1/precios-del-dia` (aditivo: la app anterior lo
+ignora) · app **1.26.0+36** (sin repartir)
+
+Pedido en la tienda: cada día se confirman los precios para empezar a vender, y
+cuando entra mercadería con otro costo, al día siguiente el sistema propone
+subir o bajar el precio según los precios iniciales. Si no se cambia nada, se
+vende al precio de ayer.
+
+### La regla
+
+- **La jornada se sigue abriendo al confirmar.** Sin confirmar, el punto de
+  venta no cobra, igual que antes. Cada campo trae ya el precio de ayer:
+  **Confirmar sin cambios** deja todo como estaba.
+- **Sugerencia por compra nueva.** Si el último lote recibido de un producto
+  (desde el día de la última confirmación y hasta ayer) tiene otro costo que el
+  lote anterior, se propone `precio vigente × costo nuevo ÷ costo anterior`,
+  al Bs entero hacia arriba. El ejemplo de la tienda: la LG LK50 comprada a 800
+  y vendida a 1100, recomprada a 850 → **1169**; a 750 → **1032**.
+- **Nunca se aplica sola.** Solo cambia el precio si alguien la aplica y
+  confirma; sin eso se vende al precio de ayer. Tampoco se guarda en ningún
+  sitio: se deduce al leer y desaparece cuando se confirma la jornada siguiente.
+- No se sugiere: un cambio de costo de menos del 0,5 % (ruido del prorrateo),
+  lo recibido hoy (sale mañana), lo que ya estaba en stock cuando se confirmó
+  una jornada anterior, ni un precio que no cubra un aparato más caro que sigue
+  en stock.
+
+### Panel (`/precios-del-dia`)
+
+- **La cabecera salía en blanco**: `.precios-modulo` no estaba en la lista de
+  módulos de `_crud.scss` que pintan la banda con `--grad-marca`. Ahora lleva
+  la fecha de la jornada y su estado (*Confirmados · el punto de venta cobra* /
+  *Sin confirmar · no cobra*).
+- Cuarto indicador **Sugerencias** y un aviso con **Aplicar todas**.
+- Filtros *Todos · Pendientes · Con sugerencia · Cambiados* con su cuenta; si
+  hay sugerencias la pantalla abre por ellas.
+- Cada producto: margen con el precio escrito, cambio frente a ayer y ↺ para
+  volver al de ayer; debajo, la franja de la sugerencia con su porqué (compra,
+  fecha, costo antes → después) y **Aplicar Bs 1.169**, que pasa a *Aplicada*.
+- Barra de abajo: cuántos suben, bajan y quedan igual, y el botón dice lo que
+  va a pasar (*Confirmar sin cambios*, *Confirmar precios del día*, *Guardar
+  correcciones*).
+- **Arreglo encontrado al probar:** si un precio quedaba bajo el costo con un
+  filtro puesto, el error salía arriba y el producto culpable no estaba en la
+  lista: el botón parecía no hacer nada. Ahora la fila se marca en rojo con su
+  costo, el filtro vuelve a *Todos*, la barra lo explica y la marca se quita al
+  corregir el precio.
+- En el teléfono la tabla pasa a dos columnas (stock, costo y ayer bajo el
+  nombre) en vez de desplazarse de lado.
+
+### App
+
+- `SugerenciaDePrecio` en el modelo y la misma pantalla: resumen de la jornada
+  con suben/bajan, aviso con *Aplicar todas*, chips de filtro, franja de
+  sugerencia con *Aplicar*, ↺ por fila y **Confirmar sin cambios /
+  Confirmar precios (N cambios)**. Se confirma la lista entera aunque el
+  filtro esconda filas.
+- La fila del precio desbordaba 147 px a 360 px con letra grande al mostrar
+  margen, cambio y deshacer juntos: ahora las etiquetas se encogen.
+
+**Cómo se comprobó:** 9 pruebas nuevas en `PreciosDelDiaTest` (sube, baja,
+recibido hoy, compra ya confirmada, costo igual, no se aplica sola, confirmar
+sin cambios, error visible con filtro, API) y la suite completa del backend.
+En el panel, contra una base aparte (`electronica_hogar_preview`, borrada al
+terminar): licuadora 800 → 850 sugirió 1169 y refrigerador 3000 → 2850 sugirió
+3990; aplicada la primera y confirmada la jornada, el POS vende la licuadora a
+1169 y el refrigerador sigue a 4200. Revisado a 1366 px, a 375 px y en oscuro.
+App: `test/precios_test.dart` (modelo, backend anterior y la pantalla a 360 px:
+abre por sugerencias, no aplica sola, confirma todo), `flutter test` (172) y
+`flutter analyze` con los 11 avisos previos.
+
+> **Datos del seeder:** `LocalDataSeeder` crea un TV TCL 85" con costo 9.500
+> por encima de su precio, así que una base recién sembrada no deja confirmar
+> la jornada hasta corregirlo. Y la cuenta que crea no es la que dice
+> `DESARROLLO.md` §1.
+
+---
+
+## Foto del producto con la cámara (2026-10-08)
+
+App **1.26.0+36** (sin repartir; entra en la misma versión) · sin cambios de API
+
+- **Alta y edición de producto:** además de *Galería*, el botón **Tomar foto**
+  abre la cámara y la foto queda cargada para el registro (se sube al guardar,
+  reducida a 1600 px como la de galería). Los productos se registran con la caja
+  delante, y antes había que fotografiarla aparte y buscarla en la galería.
+- La foto elegida —o la actual, al editar— se ve en miniatura sobre los
+  botones, con la papelera para quitarla.
+- Sin permiso de cámara, el error se dice bajo el campo en vez de no hacer nada.
+- iOS: se añadieron `NSCameraUsageDescription` y
+  `NSPhotoLibraryUsageDescription` al `Info.plist`, que faltaban (sin ellos iOS
+  cierra la app al pedir la cámara). Android ya tenía el permiso `CAMERA`.
+
+**Cómo se comprobó:** `flutter analyze` del formulario sin avisos y
+`flutter test` en verde (169). Falta probarlo en un teléfono.
+
+---
 
 ## Compras rediseñada, selector de apariencia e inversión por proveedor (2026-10-08)
 

@@ -71,6 +71,7 @@ class CompraController extends Controller
         $compra->load([
             'proveedor',
             'user',
+            'verificador',
             'detalles' => fn ($d) => $d->with('producto')
                 ->withCount('unidades')
                 ->orderBy('id'),

@@ -127,7 +127,19 @@ class ArqueoDeCaja
             $caja->movimientos()->retiros()->sum('monto')
         );
 
-        return $ingresos - $retiros;
+        return $ingresos - $retiros - $this->gastosEnCentavos($caja);
+    }
+
+    /**
+     * Gastos pagados con billetes del cajón durante el turno (la comida, un
+     * flete). Salen del cajón igual que un retiro; sin restarlos, el cierre
+     * daría un faltante que no es tal. Los pagados por QR no tocan el cajón.
+     */
+    public function gastosEnCentavos(Caja $caja): int
+    {
+        return ProrrateoDeGastos::aCentavos(
+            $caja->gastos()->where('metodo_pago', 'efectivo')->sum('monto')
+        );
     }
 
     /**

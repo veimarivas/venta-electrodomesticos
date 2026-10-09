@@ -619,6 +619,8 @@ document.addEventListener('livewire:init', () => {
         'modal-rol': 'modalRol',
         'modal-permisos-rol': 'modalPermisosRol',
         'modal-eliminar-rol': 'modalEliminarRol',
+        'modal-gasto': 'modalGasto',
+        'modal-archivar-gasto': 'modalArchivarGasto',
     };
 
     Object.entries(modales).forEach(([evento, id]) => {

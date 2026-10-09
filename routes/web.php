@@ -87,6 +87,38 @@ Route::middleware(['auth', 'active'])->group(function () {
         'breadcrumbs' => ['Inicio' => null, 'Análisis' => null, 'Reportes' => null],
     ])->middleware('permission:reportes.ver')->name('reportes.index');
 
+    // Seguimiento del administrador: el cierre del día en dinero y lo que
+    // vendió cada vendedor (descuentos y sobreprecios).
+    Route::view('/reportes/resumen-diario', 'backend.reportes.resumen-diario', [
+        'title' => 'Resumen del día',
+        'breadcrumbs' => ['Inicio' => null, 'Análisis' => null, 'Resumen del día' => null],
+    ])->middleware('permission:reportes.seguimiento')->name('reportes.resumen-diario');
+
+    Route::view('/reportes/vendedores', 'backend.reportes.vendedores', [
+        'title' => 'Ventas por vendedor',
+        'breadcrumbs' => ['Inicio' => null, 'Análisis' => null, 'Ventas por vendedor' => null],
+    ])->middleware('permission:reportes.seguimiento')->name('reportes.vendedores');
+
+    Route::view('/gastos', 'backend.gastos.index', [
+        'title' => 'Gastos',
+        'breadcrumbs' => ['Inicio' => null, 'Operaciones' => null, 'Gastos' => null],
+    ])->middleware('permission:gastos.ver')->name('gastos.index');
+
+    // Las compras que el administrador asigna a un vendedor para verificar.
+    // Es la única parte de Compras que ve el vendedor: solo las suyas.
+    Route::view('/verificar-compras', 'backend.compras.verificaciones', [
+        'title' => 'Compras por verificar',
+        'breadcrumbs' => ['Inicio' => null, 'Compras' => null, 'Por verificar' => null],
+    ])->middleware('permission:compras.verificar')->name('compras.verificaciones');
+
+    Route::get('/verificar-compras/{compra}', function (\App\Models\Compra $compra) {
+        return view('backend.compras.verificar', [
+            'title' => 'Verificar '.$compra->codigo,
+            'breadcrumbs' => ['Inicio' => null, 'Por verificar' => route('compras.verificaciones'), $compra->codigo => null],
+            'compra' => $compra,
+        ]);
+    })->middleware('permission:compras.verificar')->name('compras.verificar');
+
     Route::view('/ventas/nueva', 'backend.ventas.pos', [
         'title' => 'Punto de venta',
         'breadcrumbs' => ['Inicio' => null, 'Ventas' => null, 'Punto de venta' => null],

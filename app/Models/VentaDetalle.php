@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'unidad_vendida_id',
     'producto_id',
     'precio_unitario',
+    'precio_lista',
     'costo_unitario',
     'descuento',
     'ganancia',
@@ -47,6 +48,9 @@ class VentaDetalle extends Model
             'producto_id' => 'integer',
             // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'precio_unitario' => 'decimal:2',
+            // La lista del momento de vender: contra ella se mide el descuento
+            // o el sobreprecio del seguimiento por vendedor.
+            'precio_lista' => 'decimal:2',
             'costo_unitario' => 'decimal:2',
             'descuento' => 'decimal:2',
             'ganancia' => 'decimal:2',

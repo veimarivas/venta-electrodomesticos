@@ -963,16 +963,154 @@ class VentaCrudTest extends TestCase
             ->assertDontSee('carrito-pendiente-boton', false);
     }
 
-    public function test_el_pos_no_deja_cobrar_por_encima_del_precio_de_referencia(): void
+    public function test_el_pos_deja_cobrar_por_encima_del_precio_de_referencia(): void
     {
+        // Clientes frecuentes o instituciones: se puede cobrar más que la lista.
         $unidad = $this->unidadEnStock(200, 400, 50);
 
         Livewire::actingAs($this->admin())
             ->test(Pos::class)
             ->call('agregar', $unidad->id)
             ->set('carrito.0.precio', '450')
-            ->assertHasErrors('carrito.0.precio')
-            ->assertSet('ventaValida', false);
+            ->assertHasNoErrors('carrito.0.precio')
+            ->assertSet('ventaValida', true)
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $venta = Venta::firstOrFail();
+        $detalle = $venta->detalles()->firstOrFail();
+
+        // Se registra lo cobrado, sin «descuento negativo».
+        $this->assertSame('450.00', $detalle->precio_unitario);
+        $this->assertSame('0.00', $detalle->descuento);
+        $this->assertEquals(450, $venta->total);
+        $this->assertEquals(0, $venta->descuento);
+    }
+
+    // ---- Venta por cantidad (productos sin serial) ------------------------------
+
+    /** Un producto sin serial con N unidades en stock, la más antigua primero. */
+    private function productoSinSerial(int $unidades = 4, float $costo = 20, float $precio = 50): Producto
+    {
+        $producto = Producto::factory()->create([
+            'precio_venta' => $precio,
+            'descuento_maximo' => 5,
+            'tiene_serial' => false,
+            'activo' => true,
+        ]);
+
+        app(PreciosDelDia::class)->guardar([$producto->id => $precio], $this->admin()->id);
+
+        for ($i = 0; $i < $unidades; $i++) {
+            Unidad::factory()->create([
+                'producto_id' => $producto->id,
+                'estado' => 'en_stock',
+                'serial' => null,
+                'costo_unitario' => $costo,
+                'precio_venta' => $precio,
+                'ingresado_en' => now()->subDays(10 - $i),
+            ]);
+        }
+
+        return $producto;
+    }
+
+    public function test_un_producto_sin_serial_se_vende_por_cantidad(): void
+    {
+        $producto = $this->productoSinSerial(4);
+        $primera = $producto->unidades()->orderBy('ingresado_en')->firstOrFail();
+
+        $pantalla = Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $primera->id)
+            ->call('cambiarCantidad', $producto->id, 3)
+            ->assertCount('carrito', 3);
+
+        // Una sola línea en pantalla, con las tres unidades dentro.
+        $this->assertCount(1, $pantalla->instance()->tarjetasDelCarrito());
+
+        // Se apartaron las más antiguas y la nueva queda en stock.
+        $this->assertSame(3, Unidad::where('producto_id', $producto->id)->where('estado', 'reservado')->count());
+        $this->assertSame(
+            $producto->unidades()->orderBy('ingresado_en')->limit(3)->pluck('id')->sort()->values()->all(),
+            collect($pantalla->get('carrito'))->pluck('unidad_id')->sort()->values()->all(),
+        );
+
+        // El precio pactado vale para todas: cambia una, cambian las tres.
+        $pantalla->set('carrito.0.precio', '48')
+            ->assertSet('carrito.1.precio', '48')
+            ->assertSet('carrito.2.precio', '48')
+            ->call('cobrar')
+            ->assertHasNoErrors();
+
+        $venta = Venta::firstOrFail();
+        $this->assertSame(3, $venta->detalles()->count());
+        $this->assertEquals(144, $venta->total);
+    }
+
+    public function test_bajar_la_cantidad_devuelve_unidades_al_stock(): void
+    {
+        $producto = $this->productoSinSerial(4);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $producto->unidades()->firstOrFail()->id)
+            ->call('cambiarCantidad', $producto->id, 4)
+            ->call('cambiarCantidad', $producto->id, 2)
+            ->assertCount('carrito', 2);
+
+        $this->assertSame(2, Unidad::where('producto_id', $producto->id)->where('estado', 'en_stock')->count());
+    }
+
+    public function test_no_se_piden_mas_unidades_de_las_que_hay(): void
+    {
+        $producto = $this->productoSinSerial(2);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $producto->unidades()->firstOrFail()->id)
+            ->call('cambiarCantidad', $producto->id, 5)
+            ->assertCount('carrito', 2)
+            ->assertDispatched('toast', tipo: 'warning');
+    }
+
+    public function test_un_producto_con_serial_no_se_agrupa(): void
+    {
+        $a = $this->unidadEnStock();
+        $b = Unidad::factory()->create([
+            'producto_id' => $a->producto_id,
+            'estado' => 'en_stock',
+            'costo_unitario' => 1000,
+            'precio_venta' => 1500,
+        ]);
+
+        $pantalla = Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $a->id)
+            ->call('agregar', $b->id)
+            // Con serial, cambiar la cantidad no hace nada: cada aparato se escanea.
+            ->call('cambiarCantidad', $a->producto_id, 5)
+            ->assertCount('carrito', 2);
+
+        $this->assertCount(2, $pantalla->instance()->tarjetasDelCarrito());
+    }
+
+    public function test_la_pantalla_no_muestra_el_minimo_ni_el_descuento_fijos(): void
+    {
+        $unidad = $this->unidadEnStock(200, 400, 50);
+
+        Livewire::actingAs($this->admin())
+            ->test(Pos::class)
+            ->call('agregar', $unidad->id)
+            ->set('carrito.0.precio', '360')
+            // El resumen de cobro solo enseña el total.
+            ->assertDontSee('Subtotal (precios de referencia)')
+            ->assertDontSee('Descuentos')
+            ->assertSee('Total a cobrar')
+            // La referencia y el mínimo solo están tras su botón.
+            ->assertSee('Precio de lista')
+            ->assertSee('Rebaja máxima')
+            ->assertDontSee('Mín. Bs');
     }
 
     public function test_el_servicio_rechaza_un_descuento_no_autorizado(): void

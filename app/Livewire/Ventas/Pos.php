@@ -237,6 +237,8 @@ class Pos extends Component
 
             $this->carrito[] = [
                 'unidad_id' => $unidad->id,
+                'producto_id' => $unidad->producto_id,
+                'sin_serial' => ! ($unidad->producto?->tiene_serial ?? true),
                 'precio_lista' => $lista,
                 'precio' => $precio,
                 'tope_descuento' => number_format(
@@ -363,8 +365,16 @@ class Pos extends Component
             // del producto en cuanto se escribe: enterarse al cobrar, con el
             // cliente delante, llega tarde.
             if (preg_match('/^carrito\.(\d+)\.precio$/', $campo, $coincidencia)) {
-                $this->revisarPrecio((int) $coincidencia[1]);
-                $this->sincronizarAutorizacion((int) $coincidencia[1]);
+                $indice = (int) $coincidencia[1];
+
+                // En una línea por cantidad el precio pactado es por unidad y
+                // vale para todas: se copia a las demás del producto.
+                foreach ($this->hermanas($indice) as $i) {
+                    $this->carrito[$i]['precio'] = $this->carrito[$indice]['precio'] ?? '';
+                    $this->revisarPrecio($i);
+                    $this->sincronizarAutorizacion($i);
+                }
+
                 $this->tocar();
             }
 
@@ -407,18 +417,10 @@ class Pos extends Component
         $unidad = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
 
         $precio = ProrrateoDeGastos::aCentavos($linea['precio']);
-        $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista']);
         $costo = ProrrateoDeGastos::aCentavos($unidad?->costo_unitario ?? '0');
 
-        if ($precio > $lista) {
-            $this->addError(
-                "carrito.{$indice}.precio",
-                'El precio de referencia es el máximo: no se cobra por encima de Bs '.
-                ProrrateoDeGastos::aDecimal($lista).'.'
-            );
-
-            return;
-        }
+        // Cobrar por encima del precio de lista sí se puede (clientes
+        // frecuentes, instituciones): no hay techo, solo el piso del costo.
 
         // Por debajo del costo no hay autorización que valga: se pierde dinero.
         if ($precio < $costo) {
@@ -544,7 +546,26 @@ class Pos extends Component
             ->orderByRaw("estado = 'en_stock' desc")
             ->orderBy('codigo_interno')
             ->limit(12)
-            ->get();
+            ->get()
+            // Un producto sin serial sale una vez (sus unidades vendibles son
+            // iguales y se venden por cantidad). Las que no se pueden vender
+            // siguen saliendo sueltas: cada una explica su propio motivo.
+            ->unique(fn (Unidad $u): string => (! ($u->producto?->tiene_serial ?? true) && $u->esVendible())
+                ? 'p'.$u->producto_id
+                : 'u'.$u->id)
+            ->values();
+    }
+
+    /** Unidades vendibles de un producto, para el «N disponibles» del buscador. */
+    public function disponiblesDe(int $productoId): int
+    {
+        return Unidad::query()->where('producto_id', $productoId)->disponibles()->count();
+    }
+
+    /** Precio de referencia (el del día) de un aparato, para el buscador. */
+    public function referenciaDe(Unidad $unidad): float
+    {
+        return (float) $this->precioDeVenta($unidad);
     }
 
     /** ¿Se buscó algo y no apareció ningún aparato, en ningún estado? */
@@ -723,13 +744,23 @@ class Pos extends Component
         }
 
         $precio = $this->precioDeVenta($unidad);
+        $sinSerial = ! ($unidad->producto?->tiene_serial ?? true);
+
+        // Sin serial, otra unidad del mismo producto se suma a su línea por
+        // cantidad y hereda el precio que ya se pactó para ella.
+        $grupo = $sinSerial ? $this->indicesDelGrupo($unidad->producto_id) : [];
+        $pactado = $grupo === [] ? $precio : (string) $this->carrito[$grupo[0]]['precio'];
 
         $this->carrito[] = [
             'unidad_id' => $unidad->id,
+            'producto_id' => $unidad->producto_id,
+            // Sin serial se vende por cantidad: la vista junta sus unidades en
+            // una sola línea con su campo de cantidad.
+            'sin_serial' => $sinSerial,
             // Precio del día del producto: la referencia que se ofrece.
             'precio_lista' => $precio,
             // Lo que se va a cobrar. Arranca en el de lista, sin descuento.
-            'precio' => $precio,
+            'precio' => $pactado,
             'tope_descuento' => number_format(
                 (float) ($unidad->producto?->descuento_maximo ?? 0), 2, '.', ''
             ),
@@ -740,6 +771,12 @@ class Pos extends Component
             // directa = se lo lleva el cliente; domicilio = hay que llevarlo.
             'entrega' => 'directa',
         ];
+
+        if ($grupo !== []) {
+            $nuevo = array_key_last($this->carrito);
+            $this->revisarPrecio($nuevo);
+            $this->sincronizarAutorizacion($nuevo);
+        }
 
         // El buscador se limpia para escanear el siguiente aparato.
         $this->buscar = '';
@@ -862,20 +899,170 @@ class Pos extends Component
             return;
         }
 
-        $unidadId = $this->carrito[$indice]['unidad_id'] ?? null;
+        // En una línea por cantidad, la cruz quita la línea entera; para
+        // llevarse menos está el campo de cantidad.
+        $this->quitarIndices($this->hermanas($indice));
+    }
 
-        unset($this->carrito[$indice]);
+    /**
+     * Saca del carrito las líneas indicadas y devuelve sus aparatos al stock.
+     *
+     * @param  array<int, int>  $indices
+     */
+    private function quitarIndices(array $indices): void
+    {
+        $unidadIds = [];
+
+        foreach ($indices as $indice) {
+            if (isset($this->carrito[$indice])) {
+                $unidadIds[] = (int) $this->carrito[$indice]['unidad_id'];
+                unset($this->carrito[$indice]);
+            }
+        }
 
         // Reindexar: con huecos, Livewire deja de casar cada fila con sus
         // inputs y el usuario ve precios en la fila equivocada.
         $this->carrito = array_values($this->carrito);
 
         // Al salir del carrito, el aparato vuelve al stock.
-        if ($unidadId !== null) {
-            app(ReservasDeUnidades::class)->liberar([$unidadId], (int) auth()->id());
+        app(ReservasDeUnidades::class)->liberar($unidadIds, (int) auth()->id());
+
+        unset($this->unidadesDelCarrito);
+        $this->resetValidation('carrito');
+        $this->reajustarMixto();
+    }
+
+    // =======================================================================
+    // Venta por cantidad (productos sin serial)
+    // =======================================================================
+
+    /**
+     * Índices de las líneas de un producto sin serial: las unidades que la
+     * vista enseña juntas como una sola línea con su cantidad.
+     *
+     * @return array<int, int>
+     */
+    private function indicesDelGrupo(int $productoId): array
+    {
+        $indices = [];
+
+        foreach ($this->carrito as $indice => $linea) {
+            if (($linea['sin_serial'] ?? false) && (int) ($linea['producto_id'] ?? 0) === $productoId) {
+                $indices[] = $indice;
+            }
         }
 
-        $this->resetValidation('carrito');
+        return $indices;
+    }
+
+    /**
+     * La línea y las que van con ella: todas las de su producto si se vende
+     * por cantidad, o solo ella si lleva serial.
+     *
+     * @return array<int, int>
+     */
+    private function hermanas(int $indice): array
+    {
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null) {
+            return [];
+        }
+
+        return ($linea['sin_serial'] ?? false)
+            ? $this->indicesDelGrupo((int) $linea['producto_id'])
+            : [$indice];
+    }
+
+    /**
+     * El carrito tal como se pinta: una tarjeta por aparato con serial y una
+     * por producto sin serial, en el orden en que entraron. `indice` es la
+     * primera línea de la tarjeta, la que lleva el campo de precio.
+     *
+     * @return array<int, array{indice: int, indices: array<int, int>}>
+     */
+    public function tarjetasDelCarrito(): array
+    {
+        $tarjetas = [];
+        $posicion = [];
+
+        foreach ($this->carrito as $indice => $linea) {
+            if ($linea['sin_serial'] ?? false) {
+                $productoId = (int) $linea['producto_id'];
+
+                if (isset($posicion[$productoId])) {
+                    $tarjetas[$posicion[$productoId]]['indices'][] = $indice;
+
+                    continue;
+                }
+
+                $posicion[$productoId] = count($tarjetas);
+            }
+
+            $tarjetas[] = ['indice' => $indice, 'indices' => [$indice]];
+        }
+
+        return $tarjetas;
+    }
+
+    /**
+     * Cambia cuántas unidades de un producto sin serial lleva la venta.
+     *
+     * Subir reserva las siguientes en stock, las más antiguas primero; bajar
+     * devuelve al stock las últimas que entraron. Las nuevas heredan el precio
+     * pactado de la línea, así que se cobra lo mismo por cada una.
+     */
+    public function cambiarCantidad(int $productoId, mixed $cantidad): void
+    {
+        $this->autorizar('ventas.crear');
+
+        $indices = $this->indicesDelGrupo($productoId);
+
+        if ($indices === [] || ! is_numeric($cantidad)) {
+            return;
+        }
+
+        // Al menos una: para sacar la línea entera está la cruz.
+        $objetivo = max(1, min(200, (int) $cantidad));
+        $actual = count($indices);
+
+        if ($objetivo < $actual) {
+            $this->quitarIndices(array_slice($indices, $objetivo));
+        } elseif ($objetivo > $actual) {
+            $base = $this->carrito[$indices[0]];
+            $faltan = $objetivo - $actual;
+
+            $ids = app(ReservasDeUnidades::class)->reservarCantidad(
+                $productoId,
+                $faltan,
+                (int) auth()->id(),
+                $this->unidadesEnCarrito(),
+            );
+
+            foreach ($ids as $unidadId) {
+                $this->carrito[] = [
+                    ...$base,
+                    'unidad_id' => $unidadId,
+                    // Cada unidad pide su propia autorización si hace falta.
+                    'solicitud_id' => null,
+                    'solicitud_estado' => null,
+                    'precio_aprobado' => null,
+                ];
+
+                $nuevo = array_key_last($this->carrito);
+                $this->sincronizarAutorizacion($nuevo);
+            }
+
+            unset($this->unidadesDelCarrito);
+
+            if (count($ids) < $faltan) {
+                $this->dispatch('toast', tipo: 'warning', mensaje: $ids === []
+                    ? 'No quedan más unidades disponibles de ese producto.'
+                    : 'Solo había '.count($ids).' más disponibles.');
+            }
+        }
+
+        $this->tocar();
         $this->reajustarMixto();
     }
 
@@ -951,18 +1138,34 @@ class Pos extends Component
     {
         $this->autorizar('ventas.crear');
 
+        // En una línea por cantidad cada unidad lleva su autorización: la
+        // regla vive por aparato en `RegistroDeVenta`. El cajero pide una vez
+        // y se manda por todas.
+        foreach ($this->hermanas($indice) as $i) {
+            if (($error = $this->pedirAutorizacion($i)) !== null) {
+                $this->dispatch('toast', tipo: 'error', mensaje: $error);
+
+                return;
+            }
+        }
+
+        $this->dispatch('toast', tipo: 'success', mensaje:
+            'Solicitud enviada al administrador. La venta se actualizará sola al resolverse.');
+    }
+
+    /** Pide la autorización de una sola línea. Devuelve el error, si lo hubo. */
+    private function pedirAutorizacion(int $indice): ?string
+    {
         $linea = $this->carrito[$indice] ?? null;
 
         if ($linea === null) {
-            return;
+            return null;
         }
 
         $unidad = Unidad::find($linea['unidad_id']);
 
         if ($unidad === null) {
-            $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
-
-            return;
+            return 'Ese aparato ya no existe.';
         }
 
         try {
@@ -972,17 +1175,14 @@ class Pos extends Component
                 (int) auth()->id()
             );
         } catch (RuntimeException $e) {
-            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
-
-            return;
+            return $e->getMessage();
         }
 
         $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
         $this->carrito[$indice]['solicitud_estado'] = $solicitud->estado;
         $this->carrito[$indice]['precio_aprobado'] = null;
 
-        $this->dispatch('toast', tipo: 'success', mensaje:
-            'Solicitud enviada al administrador. La venta se actualizará sola al resolverse.');
+        return null;
     }
 
     /**
@@ -997,10 +1197,24 @@ class Pos extends Component
     {
         $this->autorizar('ventas.autorizar_descuento');
 
+        foreach ($this->hermanas($indice) as $i) {
+            if (($error = $this->aprobarEnElActo($i)) !== null) {
+                $this->dispatch('toast', tipo: 'error', mensaje: $error);
+
+                return;
+            }
+        }
+
+        $this->dispatch('toast', tipo: 'success', mensaje: 'Precio autorizado.');
+    }
+
+    /** Autoriza en el acto una sola línea. Devuelve el error, si lo hubo. */
+    private function aprobarEnElActo(int $indice): ?string
+    {
         $linea = $this->carrito[$indice] ?? null;
 
         if ($linea === null) {
-            return;
+            return null;
         }
 
         $servicio = app(AutorizacionDeDescuento::class);
@@ -1019,18 +1233,14 @@ class Pos extends Component
                 $unidad = Unidad::find($linea['unidad_id']);
 
                 if ($unidad === null) {
-                    $this->dispatch('toast', tipo: 'error', mensaje: 'Ese aparato ya no existe.');
-
-                    return;
+                    return 'Ese aparato ya no existe.';
                 }
 
                 $solicitud = $servicio->solicitar($unidad, $linea['precio'], (int) auth()->id());
                 $solicitud = $servicio->resolver($solicitud, true, $linea['precio'], null, (int) auth()->id());
             }
         } catch (RuntimeException $e) {
-            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
-
-            return;
+            return $e->getMessage();
         }
 
         $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
@@ -1038,33 +1248,29 @@ class Pos extends Component
         $this->carrito[$indice]['precio_aprobado'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
         $this->resetValidation("carrito.{$indice}.precio");
 
-        $this->dispatch('toast', tipo: 'success', mensaje: 'Precio autorizado.');
+        return null;
     }
 
     /** El cajero retira la solicitud de una línea que ya no la necesita. */
     public function cancelarSolicitud(int $indice): void
     {
-        $linea = $this->carrito[$indice] ?? null;
+        foreach ($this->hermanas($indice) as $i) {
+            $solicitudId = $this->carrito[$i]['solicitud_id'] ?? null;
 
-        if ($linea === null) {
-            return;
-        }
+            if ($solicitudId !== null) {
+                $solicitud = SolicitudDescuento::find($solicitudId);
 
-        $solicitudId = $linea['solicitud_id'] ?? null;
-
-        if ($solicitudId !== null) {
-            $solicitud = SolicitudDescuento::find($solicitudId);
-
-            if ($solicitud !== null) {
-                try {
-                    app(AutorizacionDeDescuento::class)->cancelar($solicitud, (int) auth()->id());
-                } catch (RuntimeException) {
-                    // Ya resuelta o no es suya: se limpia igual.
+                if ($solicitud !== null) {
+                    try {
+                        app(AutorizacionDeDescuento::class)->cancelar($solicitud, (int) auth()->id());
+                    } catch (RuntimeException) {
+                        // Ya resuelta o no es suya: se limpia igual.
+                    }
                 }
             }
-        }
 
-        $this->limpiarSolicitudDeLinea($indice);
+            $this->limpiarSolicitudDeLinea($i);
+        }
 
         $this->dispatch('toast', tipo: 'info', mensaje: 'Solicitud cancelada.');
     }
@@ -1079,6 +1285,10 @@ class Pos extends Component
     public function comprobarSolicitudes(): void
     {
         $cambio = false;
+
+        // Una línea por cantidad trae una solicitud por unidad: el aviso se
+        // junta para no repetir el mismo mensaje una vez por aparato.
+        $avisos = [];
 
         foreach (array_keys($this->carrito) as $indice) {
             $linea = $this->carrito[$indice] ?? null;
@@ -1110,8 +1320,7 @@ class Pos extends Component
                 $this->carrito[$indice]['precio'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
                 $this->resetValidation("carrito.{$indice}.precio");
 
-                $this->dispatch('toast', tipo: 'success', mensaje:
-                    'El administrador autorizó Bs '.number_format((float) $solicitud->precio_aprobado, 2, ',', '.').' para ese aparato.');
+                $avisos['El administrador autorizó Bs '.number_format((float) $solicitud->precio_aprobado, 2, ',', '.').'.'] = 'success';
 
                 $cambio = true;
 
@@ -1131,8 +1340,7 @@ class Pos extends Component
                 $this->limpiarSolicitudDeLinea($indice);
                 $this->resetValidation("carrito.{$indice}.precio");
 
-                $this->dispatch('toast', tipo: 'warning', mensaje:
-                    'El administrador rechazó el descuento'.($solicitud->motivo ? ': '.$solicitud->motivo : '.'));
+                $avisos['El administrador rechazó el descuento'.($solicitud->motivo ? ': '.$solicitud->motivo : '.')] = 'warning';
 
                 $cambio = true;
 
@@ -1143,6 +1351,10 @@ class Pos extends Component
                 $this->limpiarSolicitudDeLinea($indice);
                 $cambio = true;
             }
+        }
+
+        foreach ($avisos as $mensaje => $tipo) {
+            $this->dispatch('toast', tipo: $tipo, mensaje: $mensaje);
         }
 
         if ($cambio) {
@@ -1173,7 +1385,10 @@ class Pos extends Component
             return;
         }
 
-        $this->carrito[$indice]['entrega'] = $modo;
+        // Una línea por cantidad va entera: o se la lleva o se la llevan.
+        foreach ($this->hermanas($indice) as $i) {
+            $this->carrito[$i]['entrega'] = $modo;
+        }
 
         $this->tocar();
 
@@ -1708,13 +1923,34 @@ class Pos extends Component
     // Totales en vivo
     // =======================================================================
 
-    /** Todo en centavos enteros: en float los totales no cuadrarían. */
+    /**
+     * Todo en centavos enteros: en float los totales no cuadrarían.
+     *
+     * Cada línea aporta su precio de lista o, si se cobra por encima, el
+     * precio cobrado: así `subtotal − descuento` es siempre lo que se cobra.
+     */
     #[Computed]
     public function subtotalEnCentavos(): int
     {
-        return collect($this->carrito)->sum(
-            fn (array $l): int => ProrrateoDeGastos::aCentavos($l['precio_lista'] ?? '0')
-        );
+        return collect($this->carrito)->sum(fn (array $l): int => $this->precioUnitarioDeLinea($l));
+    }
+
+    /**
+     * Precio unitario que se registra en la venta: el de lista, salvo que se
+     * cobre por encima, en cuyo caso el cobrado (con descuento cero). Así la
+     * línea nunca lleva un «descuento negativo».
+     *
+     * @param  array<string, string|int>  $linea
+     */
+    public function precioUnitarioDeLinea(array $linea): int
+    {
+        $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista'] ?? '0');
+
+        if (! is_numeric($linea['precio'] ?? '')) {
+            return $lista;
+        }
+
+        return max($lista, ProrrateoDeGastos::aCentavos($linea['precio']));
     }
 
     /** Lo rebajado: la distancia entre el precio de referencia y el cobrado. */
@@ -1726,8 +1962,8 @@ class Pos extends Component
 
     /**
      * Descuento de una línea. Nunca negativo: cobrar por encima del precio de
-     * referencia no es un "descuento negativo", es un error de tecleo que la
-     * validación marca aparte.
+     * referencia no es un «descuento negativo», es un precio más alto (ver
+     * `precioUnitarioDeLinea`).
      *
      * @param  array<string, string|int>  $linea
      */
@@ -1788,6 +2024,17 @@ class Pos extends Component
     }
 
     /**
+     * ¿Falta abrir la caja para poder vender? Solo si la tienda la tiene como
+     * obligatoria (un interruptor del administrador). Apagada, se vende sin
+     * turno y el control del día lo da el resumen diario.
+     */
+    #[Computed]
+    public function faltaCaja(): bool
+    {
+        return app(\App\Support\Ajustes::class)->cajaObligatoria() && ! $this->cajaAbierta;
+    }
+
+    /**
      * ¿Se fijaron los precios de hoy? La jornada empieza por ahí: hasta que no
      * se guardan, el punto de venta no cobra.
      */
@@ -1815,7 +2062,7 @@ class Pos extends Component
 
         $motivos = [];
 
-        if (! $this->cajaAbierta) {
+        if ($this->faltaCaja) {
             $motivos[] = 'No hay una caja abierta. Ábrela para empezar a vender.';
         }
 
@@ -1828,12 +2075,6 @@ class Pos extends Component
             $precio = ProrrateoDeGastos::aCentavos($linea['precio'] ?? 0);
             $lista = ProrrateoDeGastos::aCentavos($linea['precio_lista'] ?? 0);
             $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento'] ?? 0);
-
-            if ($precio > $lista) {
-                $motivos[] = 'Un aparato está por encima de su precio de referencia.';
-
-                break;
-            }
 
             if ($lista - $precio > $tope) {
                 $aprobado = $linea['precio_aprobado'] ?? null;
@@ -1884,9 +2125,9 @@ class Pos extends Component
             return false;
         }
 
-        // Vender exige la caja abierta: una venta fuera de turno no entra en
-        // ningún cuadre.
-        if (! $this->cajaAbierta) {
+        // Con la caja obligatoria, vender exige el turno abierto: una venta
+        // fuera de turno no entra en ningún cuadre.
+        if ($this->faltaCaja) {
             return false;
         }
 
@@ -1906,8 +2147,8 @@ class Pos extends Component
             $tope = ProrrateoDeGastos::aCentavos($linea['tope_descuento']);
             $costo = ProrrateoDeGastos::aCentavos($unidad?->costo_unitario ?? '0');
 
-            // Ni por encima de la referencia ni por debajo del costo.
-            if ($precio > $lista || $precio < $costo) {
+            // Por debajo del costo, nunca. Por encima de la referencia, sí.
+            if ($precio < $costo) {
                 return false;
             }
 
@@ -2044,8 +2285,10 @@ class Pos extends Component
                     'unidad_id' => (int) $l['unidad_id'],
                     // Se registra el precio de referencia y la rebaja por
                     // separado: en el histórico tiene que verse qué se dejó
-                    // de cobrar, no solo cuánto entró.
-                    'precio_unitario' => $l['precio_lista'],
+                    // de cobrar, no solo cuánto entró. Por encima de la
+                    // referencia se registra lo cobrado, sin descuento.
+                    'precio_unitario' => ProrrateoDeGastos::aDecimal($this->precioUnitarioDeLinea($l)),
+                    'precio_lista' => $l['precio_lista'],
                     'descuento' => ProrrateoDeGastos::aDecimal($this->descuentoDeLinea($l)),
                 ], $this->carrito),
                 cabecera: [

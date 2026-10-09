@@ -29,7 +29,7 @@ class ComprobantesDeCliente
 
         return Pdf::loadView('backend.creditos.estado-cuenta', [
             'credito' => $credito,
-            'tienda' => config('app.name'),
+            'tienda' => config('app.nombre_comercial'),
         ])->setPaper('a4')->output();
     }
 
@@ -45,7 +45,7 @@ class ComprobantesDeCliente
 
         return Pdf::loadView('backend.reparaciones.orden', [
             'reparacion' => $reparacion,
-            'tienda' => config('app.name'),
+            'tienda' => config('app.nombre_comercial'),
         ])->setPaper('a4')->output();
     }
 }

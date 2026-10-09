@@ -65,6 +65,19 @@ class ProductoCrudTest extends TestCase
                 && $productos->lastPage() === 3);
     }
 
+    public function test_la_rebaja_mayor_que_el_precio_dice_el_tope_y_se_corrige_sola(): void
+    {
+        Livewire::actingAs($this->admin())
+            ->test(Index::class)
+            ->set('precio', '100')
+            ->set('descuentoMaximo', '150')
+            ->assertHasErrors('descuentoMaximo')
+            ->assertSee('como mucho Bs 100,00', false)
+            // Subir el precio quita el error sin tocar la rebaja.
+            ->set('precio', '200')
+            ->assertHasNoErrors('descuentoMaximo');
+    }
+
     public function test_el_buscador_filtra_por_nombre_y_modelo(): void
     {
         Producto::factory()->count(15)->create();

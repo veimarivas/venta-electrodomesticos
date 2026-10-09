@@ -46,6 +46,8 @@ class MenuBuilderTest extends TestCase
 
         $this->assertContains('Ventas', $labels);
         $this->assertNotContains('Compras', $labels);
+        $this->assertContains('Por verificar', $labels);
+        $this->assertNotContains('Gastos', $labels);
         $this->assertNotContains('Reportes', $labels);
         $this->assertNotContains('Administración', $labels);
     }

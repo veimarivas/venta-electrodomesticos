@@ -48,6 +48,7 @@
 @use 'components/pos';
 @use 'components/autorizaciones';
 @use 'components/precios';
+@use 'components/seguimiento';
 
 // Capa de unificación: va la ÚLTIMA para dar una sola forma a los elementos
 // que cada módulo reimplementó (píldoras de estado, iconos de vacío). Solo

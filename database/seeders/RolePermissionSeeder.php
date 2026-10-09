@@ -22,7 +22,13 @@ class RolePermissionSeeder extends Seeder
         'productos' => ['ver', 'crear', 'editar', 'eliminar'],
         'unidades' => ['ver', 'crear', 'editar', 'eliminar'],
         'proveedores' => ['ver', 'crear', 'editar', 'eliminar'],
-        'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar'],
+        // `verificar` es ver y verificar solo las compras asignadas: lo tiene
+        // el vendedor, que no ve el resto de Compras ni sus costos.
+        'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar', 'verificar'],
+        // Gastos de la tienda (comida, fletes, servicios): solo administrador.
+        'gastos' => ['ver', 'crear', 'editar', 'eliminar'],
+        // Interruptores de la tienda, como «la caja es obligatoria para vender».
+        'ajustes' => ['editar'],
         'inventario' => ['ver', 'ajustar'],
         'stock' => ['ver'],
         // El arqueo lo abre y lo cierra quien está en el mostrador; verlo
@@ -42,7 +48,9 @@ class RolePermissionSeeder extends Seeder
         // para mostrarlos, pero registrarlos o cambiarles la fecha no.
         'qrs_cobro' => ['ver', 'crear', 'editar', 'eliminar'],
         'clientes' => ['ver', 'crear', 'editar', 'eliminar'],
-        'reportes' => ['ver', 'ver_costos'],
+        // `seguimiento`: el resumen del día (ingresos y gastos) y las ventas
+        // por vendedor. De fábrica, solo el administrador.
+        'reportes' => ['ver', 'ver_costos', 'seguimiento'],
         'usuarios' => ['ver', 'crear', 'editar', 'eliminar'],
         'roles' => ['ver', 'crear', 'editar', 'eliminar'],
     ];
@@ -98,6 +106,8 @@ class RolePermissionSeeder extends Seeder
             // Ver, no administrar: el vendedor muestra el QR en el mostrador.
             'qrs_cobro.ver',
             'clientes.ver', 'clientes.crear',
+            // Solo las compras que el administrador le asigne para verificar.
+            'compras.verificar',
         ],
     ];
 

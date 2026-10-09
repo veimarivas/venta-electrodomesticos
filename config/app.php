@@ -16,6 +16,14 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | Nombre comercial que ve el cliente en sus documentos: el recibo de venta,
+    | la orden de servicio y el estado de cuenta. Va aparte de APP_NAME para
+    | poder cambiar la marca impresa sin renombrar el panel entero.
+    */
+
+    'nombre_comercial' => env('TIENDA_NOMBRE', 'Electrogar'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

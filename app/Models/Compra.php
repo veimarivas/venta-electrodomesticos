@@ -37,6 +37,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'estado',
     'recepcionada_en',
     'notas',
+    'verificador_id',
+    'asignada_en',
 ])]
 class Compra extends Model
 {
@@ -58,6 +60,8 @@ class Compra extends Model
         return [
             'fecha_compra' => 'date',
             'recepcionada_en' => 'datetime',
+            'asignada_en' => 'datetime',
+            'verificador_id' => 'integer',
             // Dinero como decimal:2, nunca float (ver docs/ARQUITECTURA.md §5).
             'subtotal' => 'decimal:2',
             'descuento' => 'decimal:2',
@@ -78,6 +82,30 @@ class Compra extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Quién tiene asignada la verificación de la mercadería. Puede verla y
+     * verificarla aunque no tenga el resto de Compras (`compras.verificar`).
+     */
+    public function verificador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verificador_id');
+    }
+
+    /** ¿Este usuario la puede verificar por tenerla asignada? */
+    public function esVerificadaPor(?User $usuario): bool
+    {
+        return $usuario !== null
+            && $this->verificador_id !== null
+            && (int) $this->verificador_id === (int) $usuario->id
+            && $usuario->can('compras.verificar');
+    }
+
+    /** Las compras asignadas a un usuario para verificar. */
+    public function scopeAsignadasA(Builder $query, int $userId): Builder
+    {
+        return $query->where('verificador_id', $userId);
     }
 
     public function detalles(): HasMany

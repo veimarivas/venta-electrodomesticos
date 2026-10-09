@@ -156,7 +156,7 @@ class VentaController extends Controller
         $pdf = Pdf::loadView('backend.ventas.recibo', [
             'venta' => $venta,
             'metodosPago' => Venta::METODOS_PAGO,
-            'tienda' => config('app.name'),
+            'tienda' => config('app.nombre_comercial'),
         ])->setPaper([0, 0, 226.77, $this->alto($venta)]);
 
         $contenido = $pdf->output();
