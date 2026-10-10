@@ -161,6 +161,23 @@ return [
         'permission' => 'cargos.ver',
     ],
 
+    // Asistencia marcada desde el teléfono dentro de cada tienda.
+    [
+        'label' => 'Asistencia',
+        'icon' => 'ri-calendar-check-line',
+        'route' => 'asistencia.index',
+        'active' => 'asistencia*',
+        'permission' => 'asistencia.ver',
+    ],
+
+    [
+        'label' => 'Tiendas',
+        'icon' => 'ri-store-2-line',
+        'route' => 'tiendas.index',
+        'active' => 'tiendas*',
+        'permission' => 'tiendas.ver',
+    ],
+
     ['type' => 'title', 'label' => 'Análisis'],
 
     // Un solo ítem, no tres: la pantalla de reportes reúne en una vista lo que

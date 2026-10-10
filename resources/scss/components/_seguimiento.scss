@@ -459,6 +459,96 @@
     }
 }
 
+// ---- Tiendas --------------------------------------------------------------------
+.tiendas-modulo {
+    .min-w-0 { min-width: 0; }
+
+    .tienda-tarjeta {
+        border-top: 3px solid var(--marca-oro) !important;
+        transition: box-shadow var(--trans-rapida);
+
+        &:hover { box-shadow: var(--sombra-card-hover) !important; }
+        &--inactiva { opacity: .7; border-top-color: var(--marca-linea-fuerte) !important; }
+    }
+
+    .tienda-estado {
+        flex-shrink: 0;
+        padding: .2rem .6rem;
+        border-radius: var(--radio-pill);
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--marca-apagado);
+        background: var(--marca-suave);
+
+        &--activa { color: var(--estado-ok); background: var(--estado-ok-suave); }
+    }
+
+    .tienda-datos li {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .2rem 0;
+        font-size: var(--text-sm);
+        color: var(--marca-tinta);
+
+        i { color: var(--marca-apagado); font-size: 1rem; }
+    }
+
+    .tiendas-ayuda {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        padding: .8rem 1rem;
+        border-radius: var(--radio-md);
+        font-size: var(--text-sm);
+        color: var(--marca-tinta);
+        background: var(--marca-suave);
+        border: 1px dashed var(--marca-linea-fuerte);
+
+        i { font-size: 1.25rem; color: var(--marca-azul-texto); }
+    }
+
+    .tienda-ubicacion {
+        padding: 1rem;
+        border-radius: var(--radio-md);
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-suave);
+    }
+
+    .tienda-mapa {
+        overflow: hidden;
+        height: 14rem;
+        border-radius: var(--radio-md);
+        border: 1px solid var(--marca-linea);
+
+        iframe { display: block; width: 100%; height: 100%; border: 0; }
+    }
+}
+
+// ---- Asistencia -----------------------------------------------------------------
+.asistencia-modulo {
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    .asistencia-fila { cursor: pointer; }
+    .asistencia-fila:hover > td { background: var(--marca-suave); }
+    .asistencia-detalle > td { background: color-mix(in srgb, var(--marca-suave) 60%, transparent); }
+    .asistencia-tabla > tbody { border-bottom: 1px solid var(--marca-linea); }
+
+    .asistencia-atraso,
+    .asistencia-sin-salida,
+    .asistencia-en-turno {
+        display: inline-block;
+        padding: .1rem .5rem;
+        border-radius: var(--radio-pill);
+        font-size: var(--text-xs);
+        font-weight: 700;
+    }
+
+    .asistencia-atraso { color: var(--estado-alerta-texto); background: var(--estado-alerta-suave); }
+    .asistencia-sin-salida { color: var(--estado-error); background: var(--estado-error-suave); }
+    .asistencia-en-turno { color: var(--estado-ok); background: var(--estado-ok-suave); }
+}
+
 // ---- Seguridad de la app (Usuarios) -----------------------------------------------
 .sesion-app {
     .sesion-app-lista li {

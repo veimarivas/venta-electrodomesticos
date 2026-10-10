@@ -43,6 +43,8 @@ class LocalDataSeeder extends Seeder
             'compras' => ['ver', 'crear', 'editar', 'eliminar', 'recepcionar', 'verificar'],
             'gastos' => ['ver', 'crear', 'editar', 'eliminar'],
             'ajustes' => ['editar'],
+            'tiendas' => ['ver', 'crear', 'editar', 'eliminar'],
+            'asistencia' => ['marcar', 'ver'],
             'inventario' => ['ver', 'ajustar'],
             'stock' => ['ver'],
             'caja' => ['ver', 'gestionar'],
@@ -109,6 +111,7 @@ class LocalDataSeeder extends Seeder
             'qrs_cobro.ver',
             'clientes.ver', 'clientes.crear',
             'compras.verificar',
+            'asistencia.marcar',
         ]);
     }
 

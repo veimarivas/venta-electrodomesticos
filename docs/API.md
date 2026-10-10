@@ -31,6 +31,21 @@
 | GET | `/auth/perfil` | datos del usuario y su rol, más `ajustes` de sesión |  |
 | PUT | `/auth/perfil` | actualizar nombre, correo y datos personales del usuario autenticado |  |
 
+## /asistencia
+
+El teléfono manda `latitud`, `longitud`, `precision` (m) y `simulada`; el
+servidor vuelve a medir la distancia a cada tienda y decide. 422 con
+`errors.ubicacion` si está fuera del radio, la ubicación es simulada o la
+precisión es peor que 50 m.
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/asistencia` | turno `abierta`, los de `hoy` y las `tiendas` (ubicación, radio, hora de entrada) para medir en vivo; `precision_maxima`, `puede_ver_todos`, `puede_fijar_tiendas` | `asistencia.marcar o asistencia.ver` |
+| POST | `/asistencia/entrada` | marca la entrada en la tienda más cercana si está dentro de su radio; calcula el atraso | `asistencia.marcar` |
+| POST | `/asistencia/salida` | marca la salida dentro de la tienda donde entró | `asistencia.marcar` |
+| GET | `/asistencia/historial?mes=2026-10&user_id=&tienda_id=` | por trabajador: días, minutos, atrasos, sin salida y `detalle` por día con sus turnos. Sin `asistencia.ver`, solo el propio | `asistencia.marcar o asistencia.ver` |
+| POST | `/asistencia/{asistencia}/corregir` | `salida` (HH:mm) y `motivo`: pone la salida olvidada | `asistencia.ver` |
+
 ## /autorizaciones
 
 | Método | Ruta | Qué hace | Permiso / notas |
@@ -286,6 +301,13 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 | DELETE | `/roles/{rol}` | baja; se niega si alguien lo tiene asignado | `roles.eliminar` |
 | GET | `/roles/{rol}/permisos` | roles, matriz por módulo y lo que tiene marcado | `roles.ver` |
 | POST | `/roles/{rol}/permisos` | alta, nombre y sincronización de permisos | `roles.editar` |
+
+## /tiendas
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/tiendas` | todas las tiendas con ubicación, radio, hora de entrada y si están activas | `tiendas.ver` |
+| POST | `/tiendas/{tienda}/ubicacion` | `latitud`, `longitud`, `precision` (≤ 100 m), `radio_metros` opcional: fija la ubicación desde el teléfono | `tiendas.editar` |
 
 ## /tipo-de-cambio
 

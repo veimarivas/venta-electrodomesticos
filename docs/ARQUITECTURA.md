@@ -508,6 +508,25 @@ nombre, llave_hash (char 64: SHA-256 de la llave), ultimo_uso_en, timestamps
 ```
 > La huella la verifica el teléfono; el servidor decide qué teléfono abre sesión sin contraseña. La llave (64 caracteres al azar) solo la tiene el teléfono, en su Keystore. Cambiar la contraseña o bloquear la cuenta borra las filas del usuario (`User::booted`); el administrador las quita en *Usuarios*.
 
+**`tiendas`** — sucursales *(implementada 2026-10-10)*
+```
+id, nombre, direccion, latitud, longitud (decimal 10,7, nullable),
+radio_metros (default 30), hora_entrada (time, nullable), tolerancia_minutos (default 10),
+activa, timestamps, deleted_at
+```
+> Sin ubicación o inactiva, no se puede marcar en ella. Sin hora de entrada no cuenta atrasos.
+
+**`asistencias`** — un turno (entrada → salida) *(implementada 2026-10-10)*
+```
+id, user_id (FK cascade), tienda_id (FK restrict), fecha (date),
+entrada_en, entrada_latitud, entrada_longitud, entrada_distancia (m), entrada_precision (m),
+salida_en, salida_latitud, salida_longitud, salida_distancia, salida_precision (nullable),
+minutos_atraso (nullable: solo la primera entrada del día de una tienda con hora),
+corregida_por (FK users nullable), notas, timestamps
+INDEX (user_id, fecha), INDEX (tienda_id, fecha)
+```
+> `App\Support\RegistroDeAsistencia` decide: distancia por haversine contra las tiendas activas con ubicación; entrada en cualquiera, salida en la misma; rechaza ubicación simulada y precisión > 50 m; bloqueo por usuario para que dos toques no abran dos turnos. Un turno de un día anterior sin salida queda «sin salida» hasta que alguien con `asistencia.ver` la pone (`corregida_por`, `notas`).
+
 **`cotizaciones_dolar`** — dólar oficial (BCB) y paralelo *(implementada 2026-10-10)*
 ```
 id, tipo ('oficial'|'paralelo'), compra, venta (decimal 10,4), fuente,

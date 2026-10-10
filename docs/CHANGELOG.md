@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.28.0+38 | 2026-10-10 | Asistencia por ubicación (marcar entrada y salida dentro del radio de la tienda, historial del mes, fijar la ubicación de la tienda) | el de asistencia del 2026-10-10 (con uno anterior la pantalla de asistencia da 404) |
 | 1.27.0+37 | 2026-10-10 | Cierre de sesión por inactividad, entrar con huella o rostro (teléfono registrado, sin guardar la contraseña), dólar paralelo y oficial en el inicio, lista amarilla | el del 2026-10-10 (con uno anterior la huella no se puede activar, el dólar no aparece y la lista amarilla da 404; la inactividad funciona con 10 min fijos) |
 | 1.26.0+36 | 2026-10-09 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas, foto del producto con la cámara, sugerencias de precio, venta por cantidad, precio por encima de la lista, referencias ocultas, verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor, caja opcional | el del 2026-10-09 (con uno del 2026-10-08 vende, pero «Por verificar», gastos y los resúmenes dan 404; con uno anterior además cobrar por encima de la lista da 422) |
 | 1.25.0+35 | 2026-10-05 | Sistema visual unificado | sin cambios de API |
@@ -34,6 +35,63 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Asistencia por ubicación en varias tiendas (2026-10-10)
+
+Backend: 3 migraciones (`tiendas`, `asistencias`, permisos `tiendas.*`,
+`asistencia.marcar` y `asistencia.ver`), endpoints nuevos (ver
+[API.md](API.md)) · app **1.28.0+38** (paquete nuevo: `geolocator`)
+
+Pedido del dueño: ahora hay 2 tiendas y los vendedores venden en cualquiera;
+la asistencia se marca desde la app solo dentro de un radio de la tienda, y
+hace falta el historial por mes. Decisiones tomadas con él: **radio de 30 m
+editable por tienda** (el GPS de un celular dentro de un local yerra entre 10 y
+30 m: con 10 m rechazaría a quien está dentro), **hora de entrada con
+tolerancia por tienda** para contar atrasos, y la asistencia **no afecta a las
+ventas**.
+
+- **Tiendas** (panel, *Personal → Tiendas*): nombre, dirección, ubicación,
+  radio, hora de entrada y tolerancia, activa o no. La ubicación se escribe, se
+  pega desde Google Maps (coordenadas o enlace), se toma del navegador o —lo
+  más exacto— se fija **desde el teléfono parado dentro de la tienda**
+  (*Asistencia → Tiendas → Fijar aquí*, espera a que el GPS baje de ±20 m).
+  Vista previa del punto en un mapa. Quitar una tienda la archiva: su
+  historial se conserva.
+- **Marcar (app, «Asistencia» en el inicio).** Con la pantalla abierta se lee
+  el GPS en vivo y se enseña la tienda más cercana y a cuántos metros; el
+  botón *Marcar entrada / salida* solo se enciende dentro del radio. Al
+  pulsarlo se toma una lectura fresca y **el servidor vuelve a medir**
+  (`RegistroDeAsistencia`, haversine): la app ayuda, el servidor decide.
+  Reglas: entrada en **cualquier** tienda activa; salida en **la misma** donde
+  entró; varios turnos por día (salir a almorzar y volver); no se marca con
+  **ubicación simulada** (apps de GPS falso) ni con precisión peor que ±50 m.
+  Se guardan coordenadas, distancia y precisión de cada marca. El GPS solo se
+  usa con la pantalla abierta: nada en segundo plano.
+- **Atrasos:** en la primera entrada del día, si la tienda tiene hora de
+  entrada y se llega pasada la tolerancia, se anotan los minutos desde esa
+  hora (llegar 08:25 a una tienda de 08:00 con 10 min de tolerancia = 25 min).
+- **Historial del mes** (panel, *Personal → Asistencia*; app, «Mi asistencia
+  del mes» y, con `asistencia.ver`, «Asistencia del personal»): por
+  trabajador, días, horas, atrasos y salidas sin marcar, con el detalle de
+  cada día y turno. Filtros por mes, trabajador y tienda. Descarga en **PDF**
+  (con línea de firma cuando es de una persona) y **CSV** para Excel.
+- **Salida olvidada:** quien tiene `asistencia.ver` la pone a mano con su
+  motivo (panel y app); queda marcada como *corregida* con quién y por qué.
+- **Permisos:** `asistencia.marcar` (vendedor y supervisor), `asistencia.ver`
+  (supervisor y administrador), `tiendas.*` (administrador).
+- Android: permisos de ubicación (`ACCESS_FINE_LOCATION`) solo en primer plano;
+  iOS: `NSLocationWhenInUseUsageDescription`.
+
+Comprobado: `tests/Feature/AsistenciaTest.php` (13 pruebas: distancia en
+metros, dentro/fuera del radio, cualquier tienda, GPS falso y señal débil,
+tienda inactiva o sin ubicación, salida en la misma tienda y segundo turno,
+atraso con tolerancia, historial propio vs. de todos, corrección de salida,
+fijar ubicación por API, estado para el teléfono, alta en el panel pegando un
+enlace de Google Maps, historial del panel con PDF y CSV). App:
+`test/asistencia_test.dart` (9: distancia, tienda más cercana, formatos,
+historial y la pantalla con un GPS falso dentro, fuera, simulado y con señal
+débil) y `flutter test` completo (205). Panel revisado en el navegador con una
+base de prueba (tiendas, historial, poner salida).
 
 ## Sesión por inactividad, huella o rostro, dólar del día y lista amarilla (2026-10-10)
 

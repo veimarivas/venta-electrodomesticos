@@ -294,6 +294,20 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->middleware('permission:reparaciones.ver')
         ->name('reparaciones.orden');
 
+    Route::view('/tiendas', 'backend.tiendas.index', [
+        'title' => 'Tiendas',
+        'breadcrumbs' => ['Inicio' => null, 'Personal' => null, 'Tiendas' => null],
+    ])->middleware('permission:tiendas.ver')->name('tiendas.index');
+
+    Route::view('/asistencia', 'backend.asistencia.index', [
+        'title' => 'Asistencia',
+        'breadcrumbs' => ['Inicio' => null, 'Personal' => null, 'Asistencia' => null],
+    ])->middleware('permission:asistencia.ver')->name('asistencia.index');
+
+    Route::get('/asistencia/exportar', \App\Http\Controllers\AsistenciaExportController::class)
+        ->middleware('permission:asistencia.ver')
+        ->name('asistencia.exportar');
+
     Route::view('/inventario/lista-amarilla', 'backend.inventario.lista-amarilla', [
         'title' => 'Lista amarilla',
         'breadcrumbs' => ['Inicio' => null, 'Inventario' => null, 'Lista amarilla' => null],

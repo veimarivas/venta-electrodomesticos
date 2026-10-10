@@ -29,6 +29,10 @@ class RolePermissionSeeder extends Seeder
         'gastos' => ['ver', 'crear', 'editar', 'eliminar'],
         // Interruptores de la tienda, como «la caja es obligatoria para vender».
         'ajustes' => ['editar'],
+        // Sucursales con su ubicación y radio para marcar asistencia.
+        'tiendas' => ['ver', 'crear', 'editar', 'eliminar'],
+        // `marcar`: la propia entrada y salida; `ver`: el historial de todos.
+        'asistencia' => ['marcar', 'ver'],
         'inventario' => ['ver', 'ajustar'],
         'stock' => ['ver'],
         // El arqueo lo abre y lo cierra quien está en el mostrador; verlo
@@ -80,6 +84,7 @@ class RolePermissionSeeder extends Seeder
             'qrs_cobro.ver', 'qrs_cobro.crear', 'qrs_cobro.editar',
             'clientes.ver', 'clientes.crear', 'clientes.editar',
             'reportes.ver', 'reportes.ver_costos',
+            'asistencia.marcar', 'asistencia.ver',
         ],
         'vendedor' => [
             'personas.ver',
@@ -108,6 +113,8 @@ class RolePermissionSeeder extends Seeder
             'clientes.ver', 'clientes.crear',
             // Solo las compras que el administrador le asigne para verificar.
             'compras.verificar',
+            // Marca su entrada y salida desde el teléfono, dentro de la tienda.
+            'asistencia.marcar',
         ],
     ];
 

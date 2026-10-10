@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccesoBiometricoController;
+use App\Http\Controllers\Api\V1\AsistenciaController;
+use App\Http\Controllers\Api\V1\TiendaController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ListaAmarillaController;
 use App\Http\Controllers\Api\V1\TipoDeCambioController;
@@ -88,6 +90,27 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Dólar: oficial del BCB y paralelo. Lo ve todo el que entra.
         Route::get('/tipo-de-cambio', [TipoDeCambioController::class, 'show'])->name('tipo-de-cambio');
+
+        // Asistencia: marcar dentro de la tienda y el historial del mes.
+        Route::middleware('permission:asistencia.marcar|asistencia.ver')->group(function () {
+            Route::get('/asistencia', [AsistenciaController::class, 'estado'])->name('asistencia.estado');
+            Route::get('/asistencia/historial', [AsistenciaController::class, 'historial'])->name('asistencia.historial');
+        });
+        Route::middleware('permission:asistencia.marcar')->group(function () {
+            Route::post('/asistencia/entrada', [AsistenciaController::class, 'entrada'])->name('asistencia.entrada');
+            Route::post('/asistencia/salida', [AsistenciaController::class, 'salida'])->name('asistencia.salida');
+        });
+        Route::post('/asistencia/{asistencia}/corregir', [AsistenciaController::class, 'corregir'])
+            ->middleware('permission:asistencia.ver')
+            ->name('asistencia.corregir');
+
+        // Tiendas: lista y fijar la ubicación desde el teléfono.
+        Route::get('/tiendas', [TiendaController::class, 'index'])
+            ->middleware('permission:tiendas.ver')
+            ->name('tiendas.index');
+        Route::post('/tiendas/{tienda}/ubicacion', [TiendaController::class, 'ubicacion'])
+            ->middleware('permission:tiendas.editar')
+            ->name('tiendas.ubicacion');
 
         // Aparatos que llevan demasiado tiempo en la tienda.
         Route::get('/inventario/lista-amarilla', [ListaAmarillaController::class, 'index'])

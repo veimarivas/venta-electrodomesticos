@@ -821,6 +821,45 @@ del día por método. Solo el administrador los anota.
 
 ## 9. Personal y accesos
 
+### Asistencia en las tiendas
+
+Cada trabajador marca su **entrada y salida desde el teléfono**, y solo se
+puede **dentro de la tienda**: a menos de 30 m de su ubicación (el radio se
+cambia por tienda).
+
+**Primero, el administrador** registra cada tienda en *Personal → Tiendas*:
+nombre, dirección, hora de entrada y tolerancia (por ejemplo, 08:30 con 10 min:
+llegar 08:38 no es atraso; llegar 08:45 son 15 min de atraso). La ubicación
+más exacta se fija **con el teléfono, parado dentro de la tienda**: en la app,
+*Asistencia → Tiendas → Fijar ubicación aquí*, espera a que la precisión baje
+de 20 m y guarda. También se puede pegar el punto desde Google Maps en el
+panel.
+
+**El trabajador**, al llegar, abre *Asistencia* en el inicio de la app:
+
+1. La pantalla dice en qué tienda está y a cuántos metros (o que está fuera).
+2. Dentro del radio se enciende **Marcar entrada**; fuera, el botón queda
+   apagado y dice cuánto falta.
+3. Al irse, **Marcar salida** en la misma tienda donde entró. Si sale a
+   almorzar y vuelve, marca salida y otra entrada: el día suma los dos tramos.
+
+Se puede entrar en cualquiera de las tiendas. No se puede marcar con una app
+de «GPS falso», ni con la señal del GPS muy débil (más de ±50 m): en ese caso,
+acercarse a la puerta o a una ventana unos segundos.
+
+> La primera vez el teléfono pide permiso de ubicación: hay que aceptarlo. La
+> app solo usa el GPS con la pantalla de asistencia abierta.
+
+**El historial** está en *Personal → Asistencia* (y en la app, «Asistencia del
+personal»): por mes, cada trabajador con sus días, horas trabajadas, atrasos
+y días sin salida; al abrirlo, cada día con su tienda, entrada y salida. Se
+descarga en **PDF** (para imprimir y firmar) o en **CSV** para Excel. Cada
+trabajador ve el suyo en la app, en «Mi asistencia del mes».
+
+**Si alguien olvidó marcar la salida**, en el historial sale *Sin salida*:
+*Poner salida*, la hora y el motivo. Queda marcada como *corregida* con quién
+la puso.
+
 **Personas** — los datos personales de todo el mundo. Es la base: un trabajador
 y un cliente pueden ser la misma persona, y su celular se corrige en un solo
 sitio.
