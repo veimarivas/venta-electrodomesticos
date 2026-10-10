@@ -68,3 +68,16 @@ Schedule::command('cuotas:avisar')
 Schedule::command('reservas:liberar')
     ->everyMinute()
     ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Dólar
+|--------------------------------------------------------------------------
+|
+| El dólar se mueve durante el día: cada 30 minutos se lee el oficial del BCB
+| y el paralelo. Si la fuente no responde, se sigue enseñando el último valor
+| con su hora (ver App\Support\TipoDeCambio).
+*/
+Schedule::command('dolar:actualizar')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();

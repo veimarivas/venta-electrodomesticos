@@ -106,6 +106,19 @@ El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 > seeder**. La caja sigue obligatoria hasta que el administrador la apague.
 > Sube el backend antes de repartir la app 1.26.0+36.
 
+> **Actualización del 2026-10-10 (inactividad, huella, dólar, lista
+> amarilla):** 2 migraciones, sin permisos nuevos. El dólar se lee de
+> `https://bo.dolarapi.com` (sin clave; se cambia con `DOLAR_API_URL`): el
+> servidor necesita salida a internet por HTTPS. Para que se actualice solo
+> cada 30 min tiene que estar corriendo `schedule:work` (§4); si no, se
+> refresca al abrir el panel o la app. Comprobar a mano:
+>
+> ```bash
+> php artisan dolar:actualizar
+> ```
+>
+> Sube el backend antes de repartir la app 1.27.0+37.
+
 > **Lo lento va ANTES de bajar el sitio.** `composer install` y `npm ci` tardan
 > minutos y son justo lo que puede fallar —red, disco, una versión de Node—. Si
 > el sitio ya está en mantenimiento cuando revientan, la tienda se queda caída

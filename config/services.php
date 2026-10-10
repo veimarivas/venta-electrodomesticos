@@ -52,4 +52,18 @@ return [
         "project_id" => env("FIREBASE_PROJECT_ID"),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tipo de cambio del dólar
+    |--------------------------------------------------------------------------
+    |
+    | De dónde se lee el dólar oficial (BCB) y el paralelo. Ver
+    | App\Support\TipoDeCambio. No pide clave.
+    |
+    */
+
+    "dolar" => [
+        "url" => env("DOLAR_API_URL", "https://bo.dolarapi.com/v1/dolares"),
+    ],
+
 ];

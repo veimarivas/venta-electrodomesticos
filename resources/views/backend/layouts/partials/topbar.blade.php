@@ -68,6 +68,10 @@
 
             <div class="d-flex align-items-center">
 
+                <!-- Dólar del día: paralelo y oficial del BCB. Lo primero de la
+                     derecha porque es lo que se mira antes de cotizar. -->
+                @livewire('sistema.tipo-de-cambio')
+
                 <!-- Buscador en móvil -->
                 <div class="dropdown d-md-none topbar-head-dropdown header-item">
                     <button type="button"

@@ -499,7 +499,21 @@ user_id (FK), timestamps, deleted_at
 ```
 id, clave (unique), valor, user_id (FK nullable), timestamps
 ```
-> Se lee con `App\Support\Ajustes` (caché por petición). Hoy guarda `caja_obligatoria` ('1' por defecto).
+> Se lee con `App\Support\Ajustes` (caché por petición). Guarda `caja_obligatoria` ('1' por defecto), `app_inactividad_minutos` ('10': minutos sin uso tras los que la app cierra la sesión) y `lista_amarilla_dias` ('180').
+
+**`accesos_biometricos`** — teléfonos que entran con huella o rostro *(implementada 2026-10-10)*
+```
+id, user_id (FK cascade), dispositivo_id (string 64, UNIQUE: un teléfono, una persona),
+nombre, llave_hash (char 64: SHA-256 de la llave), ultimo_uso_en, timestamps
+```
+> La huella la verifica el teléfono; el servidor decide qué teléfono abre sesión sin contraseña. La llave (64 caracteres al azar) solo la tiene el teléfono, en su Keystore. Cambiar la contraseña o bloquear la cuenta borra las filas del usuario (`User::booted`); el administrador las quita en *Usuarios*.
+
+**`cotizaciones_dolar`** — dólar oficial (BCB) y paralelo *(implementada 2026-10-10)*
+```
+id, tipo ('oficial'|'paralelo'), compra, venta (decimal 10,4), fuente,
+publicado_en (de la fuente), timestamps — INDEX(tipo, created_at)
+```
+> `App\Support\TipoDeCambio` la llena desde DolarApi cada 30 min (`dolar:actualizar`) o al pedir el dato si lleva más de 30 min sin verificarse. Fila nueva solo si cambia el valor o empieza un día; si no, `touch()` (el `updated_at` es «verificado en»). Con más de 6 h sin verificar se marca desactualizado.
 
 **`precios_producto`** — el precio del día *(implementada 2026-09-20)*
 ```

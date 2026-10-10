@@ -221,6 +221,268 @@
     .vendedores-grupo { border-bottom: 1px solid var(--marca-linea); }
 }
 
+// ---- Lista amarilla ---------------------------------------------------------------
+.amarilla-modulo {
+    .tabular { font-variant-numeric: tabular-nums; }
+    .min-w-0 { min-width: 0; }
+
+    .amarilla-fila { cursor: pointer; }
+    .amarilla-fila:hover > td { background: var(--marca-suave); }
+    .amarilla-detalle > td { background: color-mix(in srgb, var(--marca-suave) 60%, transparent); }
+    .amarilla-tabla > tbody { border-bottom: 1px solid var(--marca-linea); }
+
+    // Punto de nivel: ámbar «atención», rojo «crítico».
+    .amarilla-nivel {
+        width: .7rem;
+        height: .7rem;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: var(--estado-alerta);
+        box-shadow: 0 0 0 3px var(--estado-alerta-suave);
+
+        &--critico {
+            background: var(--estado-error);
+            box-shadow: 0 0 0 3px var(--estado-error-suave);
+        }
+    }
+
+    .amarilla-dias {
+        display: inline-block;
+        padding: .15rem .6rem;
+        border-radius: var(--radio-pill);
+        font-size: var(--text-xs);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--estado-alerta-texto);
+        background: var(--estado-alerta-suave);
+
+        &--critico { color: var(--estado-error); background: var(--estado-error-suave); }
+    }
+
+    .amarilla-ajuste { border-top: 3px solid var(--marca-oro) !important; }
+}
+
+// ---- Dólar en la barra superior ---------------------------------------------------
+.dolar-topbar {
+    .dolar-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        height: 2.4rem;
+        padding: 0 .75rem 0 .55rem;
+        border-radius: var(--radio-pill);
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
+        color: var(--marca-tinta);
+        line-height: 1;
+        transition: border-color var(--trans-rapida), box-shadow var(--trans-rapida);
+
+        &:hover { border-color: var(--marca-oro); }
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+
+        &--viejo .dolar-chip-icono { color: var(--marca-apagado); }
+        &--cargando { min-width: 7rem; }
+    }
+
+    .dolar-chip-icono {
+        font-size: 1.35rem;
+        color: var(--marca-oro-hondo);
+    }
+
+    .dolar-chip-dato {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .1rem;
+
+        small {
+            font-size: var(--text-2xs);
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--marca-apagado);
+        }
+
+        strong { font-size: var(--text-sm); }
+
+        & + .dolar-chip-dato {
+            padding-left: .55rem;
+            border-left: 1px solid var(--marca-linea);
+        }
+    }
+
+    .dolar-chip-tendencia { font-size: 1rem; }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+    .dolar-sube { color: var(--estado-error); }   // dólar más caro: malo para quien compra
+    .dolar-baja { color: var(--estado-ok); }
+
+    .dolar-panel {
+        width: 20rem;
+        max-width: calc(100vw - 2rem);
+        overflow: hidden;
+        border-radius: var(--radio-lg);
+    }
+
+    .dolar-panel-cabecera {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: .85rem 1rem .6rem;
+    }
+
+    .dolar-aviso {
+        display: flex;
+        gap: .4rem;
+        margin: 0 1rem .6rem;
+        padding: .45rem .6rem;
+        border-radius: var(--radio-md);
+        font-size: var(--text-xs);
+        color: var(--estado-alerta-texto);
+        background: var(--estado-alerta-suave);
+    }
+
+    .dolar-tarjetas {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .5rem;
+        padding: 0 1rem;
+    }
+
+    .dolar-tarjeta {
+        padding: .6rem .7rem;
+        border-radius: var(--radio-md);
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-suave);
+
+        &--paralelo { border-top: 3px solid var(--marca-oro); }
+        &--oficial { border-top: 3px solid var(--marca-azul); }
+    }
+
+    .dolar-tarjeta-titulo {
+        display: block;
+        margin-bottom: .3rem;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: var(--marca-tinta);
+    }
+
+    .dolar-tarjeta-fila {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--text-sm);
+        color: var(--marca-apagado);
+
+        strong { color: var(--marca-tinta); }
+    }
+
+    .dolar-indicadores {
+        display: flex;
+        justify-content: space-between;
+        gap: .5rem;
+        padding: .6rem 1rem 0;
+        font-size: var(--text-xs);
+        color: var(--marca-apagado);
+
+        strong { margin-left: .25rem; color: var(--marca-tinta); }
+        strong.dolar-sube { color: var(--estado-error); }
+        strong.dolar-baja { color: var(--estado-ok); }
+    }
+
+    .dolar-grafico {
+        padding: .6rem 1rem 0;
+
+        svg { display: block; width: 100%; height: 3rem; }
+    }
+
+    .dolar-linea {
+        fill: none;
+        stroke-width: 2;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke;
+
+        &--paralelo { stroke: var(--marca-oro); }
+        &--oficial { stroke: var(--marca-azul); stroke-dasharray: 4 3; }
+    }
+
+    .dolar-grafico-leyenda {
+        display: flex;
+        gap: .75rem;
+        margin-top: .3rem;
+        font-size: var(--text-2xs);
+        color: var(--marca-apagado);
+    }
+
+    .dolar-punto {
+        display: inline-block;
+        width: .55rem;
+        height: .55rem;
+        border-radius: 50%;
+        vertical-align: middle;
+
+        &--paralelo { background: var(--marca-oro); }
+        &--oficial { background: var(--marca-azul); }
+    }
+
+    .dolar-conversor {
+        margin: .75rem 1rem 0;
+        padding-top: .7rem;
+        border-top: 1px dashed var(--marca-linea);
+    }
+
+    .dolar-conversor-resultado {
+        display: flex;
+        justify-content: space-between;
+        gap: .5rem;
+        margin-top: .45rem;
+        font-size: var(--text-xs);
+        color: var(--marca-apagado);
+
+        strong { color: var(--marca-tinta); }
+    }
+
+    .dolar-pie {
+        margin-top: .8rem;
+        padding: .5rem 1rem;
+        font-size: var(--text-2xs);
+        color: var(--marca-apagado);
+        background: var(--marca-suave);
+    }
+
+    [x-cloak] { display: none !important; }
+
+    // En el teléfono el chip se queda en el dato que importa: el paralelo.
+    @media (max-width: 575.98px) {
+        .dolar-chip { gap: .35rem; padding: 0 .55rem 0 .4rem; }
+        .dolar-chip-dato small { display: none; }
+    }
+}
+
+// ---- Seguridad de la app (Usuarios) -----------------------------------------------
+.sesion-app {
+    .sesion-app-lista li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .6rem 0;
+        border-bottom: 1px solid var(--marca-linea);
+
+        &:last-child { border-bottom: 0; }
+    }
+
+    .min-w-0 { min-width: 0; }
+
+    .sesion-app-vacio {
+        padding: .8rem 1rem;
+        border-radius: var(--radio-md);
+        font-size: var(--text-sm);
+        color: var(--marca-apagado);
+        background: var(--marca-suave);
+    }
+}
+
 // ---- Interruptor de la caja -----------------------------------------------------
 .caja-ajuste {
     padding: 1rem 1.15rem;

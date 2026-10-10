@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccesoBiometricoController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\ListaAmarillaController;
+use App\Http\Controllers\Api\V1\TipoDeCambioController;
 use App\Http\Controllers\Api\V1\BusquedaController;
 use App\Http\Controllers\Api\V1\CajaController;
 use App\Http\Controllers\Api\V1\CargoController;
@@ -59,6 +62,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         ->middleware('throttle:5,1')
         ->name('auth.login');
 
+    // Entrar con huella desde un teléfono registrado. Algo más holgado que el
+    // login (la llave no se adivina), pero con límite igual.
+    Route::post('/auth/huella/entrar', [AccesoBiometricoController::class, 'entrar'])
+        ->middleware('throttle:10,1')
+        ->name('auth.huella.entrar');
+
     // ---- Autenticado ------------------------------------------------------
     Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 
@@ -66,6 +75,27 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/auth/perfil', [AuthController::class, 'perfil'])->name('auth.perfil');
         Route::put('/auth/perfil', [AuthController::class, 'actualizarPerfil'])->name('auth.perfil.actualizar');
         Route::put('/auth/password', [AuthController::class, 'cambiarContrasena'])->name('auth.password.cambiar');
+
+        // Huella o rostro: registrar este teléfono, verlos y quitarlo.
+        Route::get('/auth/huella', [AccesoBiometricoController::class, 'index'])->name('auth.huella.index');
+        Route::post('/auth/huella', [AccesoBiometricoController::class, 'registrar'])->name('auth.huella.registrar');
+        Route::delete('/auth/huella', [AccesoBiometricoController::class, 'quitar'])->name('auth.huella.quitar');
+
+        // Minutos sin uso tras los que la app cierra la sesión.
+        Route::post('/auth/inactividad', [AuthController::class, 'inactividad'])
+            ->middleware('permission:ajustes.editar')
+            ->name('auth.inactividad');
+
+        // Dólar: oficial del BCB y paralelo. Lo ve todo el que entra.
+        Route::get('/tipo-de-cambio', [TipoDeCambioController::class, 'show'])->name('tipo-de-cambio');
+
+        // Aparatos que llevan demasiado tiempo en la tienda.
+        Route::get('/inventario/lista-amarilla', [ListaAmarillaController::class, 'index'])
+            ->middleware('permission:unidades.ver')
+            ->name('inventario.lista-amarilla');
+        Route::post('/inventario/lista-amarilla/umbral', [ListaAmarillaController::class, 'umbral'])
+            ->middleware('permission:ajustes.editar')
+            ->name('inventario.lista-amarilla.umbral');
 
         // Teléfonos para el push.
         Route::get('/dispositivos', [DispositivoController::class, 'index'])->name('dispositivos.index');

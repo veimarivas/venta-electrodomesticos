@@ -62,4 +62,27 @@ class User extends Authenticatable
     {
         return $this->hasMany(Dispositivo::class);
     }
+
+    /**
+     * Teléfonos registrados para entrar con huella o rostro.
+     */
+    public function accesosBiometricos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AccesoBiometrico::class);
+    }
+
+    /**
+     * Cambiar la contraseña o bloquear la cuenta borra los teléfonos con
+     * huella: quien la cambia porque se la vieron no puede dejar abierta la
+     * puerta de un teléfono que ya no tiene. Cada uno vuelve a activarlo al
+     * entrar con la contraseña nueva.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (User $usuario): void {
+            if ($usuario->wasChanged('password') || ($usuario->wasChanged('is_active') && ! $usuario->is_active)) {
+                $usuario->accesosBiometricos()->delete();
+            }
+        });
+    }
 }

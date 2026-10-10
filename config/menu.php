@@ -119,6 +119,8 @@ return [
         'children' => [
             ['label' => 'Unidades', 'route' => 'inventario.unidades.index', 'active' => 'inventario/unidades*', 'permission' => 'unidades.ver'],
             ['label' => 'Kardex', 'route' => 'inventario.kardex', 'active' => 'inventario/kardex*', 'permission' => 'inventario.ver'],
+            // Lo que lleva meses sin venderse, contado a hoy.
+            ['label' => 'Lista amarilla', 'route' => 'inventario.lista-amarilla', 'active' => 'inventario/lista-amarilla*', 'permission' => 'unidades.ver'],
         ],
     ],
 

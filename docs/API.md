@@ -20,10 +20,15 @@
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| POST | `/auth/login` | correo + contraseña + nombre del dispositivo → token | pública · 5/min |
+| POST | `/auth/login` | correo + contraseña + nombre del dispositivo → `token`, `usuario` y `ajustes` (`inactividad_minutos`, `opciones_inactividad`) | pública · 5/min |
+| POST | `/auth/huella/entrar` | `dispositivo_id` + `llave` + `dispositivo` → mismo cuerpo que el login. 422 en `llave` si el teléfono ya no está registrado | pública · 10/min |
+| GET | `/auth/huella` | teléfonos del usuario registrados para entrar con huella |  |
+| POST | `/auth/huella` | registra este teléfono (`dispositivo_id`, `nombre`) → `llave` (una sola vez; el servidor guarda su hash) |  |
+| DELETE | `/auth/huella` | `dispositivo_id`: este teléfono deja de entrar con huella |  |
+| POST | `/auth/inactividad` | `minutos` (5, 10, 15, 20, 30, 60): tras cuánto sin uso la app cierra la sesión | `ajustes.editar` |
 | POST | `/auth/logout` | revoca el token actual |  |
 | PUT | `/auth/password` | cambiar contraseña (requiere actual + nueva con confirmación) |  |
-| GET | `/auth/perfil` | datos del usuario y su rol |  |
+| GET | `/auth/perfil` | datos del usuario y su rol, más `ajustes` de sesión |  |
 | PUT | `/auth/perfil` | actualizar nombre, correo y datos personales del usuario autenticado |  |
 
 ## /autorizaciones
@@ -165,6 +170,13 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 | POST | `/gastos/{gasto}` | edición | `gastos.editar` |
 | DELETE | `/gastos/{gasto}` | archiva (borrado lógico) | `gastos.eliminar` |
 
+## /inventario/lista-amarilla
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/inventario/lista-amarilla?dias=&buscar=` | aparatos en tienda con `dias` o más (sin `dias`, el umbral de la tienda), contados a hoy, por producto; `meta`: `dias`, `umbral`, `resumen`, `puede_configurar`. Costo y capital solo con `reportes.ver_costos` | `unidades.ver` |
+| POST | `/inventario/lista-amarilla/umbral` | `dias` (30 a 1095): umbral de la tienda | `ajustes.editar` |
+
 ## /inventario
 
 | Método | Ruta | Qué hace | Permiso / notas |
@@ -274,6 +286,12 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 | DELETE | `/roles/{rol}` | baja; se niega si alguien lo tiene asignado | `roles.eliminar` |
 | GET | `/roles/{rol}/permisos` | roles, matriz por módulo y lo que tiene marcado | `roles.ver` |
 | POST | `/roles/{rol}/permisos` | alta, nombre y sincronización de permisos | `roles.editar` |
+
+## /tipo-de-cambio
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/tipo-de-cambio` | dólar `paralelo` y `oficial` (BCB): `compra`, `venta`, `verificado_en`, `desactualizado`; `brecha` (%), `variacion` (desde ayer), `historial` de 14 días | autenticado |
 
 ## /unidades
 

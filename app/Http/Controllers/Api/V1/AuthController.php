@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\UsuarioResource;
 use App\Models\User;
 use App\Http\Controllers\Api\V1\PersonaController;
+use App\Support\Ajustes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -56,17 +57,27 @@ class AuthController extends Controller
             ]);
         }
 
+        return self::sesionPara($usuario, $datos['dispositivo']);
+    }
+
+    /**
+     * Abre la sesión del usuario en un dispositivo: token nuevo y los ajustes
+     * de sesión de la app. Lo usan el login con contraseña y el de huella.
+     */
+    public static function sesionPara(User $usuario, string $dispositivo): JsonResponse
+    {
         // Un token por dispositivo: volver a entrar desde el mismo teléfono
         // reemplaza el anterior en vez de acumular tokens vivos.
-        $usuario->tokens()->where('name', $datos['dispositivo'])->delete();
+        $usuario->tokens()->where('name', $dispositivo)->delete();
 
-        $token = $usuario->createToken($datos['dispositivo'])->plainTextToken;
+        $token = $usuario->createToken($dispositivo)->plainTextToken;
 
         $usuario->forceFill(['last_login_at' => now()])->save();
 
         return response()->json([
             'token' => $token,
             'usuario' => new UsuarioResource($usuario->load('persona')),
+            'ajustes' => app(Ajustes::class)->paraLaApp(),
         ]);
     }
 
@@ -80,7 +91,28 @@ class AuthController extends Controller
 
     public function perfil(Request $request): UsuarioResource
     {
-        return new UsuarioResource($request->user()->load('persona'));
+        return (new UsuarioResource($request->user()->load('persona')))
+            ->additional(['ajustes' => app(Ajustes::class)->paraLaApp()]);
+    }
+
+    /**
+     * Minutos sin uso tras los que la app cierra la sesión. Lo fija el
+     * administrador para todos los teléfonos.
+     */
+    public function inactividad(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'minutos' => ['required', 'integer', 'in:'.implode(',', Ajustes::OPCIONES_INACTIVIDAD)],
+        ], [
+            'minutos.in' => 'Elige uno de los tiempos de la lista.',
+        ]);
+
+        app(Ajustes::class)->fijarInactividad((int) $datos['minutos'], (int) $request->user()->id);
+
+        return response()->json([
+            'mensaje' => "La app cerrará la sesión tras {$datos['minutos']} minutos sin uso.",
+            'ajustes' => app(Ajustes::class)->paraLaApp(),
+        ]);
     }
 
     /**

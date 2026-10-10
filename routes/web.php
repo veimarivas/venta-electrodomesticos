@@ -294,6 +294,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->middleware('permission:reparaciones.ver')
         ->name('reparaciones.orden');
 
+    Route::view('/inventario/lista-amarilla', 'backend.inventario.lista-amarilla', [
+        'title' => 'Lista amarilla',
+        'breadcrumbs' => ['Inicio' => null, 'Inventario' => null, 'Lista amarilla' => null],
+    ])->middleware('permission:unidades.ver')->name('inventario.lista-amarilla');
+
     Route::view('/inventario/kardex', 'backend.inventario.kardex', [
         'title' => 'Kardex',
         'breadcrumbs' => ['Inicio' => null, 'Inventario' => null, 'Kardex' => null],

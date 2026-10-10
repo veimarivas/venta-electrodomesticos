@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.27.0+37 | 2026-10-10 | Cierre de sesión por inactividad, entrar con huella o rostro (teléfono registrado, sin guardar la contraseña), dólar paralelo y oficial en el inicio, lista amarilla | el del 2026-10-10 (con uno anterior la huella no se puede activar, el dólar no aparece y la lista amarilla da 404; la inactividad funciona con 10 min fijos) |
 | 1.26.0+36 | 2026-10-09 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas, foto del producto con la cámara, sugerencias de precio, venta por cantidad, precio por encima de la lista, referencias ocultas, verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor, caja opcional | el del 2026-10-09 (con uno del 2026-10-08 vende, pero «Por verificar», gastos y los resúmenes dan 404; con uno anterior además cobrar por encima de la lista da 422) |
 | 1.25.0+35 | 2026-10-05 | Sistema visual unificado | sin cambios de API |
 | 1.24.1+34 | 2026-10-03 | La sesión ya no se cierra sola | `5026ca8` |
@@ -33,6 +34,81 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Sesión por inactividad, huella o rostro, dólar del día y lista amarilla (2026-10-10)
+
+Backend: 2 migraciones (`accesos_biometricos`, `cotizaciones_dolar`), endpoints
+nuevos (ver [API.md](API.md)), tarea `dolar:actualizar` cada 30 min · app
+**1.27.0+37**
+
+Pedido del dueño: que la app cierre la sesión si no se usa, que un teléfono
+registrado entre con huella o rostro sin pedir usuario y contraseña, una lista
+de lo que lleva mucho tiempo en la tienda y el dólar (compra/venta y el del
+banco) siempre a la vista.
+
+- **Cierre por inactividad (app).** `GuardiaDeInactividad` envuelve toda la
+  app: cualquier toque reinicia el reloj. Un minuto antes sale una tarjeta con
+  la cuenta atrás y «Seguir aquí»; al llegar a cero se **revoca el token** en
+  el servidor (no solo se esconde la pantalla). Con la app en segundo plano o
+  cerrada el tiempo sigue contando desde el último toque: al volver o al
+  arrancar se comprueba. El tiempo lo fija el administrador para todos
+  (`Ajustes::INACTIVIDAD_APP`, 10 min de fábrica; 5/10/15/20/30/60) desde
+  *Usuarios → Sesión en la app del teléfono* o *Mi perfil → Seguridad*, y
+  llega con el login y el perfil. La pantalla de entrada explica por qué se
+  cerró. Por qué 10 min: deja atender a un cliente sin cortarse y no deja un
+  teléfono olvidado en el mostrador abierto todo el día.
+- **Huella o rostro con teléfono registrado.** Antes la app guardaba **la
+  contraseña** cifrada en el teléfono, y `MainActivity` era `FlutterActivity`,
+  con la que el diálogo de `local_auth` no se puede mostrar (la huella nunca
+  aparecía). Ahora: `FlutterFragmentActivity` + temas AppCompat; al entrar con
+  la contraseña (casilla marcada de fábrica) se confirma la huella y el
+  servidor registra el teléfono entregándole una **llave al azar** que el
+  teléfono guarda en el Keystore; el servidor guarda solo su SHA-256
+  (`accesos_biometricos`, un teléfono = una persona). Desde entonces la
+  pantalla de entrada saluda por el nombre y pide solo la huella
+  (`POST /auth/huella/entrar`); la contraseña queda a un toque. Cambiar la
+  contraseña o bloquear la cuenta borra los teléfonos (`User::booted`), y el
+  administrador los ve y los quita en *Usuarios*. La contraseña vieja guardada
+  por versiones anteriores se borra al arrancar 1.27.0.
+- **Dólar del día.** `TipoDeCambio` lee DolarApi (`bo.dolarapi.com`): el
+  **oficial del BCB** y el **paralelo** (compra y venta de Binance P2P, que es
+  como hoy se mide el dólar de la calle). Guarda una fila cuando cambia o al
+  empezar el día (`cotizaciones_dolar`), así que si la fuente se cae se sigue
+  enseñando el último valor con su hora y un aviso; descarta valores absurdos.
+  En el panel va en la barra superior (componente perezoso: no frena la
+  página) con un desplegable: compra/venta de los dos, brecha, cambio desde
+  ayer, dos semanas en línea y un conversor US$ ↔ Bs. En la app, una banda en
+  la cabecera del inicio con el mismo detalle en una hoja. Sin ningún dato
+  —o sin la tabla, con la migración pendiente— no se muestra: el dólar nunca
+  puede tumbar el panel (antes, sin migrar, la barra daba error en todas las
+  páginas).
+- **Lista amarilla.** `ListaAmarilla` lista los aparatos **en tienda** (en
+  stock o en un carrito) con N días o más desde que entraron
+  (`unidades.ingresado_en`), **contados a la fecha de hoy**, agrupados por
+  producto y ordenados del más viejo; con el doble del umbral pasa a
+  «crítico». Umbral de la tienda: 180 días (6 meses), lo cambia el
+  administrador; se puede consultar 3/6/9/12 meses o cualquier número de días.
+  Con `reportes.ver_costos` muestra el capital parado; sin él, el valor a
+  precio de hoy. Panel: *Inventario → Lista amarilla*; app: acceso «Lista
+  amarilla» en el inicio con el número de aparatos.
+- **Arreglo de paso:** los filtros en píldora (`.precios-filtro`) solo tenían
+  estilo dentro de Precios del día, así que en *Ventas por vendedor* salían
+  como botones sin formato. Ahora son compartidos.
+
+Comprobado: `tests/Feature/SesionDolarYListaAmarillaTest.php` (14 pruebas:
+inactividad en login/perfil, solo el admin la cambia, panel; registrar y entrar
+con huella, llave falsa, contraseña nueva o cuenta bloqueada borran los
+teléfonos, un teléfono una persona; dólar con la fuente falseada, sin
+duplicar, fuente caída, valores absurdos, barra del panel; lista amarilla por
+días, estados, nivel y costos) y la suite completa (1013). App:
+`flutter analyze` sin avisos nuevos y `flutter test` (196), con pruebas nuevas
+de inactividad al arrancar, cierre con su motivo, huella (sin registrar, llave
+buena, llave rechazada, activar) y de los modelos del dólar y la lista. El
+panel se miró en el navegador con una base de prueba.
+
+> En el XAMPP de desarrollo PHP no trae certificados raíz y la consulta HTTPS
+> del dólar falla (cURL 60): ahí el dólar no aparece hasta configurar
+> `curl.cainfo`. En el servidor Linux funciona sin tocar nada.
 
 ## Verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor y caja opcional (2026-10-09)
 

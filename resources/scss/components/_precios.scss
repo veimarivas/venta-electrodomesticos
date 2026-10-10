@@ -70,36 +70,8 @@
         background: color-mix(in srgb, var(--marca-oro) 18%, transparent);
     }
 
-    // ---- Filtros --------------------------------------------------------------
-    .precios-filtros {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: .4rem;
-    }
-
-    .precios-filtro {
-        display: inline-flex;
-        align-items: center;
-        gap: .4rem;
-        padding: .38rem .8rem;
-        border-radius: var(--radio-pill);
-        border: 1px solid var(--marca-linea-fuerte);
-        background: var(--marca-superficie);
-        color: var(--marca-apagado);
-        font-size: var(--text-sm);
-        font-weight: 600;
-        transition: background var(--trans-rapida), color var(--trans-rapida), border-color var(--trans-rapida);
-
-        &:hover { color: var(--marca-tinta); border-color: var(--marca-azul-claro); }
-        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
-
-        &--activo {
-            color: var(--marca-azul-texto);
-            border-color: color-mix(in srgb, var(--vz-primary) 45%, transparent);
-            background: color-mix(in srgb, var(--vz-primary) 10%, transparent);
-        }
-    }
+    // Los filtros en píldora están al final del archivo, fuera de este ámbito:
+    // los usan también Ventas por vendedor y la Lista amarilla.
 
     .precios-filtro-cuenta {
         min-width: 1.4rem;
@@ -325,5 +297,38 @@
         .precios-pie { justify-content: flex-end; flex-wrap: wrap; gap: .1rem .5rem; }
         .precios-sugerencia .btn { width: 100%; }
         .precios-barra .btn { width: 100%; }
+    }
+}
+
+// ---- Filtros en píldora (compartidos) ------------------------------------------
+// Período o plazo de un vistazo: Precios del día, Ventas por vendedor y Lista
+// amarilla. Fuera de `.precios-modulo` para que sirvan en cualquiera.
+.precios-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem;
+}
+
+.precios-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .38rem .8rem;
+    border-radius: var(--radio-pill);
+    border: 1px solid var(--marca-linea-fuerte);
+    background: var(--marca-superficie);
+    color: var(--marca-apagado);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    transition: background var(--trans-rapida), color var(--trans-rapida), border-color var(--trans-rapida);
+
+    &:hover { color: var(--marca-tinta); border-color: var(--marca-azul-claro); }
+    &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+
+    &--activo {
+        color: var(--marca-azul-texto);
+        border-color: color-mix(in srgb, var(--vz-primary) 45%, transparent);
+        background: color-mix(in srgb, var(--vz-primary) 10%, transparent);
     }
 }

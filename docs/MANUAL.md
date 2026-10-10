@@ -650,6 +650,39 @@ que existe el kardex.
 > El alta manual de una unidad existe para **regularizar** stock que ya estaba
 > en la tienda antes del sistema. El camino normal es la compra.
 
+**Lista amarilla** (*Inventario → Lista amarilla*, y «Lista amarilla» en el
+inicio del teléfono) — los aparatos que llevan mucho tiempo en la tienda sin
+venderse, **contados a la fecha de hoy** desde que entraron (la recepción de
+la compra o el alta manual). De fábrica, **6 meses o más**; arriba se elige 3,
+6, 9 meses, 1 año o cualquier número de días.
+
+- Agrupa por producto, del más viejo al más nuevo. El punto ámbar es
+  *atención*; el rojo, *crítico* (el doble del plazo o más).
+- Al abrir un producto salen sus aparatos uno por uno: cuándo entró, cuántos
+  días lleva y de qué compra vino. Cuenta también los que están en un carrito.
+- Arriba: cuántos aparatos son y cuánto valen a precio de hoy (con permiso de
+  costos, **el capital parado**: lo que costaron).
+- Qué hacer con ellos: revisar su **precio del día**, ponerlos en la vitrina
+  o no volver a comprarlos.
+- El administrador cambia el plazo de fábrica en la misma pantalla (*Umbral de
+  la tienda*); el número del inicio cuenta con ese plazo.
+
+---
+
+## Dólar del día
+
+Arriba a la derecha del panel y en la cabecera del inicio del teléfono está el
+**dólar**: el **paralelo** (compra y venta, el de la calle, medido en Binance
+P2P) y el **oficial del Banco Central**. Se actualiza solo cada 30 minutos.
+
+Al tocarlo se abre el detalle: compra y venta de los dos, la **brecha** (cuánto
+más caro está el paralelo), cuánto cambió **desde ayer**, la línea de las
+últimas dos semanas y un **conversor** de dólares a bolivianos (y al revés) a
+los dos precios.
+
+> Si la fuente no responde, se sigue mostrando **el último valor conocido** con
+> su hora y un aviso; nunca un cero.
+
 ---
 
 ## 7. Servicio técnico
@@ -864,6 +897,41 @@ para verlos.
 
 > La tarjeta de **Inventario** no cambia al mover el selector de período: es una
 > foto de lo que hay en la estantería ahora mismo, no un acumulado.
+
+### Entrar con huella o rostro
+
+La primera vez entras con tu usuario y contraseña, con la casilla **«Entrar
+con huella o rostro en este teléfono»** marcada (viene así). El teléfono te
+pide la huella para confirmar y queda registrado. Desde entonces, al abrir la
+app te saluda por tu nombre y basta con la huella o el rostro: no hay que
+escribir nada.
+
+- **Tu contraseña no se guarda en el teléfono.** El servidor le da al teléfono
+  una llave propia; si cambias la contraseña, esa llave deja de servir y
+  vuelves a activarla al entrar.
+- **Un teléfono, una persona.** Si otra persona entra con su contraseña en el
+  mismo teléfono y activa la huella, el teléfono pasa a ser suyo.
+- **Apagarla:** *Mi perfil → Seguridad → Entrar con huella o rostro*.
+- **Teléfono perdido o de alguien que ya no trabaja aquí:** el administrador
+  lo quita en *Usuarios → Teléfonos que entran con huella o rostro*.
+- ¿No quieres la huella hoy? En la pantalla de entrada, *Usar mi usuario y
+  contraseña*.
+
+### Cierre por inactividad
+
+Si nadie toca la app durante un rato (10 minutos de fábrica), la sesión se
+cierra sola: un teléfono olvidado en el mostrador no puede seguir vendiendo a
+nombre de nadie. **Un minuto antes** aparece abajo un aviso con la cuenta
+atrás; tocar en cualquier parte o en *Seguir aquí* lo cancela. Cuenta también
+con la app en segundo plano o cerrada.
+
+Al volver, la pantalla de entrada explica que se cerró por inactividad y, si
+tienes la huella activada, te la pide en el acto. Las ventas guardadas sin
+conexión no se pierden.
+
+El tiempo lo elige el administrador para todos los teléfonos (5, 10, 15, 20,
+30 o 60 minutos): en el panel, *Usuarios → Sesión en la app del teléfono*; en
+el teléfono, *Mi perfil → Seguridad*.
 
 ### Instalarla en el teléfono
 
