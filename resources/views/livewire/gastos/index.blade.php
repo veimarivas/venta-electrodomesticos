@@ -113,6 +113,7 @@
                                         <div class="fw-semibold">{{ $gasto->concepto }}</div>
                                         <small class="text-muted">
                                             {{ \App\Models\Gasto::CATEGORIAS[$gasto->categoria] ?? $gasto->categoria }}
+                                            @if ($gasto->tienda) · {{ $gasto->tienda->nombre }} @endif
                                             · anotó {{ $gasto->user?->name ?? '—' }}
                                             @if ($gasto->notas) · {{ \Illuminate\Support\Str::limit($gasto->notas, 60) }} @endif
                                         </small>
@@ -211,6 +212,19 @@
                                     @endforeach
                                 </select>
                             </div>
+
+                            @if ($this->tiendas->isNotEmpty())
+                                <div class="col-md-6">
+                                    <label for="g-tienda" class="form-label">Tienda</label>
+                                    <select id="g-tienda" class="form-select" wire:model.live="tiendaGasto">
+                                        <option value="">General (de ninguna tienda)</option>
+                                        @foreach ($this->tiendas as $t)
+                                            <option value="{{ $t->id }}">{{ $t->nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6 d-none d-md-block"></div>
+                            @endif
 
                             <div class="col-md-6">
                                 <label for="g-monto" class="form-label">Monto (Bs) <span class="text-danger">*</span></label>

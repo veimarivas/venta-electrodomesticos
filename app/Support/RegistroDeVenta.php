@@ -168,8 +168,13 @@ class RegistroDeVenta
 
                 $pago = $this->repartoDelPago($cabecera, $total);
 
+                // Tienda desde la que se vende (la decide `TiendaActual` en quien
+                // llama). Sin tiendas registradas es null, como antes.
+                $tiendaId = isset($cabecera['tienda_id']) ? (int) $cabecera['tienda_id'] : null;
+
                 $venta = $this->generador->crearCon([
                     ...$pago,
+                    'tienda_id' => $tiendaId,
                     // Clave del teléfono para reintentar sin duplicar. Nula en
                     // las ventas del panel.
                     'clave_idempotencia' => $cabecera['clave_idempotencia'] ?? null,
@@ -178,8 +183,8 @@ class RegistroDeVenta
                     // Se ata al turno abierto, si lo hay. Nulo no es un error:
                     // el sistema sigue vendiendo aunque nadie haya abierto
                     // caja, y el cierre avisa de esas ventas sueltas en vez de
-                    // sumarlas por su cuenta.
-                    'caja_id' => $this->arqueo->abierta()?->id,
+                    // sumarlas por su cuenta. La caja es la de su tienda.
+                    'caja_id' => $this->arqueo->abierta($tiendaId)?->id,
                     'vendida_en' => now(),
                     'subtotal' => ProrrateoDeGastos::aDecimal($subtotal),
                     'descuento' => ProrrateoDeGastos::aDecimal($descuentoTotal),

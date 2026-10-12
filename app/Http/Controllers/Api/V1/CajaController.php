@@ -106,6 +106,7 @@ class CajaController extends Controller
                 $request->user()->id,
                 $datos['monto_inicial'],
                 $datos['notas'] ?? null,
+                $this->tiendaId($request->user()),
             );
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -125,7 +126,7 @@ class CajaController extends Controller
         ]);
 
         $arqueo = app(ArqueoDeCaja::class);
-        $caja = $arqueo->abierta();
+        $caja = $arqueo->abierta($this->tiendaId($request->user()));
 
         if ($caja === null) {
             return response()->json(['message' => 'No hay ninguna caja abierta.'], 422);
@@ -166,7 +167,7 @@ class CajaController extends Controller
         ]);
 
         $arqueo = app(ArqueoDeCaja::class);
-        $caja = $arqueo->abierta();
+        $caja = $arqueo->abierta($this->tiendaId($request->user()));
 
         if ($caja === null) {
             return response()->json(['message' => 'No hay ninguna caja abierta.'], 422);
@@ -192,6 +193,12 @@ class CajaController extends Controller
         ]);
     }
 
+    /** La caja es la de la tienda donde trabaja quien la maneja. */
+    private function tiendaId(\App\Models\User $usuario): ?int
+    {
+        return app(\App\Support\TiendaActual::class)->de($usuario)?->id;
+    }
+
     /**
      * La carga que devuelven todas las acciones, para que la app repinte con
      * el mismo contrato.
@@ -202,13 +209,15 @@ class CajaController extends Controller
     {
         $arqueo = app(ArqueoDeCaja::class);
         $puedeVer = $usuario->can('caja.ver');
-        $abierta = $arqueo->abierta();
+        $abierta = $arqueo->abierta($this->tiendaId($usuario));
 
         if ($abierta !== null) {
             $abierta->loadMissing(['abiertaPor', 'movimientos.user']);
         }
 
         return [
+            // La tienda cuya caja es esta (y si se puede cambiar).
+            'tienda_actual' => app(\App\Support\TiendaActual::class)->paraMostrar($usuario),
             'puede_gestionar' => $usuario->can('caja.gestionar'),
             'puede_ver' => $puedeVer,
             // ¿Hace falta el turno abierto para vender? Un interruptor del

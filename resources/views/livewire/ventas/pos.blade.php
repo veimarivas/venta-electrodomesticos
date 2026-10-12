@@ -989,7 +989,7 @@
                         <div class="pos-aviso pos-aviso--caja mt-3">
                             <i class="ri-lock-2-line"></i>
                             <div>
-                                <strong>La caja está cerrada.</strong>
+                                <strong>La caja{{ $this->tienda ? ' de '.$this->tienda->nombre : '' }} está cerrada.</strong>
                                 Ábrela para vender: las ventas de hoy tienen que entrar en un turno.
                             </div>
                             @can('caja.gestionar')

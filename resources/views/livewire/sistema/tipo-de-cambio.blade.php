@@ -24,11 +24,10 @@
     };
 @endphp
 
-@if ($paralelo === null && $oficial === null)
-    {{-- Sin ningún dato todavía (o sin la tabla): no se ocupa la barra. --}}
-    <div class="d-none" wire:poll.600s></div>
-@else
-<div class="dropdown ms-1 header-item dolar-topbar" wire:poll.600s>
+{{-- Sin ningún dato todavía (o sin la tabla) no se ocupa la barra. Un solo
+     elemento raíz siempre: Livewire lo exige. --}}
+<div @class(['dropdown ms-1 header-item dolar-topbar', 'd-none' => $paralelo === null && $oficial === null]) wire:poll.600s>
+@if ($paralelo !== null || $oficial !== null)
     <button type="button" @class(['dolar-chip', 'dolar-chip--viejo' => $viejo])
         data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false"
         aria-label="Dólar: paralelo {{ $num($paralelo['venta'] ?? null) }}, oficial {{ $num($oficial['venta'] ?? null) }}">
@@ -138,5 +137,5 @@
 
         <div class="dolar-pie">{{ $dolar['fuente'] }}</div>
     </div>
-</div>
 @endif
+</div>

@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.29.0+39 | 2026-10-11 | Seguimiento por tienda: la tienda de trabajo (asistencia o elegida) en el cobro y la caja, una caja por tienda, ventas sin conexión con su tienda, resumen del día y ventas por vendedor por tienda | el del 2026-10-11 (con uno anterior la tienda no se ve y las ventas no la llevan) |
 | 1.28.0+38 | 2026-10-10 | Asistencia por ubicación (marcar entrada y salida dentro del radio de la tienda, historial del mes, fijar la ubicación de la tienda) | el de asistencia del 2026-10-10 (con uno anterior la pantalla de asistencia da 404) |
 | 1.27.0+37 | 2026-10-10 | Cierre de sesión por inactividad, entrar con huella o rostro (teléfono registrado, sin guardar la contraseña), dólar paralelo y oficial en el inicio, lista amarilla | el del 2026-10-10 (con uno anterior la huella no se puede activar, el dólar no aparece y la lista amarilla da 404; la inactividad funciona con 10 min fijos) |
 | 1.26.0+36 | 2026-10-09 | «Tu jornada», menú de cuenta con apariencia, oscuro de marca, Personas y Compras rediseñadas, foto del producto con la cámara, sugerencias de precio, venta por cantidad, precio por encima de la lista, referencias ocultas, verificación de compras por el vendedor, gastos, resumen del día, ventas por vendedor, caja opcional | el del 2026-10-09 (con uno del 2026-10-08 vende, pero «Por verificar», gastos y los resúmenes dan 404; con uno anterior además cobrar por encima de la lista da 422) |
@@ -35,6 +36,50 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Seguimiento por tienda: ventas, caja y reportes (2026-10-11)
+
+Backend: 1 migración (`tienda_id` en `ventas`, `cajas`, `pagos_credito`,
+`gastos` y `users`), `GET/POST /tienda-actual`, filtros `tienda_id` en los
+reportes · app **1.29.0+39**
+
+Pedido del dueño: con dos tiendas, saber **desde qué tienda se vendió**. El
+**depósito y el stock siguen siendo uno solo**, compartido: lo que lleva tienda
+es el dinero y el seguimiento. Decisiones tomadas con él: la tienda sale de la
+**asistencia** y, si no se marcó, **se elige**; **una caja por tienda**; y lo
+de antes pasa a la **tienda principal**.
+
+- **`TiendaActual`** decide dónde trabaja cada uno, en este orden: el turno de
+  asistencia de hoy (fijo mientras dure), la tienda elegida (guardada en el
+  usuario, así vale igual en el panel y en el teléfono) y la principal. Sin
+  tiendas registradas devuelve null y todo funciona como antes.
+- **Elegir la tienda:** en el panel, un selector en la barra superior; en la
+  app, un chip en el cobro y en la caja. Con turno de asistencia abierto no se
+  puede cambiar.
+- **Ventas, cobros de cuotas y gastos** se anotan con su tienda
+  (`RegistroDeVenta`, `CobroDeCuota`, `RegistroDeGastos`). La app manda la
+  tienda con cada venta, y la **venta guardada sin conexión la conserva** para
+  sincronizarse con la tienda de ese momento aunque el turno ya haya cambiado.
+- **Una caja por tienda** (`ArqueoDeCaja::abierta($tiendaId)`): cada local
+  abre, mueve y cierra su propia caja, y la venta entra en la caja de su
+  tienda. Quien supervisa ve también las cajas abiertas de las otras tiendas.
+  Las ventas y cobros «sueltos» del cierre se cuentan solo de esa tienda.
+- **Tienda principal** (*Personal → Tiendas → Principal*): la que se usa
+  cuando nadie eligió; al marcarla se le asignan las ventas, cajas, cobros y
+  gastos de antes que no tienen tienda (el panel avisa cuántos hay).
+- **Reportes por tienda:** el resumen del día (panel y app) filtra por tienda
+  y, con todas, muestra lo vendido por cada una; los **pagos a proveedores** no
+  salen por tienda porque las compras son del depósito compartido. Ventas por
+  vendedor filtra por tienda y dice cuánto vendió cada uno en cada tienda. El
+  historial de ventas tiene filtro y muestra la tienda. Los gastos pueden ser
+  de una tienda o generales.
+
+Comprobado: `tests/Feature/VentasPorTiendaTest.php` (9 pruebas: orden
+asistencia → elegida → principal, no cambiar con turno abierto, sin tiendas
+todo igual, una caja por tienda y la venta en la suya, tienda que manda el
+teléfono, elegir por API y en el panel, la principal se queda con lo de
+antes, resumen del día y ventas por vendedor por tienda) y la suite completa.
+App: `test/tienda_actual_test.dart` (4) y `flutter test` completo (209).
 
 ## Asistencia por ubicación en varias tiendas (2026-10-10)
 

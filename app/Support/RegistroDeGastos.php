@@ -21,7 +21,7 @@ class RegistroDeGastos
     public function __construct(private readonly ArqueoDeCaja $arqueo) {}
 
     /**
-     * @param  array{fecha: string, concepto: string, categoria: string, monto: string|float, metodo_pago: string, beneficiario_id?: ?int, notas?: ?string, de_caja?: bool}  $datos
+     * @param  array{fecha: string, concepto: string, categoria: string, monto: string|float, metodo_pago: string, beneficiario_id?: ?int, notas?: ?string, de_caja?: bool, tienda_id?: ?int}  $datos
      */
     public function guardar(array $datos, int $userId, ?Gasto $gasto = null, ?UploadedFile $comprobante = null): Gasto
     {
@@ -49,6 +49,9 @@ class RegistroDeGastos
             'metodo_pago' => $datos['metodo_pago'],
             'beneficiario_id' => $datos['beneficiario_id'] ?? null,
             'caja_id' => $cajaId,
+            // De qué tienda es el gasto (opcional: el de la tienda en general,
+            // un flete del depósito, no es de ninguna).
+            'tienda_id' => isset($datos['tienda_id']) && $datos['tienda_id'] !== '' ? (int) $datos['tienda_id'] : null,
             'notas' => isset($datos['notas']) && trim((string) $datos['notas']) !== '' ? trim($datos['notas']) : null,
         ];
 
@@ -98,10 +101,13 @@ class RegistroDeGastos
             return $gasto->caja_id;
         }
 
-        $caja = $this->arqueo->abierta();
+        $tiendaId = isset($datos['tienda_id']) && $datos['tienda_id'] !== '' ? (int) $datos['tienda_id'] : null;
+        $caja = $this->arqueo->abierta($tiendaId);
 
         if ($caja === null) {
-            throw new RuntimeException('No hay una caja abierta de la que sacar el efectivo. Desmarca «sale del cajón» o abre el turno.');
+            throw new RuntimeException(
+                'No hay una caja abierta'.($tiendaId ? ' en esa tienda' : '').' de la que sacar el efectivo. Desmarca «sale del cajón» o abre el turno.'
+            );
         }
 
         if ($centavos > $this->arqueo->esperadoEnCentavos($caja)) {

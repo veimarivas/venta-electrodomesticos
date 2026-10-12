@@ -23,7 +23,7 @@ class ArqueoDeCaja
      *
      * @param  float|string  $montoInicial  El cambio que se deja en el cajón.
      */
-    public function abrir(int $userId, float|string $montoInicial = 0, ?string $notas = null): Caja
+    public function abrir(int $userId, float|string $montoInicial = 0, ?string $notas = null, ?int $tiendaId = null): Caja
     {
         $inicial = ProrrateoDeGastos::aCentavos($montoInicial);
 
@@ -31,19 +31,21 @@ class ArqueoDeCaja
             throw new RuntimeException('El fondo inicial no puede ser negativo.');
         }
 
-        return DB::transaction(function () use ($userId, $inicial, $notas): Caja {
+        return DB::transaction(function () use ($userId, $inicial, $notas, $tiendaId): Caja {
             // Se comprueba DENTRO de la transacción y con bloqueo: dos pestañas
             // abriendo a la vez dejarían dos cajas abiertas, y a partir de ahí
-            // ninguna cuadraría.
-            $abierta = Caja::query()->abiertas()->lockForUpdate()->first();
+            // ninguna cuadraría. Una caja abierta **por tienda**: cada local
+            // cuadra su propio cajón.
+            $abierta = Caja::query()->abiertas()->where('tienda_id', $tiendaId)->lockForUpdate()->first();
 
             if ($abierta !== null) {
                 throw new RuntimeException(
-                    'Ya hay una caja abierta. Ciérrala antes de abrir otra.'
+                    'Ya hay una caja abierta'.($tiendaId ? ' en esta tienda' : '').'. Ciérrala antes de abrir otra.'
                 );
             }
 
             return Caja::create([
+                'tienda_id' => $tiendaId,
                 'abierta_por' => $userId,
                 'abierta_en' => now(),
                 'monto_inicial' => ProrrateoDeGastos::aDecimal($inicial),
@@ -92,10 +94,13 @@ class ArqueoDeCaja
         });
     }
 
-    /** La caja abierta ahora mismo, o null. */
-    public function abierta(): ?Caja
+    /**
+     * La caja abierta ahora mismo en esa tienda, o null. Sin tiendas
+     * registradas, `$tiendaId` es null y es la única caja, como siempre.
+     */
+    public function abierta(?int $tiendaId = null): ?Caja
     {
-        return Caja::query()->abiertas()->latest('abierta_en')->first();
+        return Caja::query()->abiertas()->where('tienda_id', $tiendaId)->latest('abierta_en')->first();
     }
 
     /**
@@ -261,6 +266,7 @@ class ArqueoDeCaja
         return Venta::query()
             ->completadas()
             ->whereNull('caja_id')
+            ->where('tienda_id', $caja->tienda_id)
             // Una venta a crédito solo trae billetes si hubo cuota inicial:
             // con inicial cero no entró nada al cajón y contarla como suelta
             // asustaría sin motivo.
@@ -280,6 +286,7 @@ class ArqueoDeCaja
 
         return PagoCredito::query()
             ->whereNull('caja_id')
+            ->where('tienda_id', $caja->tienda_id)
             ->enEfectivo()
             ->whereBetween('pagado_en', [$caja->abierta_en, $hasta])
             ->count();

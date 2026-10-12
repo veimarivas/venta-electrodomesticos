@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * saldada, que es justo lo que se discute en el mostrador.
  */
 #[Fillable([
+    'tienda_id',
     'credito_id',
     'cuota_id',
     'recibo',
@@ -80,5 +81,11 @@ class PagoCredito extends Model
     public function scopeEnEfectivo(Builder $query): Builder
     {
         return $query->where('metodo_pago', 'efectivo');
+    }
+
+    /** Tienda desde la que se hizo (seguimiento por tienda). */
+    public function tienda(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Tienda::class)->withTrashed();
     }
 }

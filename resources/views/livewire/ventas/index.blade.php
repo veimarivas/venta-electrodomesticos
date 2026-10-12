@@ -246,6 +246,15 @@
                         <input type="date" class="form-control" style="max-width: 9.5rem"
                             wire:model.live="hasta" aria-label="Hasta">
 
+                        @if ($tiendas->isNotEmpty())
+                            <select class="form-select" style="max-width: 11rem" wire:model.live="filtroTienda" aria-label="Tienda">
+                                <option value="">Toda tienda</option>
+                                @foreach ($tiendas as $t)
+                                    <option value="{{ $t->id }}">{{ $t->nombre }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+
                         <select class="form-select" style="max-width: 10rem" wire:model.live="filtroEstado">
                             <option value="todas">Todo estado</option>
                             @foreach ($estados as $valor => $etiqueta)
@@ -309,7 +318,9 @@
                                     <div class="text-truncate">
                                         {{ $venta->cliente?->persona?->nombre_completo ?? 'Público general' }}
                                     </div>
-                                    <small class="text-muted">Vendió {{ $venta->user?->name ?? '—' }}</small>
+                                    <small class="text-muted">
+                                        Vendió {{ $venta->user?->name ?? '—' }}{{ $venta->tienda ? ' · '.$venta->tienda->nombre : '' }}
+                                    </small>
                                 </td>
 
                                 <td class="text-center">

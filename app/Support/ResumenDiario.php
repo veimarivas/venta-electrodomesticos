@@ -34,12 +34,16 @@ use Carbon\CarbonInterface;
  */
 class ResumenDiario
 {
+    /** Tienda que se mira; null = todas. */
+    private ?int $tiendaId = null;
+
     /**
      * @return array<string, mixed>
      */
-    public function del(CarbonInterface $dia): array
+    public function del(CarbonInterface $dia, ?int $tiendaId = null): array
     {
         $fecha = $dia->toDateString();
+        $this->tiendaId = $tiendaId;
 
         $ventas = $this->ventas($fecha);
         $cobranza = $this->cobranza($fecha);
@@ -61,6 +65,9 @@ class ResumenDiario
 
         return [
             'fecha' => $fecha,
+            'tienda_id' => $tiendaId,
+            // Con todas las tiendas, cuánto vendió cada una ese día.
+            'por_tienda' => $tiendaId === null ? $this->porTienda($fecha) : [],
             'ingresos' => [
                 'total' => $this->bs($ingresos),
                 'ventas' => [
@@ -123,7 +130,8 @@ class ResumenDiario
         $ventas = Venta::query()
             ->completadas()
             ->whereDate('vendida_en', $fecha)
-            ->get(['metodo_pago', 'total', 'total_devuelto', 'monto_efectivo', 'monto_qr']);
+            ->when($this->tiendaId, fn ($q) => $q->where('tienda_id', $this->tiendaId))
+            ->get(['tienda_id', 'metodo_pago', 'total', 'total_devuelto', 'monto_efectivo', 'monto_qr']);
 
         $suma = ['cantidad' => $ventas->count(), 'cobrado' => 0, 'efectivo' => 0, 'qr' => 0, 'otros' => 0, 'a_credito' => 0];
 
@@ -158,7 +166,10 @@ class ResumenDiario
      */
     private function cobranza(string $fecha): array
     {
-        $pagos = PagoCredito::query()->whereDate('pagado_en', $fecha)->get(['monto', 'metodo_pago']);
+        $pagos = PagoCredito::query()
+            ->whereDate('pagado_en', $fecha)
+            ->when($this->tiendaId, fn ($q) => $q->where('tienda_id', $this->tiendaId))
+            ->get(['monto', 'metodo_pago']);
 
         return [
             'cantidad' => $pagos->count(),
@@ -176,6 +187,7 @@ class ResumenDiario
             ->with('user')
             ->where('tipo', $tipo)
             ->whereDate('created_at', $fecha)
+            ->when($this->tiendaId, fn ($q) => $q->whereHas('caja', fn ($c) => $c->where('tienda_id', $this->tiendaId)))
             ->orderBy('created_at')
             ->get();
 
@@ -195,6 +207,12 @@ class ResumenDiario
      */
     private function pagosAProveedores(string $fecha): array
     {
+        // Las compras son del depósito compartido, no de una tienda: solo
+        // cuentan en el resumen de todas.
+        if ($this->tiendaId !== null) {
+            return ['total' => 0, 'detalle' => []];
+        }
+
         $pagos = PagoCompra::query()
             ->with(['compra.proveedor', 'user'])
             ->whereDate('fecha', $fecha)
@@ -221,6 +239,7 @@ class ResumenDiario
         $gastos = Gasto::query()
             ->with(['beneficiario', 'user'])
             ->delDia($fecha)
+            ->when($this->tiendaId, fn ($q) => $q->where('tienda_id', $this->tiendaId))
             ->orderBy('id')
             ->get();
 
@@ -271,12 +290,39 @@ class ResumenDiario
      */
     private function devoluciones(string $fecha): array
     {
-        $lineas = VentaDetalle::query()->whereDate('devuelto_en', $fecha)->get(['precio_unitario', 'descuento']);
+        $lineas = VentaDetalle::query()
+            ->whereDate('devuelto_en', $fecha)
+            ->when($this->tiendaId, fn ($q) => $q->whereHas('venta', fn ($v) => $v->where('tienda_id', $this->tiendaId)))
+            ->get(['precio_unitario', 'descuento']);
 
         return [
             'cantidad' => $lineas->count(),
             'total' => (int) $lineas->sum(fn (VentaDetalle $l) => $l->netoEnCentavos()),
         ];
+    }
+
+    /**
+     * Ventas del día por tienda (lo cobrado en su momento).
+     *
+     * @return list<array{tienda_id: ?int, tienda: string, ventas: int, vendido: float}>
+     */
+    private function porTienda(string $fecha): array
+    {
+        return Venta::query()
+            ->with('tienda:id,nombre')
+            ->completadas()
+            ->whereDate('vendida_en', $fecha)
+            ->get(['id', 'tienda_id', 'total', 'total_devuelto'])
+            ->groupBy(fn (Venta $v) => $v->tienda_id ?? 0)
+            ->map(fn ($grupo): array => [
+                'tienda_id' => $grupo->first()->tienda_id,
+                'tienda' => $grupo->first()->tienda?->nombre ?? 'Sin tienda',
+                'ventas' => $grupo->count(),
+                'vendido' => $this->bs((int) $grupo->sum(fn (Venta $v) => $this->c($v->total) + $this->c($v->total_devuelto))),
+            ])
+            ->sortByDesc('vendido')
+            ->values()
+            ->all();
     }
 
     private function c(mixed $valor): int

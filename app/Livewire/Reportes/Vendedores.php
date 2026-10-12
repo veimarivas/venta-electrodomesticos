@@ -27,6 +27,9 @@ class Vendedores extends Component
 
     public ?int $vendedorId = null;
 
+    /** Tienda que se mira; null = todas. */
+    public ?int $tiendaId = null;
+
     /** Vendedor con el detalle abierto. */
     public ?int $abierto = null;
 
@@ -81,7 +84,14 @@ class Vendedores extends Component
             [$desde, $hasta] = [$hasta, $desde];
         }
 
-        return app(SeguimientoDeVendedores::class)->entre($desde, $hasta, $this->vendedorId);
+        return app(SeguimientoDeVendedores::class)->entre($desde, $hasta, $this->vendedorId, $this->tiendaId ?: null);
+    }
+
+    /** @return \Illuminate\Support\Collection<int, \App\Models\Tienda> */
+    #[Computed]
+    public function tiendas(): \Illuminate\Support\Collection
+    {
+        return app(\App\Support\TiendaActual::class)->activas();
     }
 
     /**

@@ -59,6 +59,15 @@ class Index extends Component
         return app(ArqueoDeCaja::class);
     }
 
+    /**
+     * La caja que se maneja es la de la tienda donde se está trabajando (por
+     * la asistencia o la elegida en la barra superior). Null sin tiendas.
+     */
+    private function tiendaId(): ?int
+    {
+        return app(\App\Support\TiendaActual::class)->de(auth()->user())?->id;
+    }
+
     public function abrir(): void
     {
         abort_unless($this->puedeGestionar(), 403);
@@ -76,7 +85,8 @@ class Index extends Component
             $this->arqueo()->abrir(
                 auth()->id(),
                 $this->montoInicial,
-                $this->notas !== '' ? $this->notas : null
+                $this->notas !== '' ? $this->notas : null,
+                $this->tiendaId(),
             );
         } catch (RuntimeException $e) {
             $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
@@ -129,7 +139,7 @@ class Index extends Component
             ]
         );
 
-        $caja = $this->arqueo()->abierta();
+        $caja = $this->arqueo()->abierta($this->tiendaId());
 
         if ($caja === null) {
             $this->dispatch('cerrar-modal-cerrar-caja');
@@ -209,7 +219,7 @@ class Index extends Component
             ]
         );
 
-        $caja = $this->arqueo()->abierta();
+        $caja = $this->arqueo()->abierta($this->tiendaId());
 
         if ($caja === null) {
             $this->dispatch('cerrar-modal-movimiento-caja');
@@ -259,7 +269,7 @@ class Index extends Component
 
     public function render(): View
     {
-        $abierta = $this->arqueo()->abierta();
+        $abierta = $this->arqueo()->abierta($this->tiendaId());
 
         if ($abierta !== null) {
             $abierta->loadMissing('abiertaPor');
@@ -270,13 +280,23 @@ class Index extends Component
         $cierres = $this->puedeVer()
             ? Caja::query()
                 ->cerradas()
-                ->with(['abiertaPor', 'cerradaPor'])
+                ->with(['abiertaPor', 'cerradaPor', 'tienda'])
                 ->withCount('ventas')
                 ->latest('cerrada_en')
                 ->paginate(10)
             : null;
 
+        $tienda = app(\App\Support\TiendaActual::class)->de(auth()->user());
+
         return view('livewire.caja.index', [
+            'tienda' => $tienda,
+            // Para quien supervisa: las cajas abiertas en las otras tiendas.
+            'otrasAbiertas' => $this->puedeVer()
+                ? Caja::query()->abiertas()->with(['tienda', 'abiertaPor'])
+                    ->where(fn ($q) => $q->where('tienda_id', '!=', $tienda?->id)->orWhereNull('tienda_id'))
+                    ->when($tienda === null, fn ($q) => $q->whereRaw('1 = 0'))
+                    ->get()
+                : collect(),
             'cajaObligatoria' => app(\App\Support\Ajustes::class)->cajaObligatoria(),
             'abierta' => $abierta,
             'cierres' => $cierres,

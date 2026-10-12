@@ -90,6 +90,7 @@ class CreditoController extends Controller
                     'metodo_pago' => $datos['metodo_pago'],
                     'comprobante_qr' => $datos['comprobante_qr'] ?? null,
                     'notas' => $datos['notas'] ?? null,
+                    'tienda_id' => app(\App\Support\TiendaActual::class)->de($request->user())?->id,
                 ],
                 $request->user()->id,
             );

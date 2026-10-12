@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
  * que seguir dando el mismo número dentro de un año.
  */
 #[Fillable([
+    'tienda_id',
     'cliente_id',
     'user_id',
     'caja_id',
@@ -245,5 +246,11 @@ class Venta extends Model
                 ->orWhereHas('detalles.unidad', fn (Builder $u) => $u->where('serial', 'like', "%{$termino}%")
                     ->orWhere('codigo_interno', 'like', "%{$termino}%"));
         });
+    }
+
+    /** Tienda desde la que se hizo (seguimiento por tienda). */
+    public function tienda(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Tienda::class)->withTrashed();
     }
 }

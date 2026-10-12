@@ -2020,7 +2020,17 @@ class Pos extends Component
     #[Computed]
     public function cajaAbierta(): bool
     {
-        return app(ArqueoDeCaja::class)->abierta() !== null;
+        return app(ArqueoDeCaja::class)->abierta($this->tienda?->id) !== null;
+    }
+
+    /**
+     * Tienda desde la que se vende: la de la asistencia de hoy o la elegida en
+     * la barra superior. Null sin tiendas registradas.
+     */
+    #[Computed]
+    public function tienda(): ?\App\Models\Tienda
+    {
+        return app(\App\Support\TiendaActual::class)->de(auth()->user());
     }
 
     /**
@@ -2293,6 +2303,7 @@ class Pos extends Component
                 ], $this->carrito),
                 cabecera: [
                     'clave_idempotencia' => $clave,
+                    'tienda_id' => $this->tienda?->id,
                     'cliente_id' => $this->clienteId,
                     'metodo_pago' => $this->metodoPago,
                     'notas' => trim($this->notas) !== '' ? trim($this->notas) : null,

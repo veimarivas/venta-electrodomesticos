@@ -51,6 +51,9 @@ class Index extends Component
     /** Sale del cajón del turno abierto (solo efectivo de hoy). */
     public bool $deCaja = true;
 
+    /** Tienda del gasto; vacío = gasto general (de ninguna). */
+    public string $tiendaGasto = '';
+
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
     public $comprobante = null;
 
@@ -67,7 +70,7 @@ class Index extends Component
     public function gastos(): Collection
     {
         return Gasto::query()
-            ->with(['beneficiario', 'user'])
+            ->with(['beneficiario', 'user', 'tienda'])
             ->delDia($this->fecha)
             ->latest('id')
             ->get();
@@ -83,7 +86,19 @@ class Index extends Component
     #[Computed]
     public function hayCajaAbierta(): bool
     {
-        return app(ArqueoDeCaja::class)->abierta() !== null;
+        return app(ArqueoDeCaja::class)->abierta($this->tiendaGasto !== '' ? (int) $this->tiendaGasto : null) !== null;
+    }
+
+    /** @return \Illuminate\Support\Collection<int, \App\Models\Tienda> */
+    #[Computed]
+    public function tiendas(): \Illuminate\Support\Collection
+    {
+        return app(\App\Support\TiendaActual::class)->activas();
+    }
+
+    private function tiendaDeTrabajo(): string
+    {
+        return (string) (app(\App\Support\TiendaActual::class)->de(auth()->user())?->id ?? '');
     }
 
     public function diaAnterior(): void
@@ -104,6 +119,7 @@ class Index extends Component
         $this->categoria = 'comida';
         $this->metodoPago = 'qr';
         $this->deCaja = true;
+        $this->tiendaGasto = $this->tiendaDeTrabajo();
         $this->fechaGasto = $this->fecha;
         $this->resetValidation();
 
@@ -125,6 +141,7 @@ class Index extends Component
         $this->beneficiarioId = $gasto->beneficiario_id;
         $this->notas = (string) $gasto->notas;
         $this->deCaja = $gasto->caja_id !== null;
+        $this->tiendaGasto = (string) ($gasto->tienda_id ?? '');
         $this->comprobante = null;
         $this->resetValidation();
 
@@ -161,6 +178,7 @@ class Index extends Component
                     'beneficiario_id' => $this->beneficiarioId,
                     'notas' => $this->notas,
                     'de_caja' => $this->deCaja,
+                    'tienda_id' => $this->tiendaGasto !== '' ? (int) $this->tiendaGasto : null,
                 ],
                 (int) auth()->id(),
                 $this->gastoId ? Gasto::findOrFail($this->gastoId) : null,

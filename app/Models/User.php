@@ -15,7 +15,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'persona_id'])]
+#[Fillable(['tienda_id', 'name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'persona_id'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
@@ -84,5 +84,14 @@ class User extends Authenticatable
                 $usuario->accesosBiometricos()->delete();
             }
         });
+    }
+
+    /**
+     * Tienda que la persona eligió para trabajar cuando no marcó asistencia.
+     * La que manda es la de `TiendaActual::de()`.
+     */
+    public function tienda(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Tienda::class)->withTrashed();
     }
 }

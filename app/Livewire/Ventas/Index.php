@@ -27,6 +27,14 @@ class Index extends Component
     /** todas | completada | anulada */
     public string $filtroEstado = 'todas';
 
+    /** Tienda desde la que se vendió; vacío = todas. */
+    public string $filtroTienda = '';
+
+    public function updatedFiltroTienda(): void
+    {
+        $this->resetPage();
+    }
+
     public string $desde = '';
 
     public string $hasta = '';
@@ -287,10 +295,11 @@ class Index extends Component
     public function render(): View
     {
         $ventas = Venta::query()
-            ->with(['cliente.persona', 'user'])
+            ->with(['cliente.persona', 'user', 'tienda:id,nombre'])
             ->withCount('detalles')
             ->buscar($this->buscar)
             ->when($this->filtroEstado !== 'todas', fn ($q) => $q->where('estado', $this->filtroEstado))
+            ->when($this->filtroTienda !== '', fn ($q) => $q->where('tienda_id', (int) $this->filtroTienda))
             ->when($this->desde !== '', fn ($q) => $q->whereDate('vendida_en', '>=', $this->desde))
             ->when($this->hasta !== '', fn ($q) => $q->whereDate('vendida_en', '<=', $this->hasta))
             ->orderBy($this->ordenarPor, $this->direccionOrden)
@@ -312,6 +321,7 @@ class Index extends Component
         return view('livewire.ventas.index', [
             'ventas' => $ventas,
             'estados' => Venta::ESTADOS,
+            'tiendas' => app(\App\Support\TiendaActual::class)->activas(),
             'metodosPago' => Venta::METODOS_PAGO,
             'totalVentas' => (int) $totales->cantidad,
             'ingresoTotal' => (float) $totales->ingreso,

@@ -17,6 +17,9 @@ class ResumenDiario extends Component
 {
     public string $fecha = '';
 
+    /** Tienda que se mira; vacío = todas. */
+    public string $tiendaId = '';
+
     public function mount(): void
     {
         abort_unless(auth()->user()?->can('reportes.seguimiento') ?? false, 403);
@@ -28,7 +31,17 @@ class ResumenDiario extends Component
     #[Computed]
     public function resumen(): array
     {
-        return app(Resumen::class)->del(Carbon::parse($this->fecha));
+        return app(Resumen::class)->del(
+            Carbon::parse($this->fecha),
+            $this->tiendaId !== '' ? (int) $this->tiendaId : null,
+        );
+    }
+
+    /** @return \Illuminate\Support\Collection<int, \App\Models\Tienda> */
+    #[Computed]
+    public function tiendas(): \Illuminate\Support\Collection
+    {
+        return app(\App\Support\TiendaActual::class)->activas();
     }
 
     public function updatedFecha(): void

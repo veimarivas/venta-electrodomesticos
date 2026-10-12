@@ -7,6 +7,7 @@ use App\Models\Gasto;
 use App\Models\User;
 use App\Support\ArqueoDeCaja;
 use App\Support\RegistroDeGastos;
+use App\Support\TiendaActual;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -27,7 +28,7 @@ class GastoController extends Controller
         $fecha = $datos['fecha'] ?? now()->toDateString();
 
         $gastos = Gasto::query()
-            ->with(['beneficiario', 'user'])
+            ->with(['beneficiario', 'user', 'tienda'])
             ->delDia($fecha)
             ->latest('id')
             ->get();
@@ -43,7 +44,9 @@ class GastoController extends Controller
                 'metodos' => Gasto::METODOS,
                 'personas' => User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name'])
                     ->map(fn (User $u) => ['id' => $u->id, 'nombre' => $u->name])->values(),
-                'caja_abierta' => app(ArqueoDeCaja::class)->abierta() !== null,
+                'caja_abierta' => app(ArqueoDeCaja::class)
+                    ->abierta(app(TiendaActual::class)->de($request->user())?->id) !== null,
+                'tienda_actual' => app(TiendaActual::class)->paraMostrar($request->user()),
             ],
         ]);
     }
@@ -77,14 +80,21 @@ class GastoController extends Controller
             'beneficiario_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'notas' => ['nullable', 'string', 'max:500'],
             'de_caja' => ['nullable', 'boolean'],
+            'tienda_id' => ['nullable', 'integer', Rule::exists('tiendas', 'id')],
             'comprobante' => ['nullable', 'image', 'max:5120'],
         ], [
             'fecha.before_or_equal' => 'Un gasto no puede ser de un día que todavía no llegó.',
         ]);
 
+        // Sin el campo, el gasto es de la tienda donde se trabaja; con el
+        // campo vacío, de ninguna (un gasto general).
+        $tiendaId = $request->has('tienda_id')
+            ? ($datos['tienda_id'] ?? null)
+            : app(TiendaActual::class)->de($request->user())?->id;
+
         try {
             $guardado = app(RegistroDeGastos::class)->guardar(
-                [...$datos, 'de_caja' => (bool) ($datos['de_caja'] ?? false)],
+                [...$datos, 'tienda_id' => $tiendaId, 'de_caja' => (bool) ($datos['de_caja'] ?? false)],
                 (int) $request->user()->id,
                 $gasto,
                 $request->file('comprobante'),
@@ -98,7 +108,7 @@ class GastoController extends Controller
 
         return response()->json([
             'message' => $gasto ? 'Gasto corregido.' : 'Gasto registrado.',
-            'data' => $this->gasto($guardado->load(['beneficiario', 'user'])),
+            'data' => $this->gasto($guardado->load(['beneficiario', 'user', 'tienda'])),
         ], $gasto ? 200 : 201);
     }
 
@@ -119,6 +129,8 @@ class GastoController extends Controller
             'beneficiario_id' => $g->beneficiario_id,
             'beneficiario' => $g->beneficiario?->name,
             'de_caja' => $g->caja_id !== null,
+            'tienda_id' => $g->tienda_id,
+            'tienda' => $g->tienda?->nombre,
             'comprobante_url' => $g->comprobante_url,
             'notas' => $g->notas,
             'registrado_por' => $g->user?->name,

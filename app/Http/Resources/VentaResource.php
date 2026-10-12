@@ -49,6 +49,9 @@ class VentaResource extends JsonResource
                 ?? ($this->relationLoaded('detalles') ? $this->detalles->count() : null),
             'cliente' => $this->cliente?->persona?->nombre_completo ?? 'Público general',
             'vendedor' => $this->user?->name,
+            // Desde qué tienda se vendió (seguimiento por tienda).
+            'tienda_id' => $this->tienda_id,
+            'tienda' => $this->tienda_id ? $this->tienda?->nombre : null,
             'notas' => $this->notas,
             'anulada_en' => $this->anulada_en?->toIso8601String(),
             'motivo_anulacion' => $this->motivo_anulacion,

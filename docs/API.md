@@ -302,6 +302,18 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 | GET | `/roles/{rol}/permisos` | roles, matriz por módulo y lo que tiene marcado | `roles.ver` |
 | POST | `/roles/{rol}/permisos` | alta, nombre y sincronización de permisos | `roles.editar` |
 
+## /tienda-actual
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/tienda-actual` | `tienda` donde trabaja (`id`, `nombre`), `fuente` (asistencia, elegida o principal), `puede_cambiar` y las `tiendas` activas | autenticado |
+| POST | `/tienda-actual` | `tienda_id`: elige la tienda de trabajo. 422 si tiene un turno de asistencia abierto en otra | autenticado |
+
+> `POST /pos/cobrar` acepta `tienda_id` (la venta guardada sin conexión lo
+> manda); sin él, la tienda es la de quien vende. `GET /caja` incluye
+> `tienda_actual` y la caja es la de esa tienda. `GET /reportes/resumen-diario`
+> y `/reportes/vendedores` aceptan `tienda_id`; el resumen trae `por_tienda`.
+
 ## /tiendas
 
 | Método | Ruta | Qué hace | Permiso / notas |

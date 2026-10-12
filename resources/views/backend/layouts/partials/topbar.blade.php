@@ -72,6 +72,9 @@
                      derecha porque es lo que se mira antes de cotizar. -->
                 @livewire('sistema.tipo-de-cambio')
 
+                <!-- Tienda donde se trabaja: la de la asistencia o la elegida. -->
+                @livewire('sistema.tienda-actual')
+
                 <!-- Buscador en móvil -->
                 <div class="dropdown d-md-none topbar-head-dropdown header-item">
                     <button type="button"

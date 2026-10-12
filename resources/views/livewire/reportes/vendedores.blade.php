@@ -46,6 +46,17 @@
                     @endforeach
                 </select>
             </div>
+            @if ($this->tiendas->isNotEmpty())
+                <div style="min-width: 11rem;">
+                    <label class="form-label fs-12 mb-1" for="v-tienda">Tienda</label>
+                    <select id="v-tienda" class="form-select form-select-sm" wire:model.live="tiendaId">
+                        <option value="">Todas</option>
+                        @foreach ($this->tiendas as $t)
+                            <option value="{{ $t->id }}">{{ $t->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <span class="spinner-border spinner-border-sm text-primary" role="status" wire:loading.delay>
                 <span class="visually-hidden">Cargando...</span>
             </span>
@@ -124,6 +135,17 @@
                                 @if ($abierto === $v['vendedor_id'])
                                     <tr class="vendedores-detalle">
                                         <td colspan="7" class="px-4 pb-4">
+                                            @if (count($v['tiendas']) > 1 || ($v['tiendas'][0]['tienda_id'] ?? null) !== null)
+                                                <h6 class="mt-2 mb-2 fs-13 text-uppercase text-muted">Por tienda</h6>
+                                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                                    @foreach ($v['tiendas'] as $t)
+                                                        <span class="gastos-categoria">
+                                                            <i class="ri-store-2-line"></i> {{ $t['tienda'] }} · {{ $bs($t['total']) }}
+                                                            · {{ $t['unidades'] }} u.
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
                                             <h6 class="mt-2 mb-2 fs-13 text-uppercase text-muted">Por producto</h6>
                                             <div class="table-responsive">
                                                 <table class="table table-sm mb-3">

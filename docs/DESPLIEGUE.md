@@ -125,6 +125,12 @@ El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 > desde el teléfono dentro de cada una. Sube el backend antes de repartir la
 > app 1.28.0+38.
 
+> **Actualización de seguimiento por tienda (2026-10-11):** 1 migración. Justo
+> después, en *Personal → Tiendas*, marcar la **tienda principal**: se le
+> asignan las ventas, cajas, cobros y gastos anteriores. Si en ese momento hay
+> una caja abierta, también pasa a la principal. Sube el backend antes de
+> repartir la app 1.29.0+39.
+
 > **Lo lento va ANTES de bajar el sitio.** `composer install` y `npm ci` tardan
 > minutos y son justo lo que puede fallar —red, disco, una versión de Node—. Si
 > el sitio ya está en mantenimiento cuando revientan, la tienda se queda caída

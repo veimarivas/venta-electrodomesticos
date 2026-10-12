@@ -35,9 +35,15 @@
                                 </span>
                             </div>
                             <div class="min-w-0">
-                                <h4 class="text-white mb-1">Control de caja</h4>
+                                <h4 class="text-white mb-1">
+                                    Control de caja{{ $tienda ? ' · '.$tienda->nombre : '' }}
+                                </h4>
                                 <p class="mb-0" style="color: rgba(255,255,255,.65);">
-                                    Apertura, cuadre y histórico de turnos de caja.
+                                    @if ($tienda)
+                                        Cada tienda abre y cuadra su propia caja. Para manejar la de otra, cámbiala arriba a la derecha.
+                                    @else
+                                        Apertura, cuadre y histórico de turnos de caja.
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -96,6 +102,20 @@
         </div>
     @endif
 
+    {{-- Las cajas abiertas en las otras tiendas, para quien supervisa. --}}
+    @if ($otrasAbiertas->isNotEmpty())
+        <div class="caja-otras mb-4">
+            <i class="ri-store-2-line"></i>
+            <span>
+                También abiertas:
+                @foreach ($otrasAbiertas as $otra)
+                    <strong>{{ $otra->tienda?->nombre ?? 'Sin tienda' }}</strong>
+                    (desde las {{ $otra->abierta_en->format('H:i') }}, {{ $otra->abiertaPor?->name }}){{ $loop->last ? '.' : ' ·' }}
+                @endforeach
+            </span>
+        </div>
+    @endif
+
     {{-- ===================== Estado del turno ===================== --}}
     @if ($abierta)
         <div class="card border-0 shadow-sm caja-turno-card mb-4">
@@ -107,7 +127,7 @@
                     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 position-relative" style="z-index: 1">
                         <div class="min-w-0">
                             <span class="caja-turno-estado">
-                                <span class="caja-latido"></span> Caja abierta
+                                <span class="caja-latido"></span> Caja abierta{{ $tienda ? ' · '.$tienda->nombre : '' }}
                             </span>
                             <h4 class="caja-turno-titulo mt-3 mb-1">
                                 Bs {{ number_format((float) $abierta->monto_inicial, 2, ',', '.') }}
@@ -340,7 +360,7 @@
                                             {{ $caja->cerrada_en?->format('H:i') }}
                                         </small>
                                         <small class="caja-turno-cajero d-block">
-                                            {{ $caja->abiertaPor?->name }}
+                                            {{ $caja->abiertaPor?->name }}{{ $caja->tienda ? ' · '.$caja->tienda->nombre : '' }}
                                         </small>
                                     </td>
                                     <td>

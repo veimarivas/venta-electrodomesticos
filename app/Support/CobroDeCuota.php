@@ -21,7 +21,7 @@ class CobroDeCuota
     public function __construct(private readonly ArqueoDeCaja $arqueo) {}
 
     /**
-     * @param  array{metodo_pago?: string, comprobante_qr?: ?string, notas?: ?string}  $datos
+     * @param  array{metodo_pago?: string, comprobante_qr?: ?string, notas?: ?string, tienda_id?: ?int}  $datos
      * @return Collection<int, PagoCredito>  Una fila por cuota tocada, mismo recibo.
      */
     public function cobrar(Credito $credito, float|string $monto, array $datos, int $userId): Collection
@@ -50,12 +50,14 @@ class CobroDeCuota
             throw new RuntimeException('Falta el respaldo del pago por '.PagoCredito::METODOS_PAGO[$metodo].'.');
         }
 
-        $cajaId = $this->arqueo->abierta()?->id;
+        // El cobro entra al cajón de la tienda donde se recibe.
+        $tiendaId = isset($datos['tienda_id']) ? (int) $datos['tienda_id'] : null;
+        $cajaId = $this->arqueo->abierta($tiendaId)?->id;
         $notas = isset($datos['notas']) && trim((string) $datos['notas']) !== ''
             ? trim((string) $datos['notas'])
             : null;
 
-        return DB::transaction(function () use ($credito, $entregado, $metodo, $comprobante, $notas, $userId, $cajaId): Collection {
+        return DB::transaction(function () use ($credito, $entregado, $metodo, $comprobante, $notas, $userId, $cajaId, $tiendaId): Collection {
             // Se bloquean las cuotas hasta el commit: dos cobros a la vez sobre
             // el mismo crédito imputarían los dos a la misma cuota y el cliente
             // acabaría pagando de más.
@@ -99,6 +101,7 @@ class CobroDeCuota
                     // Se rellena al final, cuando ya hay un id del que sacarlo.
                     'recibo' => '',
                     'caja_id' => $cajaId,
+                    'tienda_id' => $tiendaId,
                     'user_id' => $userId,
                     'monto' => ProrrateoDeGastos::aDecimal($aplicado),
                     'metodo_pago' => $metodo,

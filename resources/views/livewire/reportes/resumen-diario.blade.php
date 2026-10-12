@@ -49,10 +49,35 @@
             title="Día siguiente" aria-label="Día siguiente">
             <i class="ri-arrow-right-s-line"></i>
         </button>
+        @if ($this->tiendas->isNotEmpty())
+            <select class="form-select form-select-sm w-auto ms-md-2" wire:model.live="tiendaId" aria-label="Tienda">
+                <option value="">Todas las tiendas</option>
+                @foreach ($this->tiendas as $t)
+                    <option value="{{ $t->id }}">{{ $t->nombre }}</option>
+                @endforeach
+            </select>
+        @endif
         <span class="spinner-border spinner-border-sm text-primary" role="status" wire:loading.delay>
             <span class="visually-hidden">Cargando...</span>
         </span>
     </div>
+
+    @if ($tiendaId !== '')
+        <div class="tiendas-ayuda mb-4">
+            <i class="ri-information-line"></i>
+            <span>Los pagos a proveedores no salen aquí: las compras son del depósito compartido. Se ven en «Todas las tiendas».</span>
+        </div>
+    @elseif (count($r['por_tienda']) > 1)
+        {{-- Cuánto vendió cada tienda ese día. --}}
+        <div class="row g-3 mb-4">
+            @foreach ($r['por_tienda'] as $pt)
+                <div class="col-xl-3 col-sm-6">
+                    <x-stat-card label="{{ $pt['tienda'] }}" value="{{ $bs($pt['vendido']) }}" icon="bx-store" color="info"
+                        caption="{{ $pt['ventas'] }} {{ $pt['ventas'] === 1 ? 'venta' : 'ventas' }}" />
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     {{-- ===================== Indicadores ===================== --}}
     <div class="row g-3 mb-4">

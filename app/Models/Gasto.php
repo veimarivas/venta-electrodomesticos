@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * explicarse después.
  */
 #[Fillable([
+    'tienda_id',
     'fecha',
     'concepto',
     'categoria',
@@ -88,5 +89,11 @@ class Gasto extends Model
     public function getComprobanteUrlAttribute(): ?string
     {
         return $this->comprobante ? asset('storage/'.$this->comprobante) : null;
+    }
+
+    /** Tienda desde la que se hizo (seguimiento por tienda). */
+    public function tienda(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Tienda::class)->withTrashed();
     }
 }

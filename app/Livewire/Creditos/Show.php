@@ -95,6 +95,7 @@ class Show extends Component
                     'metodo_pago' => $this->metodoPago,
                     'comprobante_qr' => $this->comprobante,
                     'notas' => $this->notas,
+                    'tienda_id' => app(\App\Support\TiendaActual::class)->de(auth()->user())?->id,
                 ],
                 auth()->id(),
             );

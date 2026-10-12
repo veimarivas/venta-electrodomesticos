@@ -37,6 +37,18 @@
         </div>
     </div>
 
+    {{-- Lo anterior a las tiendas espera una principal a la que asignarse. --}}
+    @if ($sinTienda > 0 && $this->tiendas->isNotEmpty())
+        <div class="tiendas-ayuda tiendas-ayuda--aviso mb-4">
+            <i class="ri-history-line"></i>
+            <span>
+                Hay <strong>{{ $sinTienda }} {{ $sinTienda === 1 ? 'venta' : 'ventas' }} de antes</strong> sin tienda.
+                Marca la <strong>tienda principal</strong> (la que existía antes de abrir la otra) y se le asignarán, junto con
+                sus cajas, cobros y gastos.
+            </span>
+        </div>
+    @endif
+
     {{-- ===================== Tiendas ===================== --}}
     @if ($this->tiendas->isEmpty())
         <div class="card border-0 shadow-sm">
@@ -59,9 +71,16 @@
                                     <h5 class="mb-0 text-truncate">{{ $t->nombre }}</h5>
                                     <small class="text-muted">{{ $t->direccion ?: 'Sin dirección' }}</small>
                                 </div>
-                                <span @class(['tienda-estado', 'tienda-estado--activa' => $t->activa])>
-                                    {{ $t->activa ? 'Activa' : 'Inactiva' }}
-                                </span>
+                                <div class="d-flex flex-column align-items-end gap-1">
+                                    <span @class(['tienda-estado', 'tienda-estado--activa' => $t->activa])>
+                                        {{ $t->activa ? 'Activa' : 'Inactiva' }}
+                                    </span>
+                                    @if ($principalId === $t->id)
+                                        <span class="tienda-estado tienda-estado--principal">
+                                            <i class="ri-star-fill"></i> Principal
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
 
                             <ul class="list-unstyled tienda-datos mb-3">
@@ -95,6 +114,14 @@
                                     <button type="button" class="btn btn-sm btn-soft-secondary" wire:click="alternar({{ $t->id }})">
                                         {{ $t->activa ? 'Desactivar' : 'Activar' }}
                                     </button>
+                                    @if ($t->activa && $principalId !== $t->id)
+                                        <button type="button" class="btn btn-sm btn-soft-warning" wire:click="hacerPrincipal({{ $t->id }})"
+                                            @if ($sinTienda > 0)
+                                                wire:confirm="¿Hacer principal a {{ $t->nombre }}? Se le asignarán las {{ $sinTienda }} ventas de antes que no tienen tienda."
+                                            @endif>
+                                            <i class="ri-star-line me-1"></i> Principal
+                                        </button>
+                                    @endif
                                 @endcan
                                 @can('tiendas.eliminar')
                                     <button type="button" class="btn btn-sm btn-ghost-danger btn-icon ms-auto"

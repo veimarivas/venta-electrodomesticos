@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccesoBiometricoController;
 use App\Http\Controllers\Api\V1\AsistenciaController;
+use App\Http\Controllers\Api\V1\TiendaActualController;
 use App\Http\Controllers\Api\V1\TiendaController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ListaAmarillaController;
@@ -103,6 +104,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/asistencia/{asistencia}/corregir', [AsistenciaController::class, 'corregir'])
             ->middleware('permission:asistencia.ver')
             ->name('asistencia.corregir');
+
+        // En qué tienda se trabaja (ventas, caja y cobros se anotan en ella).
+        Route::get('/tienda-actual', [TiendaActualController::class, 'show'])->name('tienda-actual');
+        Route::post('/tienda-actual', [TiendaActualController::class, 'elegir'])->name('tienda-actual.elegir');
 
         // Tiendas: lista y fijar la ubicación desde el teléfono.
         Route::get('/tiendas', [TiendaController::class, 'index'])

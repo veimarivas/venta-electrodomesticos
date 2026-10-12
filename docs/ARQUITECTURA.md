@@ -516,6 +516,8 @@ activa, timestamps, deleted_at
 ```
 > Sin ubicación o inactiva, no se puede marcar en ella. Sin hora de entrada no cuenta atrasos.
 
+> **Seguimiento por tienda (2026-10-11):** `tienda_id` (nullable, FK `tiendas`, null on delete) en `ventas` (índice con `vendida_en`), `cajas` (índice con `estado`), `pagos_credito`, `gastos` y `users` (la tienda elegida). El **stock no lleva tienda**: el depósito es compartido. `App\Support\TiendaActual` resuelve la tienda de cada persona (asistencia → elegida → principal, ajuste `tienda_principal_id`) y `ArqueoDeCaja` mantiene una caja abierta por tienda.
+
 **`asistencias`** — un turno (entrada → salida) *(implementada 2026-10-10)*
 ```
 id, user_id (FK cascade), tienda_id (FK restrict), fecha (date),

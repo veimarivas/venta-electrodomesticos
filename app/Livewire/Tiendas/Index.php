@@ -153,6 +153,24 @@ class Index extends Component
         unset($this->tiendas);
     }
 
+    /**
+     * Marca la tienda principal: la que se usa cuando alguien no marcó
+     * asistencia ni eligió tienda, y a la que pasan las ventas, cajas, cobros y
+     * gastos de antes de que hubiera tiendas.
+     */
+    public function hacerPrincipal(int $id): void
+    {
+        abort_unless(auth()->user()?->can('tiendas.editar') ?? false, 403);
+
+        $tienda = Tienda::query()->where('activa', true)->findOrFail($id);
+        $asignado = app(\App\Support\TiendaActual::class)->hacerPrincipal($tienda, (int) auth()->id());
+        $total = array_sum($asignado);
+
+        $this->dispatch('toast', tipo: 'success', mensaje: $total > 0
+            ? "{$tienda->nombre} es la principal. Se le asignaron {$asignado['ventas']} ventas, {$asignado['cajas']} cajas, {$asignado['cobros']} cobros y {$asignado['gastos']} gastos de antes."
+            : "{$tienda->nombre} es ahora la tienda principal.");
+    }
+
     public function confirmarEliminar(int $id): void
     {
         $this->autorizar('tiendas.eliminar');
@@ -185,6 +203,8 @@ class Index extends Component
     {
         return view('livewire.tiendas.index', [
             'enTurno' => Asistencia::query()->whereDate('fecha', today())->abiertas()->count(),
+            'principalId' => app(\App\Support\TiendaActual::class)->principal()?->id,
+            'sinTienda' => \App\Models\Venta::query()->whereNull('tienda_id')->count(),
         ]);
     }
 

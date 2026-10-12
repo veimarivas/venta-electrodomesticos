@@ -481,6 +481,15 @@
         background: var(--marca-suave);
 
         &--activa { color: var(--estado-ok); background: var(--estado-ok-suave); }
+        &--principal { color: var(--marca-oro-hondo); background: color-mix(in srgb, var(--marca-oro) 16%, transparent); }
+    }
+
+    .tiendas-ayuda--aviso {
+        border-style: solid;
+        border-color: color-mix(in srgb, var(--marca-oro) 45%, transparent);
+        background: color-mix(in srgb, var(--marca-oro) 8%, transparent);
+
+        i { color: var(--marca-oro-hondo); }
     }
 
     .tienda-datos li {
@@ -547,6 +556,77 @@
     .asistencia-atraso { color: var(--estado-alerta-texto); background: var(--estado-alerta-suave); }
     .asistencia-sin-salida { color: var(--estado-error); background: var(--estado-error-suave); }
     .asistencia-en-turno { color: var(--estado-ok); background: var(--estado-ok-suave); }
+}
+
+// ---- Tienda actual en la barra superior -------------------------------------------
+.tienda-topbar {
+    .tienda-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        height: 2.4rem;
+        padding: 0 .7rem 0 .6rem;
+        border-radius: var(--radio-pill);
+        border: 1px solid var(--marca-linea);
+        background: var(--marca-superficie);
+        color: var(--marca-tinta);
+        line-height: 1;
+
+        > i:first-child { font-size: 1.2rem; color: var(--marca-azul-texto); }
+        &:hover { border-color: var(--marca-azul-claro); }
+        &:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+    }
+
+    .tienda-chip-dato {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .1rem;
+
+        small {
+            font-size: var(--text-2xs);
+            font-weight: 600;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            color: var(--marca-apagado);
+        }
+
+        strong {
+            max-width: 9rem;
+            overflow: hidden;
+            font-size: var(--text-sm);
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .tienda-panel { width: 18rem; max-width: calc(100vw - 2rem); }
+
+    .tienda-opcion {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        border-radius: var(--radio-md);
+    }
+
+    @media (max-width: 575.98px) {
+        .tienda-chip-dato small { display: none; }
+        .tienda-chip-dato strong { max-width: 5.5rem; }
+    }
+}
+
+.caja-otras {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .75rem 1rem;
+    border-radius: var(--radio-md);
+    font-size: var(--text-sm);
+    color: var(--marca-tinta);
+    background: var(--marca-suave);
+    border: 1px solid var(--marca-linea);
+
+    i { font-size: 1.2rem; color: var(--marca-azul-texto); }
 }
 
 // ---- Seguridad de la app (Usuarios) -----------------------------------------------

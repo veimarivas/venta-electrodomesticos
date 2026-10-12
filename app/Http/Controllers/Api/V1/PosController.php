@@ -368,6 +368,9 @@ class PosController extends Controller
                 lineas: $lineas,
                 cabecera: [
                     'clave_idempotencia' => $clave,
+                    // La que manda el teléfono (una venta cobrada sin conexión
+                    // trae la tienda de ese momento) o la de quien vende.
+                    'tienda_id' => app(\App\Support\TiendaActual::class)->idPara($request->user(), $request->input('tienda_id')),
                     'cliente_id' => $datos['cliente_id'] ?? null,
                     'metodo_pago' => $datos['metodo_pago'],
                     'notas' => trim($datos['notas'] ?? '') !== '' ? trim($datos['notas']) : null,

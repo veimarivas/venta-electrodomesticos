@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * diciendo lo que se vio esa noche —que es justo lo que hace útil un arqueo—.
  */
 #[Fillable([
+    'tienda_id',
     'abierta_por',
     'cerrada_por',
     'abierta_en',
@@ -122,5 +123,11 @@ class Caja extends Model
     public function scopeCerradas(Builder $query): Builder
     {
         return $query->where('estado', 'cerrada');
+    }
+
+    /** Tienda desde la que se hizo (seguimiento por tienda). */
+    public function tienda(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Tienda::class)->withTrashed();
     }
 }

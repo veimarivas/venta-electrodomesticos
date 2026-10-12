@@ -22,14 +22,15 @@ class SeguimientoDeVendedores
     /**
      * @return array<int, array<string, mixed>> Un elemento por vendedor, del que más vendió al que menos.
      */
-    public function entre(CarbonInterface $desde, CarbonInterface $hasta, ?int $vendedorId = null): array
+    public function entre(CarbonInterface $desde, CarbonInterface $hasta, ?int $vendedorId = null, ?int $tiendaId = null): array
     {
         $lineas = VentaDetalle::query()
-            ->with(['venta.user', 'producto'])
+            ->with(['venta.user', 'venta.tienda:id,nombre', 'producto'])
             ->whereNull('devuelto_en')
             ->whereHas('venta', fn ($q) => $q->completadas()
                 ->whereBetween('vendida_en', [$desde->copy()->startOfDay(), $hasta->copy()->endOfDay()])
-                ->when($vendedorId !== null, fn ($v) => $v->where('user_id', $vendedorId)))
+                ->when($vendedorId !== null, fn ($v) => $v->where('user_id', $vendedorId))
+                ->when($tiendaId !== null, fn ($v) => $v->where('tienda_id', $tiendaId)))
             ->get();
 
         return $lineas
@@ -54,6 +55,17 @@ class SeguimientoDeVendedores
             'vendedor' => $usuario?->name ?? 'Sin vendedor',
             'ventas' => $lineas->pluck('venta_id')->unique()->count(),
             ...$cifras,
+            // En qué tiendas vendió y cuánto en cada una.
+            'tiendas' => $lineas
+                ->groupBy(fn (VentaDetalle $l) => $l->venta->tienda_id ?? 0)
+                ->map(fn (Collection $deTienda): array => [
+                    'tienda_id' => $deTienda->first()->venta->tienda_id,
+                    'tienda' => $deTienda->first()->venta->tienda?->nombre ?? 'Sin tienda',
+                    ...$this->cifras($deTienda),
+                ])
+                ->sortByDesc('total')
+                ->values()
+                ->all(),
             'productos' => $lineas
                 ->groupBy('producto_id')
                 ->map(fn (Collection $delProducto): array => [

@@ -860,6 +860,28 @@ trabajador ve el suyo en la app, en «Mi asistencia del mes».
 *Poner salida*, la hora y el motivo. Queda marcada como *corregida* con quién
 la puso.
 
+### Ventas y caja por tienda
+
+Las tiendas venden del **mismo depósito** (el stock es uno solo), pero cada
+venta queda anotada con **la tienda desde la que se hizo**, y cada tienda
+tiene **su propia caja**.
+
+- **¿Qué tienda se anota?** La de la asistencia de hoy. Quien no marca
+  asistencia (el administrador, por ejemplo) la elige: en el panel, arriba a
+  la derecha; en el teléfono, tocando el nombre de la tienda en el cobro o en
+  la caja. Queda guardada para la próxima vez. Si nadie eligió, cuenta la
+  **tienda principal**.
+- **La caja** que se abre, se mueve y se cierra es la de esa tienda. Cada
+  local cuadra su propio cajón.
+- **Tienda principal:** se marca una sola vez en *Personal → Tiendas*. Al
+  hacerlo, todas las ventas, cajas y cobros de antes de tener dos tiendas
+  pasan a ella.
+- **Para el seguimiento:** el *Resumen del día* y *Ventas por vendedor* se
+  pueden ver por tienda o de todas (con todas, el resumen dice cuánto vendió
+  cada una). En el historial de ventas hay un filtro por tienda. Los pagos a
+  proveedores no salen por tienda: las compras son del depósito compartido.
+
+
 **Personas** — los datos personales de todo el mundo. Es la base: un trabajador
 y un cliente pueden ser la misma persona, y su celular se corrige en un solo
 sitio.
