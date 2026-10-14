@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.30.0+40 | 2026-10-13 | Registrar y editar tiendas desde el teléfono con el mapa (arranca en la posición actual), principal y quitar | el del 2026-10-13 (con uno anterior guardar una tienda da 404) |
 | 1.29.0+39 | 2026-10-11 | Seguimiento por tienda: la tienda de trabajo (asistencia o elegida) en el cobro y la caja, una caja por tienda, ventas sin conexión con su tienda, resumen del día y ventas por vendedor por tienda | el del 2026-10-11 (con uno anterior la tienda no se ve y las ventas no la llevan) |
 | 1.28.0+38 | 2026-10-10 | Asistencia por ubicación (marcar entrada y salida dentro del radio de la tienda, historial del mes, fijar la ubicación de la tienda) | el de asistencia del 2026-10-10 (con uno anterior la pantalla de asistencia da 404) |
 | 1.27.0+37 | 2026-10-10 | Cierre de sesión por inactividad, entrar con huella o rostro (teléfono registrado, sin guardar la contraseña), dólar paralelo y oficial en el inicio, lista amarilla | el del 2026-10-10 (con uno anterior la huella no se puede activar, el dólar no aparece y la lista amarilla da 404; la inactividad funciona con 10 min fijos) |
@@ -36,6 +37,37 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Tiendas desde el teléfono con mapa, y turnos que pasan la medianoche (2026-10-13)
+
+Backend: `POST /tiendas`, `POST /tiendas/{tienda}`, `DELETE /tiendas/{tienda}`,
+`POST /tiendas/{tienda}/principal` · app **1.30.0+40** (paquetes nuevos:
+`flutter_map`, `latlong2`)
+
+- **Registrar y editar tiendas en la app** (*Tiendas* en el inicio, o
+  *Asistencia → icono de tienda*): nombre, dirección, radio (deslizador de 10 a
+  200 m), hora de entrada y tolerancia, activa. El punto se elige en un
+  **mapa que arranca en la posición actual del teléfono**: la tienda queda
+  donde está el alfiler del centro, se mueve el mapa para ajustarlo, el
+  círculo enseña el radio y el botón «Mi ubicación» vuelve al GPS. Un enlace
+  abre el punto en Google Maps para comprobarlo. Desde la lista: hacer
+  principal y quitar.
+- **Mapa de OpenStreetMap, no Google Maps**, decidido con el dueño: Google
+  Maps dentro de la app exige una clave de API de Google Cloud con
+  facturación; OpenStreetMap no pide nada. Las teselas salen de los
+  servidores públicos de OSM (con el nombre del paquete como agente, como
+  pide su política de uso); para el uso de una tienda alcanza de sobra.
+- **Arreglo: turnos que pasan la medianoche.** El turno abierto se buscaba
+  solo con fecha de hoy: quien entraba a las 22:00 no podía marcar la salida
+  a la 01:00. Ahora es abierto el último turno sin salida que empezó hace menos
+  de 16 horas; con más, cuenta como «sin salida» (salida olvidada). Lo
+  encontró una prueba que fallaba según la hora a la que se corría.
+
+Comprobado: `AsistenciaTest` con 2 pruebas nuevas (alta, edición, principal
+y baja por API con permisos; turno de 22:00 a 01:30 y el corte de 16 horas) y
+la suite completa. App: `test/form_tienda_test.dart` (3: la tienda nueva toma
+la posición del GPS, no guarda sin nombre, al editar arranca en el punto
+guardado) y `flutter test` completo (212).
 
 ## Seguimiento por tienda: ventas, caja y reportes (2026-10-11)
 

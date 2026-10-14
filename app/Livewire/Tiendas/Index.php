@@ -202,7 +202,9 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.tiendas.index', [
-            'enTurno' => Asistencia::query()->whereDate('fecha', today())->abiertas()->count(),
+            'enTurno' => Asistencia::query()
+                ->where('entrada_en', '>=', now()->subHours(\App\Support\RegistroDeAsistencia::HORAS_DE_TURNO))
+                ->abiertas()->count(),
             'principalId' => app(\App\Support\TiendaActual::class)->principal()?->id,
             'sinTienda' => \App\Models\Venta::query()->whereNull('tienda_id')->count(),
         ]);

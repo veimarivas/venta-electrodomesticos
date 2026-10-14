@@ -827,7 +827,15 @@ Cada trabajador marca su **entrada y salida desde el teléfono**, y solo se
 puede **dentro de la tienda**: a menos de 30 m de su ubicación (el radio se
 cambia por tienda).
 
-**Primero, el administrador** registra cada tienda en *Personal → Tiendas*:
+**Desde el teléfono** (lo más cómodo, estando en la tienda): *Tiendas* en el
+inicio → *Nueva tienda*. El mapa se abre **en tu posición actual**; la tienda
+queda donde está el alfiler rojo del centro: mueve el mapa con el dedo hasta
+que caiga en el local. El círculo azul es el radio donde se podrá marcar.
+Completa nombre, radio, hora de entrada y tolerancia, y *Registrar tienda*.
+Para corregirla, tócala en la lista. Con *Google Maps* se abre el punto para
+comprobarlo.
+
+**O en el panel**, el administrador registra cada tienda en *Personal → Tiendas*:
 nombre, dirección, hora de entrada y tolerancia (por ejemplo, 08:30 con 10 min:
 llegar 08:38 no es atraso; llegar 08:45 son 15 min de atraso). La ubicación
 más exacta se fija **con el teléfono, parado dentro de la tienda**: en la app,

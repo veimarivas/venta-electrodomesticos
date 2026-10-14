@@ -69,7 +69,8 @@ class Asistencia extends Model
     /** Un turno de un día anterior que nunca se cerró. */
     public function sinSalida(): bool
     {
-        return $this->salida_en === null && ! $this->fecha->isToday();
+        return $this->salida_en === null
+            && $this->entrada_en->lt(now()->subHours(\App\Support\RegistroDeAsistencia::HORAS_DE_TURNO));
     }
 
     /** Minutos trabajados; null mientras no tenga salida. */

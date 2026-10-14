@@ -113,6 +113,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('/tiendas', [TiendaController::class, 'index'])
             ->middleware('permission:tiendas.ver')
             ->name('tiendas.index');
+        Route::post('/tiendas', [TiendaController::class, 'store'])
+            ->middleware('permission:tiendas.crear')
+            ->name('tiendas.store');
+        Route::post('/tiendas/{tienda}', [TiendaController::class, 'update'])
+            ->middleware('permission:tiendas.editar')
+            ->name('tiendas.update');
+        Route::delete('/tiendas/{tienda}', [TiendaController::class, 'destroy'])
+            ->middleware('permission:tiendas.eliminar')
+            ->name('tiendas.destroy');
+        Route::post('/tiendas/{tienda}/principal', [TiendaController::class, 'principal'])
+            ->middleware('permission:tiendas.editar')
+            ->name('tiendas.principal');
         Route::post('/tiendas/{tienda}/ubicacion', [TiendaController::class, 'ubicacion'])
             ->middleware('permission:tiendas.editar')
             ->name('tiendas.ubicacion');

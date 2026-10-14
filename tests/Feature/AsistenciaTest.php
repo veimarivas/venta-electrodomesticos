@@ -150,6 +150,27 @@ class AsistenciaTest extends TestCase
         $this->assertSame(2, Asistencia::query()->count());
     }
 
+    public function test_un_turno_que_pasa_la_medianoche_se_puede_cerrar(): void
+    {
+        $this->tienda('Centro', self::CENTRO);
+        $ana = $this->vendedor();
+        $registro = app(RegistroDeAsistencia::class);
+        [$lat, $lng] = self::CENTRO;
+
+        $this->travelTo(now()->setTime(22, 0));
+        $registro->marcarEntrada($ana, $lat, $lng, 5, false);
+
+        $this->travelTo(now()->addDay()->setTime(1, 30));
+        $turno = $registro->marcarSalida($ana, $lat, $lng, 5, false);
+
+        $this->assertSame(210, $turno->minutosTrabajados());
+
+        // Pasadas 16 horas ya no es un turno abierto: es una salida olvidada.
+        $registro->marcarEntrada($ana, $lat, $lng, 5, false);
+        $this->travel(17)->hours();
+        $this->assertNull($registro->abierta($ana));
+    }
+
     public function test_el_atraso_cuenta_desde_la_hora_de_entrada_pasada_la_tolerancia(): void
     {
         $this->tienda('Centro', self::CENTRO, ['hora_entrada' => '08:00', 'tolerancia_minutos' => 10]);
@@ -212,7 +233,7 @@ class AsistenciaTest extends TestCase
         $ayer = now()->subDay();
         $turno = Asistencia::query()->create([
             'user_id' => $ana->id, 'tienda_id' => $centro->id, 'fecha' => $ayer->toDateString(),
-            'entrada_en' => $ayer->copy()->setTime(8, 0),
+            'entrada_en' => $ayer->copy()->setTime(7, 0),
             'entrada_latitud' => self::CENTRO[0], 'entrada_longitud' => self::CENTRO[1], 'entrada_distancia' => 4,
         ]);
 
@@ -228,7 +249,7 @@ class AsistenciaTest extends TestCase
             ->assertUnprocessable();
         $this->postJson("/api/v1/asistencia/{$turno->id}/corregir", ['salida' => '17:30', 'motivo' => 'Olvidó marcar'])
             ->assertOk()
-            ->assertJsonPath('asistencia.minutos', 570)
+            ->assertJsonPath('asistencia.minutos', 630)
             ->assertJsonPath('asistencia.corregida', true);
 
         $this->assertSame($admin->id, $turno->fresh()->corregida_por);
@@ -248,6 +269,39 @@ class AsistenciaTest extends TestCase
         $this->postJson("/api/v1/tiendas/{$tienda->id}/ubicacion", ['latitud' => -17.7801234, 'longitud' => -63.1809876, 'precision' => 6])
             ->assertOk()
             ->assertJsonPath('tienda.latitud', -17.7801234);
+    }
+
+    public function test_la_app_registra_edita_y_quita_tiendas(): void
+    {
+        Sanctum::actingAs($this->vendedor());
+        $this->postJson('/api/v1/tiendas', ['nombre' => 'X', 'latitud' => -17.78, 'longitud' => -63.18, 'radio_metros' => 30])
+            ->assertForbidden();
+
+        Sanctum::actingAs($this->admin());
+
+        $this->postJson('/api/v1/tiendas', ['nombre' => 'Sin punto', 'radio_metros' => 30])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('latitud');
+
+        $id = $this->postJson('/api/v1/tiendas', [
+            'nombre' => 'Tienda Sur',
+            'direccion' => 'Av. Santos Dumont',
+            'latitud' => -17.8123456,
+            'longitud' => -63.1765432,
+            'radio_metros' => 40,
+            'hora_entrada' => '08:30',
+            'tolerancia_minutos' => 5,
+        ])->assertCreated()->json('tienda.id');
+
+        $this->postJson("/api/v1/tiendas/{$id}", [
+            'nombre' => 'Tienda Sur 2', 'latitud' => -17.81, 'longitud' => -63.17, 'radio_metros' => 25, 'activa' => true,
+        ])->assertOk()->assertJsonPath('tienda.nombre', 'Tienda Sur 2')->assertJsonPath('tienda.radio_metros', 25);
+
+        $this->postJson("/api/v1/tiendas/{$id}/principal")->assertOk();
+        $this->getJson('/api/v1/tiendas')->assertOk()->assertJsonPath('data.0.principal', true);
+
+        $this->deleteJson("/api/v1/tiendas/{$id}")->assertOk();
+        $this->assertSoftDeleted('tiendas', ['id' => $id]);
     }
 
     public function test_el_estado_trae_las_tiendas_para_medir_en_el_telefono(): void

@@ -318,7 +318,11 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| GET | `/tiendas` | todas las tiendas con ubicación, radio, hora de entrada y si están activas | `tiendas.ver` |
+| GET | `/tiendas` | todas las tiendas con ubicación, radio, hora de entrada, si están activas y cuál es la `principal` | `tiendas.ver` |
+| POST | `/tiendas` | alta: `nombre`, `direccion`, `latitud`, `longitud` (obligatorias), `radio_metros` (10–500), `hora_entrada` (HH:mm), `tolerancia_minutos`, `activa` | `tiendas.crear` |
+| POST | `/tiendas/{tienda}` | edición, mismos campos | `tiendas.editar` |
+| DELETE | `/tiendas/{tienda}` | la archiva (su historial se conserva) | `tiendas.eliminar` |
+| POST | `/tiendas/{tienda}/principal` | la hace principal y le asigna lo anterior sin tienda | `tiendas.editar` |
 | POST | `/tiendas/{tienda}/ubicacion` | `latitud`, `longitud`, `precision` (≤ 100 m), `radio_metros` opcional: fija la ubicación desde el teléfono | `tiendas.editar` |
 
 ## /tipo-de-cambio

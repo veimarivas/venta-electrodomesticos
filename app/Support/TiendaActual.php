@@ -72,13 +72,7 @@ class TiendaActual
         }
 
         if ($usuario !== null) {
-            $turno = Asistencia::query()
-                ->with('tienda')
-                ->where('user_id', $usuario->id)
-                ->whereDate('fecha', today())
-                ->whereNull('salida_en')
-                ->latest('entrada_en')
-                ->first();
+            $turno = app(RegistroDeAsistencia::class)->abierta($usuario);
 
             if ($turno?->tienda !== null) {
                 return ['tienda' => $turno->tienda, 'fuente' => 'asistencia'];

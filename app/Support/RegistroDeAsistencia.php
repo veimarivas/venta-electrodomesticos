@@ -83,13 +83,20 @@ class RegistroDeAsistencia
         ];
     }
 
-    /** El turno abierto de hoy, si lo hay. */
+    /** Horas que puede durar un turno abierto; más, es una salida olvidada. */
+    public const HORAS_DE_TURNO = 16;
+
+    /**
+     * El turno abierto, si lo hay. No se mira solo «hoy»: quien entra a las
+     * 22:00 tiene que poder marcar la salida pasada la medianoche. Un turno
+     * con más de 16 horas ya no cuenta como abierto: es una salida olvidada.
+     */
     public function abierta(User $usuario): ?Asistencia
     {
         return Asistencia::query()
             ->with('tienda')
             ->where('user_id', $usuario->id)
-            ->whereDate('fecha', today())
+            ->where('entrada_en', '>=', now()->subHours(self::HORAS_DE_TURNO))
             ->abiertas()
             ->latest('entrada_en')
             ->first();
@@ -233,7 +240,7 @@ class RegistroDeAsistencia
                 'minutos' => (int) $delDia->sum(fn (Asistencia $a): int => $a->minutosTrabajados() ?? 0),
                 'minutos_atraso' => (int) $delDia->max('minutos_atraso'),
                 'sin_salida' => $delDia->contains(fn (Asistencia $a): bool => $a->sinSalida()),
-                'abierta' => $delDia->contains(fn (Asistencia $a): bool => $a->estaAbierta() && $a->fecha->isToday()),
+                'abierta' => $delDia->contains(fn (Asistencia $a): bool => $a->estaAbierta() && ! $a->sinSalida()),
                 'turnos' => $delDia->map(fn (Asistencia $a): array => $a->aArreglo())->values()->all(),
             ])
             ->values();
