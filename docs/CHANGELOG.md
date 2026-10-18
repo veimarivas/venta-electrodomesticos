@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.32.0+42 | 2026-10-18 | Icono nuevo (sin el lema, con capa monocroma para los iconos temáticos), montos que cuentan al aparecer, vibración al leer un código, al cobrar y al marcar asistencia, modo oscuro revisado (azul legible, mapa oscuro) | cualquiera desde el 2026-10-13 |
 | 1.31.0+41 | 2026-10-18 | Marca única «Electro Hogar», pantalla de arranque con el logo, enviar el recibo por WhatsApp desde la venta y al cobrar | cualquiera desde el 2026-10-13 (los recibos con logo salen del backend del 2026-10-18) |
 | 1.30.0+40 | 2026-10-13 | Registrar y editar tiendas desde el teléfono con el mapa (arranca en la posición actual), principal y quitar | el del 2026-10-13 (con uno anterior guardar una tienda da 404) |
 | 1.29.0+39 | 2026-10-11 | Seguimiento por tienda: la tienda de trabajo (asistencia o elegida) en el cobro y la caja, una caja por tienda, ventas sin conexión con su tienda, resumen del día y ventas por vendedor por tienda | el del 2026-10-11 (con uno anterior la tienda no se ve y las ventas no la llevan) |
@@ -38,6 +39,38 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Icono, movimiento discreto y modo oscuro revisado (2026-10-18)
+
+Backend: sin migraciones (solo estilos) · app **1.32.0+42**
+
+Resto de la semana 2 del plan de mejoras.
+
+- **Icono de la app** (Android): la casa y «Electro Hogar» sin el lema, que a
+  tamaño de icono era una raya ilegible. Capa delantera dentro de la zona
+  segura del icono adaptativo, **capa monocroma** para los iconos temáticos de
+  Android 13+ y un icono clásico (cuadrado azul noche) para Android 7 o
+  anterior.
+- **Movimiento discreto** (app):
+  - `MontoAnimado`: el ingreso del inicio, el neto del Resumen del día y el
+    total de «Venta registrada» (desde cero) cuentan hasta su valor en 0,7 s.
+    Con «reducir animaciones» del teléfono sale el número de una vez, y el
+    lector de pantalla lee siempre el valor final.
+  - Vibración corta al leer un código con la cámara (como el pitido de un
+    lector) y una más firme al registrar la venta y al marcar entrada o salida.
+- **Modo oscuro** (app): `Tema.acento(context)` da el azul de acción como color
+  de letra e icono según el modo. El azul medio (#254970) sobre el azul noche
+  no se veía; en oscuro pasa al azul claro (#8DB8E2). Aplicado en 50 lugares:
+  iconos de sección, contadores, precios de la vitrina, chips, y los listados
+  de ventas, inventario, unidad, taller, entregas y créditos. El mapa de la
+  tienda se oscurece en modo oscuro.
+- **Modo oscuro** (panel): `--marca-oro-hondo` pasa al oro aclarado (insignia
+  «Principal» de tiendas, ícono del dólar, alertas de stock), y la línea, el
+  punto y el borde del dólar oficial usan `--marca-azul-texto`, que sí se lee
+  sobre fondo oscuro.
+
+Comprobado: `flutter analyze` sin observaciones nuevas, `flutter test` (214,
+con dos de `MontoAnimado`) y `npm run build`.
 
 ## Una sola marca, documentos con logo y recibo por WhatsApp (2026-10-18)
 

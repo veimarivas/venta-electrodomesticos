@@ -356,7 +356,7 @@
         background: var(--marca-suave);
 
         &--paralelo { border-top: 3px solid var(--marca-oro); }
-        &--oficial { border-top: 3px solid var(--marca-azul); }
+        &--oficial { border-top: 3px solid var(--marca-azul-texto); }
     }
 
     .dolar-tarjeta-titulo {
@@ -403,7 +403,7 @@
         vector-effect: non-scaling-stroke;
 
         &--paralelo { stroke: var(--marca-oro); }
-        &--oficial { stroke: var(--marca-azul); stroke-dasharray: 4 3; }
+        &--oficial { stroke: var(--marca-azul-texto); stroke-dasharray: 4 3; }
     }
 
     .dolar-grafico-leyenda {
@@ -422,7 +422,7 @@
         vertical-align: middle;
 
         &--paralelo { background: var(--marca-oro); }
-        &--oficial { background: var(--marca-azul); }
+        &--oficial { background: var(--marca-azul-texto); }
     }
 
     .dolar-conversor {

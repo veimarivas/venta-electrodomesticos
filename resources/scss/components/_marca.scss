@@ -134,6 +134,9 @@
     --marca-linea: #32383e;
     --marca-linea-fuerte: #3d444c;
     --marca-apagado: #949dab;
+    // El oro hondo es letra sobre fondo claro; sobre el oscuro, un marrón que
+    // no se lee. Pasa al oro aclarado (insignias «Principal», ícono del dólar).
+    --marca-oro-hondo: #d8bb85;
 
     // El azul de acción sube un peldaño: sobre fondo oscuro, #254970 se
     // confunde con el propio fondo y un botón dejaría de verse.
