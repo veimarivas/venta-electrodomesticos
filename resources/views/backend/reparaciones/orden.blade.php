@@ -77,13 +77,14 @@
 
 <body>
 
-    <div class="centro">
-        <h1>{{ $tienda }}</h1>
-        <div class="titulo">ORDEN DE SERVICIO TÉCNICO</div>
-        <div class="codigo">{{ $reparacion->codigo }}</div>
-    </div>
+    @php($marca = \App\Support\MarcaDocumentos::datos())
 
-    <div class="separador"></div>
+    @include('backend.documentos.membrete', [
+        'marca' => $marca,
+        'titulo' => 'ORDEN DE SERVICIO TÉCNICO',
+        'codigo' => $reparacion->codigo,
+    ])
+    @include('backend.documentos.pie', ['marca' => $marca])
 
     @if ($reparacion->en_garantia)
         <div class="garantia">EN GARANTÍA — SIN COSTO</div>
@@ -201,8 +202,7 @@
     </table>
 
     <div class="pie">
-        Presente esta orden para retirar el aparato ·
-        Emitida el {{ now()->format('d/m/Y H:i') }}
+        Presente esta orden para retirar el aparato.
         <br>
         El aparato se conserva como máximo 90 días desde que se avisa que está listo.
     </div>

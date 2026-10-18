@@ -109,7 +109,7 @@ class ImportadorCatalogo
     private function filasInstrucciones(): array
     {
         return [
-            ['Carga masiva del catalogo - Electronica del Hogar'],
+            ['Carga masiva del catálogo - '.config('app.nombre_comercial')],
             [''],
             ['Como usar esta plantilla'],
             ['1. Rellena la hoja "Categorias" con las categorias y subcategorias.'],

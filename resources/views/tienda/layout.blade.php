@@ -12,8 +12,8 @@
     <header class="tienda-nav">
         <div class="container">
             <div class="tienda-nav-inner">
-                <a href="{{ route('tienda.index') }}" class="tienda-logo" aria-label="{{ config('app.name') }}">
-                    <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.name') }}">
+                <a href="{{ route('tienda.index') }}" class="tienda-logo" aria-label="{{ config('app.nombre_comercial') }}">
+                    <img src="{{ asset('assets/images/marca-sidebar.png') }}" alt="{{ config('app.nombre_comercial') }}">
                 </a>
 
                 <nav class="tienda-nav-menu" aria-label="Principal">
@@ -51,7 +51,7 @@
             <div class="tienda-footer-inner">
                 <div class="tienda-footer-brand">
                     <img src="{{ asset('assets/images/marca-sidebar.png') }}"
-                        alt="{{ config('app.name') }}">
+                        alt="{{ config('app.nombre_comercial') }}">
                     <p>Tecnología para tu vida. Catálogo de electrodomésticos de la tienda.</p>
                 </div>
 
@@ -63,7 +63,7 @@
             </div>
 
             <div class="tienda-footer-bottom">
-                &copy; {{ date('Y') }} {{ config('app.name') }} &middot; Todos los derechos reservados.
+                &copy; {{ date('Y') }} {{ config('app.nombre_comercial') }} &middot; Todos los derechos reservados.
             </div>
         </div>
     </footer>

@@ -13,15 +13,28 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Electro Hogar'),
 
     /*
-    | Nombre comercial que ve el cliente en sus documentos: el recibo de venta,
-    | la orden de servicio y el estado de cuenta. Va aparte de APP_NAME para
-    | poder cambiar la marca impresa sin renombrar el panel entero.
+    | Nombre comercial: el que se ve en todas partes —panel, título de la
+    | pestaña, tienda pública, recibo, orden de servicio, estado de cuenta y
+    | PDF—. Es el del logo: «Electro Hogar». APP_NAME queda para lo interno de
+    | Laravel (correos del sistema, caché).
     */
 
-    'nombre_comercial' => env('TIENDA_NOMBRE', 'Electrogar'),
+    'nombre_comercial' => env('TIENDA_NOMBRE', 'Electro Hogar'),
+
+    /*
+    | Lo que acompaña a la marca en los documentos del cliente (recibo, estado
+    | de cuenta, orden de servicio): el lema del logo y los datos de contacto.
+    | Lo que esté vacío no se imprime. La dirección de cada tienda manda sobre
+    | TIENDA_DIRECCION cuando el documento es de una tienda concreta.
+    */
+
+    'lema' => env('TIENDA_LEMA', 'Tecnología para tu vida'),
+    'tienda_telefono' => env('TIENDA_TELEFONO'),
+    'tienda_direccion' => env('TIENDA_DIRECCION'),
+    'tienda_nit' => env('TIENDA_NIT'),
 
     /*
     |--------------------------------------------------------------------------

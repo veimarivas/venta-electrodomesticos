@@ -2,7 +2,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-6">
-                {{ date('Y') }} &copy; {{ config('app.name') }}
+                {{ date('Y') }} &copy; {{ config('app.nombre_comercial') }}
             </div>
             <div class="col-sm-6">
                 <div class="text-sm-end d-none d-sm-block">

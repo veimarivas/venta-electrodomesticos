@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.31.0+41 | 2026-10-18 | Marca única «Electro Hogar», pantalla de arranque con el logo, enviar el recibo por WhatsApp desde la venta y al cobrar | cualquiera desde el 2026-10-13 (los recibos con logo salen del backend del 2026-10-18) |
 | 1.30.0+40 | 2026-10-13 | Registrar y editar tiendas desde el teléfono con el mapa (arranca en la posición actual), principal y quitar | el del 2026-10-13 (con uno anterior guardar una tienda da 404) |
 | 1.29.0+39 | 2026-10-11 | Seguimiento por tienda: la tienda de trabajo (asistencia o elegida) en el cobro y la caja, una caja por tienda, ventas sin conexión con su tienda, resumen del día y ventas por vendedor por tienda | el del 2026-10-11 (con uno anterior la tienda no se ve y las ventas no la llevan) |
 | 1.28.0+38 | 2026-10-10 | Asistencia por ubicación (marcar entrada y salida dentro del radio de la tienda, historial del mes, fijar la ubicación de la tienda) | el de asistencia del 2026-10-10 (con uno anterior la pantalla de asistencia da 404) |
@@ -37,6 +38,45 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Una sola marca, documentos con logo y recibo por WhatsApp (2026-10-18)
+
+Backend: sin migraciones · app **1.31.0+41** (dev: `flutter_native_splash`)
+
+Primera parte del plan de mejoras («elegancia rápida»). Decisión del dueño:
+el nombre en todas partes es **Electro Hogar**, el del logo.
+
+- **Una sola marca.** Convivían «Electrónica del Hogar», «Electronica Hogar»,
+  «Electro Hogar» y «Electrogar». Ahora el panel (título de la pestaña, menú,
+  pie, login, tienda pública), los documentos y la app dicen **Electro Hogar**:
+  las vistas usan `config('app.nombre_comercial')` (`TIENDA_NOMBRE`, por
+  defecto «Electro Hogar») en lugar de `APP_NAME`.
+- **Documentos con la marca** (`MarcaDocumentos` y los parciales de
+  `backend/documentos/`):
+  - recibo de 80 mm con el logo, la tienda donde se vendió y su dirección;
+  - estado de cuenta, orden de servicio y PDF de asistencia con un **membrete**
+    común (logo, título y número, contacto, raya dorada) y un pie con la marca
+    en cada página.
+  
+  Teléfono, NIT y dirección general salen de `TIENDA_TELEFONO`, `TIENDA_NIT`
+  y `TIENDA_DIRECCION` (lo vacío no se imprime). El logo va embebido en el
+  PDF (`marca-documento.jpg`, 18 KB).
+- **PDF 24 veces más livianos.** DomPDF embebía la fuente DejaVu entera: un
+  recibo de una línea pesaba ~900 KB. Con `enable_font_subsetting` (fijado en
+  `AppServiceProvider`) pesa ~40 KB, lo que importa para mandarlo por WhatsApp.
+- **Recibo por WhatsApp** (app): «Enviar recibo» en el diálogo de «Venta
+  registrada» (con el cliente todavía delante) y en el detalle de la venta.
+  Abre el menú de compartir del teléfono con «Recibo VTA-… - Electro
+  Hogar.pdf» y un mensaje de agradecimiento.
+- **Pantalla de arranque** (app): el logo dorado sobre el azul noche de la
+  marca, en Android (incluido el formato de Android 12) e iOS, en vez del
+  blanco de fábrica.
+- **Limpieza:** fuera del repositorio `resources/velzon-html` (189 HTML de
+  demostración de la plantilla, 40 MB; siguen en la historia de git).
+  `public/assets` no se tocó: no está en git (lo sube el despliegue a mano).
+
+Comprobado: la suite completa del backend y `flutter test` (212); los
+documentos se generaron y se revisaron a ojo.
 
 ## Tiendas desde el teléfono con mapa, y turnos que pasan la medianoche (2026-10-13)
 

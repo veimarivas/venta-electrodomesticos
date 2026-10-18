@@ -365,7 +365,7 @@
     <div class="login-header">
         <a href="{{ url('/') }}" class="login-logo-link">
             <img src="{{ asset('assets/images/marca-login.png') }}"
-                 alt="{{ config('app.name') }}"
+                 alt="{{ config('app.nombre_comercial') }}"
             class="login-logo-img"
             width="478" height="391">
         </a>

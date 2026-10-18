@@ -125,6 +125,11 @@ El orden es: subir, migrar si hay tablas nuevas, y **rehacer las cachés**.
 > desde el teléfono dentro de cada una. Sube el backend antes de repartir la
 > app 1.28.0+38.
 
+> **Actualización de marca (2026-10-18):** sin migraciones. En el `.env` del
+> servidor, `TIENDA_NOMBRE="Electro Hogar"` (si dice «Electrogar», cambiarlo) y,
+> si se quieren en los documentos, `TIENDA_TELEFONO`, `TIENDA_NIT` y
+> `TIENDA_DIRECCION`; después `php artisan config:cache`.
+
 > **Actualización de seguimiento por tienda (2026-10-11):** 1 migración. Justo
 > después, en *Personal → Tiendas*, marcar la **tienda principal**: se le
 > asignan las ventas, cajas, cobros y gastos anteriores. Si en ese momento hay

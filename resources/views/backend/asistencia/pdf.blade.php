@@ -30,10 +30,18 @@
     </style>
 </head>
 <body>
-    <h1>{{ $tiendaNombre }} · Asistencia de {{ $inicio->translatedFormat('F \d\e Y') }}</h1>
+    @php($marca = \App\Support\MarcaDocumentos::datos())
+
+    @include('backend.documentos.membrete', [
+        'marca' => $marca,
+        'titulo' => 'ASISTENCIA',
+        'codigo' => \Illuminate\Support\Str::ucfirst($inicio->translatedFormat('F \d\e Y')),
+    ])
+    @include('backend.documentos.pie', ['marca' => $marca])
+
     <p class="sub">
         {{ $trabajador ?? 'Todo el personal' }}{{ $tienda ? ' · '.$tienda : '' }}
-        · Emitido el {{ now()->format('d/m/Y H:i') }}
+        · Marcado desde el teléfono dentro del radio de cada tienda
     </p>
 
     @forelse ($filas as $f)
@@ -93,6 +101,5 @@
         <p>Sin asistencia registrada en el mes con esos filtros.</p>
     @endforelse
 
-    <div class="pie">Marcado desde el teléfono dentro del radio de cada tienda · {{ $tiendaNombre }}</div>
 </body>
 </html>

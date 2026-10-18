@@ -110,9 +110,13 @@
         </div>
     @endif
 
+    {{-- La marca y la tienda desde la que se vendió (su dirección). --}}
+    @include('backend.documentos.marca-ticket', [
+        'marca' => \App\Support\MarcaDocumentos::datos($venta->tienda_id ? $venta->tienda : null),
+    ])
+
     <div class="centro">
-        <div class="tienda">{{ $tienda }}</div>
-        <div class="titulo">RECIBO DE VENTA</div>
+        <div class="titulo" style="margin-top: 6pt;">RECIBO DE VENTA</div>
         <div class="codigo">{{ $venta->codigo }}</div>
     </div>
 
@@ -224,7 +228,7 @@
         <br>
         Conserva este recibo para cualquier reclamo de garantía.
         <br>
-        ¡Gracias por su compra!
+        ¡Gracias por confiar en {{ $tienda }}!
     </div>
 
 </body>

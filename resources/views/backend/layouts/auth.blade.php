@@ -235,7 +235,7 @@
 </head>
 <body class="auth-body">
     <main class="auth-shell">
-        <aside class="auth-showcase" aria-label="Información de {{ config('app.name') }}">
+        <aside class="auth-showcase" aria-label="Información de {{ config('app.nombre_comercial') }}">
             <a href="{{ url('/') }}" class="auth-logo">
                 {{-- Recorte ajustado de logo_hogar.png: se le quitan los
                      márgenes vacíos, que en una imagen centrada solo sirven
@@ -243,7 +243,7 @@
                      tira de categorías. --}}
                 <img src="{{ asset('assets/images/marca-login.png') }}"
                      width="478" height="391"
-                     alt="{{ config('app.name') }} · Tecnología para tu vida">
+                     alt="{{ config('app.nombre_comercial') }} · Tecnología para tu vida">
             </a>
 
             <div class="auth-showcase-content">
@@ -257,7 +257,7 @@
                 </ul>
             </div>
 
-            <div class="auth-showcase-footer">© {{ date('Y') }} {{ config('app.name') }} · Gestión que conecta.</div>
+            <div class="auth-showcase-footer">© {{ date('Y') }} {{ config('app.nombre_comercial') }} · Gestión que conecta.</div>
         </aside>
 
         <section class="auth-panel">

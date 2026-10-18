@@ -71,15 +71,14 @@
 
 <body>
 
-    <div class="centro">
-        <h1>{{ $tienda }}</h1>
-        <div class="titulo">ESTADO DE CUENTA</div>
-        <div class="codigo">
-            Crédito de la venta {{ $credito->venta?->codigo ?? '—' }}
-        </div>
-    </div>
+    @php($marca = \App\Support\MarcaDocumentos::datos($credito->venta?->tienda_id ? $credito->venta->tienda : null))
 
-    <div class="separador"></div>
+    @include('backend.documentos.membrete', [
+        'marca' => $marca,
+        'titulo' => 'ESTADO DE CUENTA',
+        'codigo' => 'Crédito de la venta '.($credito->venta?->codigo ?? '—'),
+    ])
+    @include('backend.documentos.pie', ['marca' => $marca])
 
     <table class="datos">
         <tr>
@@ -190,7 +189,7 @@
     @endif
 
     <div class="pie">
-        Documento informativo · Emitido el {{ now()->format('d/m/Y H:i') }}
+        Documento informativo.
         <br>
         Conserve este estado de cuenta para cualquier consulta.
     </div>

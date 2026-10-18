@@ -75,7 +75,8 @@ class ReciboTest extends TestCase
         $venta = $this->vender(1500, 100);
         $html = $this->htmlDelRecibo($venta);
 
-        $this->assertStringContainsString('Electrogar', $html);
+        $this->assertStringContainsString('Electro Hogar', $html);
+        $this->assertStringNotContainsString('Electrogar', $html);
         $this->assertStringNotContainsString('Electrónica del Hogar', $html);
         $this->assertStringNotContainsString('Subtotal', $html);
         $this->assertStringNotContainsString('Descuento', $html);

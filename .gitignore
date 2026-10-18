@@ -30,6 +30,7 @@
 !/public/assets/images/marca-login.png
 !/public/assets/images/marca-sidebar.png
 !/public/assets/images/favicon.ico
+!/public/assets/images/marca-documento.jpg
 /public/storage
 /storage/*.key
 /storage/framework/cache

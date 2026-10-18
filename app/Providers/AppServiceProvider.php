@@ -24,6 +24,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Los PDF embebían la fuente DejaVu entera: ~900 KB por un recibo de
+        // una línea, pesado para mandarlo por WhatsApp. Con el subconjunto
+        // solo viajan las letras que usa el documento. Se fija aquí y no
+        // publicando config/dompdf.php: ese archivo reemplazaría todas las
+        // opciones por defecto del paquete, no solo esta.
+        config(['dompdf.options.enable_font_subsetting' => true]);
+
         // El administrador pasa por alto cualquier verificación de permisos:
         // así no hay que acordarse de asignarle cada permiso nuevo.
         Gate::before(fn ($user) => $user->hasRole('admin') ? true : null);
