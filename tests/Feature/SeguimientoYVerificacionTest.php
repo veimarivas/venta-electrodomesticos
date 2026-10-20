@@ -247,8 +247,12 @@ class SeguimientoYVerificacionTest extends TestCase
 
         app(Ajustes::class)->exigirCaja(false);
 
+        // El carrito se retoma; el aparato con serial vuelve sin identificar
+        // (no se sabe si era el escaneado o uno provisional) y se escanea.
         Livewire::actingAs($admin)->test(Pos::class)
             ->assertSet('ventaValida', true)
+            ->set('codigoIdentificar.'.$unidad->producto_id, $unidad->codigo_interno)
+            ->call('identificar', $unidad->producto_id)
             ->call('cobrar')
             ->assertHasNoErrors();
 

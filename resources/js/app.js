@@ -584,6 +584,7 @@ document.addEventListener('livewire:init', () => {
         'modal-quitar-linea': 'modalQuitarLinea',
         'modal-vaciar-carrito': 'modalVaciarCarrito',
         'modal-confirmar-cobro': 'modalConfirmarCobro',
+        'modal-identificar': 'modalIdentificar',
         'modal-cliente-pos': 'modalClientePos',
         'modal-qr': 'modalQr',
         'modal-eliminar-qr': 'modalEliminarQr',

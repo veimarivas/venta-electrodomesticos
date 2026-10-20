@@ -73,9 +73,17 @@ accesorios, pequeños) se venden por cantidad: salen una sola vez en el buscador
 con cuántos quedan, y en el carrito la línea trae **− cantidad +**. El precio
 que se teclea es **por unidad** y vale para todas; el **importe** de la línea
 es cantidad × precio. Las cajas las elige el sistema —las que llevan más tiempo
-en el almacén— y la línea dice cuáles entregar (*Entregar: ITEM-…*). Los
-productos **con serial** se siguen escaneando uno por uno, porque su garantía
-va atada al aparato exacto.
+en el almacén— y la línea dice cuáles entregar (*Entregar: ITEM-…*).
+
+**Productos con serial, también por cantidad.** Un televisor o una lavadora se
+eligen igual: por su nombre, con la cantidad y el precio. Lo que el sistema
+aparta mientras tanto es **provisional**: al **confirmar la venta** (botón
+*Cobrar*) se abre *Identificar aparatos* y se escanea el serial o la etiqueta
+de cada aparato que se lleva el cliente —o se elige de la lista, o se teclea—.
+Tiene que ser del mismo producto y estar libre; si no, se explica por qué. Hasta
+que estén todos no se pasa al cobro, porque la garantía queda en el aparato
+exacto. Si escaneas la etiqueta desde el buscador, ese aparato ya entra
+identificado.
 
 **Cuánto se puede rebajar lo decide el producto.** Cada producto tiene un
 descuento máximo en Bs (*Catálogo → Productos*); bajar de ahí pide autorización
@@ -136,12 +144,21 @@ Al cobrar, en un solo movimiento: se emite la venta, los aparatos pasan a
 *vendido*, queda el rastro en el kardex y el aviso llega al administrador. O
 pasa todo, o no pasa nada — nunca queda media venta.
 
+**El recibo, en el teléfono.** Al registrar la venta (y luego en su detalle)
+están **Ver PDF**, **Descargar**, **Compartir** y **WhatsApp**. Si la venta tiene
+un cliente con celular, WhatsApp abre directo su chat con el recibo adjunto; si
+no, eliges el contacto.
+
 ### Pedir autorización para rebajar más
 
-Bajar del tope del producto no se puede por cuenta propia: si necesitas rebajar
-más —sin llegar por debajo del costo—, el vendedor pide autorización desde el
-mismo carrito. La solicitud guarda el precio de lista, el tope, el costo y lo que
-se pide cobrar.
+Bajar del tope del producto no se puede por cuenta propia: si el cliente pide
+menos, toca **¿Pide menos? Precio especial** en la línea. Salen **tres precios
+sugeridos** (por debajo del mínimo, en cifras redondas y nunca por debajo del
+costo) o escribes otro, y se manda al administrador. La pantalla queda en
+**«Esperando respuesta…»** hasta que conteste; puedes cancelar la espera.
+Una línea de varias unidades pide **una sola vez** («3 unidades · precio c/u»).
+La solicitud guarda el precio de lista, el tope, el costo y lo que se pide
+cobrar.
 
 El administrador la resuelve desde **Ventas → Autorizaciones** (panel) o su
 pestaña en la app, y puede aprobar el importe pedido, **sugerir otro** o rechazar

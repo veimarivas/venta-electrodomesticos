@@ -77,7 +77,12 @@
                                 <h6 class="aut-card-producto">{{ $solicitud->producto?->nombre ?? 'Producto' }}</h6>
                             </div>
                             <div class="aut-card-meta">
-                                <span><i class="ri-barcode-line"></i> {{ $solicitud->unidad?->codigo_interno }}</span>
+                                @if ($solicitud->esPorProducto())
+                                    {{-- Venta por cantidad: los aparatos exactos se eligen al cobrar. --}}
+                                    <span class="fw-semibold"><i class="ri-stack-line"></i> {{ $solicitud->cantidad }} {{ $solicitud->cantidad === 1 ? 'unidad' : 'unidades' }}</span>
+                                @else
+                                    <span><i class="ri-barcode-line"></i> {{ $solicitud->unidad?->codigo_interno }}</span>
+                                @endif
                                 @if ($solicitud->unidad?->serial)
                                     <span><i class="ri-fingerprint-line"></i> {{ $solicitud->unidad->serial }}</span>
                                 @endif
@@ -105,7 +110,7 @@
                             <span class="aut-cifra-valor aut-cifra-costo">Bs {{ number_format((float) $solicitud->costo_unitario, 2, ',', '.') }}</span>
                         </div>
                         <div class="aut-cifra aut-cifra-pedido">
-                            <span class="aut-cifra-label">Precio pedido</span>
+                            <span class="aut-cifra-label">Precio pedido{{ $solicitud->cantidad > 1 ? ' (c/u)' : '' }}</span>
                             <span class="aut-cifra-valor">Bs {{ number_format((float) $solicitud->precio_solicitado, 2, ',', '.') }}</span>
                             <small class="aut-cifra-nota {{ $margen < 0 ? 'aut-cifra-nota-mal' : 'aut-cifra-nota-bien' }}">
                                 Margen Bs {{ number_format($margen, 2, ',', '.') }}

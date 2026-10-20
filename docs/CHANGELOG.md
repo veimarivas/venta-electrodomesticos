@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.33.0+43 | 2026-10-20 | Recibo a la vista (ver, descargar, compartir, WhatsApp directo al cliente), precio especial con sugeridos y «Esperando respuesta…», productos con serial por cantidad identificados al confirmar, arreglo del «lazy loading» en Ventas | el del 2026-10-20 (con uno anterior: Ventas da error en cuanto hay ventas con tienda, el precio especial da 422 y los productos con serial no se pueden pedir por cantidad) |
 | 1.32.0+42 | 2026-10-18 | Icono nuevo (sin el lema, con capa monocroma para los iconos temáticos), montos que cuentan al aparecer, vibración al leer un código, al cobrar y al marcar asistencia, modo oscuro revisado (azul legible, mapa oscuro) | cualquiera desde el 2026-10-13 |
 | 1.31.0+41 | 2026-10-18 | Marca única «Electro Hogar», pantalla de arranque con el logo, enviar el recibo por WhatsApp desde la venta y al cobrar | cualquiera desde el 2026-10-13 (los recibos con logo salen del backend del 2026-10-18) |
 | 1.30.0+40 | 2026-10-13 | Registrar y editar tiendas desde el teléfono con el mapa (arranca en la posición actual), principal y quitar | el del 2026-10-13 (con uno anterior guardar una tienda da 404) |
@@ -39,6 +40,52 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Recibo por WhatsApp, precio especial y seriales al confirmar (2026-10-20)
+
+Backend: **1 migración** (`2026_10_20_100000_add_cantidad_a_solicitudes_descuento`) · app **1.33.0+43**
+
+- **Arreglo: Ventas en la app daba «Attempted to lazy load [tienda] on model
+  Venta».** El listado no cargaba la tienda de cada venta y, con el modo
+  estricto, en cuanto había dos ventas con tienda el listado entero fallaba.
+  Ahora se carga en el listado, el detalle, el recibo, el cobro y la ficha del
+  cliente, y `VentaResource` la busca con `loadMissing` si alguna consulta
+  futura se olvida.
+- **Recibo a la vista** (app): en el detalle de la venta y en «Venta
+  registrada», una tarjeta con **Ver PDF**, **Descargar** (elige carpeta),
+  **Compartir** y **WhatsApp**. WhatsApp abre directo el chat del cliente con
+  el PDF adjunto si la venta tiene cliente con celular (`cliente_celular` en
+  la API; a un celular de 8 cifras se le pone el 591); si no, WhatsApp pide el
+  contacto. Sin WhatsApp instalado, se abre el menú de compartir. Antes solo
+  había dos iconos sin texto en la barra.
+- **Precio especial** (app y panel): cuando el cliente pide menos que la rebaja
+  máxima, el vendedor ve **tres precios sugeridos** (bajo el mínimo, en cifras
+  redondas, nunca por debajo del costo, que no se muestra) o escribe otro, y
+  se lo pide al administrador. La venta queda en **«Esperando respuesta…»**
+  (diálogo en la app, aviso arriba del carrito en el panel) hasta que acepte
+  —el precio aprobado se pone solo— o rechace —vuelve a la rebaja máxima, con
+  el motivo—; luego se sigue igual que antes. Se puede cancelar la espera.
+- **Una autorización por línea, no por aparato.** La solicitud ahora puede ser
+  «N unidades de este producto a este precio» (`unidad_id` nulo, `cantidad`,
+  `usadas`): un solo aviso al administrador por la línea entera. Al cobrar,
+  cada unidad del producto vendida **por ese mismo vendedor** gasta una; si se
+  llevó menos, el resto sigue valiendo. La bandeja y el aviso dicen «3
+  unidades · precio c/u».
+- **Productos con serial por cantidad** (app y panel): se agregan como los que
+  no tienen serial —cantidad y precio— y el sistema aparta unidades
+  provisionales. Al **confirmar la venta** se escanea (o se elige de la lista,
+  o se teclea) el serial de cada aparato que se lleva el cliente; el servidor
+  comprueba que sea del mismo producto y que esté libre, y la provisional
+  vuelve al stock. Sin todos identificados no se cobra (ni se guarda sin
+  conexión). Escanear la etiqueta desde el buscador lo agrega ya
+  identificado. API nueva: `GET /pos/unidades`, `POST /pos/identificar`,
+  `GET /pos/sugerencias-descuento`, `POST /pos/solicitudes-descuento/{id}/cancelar`.
+- En el panel, un carrito retomado (se salió del punto de venta y se volvió)
+  trae sus aparatos con serial **sin identificar**: no se sabe si eran los
+  escaneados o provisionales, así que se vuelven a escanear al cobrar.
+
+Comprobado: la suite completa del backend, `flutter test` (225, con 11
+nuevas) y `flutter analyze` sin observaciones nuevas.
 
 ## Icono, movimiento discreto y modo oscuro revisado (2026-10-18)
 

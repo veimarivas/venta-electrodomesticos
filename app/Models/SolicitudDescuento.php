@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'unidad_id',
     'producto_id',
+    'cantidad',
+    'usadas',
     'user_id',
     'precio_lista',
     'descuento_maximo',
@@ -59,6 +61,8 @@ class SolicitudDescuento extends Model
         return [
             'unidad_id' => 'integer',
             'producto_id' => 'integer',
+            'cantidad' => 'integer',
+            'usadas' => 'integer',
             'user_id' => 'integer',
             'resuelto_por' => 'integer',
             'precio_lista' => 'decimal:2',
@@ -112,15 +116,32 @@ class SolicitudDescuento extends Model
         return $this->estado === 'aprobada';
     }
 
+    /** ¿Es «N unidades de este producto» y no un aparato concreto? */
+    public function esPorProducto(): bool
+    {
+        return $this->unidad_id === null;
+    }
+
+    /** Unidades que todavía puede cubrir. */
+    public function restantes(): int
+    {
+        return max(0, (int) $this->cantidad - (int) $this->usadas);
+    }
+
     /**
      * ¿Este precio queda cubierto por la autorización?
      *
-     * Solo si está aprobada, sin usar, y el precio no baja del piso aprobado.
+     * Solo si está aprobada, le quedan unidades por cubrir, y el precio no baja
+     * del piso aprobado.
      */
     public function cubre(int $precioEnCentavos): bool
     {
+        $sinUsar = $this->esPorProducto()
+            ? $this->restantes() > 0
+            : $this->venta_id === null;
+
         return $this->estaAprobada()
-            && $this->venta_id === null
+            && $sinUsar
             && $this->precio_aprobado !== null
             && $precioEnCentavos >= \App\Support\ProrrateoDeGastos::aCentavos($this->precio_aprobado);
     }

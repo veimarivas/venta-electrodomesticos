@@ -83,6 +83,7 @@ class RegistroDeVenta
                 $descuentoTotal = 0;
                 $costoTotal = 0;
                 $detalles = [];
+                $tomadas = [];
 
                 foreach ($lineas as $linea) {
                     $unidad = $unidades->get($linea['unidad_id']);
@@ -134,8 +135,16 @@ class RegistroDeVenta
                     if ($descuento > $topeDescuento) {
                         $autorizacion = app(AutorizacionDeDescuento::class)->aprobadaPara(
                             $unidad->id,
-                            $precio - $descuento
+                            $precio - $descuento,
+                            $userId,
+                            $tomadas,
                         );
+
+                        // Una autorización por producto cubre N líneas: se
+                        // cuenta aquí lo que ya tomó esta misma venta.
+                        if ($autorizacion !== null) {
+                            $tomadas[$autorizacion->id] = ($tomadas[$autorizacion->id] ?? 0) + 1;
+                        }
 
                         if ($autorizacion === null) {
                             throw new RuntimeException(

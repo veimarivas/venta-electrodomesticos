@@ -222,7 +222,7 @@ class ClienteController extends Controller
                 fn ($q) => $q->with([
                     // `cliente.persona` también: VentaResource lo lee, y con
                     // el modo estricto una relación sin cargar revienta.
-                    'ventas' => fn ($v) => $v->with(['user', 'cliente.persona'])
+                    'ventas' => fn ($v) => $v->with(['user', 'cliente.persona', 'tienda'])
                         ->withCount('detalles')
                         ->orderByDesc('vendida_en')
                         ->limit(10),

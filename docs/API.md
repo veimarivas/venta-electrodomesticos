@@ -232,13 +232,17 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 
 | Método | Ruta | Qué hace | Permiso / notas |
 |---|---|---|---|
-| GET | `/pos/buscar` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe. Cada aparato trae `tiene_serial`; uno **sin serial** sale una sola vez por producto con `disponibles` | `ventas.crear` |
+| GET | `/pos/buscar` | aparatos vendibles; marca la coincidencia exacta del escáner. Con `escaneado=1`, si no hay nada vendible devuelve `meta.diagnostico` explicando si el aparato ya se vendió (con su venta) o si el código no existe. Cada producto sale **una sola vez** con `disponibles` (con o sin serial; desde 2026-10-20). `tiene_serial` dice si al confirmar hay que identificar los aparatos |  `ventas.crear` |
 | POST | `/pos/cobrar` | registra la venta (multipart: lleva la foto del comprobante). Sin techo: el precio puede pasar de la lista (se registra lo cobrado, sin descuento); la referencia es el precio del día | `ventas.crear` |
 | POST | `/pos/liberar` | devuelve al stock una unidad reservada del carrito | `ventas.crear` |
 | GET | `/pos/qrs` | QR de cobro **vigentes**, con su imagen (lo que el mostrador puede usar) | `ventas.crear` |
 | POST | `/pos/reservar` | aparta una unidad 20 minutos para que otra caja no la venda | `ventas.crear` |
-| POST | `/pos/reservar-cantidad` | venta por cantidad de un producto **sin serial**: `producto_id`, `cantidad`, `excluir` (las del carrito) → aparta las más antiguas; `meta.mensaje` si no había tantas. 422 si el producto lleva serial | `ventas.crear` |
-| POST | `/pos/solicitudes-descuento` | pide autorización para bajar del mínimo (nunca del costo) | `ventas.crear` |
+| POST | `/pos/reservar-cantidad` | venta por cantidad: `producto_id`, `cantidad`, `excluir` (las del carrito) → aparta las más antiguas; `meta.mensaje` si no había tantas. En productos con serial son **provisionales** hasta identificarlas | `ventas.crear` |
+| POST | `/pos/solicitudes-descuento` | pide autorización para bajar del mínimo (nunca del costo). Por aparato (`unidad_id`) o **por línea** (`producto_id` + `cantidad` + `unidad_ids` del carrito): un solo aviso al administrador; al cobrar cubre hasta `cantidad` unidades de ese producto **del mismo vendedor** | `ventas.crear` |
+| POST | `/pos/solicitudes-descuento/{solicitud}/cancelar` | el vendedor deja de esperar y retira su solicitud pendiente | `ventas.crear` |
+| GET | `/pos/sugerencias-descuento` | `producto_id` (+ `unidad_ids`) → `precio_lista`, `precio_minimo` y hasta 3 `sugerencias` bajo el mínimo y sobre el costo (el costo no viaja) | `ventas.crear` |
+| GET | `/pos/unidades` | `producto_id` → aparatos libres del producto y los apartados por quien pregunta, para elegir al identificar | `ventas.crear` |
+| POST | `/pos/identificar` | `producto_id` + `codigo` (serial o código interno) → aparta ese aparato exacto; 422 si es de otro producto, ya se vendió o no existe; 409 si otra caja lo tomó | `ventas.crear` |
 | GET | `/pos/solicitudes-descuento/{solicitud}` | estado de la solicitud (el carrito la sondea) | `ventas.crear` |
 
 ## /precios-del-dia

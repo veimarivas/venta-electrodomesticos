@@ -71,7 +71,14 @@
                                 @php
                                     $vendible = $unidad->esVendible();
                                     $venta = $unidad->ventaDetalle?->venta;
-                                    $porCantidad = $vendible && ! ($unidad->producto?->tiene_serial ?? true);
+                                    // Todo lo vendible se vende por cantidad; con serial, el
+                                    // aparato exacto se escanea al confirmar.
+                                    $conSerial = (bool) ($unidad->producto?->tiene_serial ?? true);
+                                    // Se leyó la etiqueta de este aparato: se enseña él, no el producto.
+                                    $termino = mb_strtolower(trim($buscar));
+                                    $esElEscaneado = $termino === mb_strtolower((string) $unidad->codigo_interno)
+                                        || ($unidad->serial && $termino === mb_strtolower($unidad->serial));
+                                    $porCantidad = $vendible && ! $esElEscaneado;
                                 @endphp
 
                                 {{-- Los no vendibles también se listan: con la etiqueta
@@ -87,10 +94,10 @@
                                         </span>
                                         <span class="d-block text-muted fs-12 text-truncate">
                                             @if ($porCantidad)
-                                                {{-- Sin serial: se vende por cantidad, el aparato concreto lo elige el sistema. --}}
                                                 <span class="pos-resultado-cantidad">
                                                     <i class="ri-stack-line"></i> {{ $this->disponiblesDe($unidad->producto_id) }} disponibles
                                                 </span>
+                                                @if ($conSerial) · con serial @endif
                                             @else
                                                 <code>{{ $unidad->codigo_interno }}</code>
                                                 @if ($unidad->serial) · Serial {{ $unidad->serial }} @endif
@@ -181,6 +188,18 @@
                 </div>
 
                 <div class="card-body p-0">
+                    {{-- El vendedor sabe que la venta está en pausa: no cobra ni
+                         sigue hasta que el administrador conteste. --}}
+                    @if ($this->haySolicitudesPendientes && ! $puedeAutorizar)
+                        <div class="pos-esperando-respuesta" role="status">
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                            <div>
+                                <strong class="d-block">Esperando respuesta del administrador…</strong>
+                                <small>La venta sigue sola en cuanto acepte o rechace el precio.</small>
+                            </div>
+                        </div>
+                    @endif
+
                     @if ($carrito === [])
                         <div class="pos-carrito-vacio">
                             <div class="pos-carrito-vacio-icono">
@@ -235,6 +254,8 @@
                                         ->filter()
                                         ->first();
                                     $masEnStock = $porCantidad ? $this->disponiblesDe($productoId) : 0;
+                                    $conSerialLinea = (bool) ($linea['tiene_serial'] ?? false);
+                                    $porIdentificar = $lineasGrupo->filter(fn ($l) => (bool) ($l['por_identificar'] ?? false))->count();
                                 @endphp
 
                                 <article class="pos-linea @if ($errorPrecio) pos-linea-con-error @endif"
@@ -256,7 +277,11 @@
                                         <div class="pos-linea-info min-w-0">
                                             <h6 class="pos-linea-nombre">{{ $u?->producto?->nombre ?? 'Producto' }}</h6>
                                             <div class="pos-linea-chips">
-                                                @if ($porCantidad)
+                                                @if ($porCantidad && $conSerialLinea)
+                                                    <span class="pos-linea-chip pos-linea-chip-cantidad">
+                                                        <i class="ri-fingerprint-line"></i> Con serial · se escanea al cobrar
+                                                    </span>
+                                                @elseif ($porCantidad)
                                                     <span class="pos-linea-chip pos-linea-chip-cantidad">
                                                         <i class="ri-stack-line"></i> Sin serial · por cantidad
                                                     </span>
@@ -297,7 +322,22 @@
                                                     </span>
                                                 @endif
                                             </div>
-                                            @if ($porCantidad)
+                                            @if ($porCantidad && $conSerialLinea)
+                                                {{-- Con serial: los que ya se escanearon y cuántos faltan. --}}
+                                                <small class="pos-linea-codigos">
+                                                    @foreach ($indicesGrupo as $i)
+                                                        @unless ($carrito[$i]['por_identificar'] ?? false)
+                                                            <code>{{ $this->unidadesDelCarrito[$carrito[$i]['unidad_id']]?->serial ?: $this->unidadesDelCarrito[$carrito[$i]['unidad_id']]?->codigo_interno }}</code>
+                                                        @endunless
+                                                    @endforeach
+                                                    @if ($porIdentificar > 0)
+                                                        <span class="text-warning fw-semibold">
+                                                            <i class="ri-qr-scan-2-line"></i>
+                                                            {{ $porIdentificar }} por identificar al cobrar
+                                                        </span>
+                                                    @endif
+                                                </small>
+                                            @elseif ($porCantidad)
                                                 {{-- Las cajas que hay que entregar: las elige el sistema,
                                                      las más antiguas del almacén. --}}
                                                 <small class="pos-linea-codigos">
@@ -491,12 +531,40 @@
                                                     <button type="button" class="btn btn-sm btn-warning"
                                                         wire:click="solicitarAutorizacion({{ $indice }})"
                                                         wire:loading.attr="disabled"
-                                                        wire:target="solicitarAutorizacion({{ $indice }})">
-                                                        <i class="ri-send-plane-line align-bottom me-1"></i> Solicitar autorización
+                                                        wire:target="solicitarAutorizacion">
+                                                        <i class="ri-send-plane-line align-bottom me-1"></i> Pedir este precio
                                                     </button>
                                                 @endif
                                             @endif
                                         </div>
+                                    @endif
+
+                                    {{-- Precio especial: el vendedor quiere bajar más que la
+                                         rebaja máxima. Elige uno de los sugeridos (todos sobre
+                                         el costo) y se manda al administrador de un toque. --}}
+                                    @if (! $puedeAutorizar && $estadoSolicitud !== 'pendiente' && ! ($cubierto && $bajoMinimo))
+                                        @php
+                                            $sugeridos = $this->sugerenciasDe($indice);
+                                        @endphp
+                                        @if ($sugeridos !== [])
+                                            <div class="pos-linea-especial" x-data="{ abierto: @js($requiereAutorizacion) }">
+                                                <button type="button" class="pos-referencia-btn" x-on:click="abierto = ! abierto"
+                                                    x-bind:aria-expanded="abierto">
+                                                    <i class="ri-hand-coin-line"></i> ¿Pide menos? Precio especial
+                                                </button>
+                                                <div class="pos-linea-especial-opciones" x-show="abierto" x-transition.opacity x-cloak>
+                                                    <span class="pos-linea-campo-label">Pedir al administrador{{ $cantidad > 1 ? ' (c/u)' : '' }}:</span>
+                                                    @foreach ($sugeridos as $sugerido)
+                                                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                                            wire:click="solicitarAutorizacion({{ $indice }}, {{ $sugerido }})"
+                                                            wire:loading.attr="disabled"
+                                                            wire:target="solicitarAutorizacion">
+                                                            Bs {{ number_format($sugerido, 2, ',', '.') }}
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                     @endif
 
                                     @if ($errorPrecio)
@@ -1317,6 +1385,95 @@
                             Sí, vaciar
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===================== Identificar los aparatos con serial ===================== --}}
+    {{-- La venta se pactó por cantidad; ahora se escanea (o elige) cada aparato
+         que se lleva el cliente. Es el que queda en la garantía. --}}
+    <div class="modal fade" id="modalIdentificar" tabindex="-1" aria-hidden="true" wire:ignore.self
+        data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-crud-dialog">
+            <div class="modal-content border-0 modal-crud-content">
+                <div class="modal-header modal-crud-header p-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-sm flex-shrink-0">
+                            <span class="avatar-title modal-crud-icon rounded-circle fs-4">
+                                <i class="ri-qr-scan-2-line"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0">Identifica los aparatos</h5>
+                            <small class="text-muted">
+                                Escanea la etiqueta o el serial de cada aparato que se lleva el cliente.
+                            </small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close modal-crud-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body modal-crud-body p-4">
+                    @foreach ($this->gruposPorIdentificar as $grupo)
+                        <section class="pos-identificar-grupo" wire:key="identificar-{{ $grupo['producto_id'] }}">
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">{{ $grupo['nombre'] }}</h6>
+                                <span class="pos-identificar-progreso @if ($grupo['faltan'] === 0) is-completo @endif">
+                                    {{ $grupo['total'] - $grupo['faltan'] }} / {{ $grupo['total'] }}
+                                </span>
+                            </div>
+
+                            @if ($grupo['identificados'] !== [])
+                                <div class="d-flex flex-wrap gap-2 mb-2">
+                                    @foreach ($grupo['identificados'] as $u)
+                                        <span class="pos-linea-chip"><i class="ri-checkbox-circle-line text-success"></i> {{ $u->serial ?: $u->codigo_interno }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if ($grupo['faltan'] > 0)
+                                <div class="search-box mb-2">
+                                    <input type="text" class="form-control"
+                                        placeholder="Escanea o escribe el serial ({{ $grupo['faltan'] }} {{ $grupo['faltan'] === 1 ? 'falta' : 'faltan' }})"
+                                        wire:model="codigoIdentificar.{{ $grupo['producto_id'] }}"
+                                        wire:keydown.enter="identificar({{ $grupo['producto_id'] }})"
+                                        x-init="$nextTick(() => $el.focus())">
+                                    <i class="ri-barcode-line search-icon"></i>
+                                </div>
+
+                                {{-- Cuando la etiqueta no se deja leer: elegirlo de la lista. --}}
+                                <details class="pos-identificar-lista">
+                                    <summary class="fs-12 text-muted">O elígelo de la lista</summary>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @forelse ($this->elegiblesDe($grupo['producto_id']) as $u)
+                                            <button type="button" class="btn btn-sm btn-light"
+                                                wire:key="elegible-{{ $u->id }}"
+                                                wire:click="elegirAparato({{ $grupo['producto_id'] }}, {{ $u->id }})">
+                                                {{ $u->serial ?: $u->codigo_interno }}
+                                                @if ($u->ubicacion) <small class="text-muted">· {{ $u->ubicacion }}</small> @endif
+                                            </button>
+                                        @empty
+                                            <small class="text-muted">No hay otros aparatos libres de este producto.</small>
+                                        @endforelse
+                                    </div>
+                                </details>
+                            @endif
+                        </section>
+                    @endforeach
+                </div>
+
+                <div class="modal-footer modal-crud-footer p-4">
+                    <button type="button" class="btn btn-light modal-cancelar" data-bs-dismiss="modal">Volver a la venta</button>
+                    <button type="button" class="btn btn-primary"
+                        wire:click="continuarCobro"
+                        @disabled($this->faltanPorIdentificar > 0)>
+                        @if ($this->faltanPorIdentificar > 0)
+                            Faltan {{ $this->faltanPorIdentificar }}
+                        @else
+                            <i class="ri-arrow-right-line align-bottom me-1"></i> Continuar con el cobro
+                        @endif
+                    </button>
                 </div>
             </div>
         </div>

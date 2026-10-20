@@ -316,17 +316,20 @@ class PosApiTest extends TestCase
             ->assertJsonPath('meta.reservadas', 2);
     }
 
-    public function test_la_api_no_reserva_por_cantidad_un_producto_con_serial(): void
+    public function test_la_api_reserva_por_cantidad_tambien_un_producto_con_serial(): void
     {
+        // Ahora todos se venden por cantidad: las unidades con serial quedan
+        // apartadas como provisionales y se identifican al confirmar.
         $unidad = $this->unidadEnStock(precio: 400);
         $unidad->producto->update(['tiene_serial' => true]);
+        Unidad::factory()->create(['producto_id' => $unidad->producto_id, 'estado' => 'en_stock']);
 
         Sanctum::actingAs($this->vendedor());
 
         $this->postJson('/api/v1/pos/reservar-cantidad', [
             'producto_id' => $unidad->producto_id,
             'cantidad' => 2,
-        ])->assertStatus(422);
+        ])->assertOk()->assertJsonPath('meta.reservadas', 2);
     }
 
     public function test_el_buscador_junta_las_unidades_sin_serial(): void

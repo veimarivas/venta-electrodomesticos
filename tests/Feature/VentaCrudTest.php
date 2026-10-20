@@ -1074,25 +1074,47 @@ class VentaCrudTest extends TestCase
             ->assertDispatched('toast', tipo: 'warning');
     }
 
-    public function test_un_producto_con_serial_no_se_agrupa(): void
+    public function test_un_producto_con_serial_se_vende_por_cantidad_y_se_identifica_al_cobrar(): void
     {
         $a = $this->unidadEnStock();
+        $a->producto->update(['nombre' => 'Lavadora 18 kg']);
         $b = Unidad::factory()->create([
             'producto_id' => $a->producto_id,
             'estado' => 'en_stock',
             'costo_unitario' => 1000,
             'precio_venta' => 1500,
+            'serial' => 'SN-LAV-B',
         ]);
 
+        // Elegido por su nombre: entra por cantidad y provisional.
         $pantalla = Livewire::actingAs($this->admin())
             ->test(Pos::class)
+            ->set('buscar', 'Lavadora')
             ->call('agregar', $a->id)
-            ->call('agregar', $b->id)
-            // Con serial, cambiar la cantidad no hace nada: cada aparato se escanea.
-            ->call('cambiarCantidad', $a->producto_id, 5)
-            ->assertCount('carrito', 2);
+            ->call('cambiarCantidad', $a->producto_id, 2)
+            ->assertCount('carrito', 2)
+            ->assertSet('faltanPorIdentificar', 2);
 
-        $this->assertCount(2, $pantalla->instance()->tarjetasDelCarrito());
+        $this->assertCount(1, $pantalla->instance()->tarjetasDelCarrito());
+
+        // Al confirmar, se pide identificar en vez de cobrar.
+        $pantalla->call('confirmarCobro')
+            ->assertDispatched('abrir-modal-identificar')
+            ->assertNotDispatched('abrir-modal-confirmar-cobro');
+
+        // Se escanea uno (el B) y se elige el otro de la lista (el A).
+        $pantalla->set('codigoIdentificar.'.$a->producto_id, 'sn-lav-b')
+            ->call('identificar', $a->producto_id)
+            ->assertSet('faltanPorIdentificar', 1)
+            ->call('elegirAparato', $a->producto_id, $a->id)
+            ->assertSet('faltanPorIdentificar', 0)
+            ->call('continuarCobro')
+            ->assertDispatched('abrir-modal-confirmar-cobro');
+
+        $this->assertEqualsCanonicalizing(
+            [$a->id, $b->id],
+            array_column($pantalla->get('carrito'), 'unidad_id')
+        );
     }
 
     public function test_la_pantalla_no_muestra_el_minimo_ni_el_descuento_fijos(): void

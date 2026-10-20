@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Producto;
 use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
 use App\Support\AutorizacionDeDescuento;
@@ -20,31 +21,106 @@ use RuntimeException;
  */
 class AutorizacionController extends Controller
 {
-    /** El vendedor pide autorización para vender por debajo del mínimo. */
+    /**
+     * El vendedor pide autorización para vender por debajo del mínimo.
+     *
+     * Dos formas: por aparato (`unidad_id`, la de siempre) o por producto
+     * (`producto_id` + `cantidad`), que es la de la venta por cantidad: un solo
+     * aviso al administrador por la línea entera, aunque los aparatos con
+     * serial se escaneen recién al confirmar.
+     */
     public function solicitar(Request $request): JsonResponse
     {
         $datos = $request->validate([
-            'unidad_id' => ['required', 'integer', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
+            'unidad_id' => ['required_without:producto_id', 'nullable', 'integer', Rule::exists('unidades', 'id')->whereNull('deleted_at')],
+            'producto_id' => ['required_without:unidad_id', 'nullable', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'cantidad' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'unidad_ids' => ['nullable', 'array', 'max:200'],
+            'unidad_ids.*' => ['integer'],
             'precio' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
         ]);
 
-        $unidad = Unidad::with('producto')->find($datos['unidad_id']);
-
-        if ($unidad === null) {
-            return response()->json(['message' => 'Ese aparato ya no existe.'], 404);
-        }
+        $servicio = app(AutorizacionDeDescuento::class);
 
         try {
-            $solicitud = app(AutorizacionDeDescuento::class)->solicitar(
-                $unidad,
-                $datos['precio'],
-                $request->user()->id,
-            );
+            if (! empty($datos['producto_id'])) {
+                $solicitud = $servicio->solicitarPorProducto(
+                    Producto::findOrFail($datos['producto_id']),
+                    (string) $datos['precio'],
+                    (int) ($datos['cantidad'] ?? 1),
+                    $request->user()->id,
+                    $this->unidadesPropias($datos['unidad_ids'] ?? [], (int) $datos['producto_id'], (int) $request->user()->id),
+                );
+            } else {
+                $unidad = Unidad::with('producto')->find($datos['unidad_id']);
+
+                if ($unidad === null) {
+                    return response()->json(['message' => 'Ese aparato ya no existe.'], 404);
+                }
+
+                $solicitud = $servicio->solicitar($unidad, (string) $datos['precio'], $request->user()->id);
+            }
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
         return response()->json(['data' => $this->representar($solicitud)], 201);
+    }
+
+    /**
+     * Precios que la app ofrece al vendedor para pedir: tres por debajo del
+     * mínimo, todos por encima del costo. El costo no viaja.
+     */
+    public function sugerencias(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'unidad_ids' => ['nullable', 'array', 'max:200'],
+            'unidad_ids.*' => ['integer'],
+        ]);
+
+        return response()->json([
+            'data' => app(AutorizacionDeDescuento::class)->sugerencias(
+                Producto::findOrFail($datos['producto_id']),
+                $this->unidadesPropias($datos['unidad_ids'] ?? [], (int) $datos['producto_id'], (int) $request->user()->id),
+            ),
+        ]);
+    }
+
+    /** El vendedor deja de esperar: retira su solicitud pendiente. */
+    public function cancelar(Request $request, SolicitudDescuento $solicitud): JsonResponse
+    {
+        try {
+            app(AutorizacionDeDescuento::class)->cancelar($solicitud, (int) $request->user()->id);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
+        }
+
+        return response()->json(['data' => $this->representar($solicitud->refresh())]);
+    }
+
+    /**
+     * De las unidades que manda la app, solo las del producto que el propio
+     * vendedor tiene apartadas: con ellas se toma el costo piso, y un id ajeno
+     * no debe poder bajarlo.
+     *
+     * @param  array<int, int>  $ids
+     * @return array<int, int>
+     */
+    private function unidadesPropias(array $ids, int $productoId, int $userId): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return Unidad::query()
+            ->whereIn('id', $ids)
+            ->where('producto_id', $productoId)
+            ->where(fn ($q) => $q->where('estado', 'en_stock')
+                ->orWhere(fn ($r) => $r->where('estado', 'reservado')->where('reservado_por', $userId)))
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
     }
 
     /** Estado de una solicitud, para que la app la sondee mientras espera. */
@@ -116,6 +192,11 @@ class AutorizacionController extends Controller
             'codigo_interno' => $solicitud->unidad?->codigo_interno,
             'serial' => $solicitud->unidad?->serial,
             'producto' => $solicitud->producto?->nombre,
+            'producto_id' => $solicitud->producto_id,
+            // Por producto: cuántas unidades cubre y cuántas ya se vendieron.
+            'por_producto' => $solicitud->esPorProducto(),
+            'cantidad' => (int) $solicitud->cantidad,
+            'usadas' => (int) $solicitud->usadas,
             'precio_lista' => $lista,
             'descuento_maximo' => $tope,
             'precio_minimo' => round(max($lista - $tope, 0), 2),

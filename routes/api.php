@@ -509,6 +509,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('pos.solicitudes.solicitar');
             Route::get('/pos/solicitudes-descuento/{solicitud}', [AutorizacionController::class, 'estado'])
                 ->name('pos.solicitudes.estado');
+            Route::post('/pos/solicitudes-descuento/{solicitud}/cancelar', [AutorizacionController::class, 'cancelar'])
+                ->name('pos.solicitudes.cancelar');
+            // Precios sugeridos para pedir (bajo el mínimo, sobre el costo).
+            Route::get('/pos/sugerencias-descuento', [AutorizacionController::class, 'sugerencias'])
+                ->name('pos.solicitudes.sugerencias');
+            // Productos con serial vendidos por cantidad: al confirmar se
+            // eligen o escanean los aparatos exactos.
+            Route::get('/pos/unidades', [PosController::class, 'unidades'])->name('pos.unidades');
+            Route::post('/pos/identificar', [PosController::class, 'identificar'])->name('pos.identificar');
         });
 
         // Autorizaciones de descuento: solo quien puede aprobarlas.

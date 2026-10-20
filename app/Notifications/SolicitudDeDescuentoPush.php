@@ -82,7 +82,10 @@ class SolicitudDeDescuentoPush extends Notification
     {
         $solicitud = $this->solicitud;
         $producto = $solicitud->producto?->nombre ?? 'Producto';
-        $codigo = $solicitud->unidad?->codigo_interno ?? '';
+        // Por producto no hay aparato todavía: se dice cuántas unidades.
+        $codigo = $solicitud->unidad_id === null
+            ? ($solicitud->cantidad > 1 ? "{$solicitud->cantidad} unidades c/u" : '')
+            : ($solicitud->unidad?->codigo_interno ?? '');
         $vendedor = $solicitud->solicitante?->name ?? 'un vendedor';
 
         return $producto.($codigo !== '' ? " · {$codigo}" : '').

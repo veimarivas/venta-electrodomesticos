@@ -4,6 +4,7 @@ namespace App\Livewire\Ventas;
 
 use App\Models\Cliente;
 use App\Models\Persona;
+use App\Models\Producto;
 use App\Models\QrCobro;
 use App\Models\SolicitudDescuento;
 use App\Models\Unidad;
@@ -225,7 +226,7 @@ class Pos extends Component
             // Una rebaja aprobada y sin usar se aplica sola: es la que el cajero
             // ya consiguió antes de dejar el carrito.
             $aprobada = $autorizaciones->aprobadaVigente(
-                $unidad->id, ProrrateoDeGastos::aCentavos($lista)
+                $unidad->id, ProrrateoDeGastos::aCentavos($lista), (int) auth()->id()
             );
 
             if ($aprobada !== null) {
@@ -238,7 +239,12 @@ class Pos extends Component
             $this->carrito[] = [
                 'unidad_id' => $unidad->id,
                 'producto_id' => $unidad->producto_id,
-                'sin_serial' => ! ($unidad->producto?->tiene_serial ?? true),
+                // Todo se vende por cantidad (ver `agregar`). Lo que se retoma de
+                // un producto con serial vuelve sin identificar: no se sabe si
+                // era el aparato escaneado o uno provisional.
+                'sin_serial' => true,
+                'tiene_serial' => (bool) ($unidad->producto?->tiene_serial ?? true),
+                'por_identificar' => (bool) ($unidad->producto?->tiene_serial ?? true),
                 'precio_lista' => $lista,
                 'precio' => $precio,
                 'tope_descuento' => number_format(
@@ -480,7 +486,19 @@ class Pos extends Component
         }
 
         // ¿Alguna aprobación sin usar cubre este precio?
-        $cubre = app(AutorizacionDeDescuento::class)->aprobadaVigente($linea['unidad_id'], $precio);
+        // Lo que ya tomaron las OTRAS líneas del carrito: una autorización por
+        // producto de 2 unidades no cubre una tercera.
+        $tomadas = [];
+
+        foreach ($this->carrito as $i => $otra) {
+            if ($i !== $indice && ($otra['solicitud_estado'] ?? null) === 'aprobada' && ($otra['solicitud_id'] ?? null) !== null) {
+                $tomadas[(int) $otra['solicitud_id']] = ($tomadas[(int) $otra['solicitud_id']] ?? 0) + 1;
+            }
+        }
+
+        $cubre = app(AutorizacionDeDescuento::class)->aprobadaVigente(
+            $linea['unidad_id'], $precio, (int) auth()->id(), $tomadas
+        );
 
         if ($cubre !== null) {
             $this->carrito[$indice]['solicitud_id'] = $cubre->id;
@@ -492,7 +510,8 @@ class Pos extends Component
 
         // ¿Hay una pendiente para exactamente este precio?
         $pendiente = SolicitudDescuento::query()
-            ->where('unidad_id', $linea['unidad_id'])
+            ->where(fn ($q) => $q->where('unidad_id', $linea['unidad_id'])
+                ->orWhere(fn ($r) => $r->whereNull('unidad_id')->where('producto_id', $linea['producto_id'] ?? 0)))
             ->where('user_id', auth()->id())
             ->where('estado', 'pendiente')
             ->where('precio_solicitado', ProrrateoDeGastos::aDecimal($precio))
@@ -542,15 +561,19 @@ class Pos extends Component
                     ->orWhere('codigo_interno', 'like', "%{$termino}%")
                     ->orWhereHas('producto', fn ($p) => $p->where('nombre', 'like', "%{$termino}%"));
             })
+            // Lo escaneado primero: si se leyó la etiqueta de un aparato, es ese
+            // el que representa a su producto y entra ya identificado.
+            ->orderByRaw('(LOWER(serial) = ? OR LOWER(codigo_interno) = ?) desc', [mb_strtolower($termino), mb_strtolower($termino)])
             // Los vendibles primero: son los que se pueden cobrar.
             ->orderByRaw("estado = 'en_stock' desc")
             ->orderBy('codigo_interno')
             ->limit(12)
             ->get()
-            // Un producto sin serial sale una vez (sus unidades vendibles son
-            // iguales y se venden por cantidad). Las que no se pueden vender
-            // siguen saliendo sueltas: cada una explica su propio motivo.
-            ->unique(fn (Unidad $u): string => (! ($u->producto?->tiene_serial ?? true) && $u->esVendible())
+            // Todo producto vendible sale una vez: se vende por cantidad y, si
+            // lleva serial, los aparatos exactos se escanean al confirmar. Las
+            // que no se pueden vender siguen saliendo sueltas: cada una explica
+            // su propio motivo.
+            ->unique(fn (Unidad $u): string => $u->esVendible()
                 ? 'p'.$u->producto_id
                 : 'u'.$u->id)
             ->values();
@@ -744,19 +767,40 @@ class Pos extends Component
         }
 
         $precio = $this->precioDeVenta($unidad);
-        $sinSerial = ! ($unidad->producto?->tiene_serial ?? true);
+        $tieneSerial = (bool) ($unidad->producto?->tiene_serial ?? true);
 
-        // Sin serial, otra unidad del mismo producto se suma a su línea por
-        // cantidad y hereda el precio que ya se pactó para ella.
-        $grupo = $sinSerial ? $this->indicesDelGrupo($unidad->producto_id) : [];
+        // ¿Se leyó la etiqueta de ESTE aparato? Entonces ya está identificado.
+        // Si se eligió el producto por su nombre, el aparato es provisional y
+        // el exacto se escanea al confirmar la venta.
+        // Sin nada en el buscador el aparato llega elegido por su id (no salió
+        // de una búsqueda por nombre): también cuenta como identificado.
+        $termino = mb_strtolower(trim($this->buscar));
+        $escaneado = $termino === ''
+            || $termino === mb_strtolower((string) $unidad->serial)
+            || $termino === mb_strtolower((string) $unidad->codigo_interno);
+
+        // Otra unidad del mismo producto se suma a su línea por cantidad y
+        // hereda el precio que ya se pactó para ella.
+        $grupo = $this->indicesDelGrupo($unidad->producto_id);
         $pactado = $grupo === [] ? $precio : (string) $this->carrito[$grupo[0]]['precio'];
+
+        // Escanear un aparato de un producto que ya tiene unidades provisionales
+        // identifica una de ellas, en vez de sumar otra a la cantidad.
+        if ($tieneSerial && $escaneado && $this->primeraPorIdentificar($unidad->producto_id) !== null) {
+            $this->asignarAparato($unidad->producto_id, $unidad);
+            $this->buscar = '';
+
+            return;
+        }
 
         $this->carrito[] = [
             'unidad_id' => $unidad->id,
             'producto_id' => $unidad->producto_id,
-            // Sin serial se vende por cantidad: la vista junta sus unidades en
-            // una sola línea con su campo de cantidad.
-            'sin_serial' => $sinSerial,
+            // Todo se vende por cantidad: la vista junta las unidades de un
+            // producto en una sola línea con su campo de cantidad.
+            'sin_serial' => true,
+            'tiene_serial' => $tieneSerial,
+            'por_identificar' => $tieneSerial && ! $escaneado,
             // Precio del día del producto: la referencia que se ofrece.
             'precio_lista' => $precio,
             // Lo que se va a cobrar. Arranca en el de lista, sin descuento.
@@ -1027,7 +1071,12 @@ class Pos extends Component
         $actual = count($indices);
 
         if ($objetivo < $actual) {
-            $this->quitarIndices(array_slice($indices, $objetivo));
+            // Se sueltan primero las provisionales: el aparato que ya se
+            // escaneó es el que el cliente tiene delante.
+            $identificadas = array_values(array_filter($indices, fn (int $i): bool => ! ($this->carrito[$i]['por_identificar'] ?? false)));
+            $provisionales = array_values(array_filter($indices, fn (int $i): bool => (bool) ($this->carrito[$i]['por_identificar'] ?? false)));
+
+            $this->quitarIndices(array_slice([...$identificadas, ...$provisionales], $objetivo));
         } elseif ($objetivo > $actual) {
             $base = $this->carrito[$indices[0]];
             $faltan = $objetivo - $actual;
@@ -1043,6 +1092,8 @@ class Pos extends Component
                 $this->carrito[] = [
                     ...$base,
                     'unidad_id' => $unidadId,
+                    // Con serial, las que suma la cantidad son provisionales.
+                    'por_identificar' => (bool) ($base['tiene_serial'] ?? false),
                     // Cada unidad pide su propia autorización si hace falta.
                     'solicitud_id' => null,
                     'solicitud_estado' => null,
@@ -1064,6 +1115,228 @@ class Pos extends Component
 
         $this->tocar();
         $this->reajustarMixto();
+    }
+
+    // =======================================================================
+    // Identificar los aparatos con serial (al confirmar la venta)
+    // =======================================================================
+
+    /** Lo que se escribe o lee en el modal de identificar, por producto. */
+    public array $codigoIdentificar = [];
+
+    /** Primera línea provisional (sin identificar) de un producto, o null. */
+    private function primeraPorIdentificar(int $productoId): ?int
+    {
+        foreach ($this->indicesDelGrupo($productoId) as $i) {
+            if ($this->carrito[$i]['por_identificar'] ?? false) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    /** ¿Cuántos aparatos faltan por identificar en todo el carrito? */
+    #[Computed]
+    public function faltanPorIdentificar(): int
+    {
+        return count(array_filter($this->carrito, fn (array $l): bool => (bool) ($l['por_identificar'] ?? false)));
+    }
+
+    /**
+     * Las líneas con serial, para el modal: cuántas lleva, cuáles ya se
+     * identificaron y cuáles se pueden elegir de la lista.
+     *
+     * @return array<int, array{producto_id: int, nombre: string, total: int, identificados: array<int, Unidad>, faltan: int}>
+     */
+    #[Computed]
+    public function gruposPorIdentificar(): array
+    {
+        $grupos = [];
+
+        foreach ($this->carrito as $linea) {
+            if (! ($linea['tiene_serial'] ?? false)) {
+                continue;
+            }
+
+            $productoId = (int) $linea['producto_id'];
+            $unidad = $this->unidadesDelCarrito[$linea['unidad_id']] ?? null;
+
+            $grupos[$productoId] ??= [
+                'producto_id' => $productoId,
+                'nombre' => $unidad?->producto?->nombre ?? 'Producto',
+                'total' => 0,
+                'identificados' => [],
+                'faltan' => 0,
+            ];
+
+            $grupos[$productoId]['total']++;
+
+            if ($linea['por_identificar'] ?? false) {
+                $grupos[$productoId]['faltan']++;
+            } elseif ($unidad !== null) {
+                $grupos[$productoId]['identificados'][] = $unidad;
+            }
+        }
+
+        return array_values($grupos);
+    }
+
+    /**
+     * Aparatos del producto que se pueden elegir de la lista: libres o
+     * apartados por este cajero que no estén ya identificados en el carrito.
+     *
+     * @return Collection<int, Unidad>
+     */
+    public function elegiblesDe(int $productoId): Collection
+    {
+        $identificados = [];
+
+        foreach ($this->carrito as $linea) {
+            if (! ($linea['por_identificar'] ?? false)) {
+                $identificados[] = (int) $linea['unidad_id'];
+            }
+        }
+
+        return Unidad::query()
+            ->where('producto_id', $productoId)
+            ->whereNotIn('id', $identificados)
+            ->where(fn ($q) => $q->where('estado', 'en_stock')
+                ->orWhere(fn ($r) => $r->where('estado', 'reservado')->where('reservado_por', (int) auth()->id())))
+            ->orderBy('ingresado_en')
+            ->orderBy('id')
+            ->limit(50)
+            ->get();
+    }
+
+    /** Identifica con lo que se escaneó o tecleó en el modal. */
+    public function identificar(int $productoId): void
+    {
+        $this->autorizar('ventas.crear');
+
+        $codigo = mb_strtolower(trim((string) ($this->codigoIdentificar[$productoId] ?? '')));
+        $this->codigoIdentificar[$productoId] = '';
+
+        if ($codigo === '') {
+            return;
+        }
+
+        $unidad = Unidad::with('producto')
+            ->where(fn ($q) => $q->whereRaw('LOWER(serial) = ?', [$codigo])
+                ->orWhereRaw('LOWER(codigo_interno) = ?', [$codigo]))
+            ->first();
+
+        if ($unidad === null) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Ningún aparato del inventario tiene ese código.');
+
+            return;
+        }
+
+        if ((int) $unidad->producto_id !== $productoId) {
+            $this->dispatch('toast', tipo: 'error', mensaje: "Ese código es de «{$unidad->producto?->nombre}», no de este producto.");
+
+            return;
+        }
+
+        $this->asignarAparato($productoId, $unidad);
+    }
+
+    /** Identifica eligiendo el aparato de la lista. */
+    public function elegirAparato(int $productoId, int $unidadId): void
+    {
+        $this->autorizar('ventas.crear');
+
+        $unidad = Unidad::with('producto')->where('producto_id', $productoId)->find($unidadId);
+
+        if ($unidad !== null) {
+            $this->asignarAparato($productoId, $unidad);
+        }
+    }
+
+    /**
+     * Pone el aparato exacto en el lugar de una unidad provisional.
+     *
+     * El precio, la entrega y la autorización son de la línea, no del aparato:
+     * se conservan. La provisional vuelve al stock.
+     */
+    private function asignarAparato(int $productoId, Unidad $unidad): void
+    {
+        // ¿Ya está en el carrito? Si era una provisional, ella misma queda
+        // identificada; si ya lo estaba, no hay nada que hacer.
+        foreach ($this->indicesDelGrupo($productoId) as $i) {
+            if ((int) $this->carrito[$i]['unidad_id'] === (int) $unidad->id) {
+                if ($this->carrito[$i]['por_identificar'] ?? false) {
+                    $this->carrito[$i]['por_identificar'] = false;
+                    $this->avisarIdentificado($unidad);
+                } else {
+                    $this->dispatch('toast', tipo: 'info', mensaje: 'Ese aparato ya está identificado en esta venta.');
+                }
+
+                return;
+            }
+        }
+
+        $indice = $this->primeraPorIdentificar($productoId);
+
+        if ($indice === null) {
+            $this->dispatch('toast', tipo: 'info', mensaje: 'Ya están identificados todos los aparatos de este producto.');
+
+            return;
+        }
+
+        $esMiReserva = $unidad->estado === 'reservado' && (int) $unidad->reservado_por === (int) auth()->id();
+
+        if (! $unidad->esVendible() && ! $esMiReserva && ! $this->reservaTomable($unidad)) {
+            $this->dispatch('toast', tipo: 'error', mensaje: $unidad->estado === 'reservado'
+                ? 'Ese aparato está en proceso de venta en otra caja.'
+                : 'Ese aparato no se puede vender ('.(Unidad::ESTADOS[$unidad->estado] ?? $unidad->estado).').');
+
+            return;
+        }
+
+        if (! app(ReservasDeUnidades::class)->reservar($unidad->id, (int) auth()->id())) {
+            $this->dispatch('toast', tipo: 'error', mensaje: 'Otra caja acaba de tomar ese aparato. Escanea otro.');
+
+            return;
+        }
+
+        $provisional = (int) $this->carrito[$indice]['unidad_id'];
+
+        $this->carrito[$indice]['unidad_id'] = $unidad->id;
+        $this->carrito[$indice]['por_identificar'] = false;
+
+        app(ReservasDeUnidades::class)->liberar([$provisional], (int) auth()->id());
+
+        unset($this->unidadesDelCarrito);
+        $this->revisarPrecio($indice);
+        $this->tocar();
+
+        $this->avisarIdentificado($unidad);
+    }
+
+    private function avisarIdentificado(Unidad $unidad): void
+    {
+        // Los conteos se recalculan con el carrito ya cambiado.
+        unset($this->faltanPorIdentificar, $this->gruposPorIdentificar);
+
+        $this->dispatch('toast', tipo: 'success', mensaje: 'Identificado: '.($unidad->serial ?: $unidad->codigo_interno).'.');
+
+        if ($this->faltanPorIdentificar === 0) {
+            $this->dispatch('identificacion-completa');
+        }
+    }
+
+    /** Cierra el modal de identificar y sigue con el repaso del cobro. */
+    public function continuarCobro(): void
+    {
+        unset($this->faltanPorIdentificar);
+
+        if ($this->faltanPorIdentificar > 0) {
+            return;
+        }
+
+        $this->dispatch('cerrar-modal-identificar');
+        $this->confirmarCobro();
     }
 
     /** Devuelve una línea a su precio de referencia, sin descuento. */
@@ -1134,55 +1407,71 @@ class Pos extends Component
      * mínimo—, pero el envío lo dispara el cajero: pedir en cada tecla llenaría
      * la bandeja del administrador de solicitudes de precios a medio escribir.
      */
-    public function solicitarAutorizacion(int $indice): void
+    public function solicitarAutorizacion(int $indice, mixed $precio = null): void
     {
         $this->autorizar('ventas.crear');
 
-        // En una línea por cantidad cada unidad lleva su autorización: la
-        // regla vive por aparato en `RegistroDeVenta`. El cajero pide una vez
-        // y se manda por todas.
-        foreach ($this->hermanas($indice) as $i) {
-            if (($error = $this->pedirAutorizacion($i)) !== null) {
-                $this->dispatch('toast', tipo: 'error', mensaje: $error);
+        $hermanas = $this->hermanas($indice);
 
-                return;
+        if ($hermanas === []) {
+            return;
+        }
+
+        // Elegido de las sugerencias: es el precio de la línea entera.
+        if (is_numeric($precio) && (float) $precio > 0) {
+            foreach ($hermanas as $i) {
+                $this->carrito[$i]['precio'] = number_format((float) $precio, 2, '.', '');
             }
         }
 
-        $this->dispatch('toast', tipo: 'success', mensaje:
-            'Solicitud enviada al administrador. La venta se actualizará sola al resolverse.');
-    }
+        $linea = $this->carrito[$hermanas[0]];
 
-    /** Pide la autorización de una sola línea. Devuelve el error, si lo hubo. */
-    private function pedirAutorizacion(int $indice): ?string
-    {
-        $linea = $this->carrito[$indice] ?? null;
-
-        if ($linea === null) {
-            return null;
-        }
-
-        $unidad = Unidad::find($linea['unidad_id']);
-
-        if ($unidad === null) {
-            return 'Ese aparato ya no existe.';
-        }
-
+        // Una sola solicitud por la línea entera (producto × cantidad): un
+        // aviso al administrador, no uno por aparato.
         try {
-            $solicitud = app(AutorizacionDeDescuento::class)->solicitar(
-                $unidad,
-                $linea['precio'],
-                (int) auth()->id()
+            $solicitud = app(AutorizacionDeDescuento::class)->solicitarPorProducto(
+                Producto::findOrFail($linea['producto_id']),
+                (string) $linea['precio'],
+                count($hermanas),
+                (int) auth()->id(),
+                array_map(fn (int $i): int => (int) $this->carrito[$i]['unidad_id'], $hermanas),
             );
         } catch (RuntimeException $e) {
-            return $e->getMessage();
+            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+            return;
         }
 
-        $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
-        $this->carrito[$indice]['solicitud_estado'] = $solicitud->estado;
-        $this->carrito[$indice]['precio_aprobado'] = null;
+        foreach ($hermanas as $i) {
+            $this->carrito[$i]['solicitud_id'] = $solicitud->id;
+            $this->carrito[$i]['solicitud_estado'] = $solicitud->estado;
+            $this->carrito[$i]['precio_aprobado'] = null;
+            $this->resetValidation("carrito.{$i}.precio");
+        }
 
-        return null;
+        $this->olvidarTotales();
+        $this->reajustarMixto();
+        $this->tocar();
+    }
+
+    /**
+     * Precios que se ofrecen para pedir: bajo el mínimo y sobre el costo.
+     *
+     * @return array<int, float>
+     */
+    public function sugerenciasDe(int $indice): array
+    {
+        $hermanas = $this->hermanas($indice);
+        $linea = $this->carrito[$indice] ?? null;
+
+        if ($linea === null || ($producto = Producto::find($linea['producto_id'] ?? 0)) === null) {
+            return [];
+        }
+
+        return app(AutorizacionDeDescuento::class)->sugerencias(
+            $producto,
+            array_map(fn (int $i): int => (int) $this->carrito[$i]['unidad_id'], $hermanas),
+        )['sugerencias'];
     }
 
     /**
@@ -1197,58 +1486,48 @@ class Pos extends Component
     {
         $this->autorizar('ventas.autorizar_descuento');
 
-        foreach ($this->hermanas($indice) as $i) {
-            if (($error = $this->aprobarEnElActo($i)) !== null) {
-                $this->dispatch('toast', tipo: 'error', mensaje: $error);
+        $hermanas = $this->hermanas($indice);
 
-                return;
-            }
+        if ($hermanas === []) {
+            return;
         }
 
-        $this->dispatch('toast', tipo: 'success', mensaje: 'Precio autorizado.');
-    }
-
-    /** Autoriza en el acto una sola línea. Devuelve el error, si lo hubo. */
-    private function aprobarEnElActo(int $indice): ?string
-    {
-        $linea = $this->carrito[$indice] ?? null;
-
-        if ($linea === null) {
-            return null;
-        }
-
+        $linea = $this->carrito[$hermanas[0]];
         $servicio = app(AutorizacionDeDescuento::class);
 
         try {
             // Si la línea ya trae una solicitud en curso, se aprueba esa misma;
-            // si no, se crea y se aprueba de un tirón. En los dos casos vale el
-            // precio que el administrador tenga tecleado.
+            // si no, se crea (por la línea entera) y se aprueba de un tirón. En
+            // los dos casos vale el precio que el administrador tenga tecleado.
             $enCurso = ($linea['solicitud_id'] ?? null) !== null
                 ? SolicitudDescuento::find($linea['solicitud_id'])
                 : null;
 
-            if ($enCurso !== null && $enCurso->estaPendiente()) {
-                $solicitud = $servicio->resolver($enCurso, true, $linea['precio'], null, (int) auth()->id());
-            } else {
-                $unidad = Unidad::find($linea['unidad_id']);
-
-                if ($unidad === null) {
-                    return 'Ese aparato ya no existe.';
-                }
-
-                $solicitud = $servicio->solicitar($unidad, $linea['precio'], (int) auth()->id());
-                $solicitud = $servicio->resolver($solicitud, true, $linea['precio'], null, (int) auth()->id());
+            if ($enCurso === null || ! $enCurso->estaPendiente()) {
+                $enCurso = $servicio->solicitarPorProducto(
+                    Producto::findOrFail($linea['producto_id']),
+                    (string) $linea['precio'],
+                    count($hermanas),
+                    (int) auth()->id(),
+                    array_map(fn (int $i): int => (int) $this->carrito[$i]['unidad_id'], $hermanas),
+                );
             }
+
+            $solicitud = $servicio->resolver($enCurso, true, (string) $linea['precio'], null, (int) auth()->id());
         } catch (RuntimeException $e) {
-            return $e->getMessage();
+            $this->dispatch('toast', tipo: 'error', mensaje: $e->getMessage());
+
+            return;
         }
 
-        $this->carrito[$indice]['solicitud_id'] = $solicitud->id;
-        $this->carrito[$indice]['solicitud_estado'] = 'aprobada';
-        $this->carrito[$indice]['precio_aprobado'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
-        $this->resetValidation("carrito.{$indice}.precio");
+        foreach ($hermanas as $i) {
+            $this->carrito[$i]['solicitud_id'] = $solicitud->id;
+            $this->carrito[$i]['solicitud_estado'] = 'aprobada';
+            $this->carrito[$i]['precio_aprobado'] = number_format((float) $solicitud->precio_aprobado, 2, '.', '');
+            $this->resetValidation("carrito.{$i}.precio");
+        }
 
-        return null;
+        $this->dispatch('toast', tipo: 'success', mensaje: 'Precio autorizado.');
     }
 
     /** El cajero retira la solicitud de una línea que ya no la necesita. */
@@ -2240,6 +2519,15 @@ class Pos extends Component
             return;
         }
 
+        // Con la venta pactada, se identifican los aparatos con serial que
+        // entraron por cantidad: son los que se lleva el cliente y los que
+        // quedan en la garantía. Al terminar, el modal sigue con el repaso.
+        if ($this->faltanPorIdentificar > 0) {
+            $this->dispatch('abrir-modal-identificar');
+
+            return;
+        }
+
         $this->dispatch('abrir-modal-confirmar-cobro');
     }
 
@@ -2277,6 +2565,14 @@ class Pos extends Component
         if (! $this->ventaValida) {
             $this->dispatch('cerrar-modal-confirmar-cobro');
             $this->addError('carrito', 'Revisa los precios y el cobro antes de registrar la venta.');
+
+            return;
+        }
+
+        // Un aparato provisional no se cobra: la garantía quedaría en otro.
+        if ($this->faltanPorIdentificar > 0) {
+            $this->dispatch('cerrar-modal-confirmar-cobro');
+            $this->dispatch('abrir-modal-identificar');
 
             return;
         }

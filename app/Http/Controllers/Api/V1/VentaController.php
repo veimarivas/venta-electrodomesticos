@@ -35,7 +35,7 @@ class VentaController extends Controller
         ]);
 
         $ventas = Venta::query()
-            ->with(['cliente.persona', 'user', 'detalles.producto.marca'])
+            ->with(['cliente.persona', 'user', 'tienda', 'detalles.producto.marca'])
             ->withCount('detalles')
             ->buscar($datos['buscar'] ?? null)
             ->when(isset($datos['desde']), fn ($q) => $q->whereDate('vendida_en', '>=', $datos['desde']))
@@ -54,7 +54,7 @@ class VentaController extends Controller
     public function show(Request $request, Venta $venta): VentaResource
     {
         return new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user', 'tienda'])
         );
     }
 
@@ -85,7 +85,7 @@ class VentaController extends Controller
         return response()->json([
             'message' => "Venta anulada: {$devueltas} aparato(s) vuelve(n) al stock.",
             'data' => new VentaResource(
-                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user', 'tienda'])
             ),
         ]);
     }
@@ -132,7 +132,7 @@ class VentaController extends Controller
         return response()->json([
             'message' => 'Aparato devuelto y de vuelta en el stock.',
             'data' => new VentaResource(
-                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+                $venta->fresh()->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user', 'tienda'])
             ),
         ]);
     }
@@ -150,6 +150,7 @@ class VentaController extends Controller
             'detalles.producto',
             'cliente.persona',
             'user',
+            'tienda',
             'qrCobro',
         ]);
 

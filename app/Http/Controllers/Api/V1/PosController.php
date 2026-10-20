@@ -91,11 +91,12 @@ class PosController extends Controller
             $unidades = $unidades->prepend($exacta);
         }
 
-        // Un producto sin serial sale una sola vez: sus unidades son iguales y
-        // se venden por cantidad. Las que llevan serial siguen una por una,
-        // porque el cajero tiene que elegir el aparato exacto.
+        // Cada producto sale una sola vez: todos se venden por cantidad. En los
+        // que llevan serial, el aparato exacto se escanea al confirmar la venta
+        // (`identificar`); si lo que se leyó fue su etiqueta, ya va identificado
+        // porque encabeza la lista como `exacto`.
         $unidades = $unidades
-            ->unique(fn (Unidad $u): string => ($u->producto?->tiene_serial ?? true) ? 'u'.$u->id : 'p'.$u->producto_id)
+            ->unique(fn (Unidad $u): string => 'p'.$u->producto_id)
             ->values();
 
         return response()->json([
@@ -444,7 +445,7 @@ class PosController extends Controller
         }
 
         return (new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user', 'tienda'])
         ))->response()->setStatusCode(201);
     }
 
@@ -480,9 +481,7 @@ class PosController extends Controller
             // en una línea y pide más con `reservar-cantidad`.
             'tiene_serial' => (bool) ($unidad->producto?->tiene_serial ?? true),
             // Cuántas hay libres para vender, para no pedir de más.
-            'disponibles' => ($unidad->producto?->tiene_serial ?? true)
-                ? null
-                : Unidad::query()->where('producto_id', $unidad->producto_id)->disponibles()->count(),
+            'disponibles' => Unidad::query()->where('producto_id', $unidad->producto_id)->disponibles()->count(),
         ];
     }
 
@@ -526,12 +525,14 @@ class PosController extends Controller
     }
 
     /**
-     * Reserva varias unidades de un producto sin serial, las más antiguas
-     * primero. Es la venta por cantidad del teléfono: la app pide «N más» y
-     * recibe los aparatos concretos que quedaron apartados para esta caja.
+     * Reserva varias unidades de un producto, las más antiguas primero. Es la
+     * venta por cantidad del teléfono: la app pide «N más» y recibe los
+     * aparatos que quedaron apartados para esta caja.
      *
-     * Los productos con serial se rechazan: su garantía va atada al aparato
-     * exacto, así que se escanean uno por uno.
+     * En los productos con serial esas unidades son provisionales: guardan el
+     * stock mientras se pacta el precio, y al confirmar se cambian por las que
+     * el vendedor escanea (`identificar`), que son las que se lleva el cliente
+     * y las que quedan en la garantía.
      */
     public function reservarCantidad(Request $request): JsonResponse
     {
@@ -544,12 +545,6 @@ class PosController extends Controller
         ]);
 
         $producto = \App\Models\Producto::findOrFail($datos['producto_id']);
-
-        if ($producto->tiene_serial) {
-            return response()->json([
-                'message' => 'Este producto lleva serial: escanea cada aparato para que la garantía quede en el correcto.',
-            ], 422);
-        }
 
         $ids = app(ReservasDeUnidades::class)->reservarCantidad(
             $producto->id,
@@ -575,6 +570,92 @@ class PosController extends Controller
         ]);
     }
 
+    /**
+     * Aparatos de un producto que el vendedor puede elegir al identificar: los
+     * libres y los que él mismo tiene apartados. Con su serial, para elegirlo de
+     * la lista cuando la etiqueta no se deja leer.
+     */
+    public function unidades(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+        ]);
+
+        $userId = (int) $request->user()->id;
+
+        $unidades = Unidad::query()
+            ->with('producto.marca')
+            ->where('producto_id', $datos['producto_id'])
+            ->where(fn ($q) => $q->where('estado', 'en_stock')
+                ->orWhere(fn ($r) => $r->where('estado', 'reservado')->where('reservado_por', $userId)))
+            ->orderBy('ingresado_en')
+            ->orderBy('id')
+            ->limit(200)
+            ->get();
+
+        return response()->json([
+            'data' => $unidades->map(fn (Unidad $u): array => $this->aparato($u))->values(),
+        ]);
+    }
+
+    /**
+     * Identifica el aparato exacto que se lleva el cliente.
+     *
+     * La app lo llama al confirmar una venta por cantidad de un producto con
+     * serial, con lo que leyó la cámara o lo que eligió de la lista. Tiene que
+     * ser del MISMO producto y estar libre (o apartado por quien vende): si no,
+     * se explica por qué en vez de colarlo. Queda reservado para esta caja; la
+     * app suelta luego la unidad provisional que ocupaba su lugar.
+     */
+    public function identificar(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')->whereNull('deleted_at')],
+            'codigo' => ['required', 'string', 'min:2', 'max:100'],
+        ]);
+
+        $codigo = mb_strtolower(trim($datos['codigo']));
+        $userId = (int) $request->user()->id;
+
+        $unidad = Unidad::query()
+            ->with('producto.marca')
+            ->where(fn ($q) => $q->whereRaw('LOWER(serial) = ?', [$codigo])
+                ->orWhereRaw('LOWER(codigo_interno) = ?', [$codigo]))
+            ->first();
+
+        if ($unidad === null) {
+            return response()->json([
+                'message' => "Ningún aparato del inventario tiene el código «{$datos['codigo']}».",
+            ], 422);
+        }
+
+        if ((int) $unidad->producto_id !== (int) $datos['producto_id']) {
+            $esperado = \App\Models\Producto::query()->whereKey($datos['producto_id'])->value('nombre');
+
+            return response()->json([
+                'message' => "Ese código es de «{$unidad->producto?->nombre}», no de «{$esperado}».",
+            ], 422);
+        }
+
+        $esMiReserva = $unidad->estado === 'reservado' && (int) $unidad->reservado_por === $userId;
+
+        if (! $unidad->esVendible() && ! $esMiReserva) {
+            return response()->json([
+                'message' => $unidad->estado === 'reservado'
+                    ? 'Ese aparato está en proceso de venta en otra caja.'
+                    : 'Ese aparato no se puede vender ('.(Unidad::ESTADOS[$unidad->estado] ?? $unidad->estado).').',
+            ], 422);
+        }
+
+        if (! app(ReservasDeUnidades::class)->reservar($unidad->id, $userId)) {
+            return response()->json([
+                'message' => 'Otra caja acaba de tomar ese aparato. Escanea otro.',
+            ], 409);
+        }
+
+        return response()->json(['data' => $this->aparato($unidad->refresh()->load('producto.marca'))]);
+    }
+
     /** Suelta la reserva de los aparatos que salieron del carrito. */
     public function liberar(Request $request): JsonResponse
     {
@@ -592,7 +673,7 @@ class PosController extends Controller
     private function ventaExistente(Venta $venta): JsonResponse
     {
         return (new VentaResource(
-            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user'])
+            $venta->load(['detalles.unidad', 'detalles.producto.marca', 'cliente.persona', 'user', 'tienda'])
         ))->response()->setStatusCode(200);
     }
 
