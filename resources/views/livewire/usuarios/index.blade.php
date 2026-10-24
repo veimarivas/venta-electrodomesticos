@@ -174,6 +174,10 @@
                                 </td>
 
                                 <td>
+                                    @if ($usuario->debe_cambiar_password)
+                                        <span class="badge bg-warning-subtle text-warning mb-1"
+                                            title="Entra con su carnet hasta que ponga una contraseña propia">Contraseña temporal</span>
+                                    @endif
                                     @if ($usuario->last_login_at)
                                         <div>{{ $usuario->last_login_at->format('d/m/Y H:i') }}</div>
                                         <small class="text-muted">{{ $usuario->last_login_at->diffForHumans() }}</small>
@@ -204,6 +208,15 @@
                                                     title="{{ $usuario->is_active ? 'Desactivar cuenta' : 'Activar cuenta' }}"
                                                     aria-label="{{ $usuario->is_active ? 'Desactivar' : 'Activar' }} la cuenta de {{ $usuario->name }}">
                                                     <i class="{{ $usuario->is_active ? 'ri-toggle-fill' : 'ri-toggle-line' }} fs-16"></i>
+                                                </button>
+
+                                                {{-- Olvidó su usuario o su contraseña. --}}
+                                                <button type="button"
+                                                    class="btn btn-sm btn-ghost-warning btn-icon rounded-circle"
+                                                    wire:click="$dispatch('reiniciar-acceso', { userId: {{ $usuario->id }} })"
+                                                    title="Reiniciar acceso (olvidó su usuario o contraseña)"
+                                                    aria-label="Reiniciar el acceso de {{ $usuario->name }}">
+                                                    <i class="ri-key-2-line fs-16"></i>
                                                 </button>
                                             @endif
 
@@ -492,4 +505,7 @@
             </div>
         </div>
     </div>
+
+    {{-- Reiniciar acceso: modal compartido con Vendedores. --}}
+    <livewire:personal.reiniciar-acceso />
 </div>

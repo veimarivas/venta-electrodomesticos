@@ -21,6 +21,7 @@ viejas avisen.
 
 | App | Fecha | Qué trajo | Backend desde |
 |---|---|---|---|
+| 1.34.0+44 | 2026-10-24 | Vendedores (crear cuenta, reiniciar acceso, días de trabajo del mes), contraseña propia obligatoria al entrar con el carnet, faltas en el historial de asistencia | el del 2026-10-24 (con uno anterior, Vendedores da 404 y la contraseña temporal no se pide cambiar) |
 | 1.33.0+43 | 2026-10-20 | Recibo a la vista (ver, descargar, compartir, WhatsApp directo al cliente), precio especial con sugeridos y «Esperando respuesta…», productos con serial por cantidad identificados al confirmar, arreglo del «lazy loading» en Ventas | el del 2026-10-20 (con uno anterior: Ventas da error en cuanto hay ventas con tienda, el precio especial da 422 y los productos con serial no se pueden pedir por cantidad) |
 | 1.32.0+42 | 2026-10-18 | Icono nuevo (sin el lema, con capa monocroma para los iconos temáticos), montos que cuentan al aparecer, vibración al leer un código, al cobrar y al marcar asistencia, modo oscuro revisado (azul legible, mapa oscuro) | cualquiera desde el 2026-10-13 |
 | 1.31.0+41 | 2026-10-18 | Marca única «Electro Hogar», pantalla de arranque con el logo, enviar el recibo por WhatsApp desde la venta y al cobrar | cualquiera desde el 2026-10-13 (los recibos con logo salen del backend del 2026-10-18) |
@@ -40,6 +41,43 @@ viejas avisen.
 | 1.16.0+25 | 2026-09-20 | Venta a crédito desde el teléfono | `9584083` |
 | 1.15.0+23 | 2026-09-18 | Catálogo desde Excel | `b570fe3` |
 | 1.14.x | 2026-09-13 | Aviso sonoro de autorización, reserva de 20 min | `5b4bcd5` |
+
+## Vendedores: cuentas, reinicio de acceso y días de trabajo (2026-10-24)
+
+Backend: **1 migración** (`2026_10_24_100000_create_dias_de_trabajo_y_cambio_de_contrasena`) · app **1.34.0+44**
+
+- **Vendedores** (panel: *Personal → Vendedores*; app: *Administración →
+  Vendedores*): cada trabajador activo con su cuenta, sus roles y los días que
+  tiene programados en el mes, con tres acciones:
+  - **Crear cuenta** para quien no tiene: usuario = inicial y apellidos,
+    contraseña temporal = carnet (la convención de `CuentaDeTrabajador`), rol
+    vendedor por defecto.
+  - **Reiniciar acceso** para quien olvidó su usuario o su contraseña: vuelve
+    a la convención, **cierra todas sus sesiones** (panel y teléfonos), borra
+    su huella y enseña el usuario y la contraseña temporal para dárselos, con
+    copiar y **WhatsApp** (el mensaje dice «tu carnet», no el número). También
+    en *Usuarios* (panel y app). Nadie reinicia su propia cuenta.
+  - **Días de trabajo**: calendario del mes para marcar los días que le toca,
+    con atajos (lunes a sábado, lunes a viernes, todo el mes, como el mes
+    anterior, ninguno). Se guarda el mes entero de una vez.
+- **Contraseña propia obligatoria.** Una cuenta creada o reiniciada, o con una
+  contraseña puesta por el administrador, queda con `debe_cambiar_password`:
+  - la app abre «Pon tu propia contraseña» y no deja seguir;
+  - el panel manda al perfil, en la pestaña Contraseña, con el aviso;
+  - la API responde 403 a todo lo demás hasta que la cambia.
+  
+  Repetir el carnet no vale.
+- **Faltas en la asistencia.** Con el calendario, el historial (panel y app)
+  muestra días trabajados «de N programados», las **faltas** (día programado ya
+  pasado sin entrada, con sus fechas) y también a quien tenía días y no vino
+  ninguno. Hoy todavía no cuenta como falta.
+- Permiso nuevo `asistencia.programar` (supervisor; el administrador por
+  `Gate::before()`). API: `GET /vendedores`, `POST /vendedores/{trabajador}/cuenta`,
+  `POST /vendedores/{trabajador}/reiniciar`, `POST /usuarios/{usuario}/reiniciar`,
+  `GET|PUT /dias-de-trabajo`.
+
+Comprobado: la suite completa del backend (1059), `flutter test` (230, con 5
+nuevas) y `flutter analyze` sin observaciones nuevas.
 
 ## Recibo por WhatsApp, precio especial y seriales al confirmar (2026-10-20)
 

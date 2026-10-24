@@ -15,7 +15,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['tienda_id', 'name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'persona_id'])]
+#[Fillable(['tienda_id', 'name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'persona_id', 'debe_cambiar_password'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable
 {
@@ -27,12 +27,23 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+    /**
+     * Valor por defecto también en memoria: con el modo estricto, un usuario
+     * recién creado sin releer de la base no tendría el atributo.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'debe_cambiar_password' => false,
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'debe_cambiar_password' => 'boolean',
             'last_login_at' => 'datetime',
         ];
     }
@@ -66,6 +77,12 @@ class User extends Authenticatable
     /**
      * Teléfonos registrados para entrar con huella o rostro.
      */
+    /** Los días que le toca trabajar (calendario del mes). */
+    public function diasDeTrabajo(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DiaDeTrabajo::class);
+    }
+
     public function accesosBiometricos(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(AccesoBiometrico::class);

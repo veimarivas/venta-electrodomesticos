@@ -193,6 +193,7 @@ class Index extends Component
                 'atrasos' => (int) $filas->sum('atrasos'),
                 'minutos_atraso' => (int) $filas->sum('minutos_atraso'),
                 'sin_salida' => (int) $filas->sum('sin_salida'),
+                'faltas' => (int) $filas->sum('faltas'),
             ],
         ]);
     }

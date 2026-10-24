@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Asistencia;
+use App\Models\DiaDeTrabajo;
 use App\Models\Tienda;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -217,12 +218,83 @@ class RegistroDeAsistencia
             ->orderBy('entrada_en')
             ->get();
 
-        return $asistencias
+        // Los días que a cada uno le tocaba trabajar. Con ellos, un día sin
+        // entrada deja de ser «nada» y pasa a ser una falta. Sin filtro de
+        // tienda: el calendario es de la persona, no del local.
+        $programados = $tiendaId
+            ? collect()
+            : DiaDeTrabajo::query()
+                ->delMes($anio, $mes)
+                ->when($userId, fn ($q) => $q->where('user_id', $userId))
+                ->get(['user_id', 'fecha'])
+                ->groupBy('user_id')
+                ->map(fn (Collection $dias): array => $dias->map(fn (DiaDeTrabajo $d): string => $d->fecha->toDateString())->all());
+
+        $filas = $asistencias
             ->groupBy('user_id')
-            ->map(fn (Collection $turnos): array => $this->resumenDe($turnos))
+            ->map(fn (Collection $turnos, int $id): array => $this->conProgramacion(
+                $this->resumenDe($turnos),
+                $programados->get($id, [])
+            ));
+
+        // Quien tenía días programados y no vino ni uno también sale: son
+        // justo las faltas que más importa ver.
+        $sinTurnos = $programados->keys()->diff($filas->keys());
+
+        if ($sinTurnos->isNotEmpty()) {
+            $nombres = User::query()->whereIn('id', $sinTurnos)->pluck('name', 'id');
+
+            foreach ($sinTurnos as $id) {
+                $filas->put($id, $this->conProgramacion([
+                    'user_id' => (int) $id,
+                    'trabajador' => $nombres[$id] ?? '—',
+                    'dias' => 0,
+                    'minutos' => 0,
+                    'atrasos' => 0,
+                    'minutos_atraso' => 0,
+                    'sin_salida' => 0,
+                    'detalle' => [],
+                ], $programados->get($id, [])));
+            }
+        }
+
+        return $filas
             ->sortBy('trabajador', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
+    }
+
+    /**
+     * Agrega al resumen lo que dice el calendario: días programados, faltas
+     * (programado, ya pasado, sin entrada) y días trabajados fuera de él.
+     *
+     * @param  array<string, mixed>  $fila
+     * @param  array<int, string>  $programados  Fechas Y-m-d.
+     * @return array<string, mixed>
+     */
+    private function conProgramacion(array $fila, array $programados): array
+    {
+        $trabajados = array_column($fila['detalle'], 'fecha');
+        $hoy = today()->toDateString();
+
+        // Hoy todavía no es falta: puede entrar más tarde.
+        $faltas = array_values(array_filter(
+            $programados,
+            fn (string $f): bool => $f < $hoy && ! in_array($f, $trabajados, true)
+        ));
+
+        $fila['programados'] = count($programados);
+        $fila['faltas'] = count($faltas);
+        $fila['fechas_falta'] = $faltas;
+        $fila['fuera_de_programa'] = $programados === []
+            ? 0
+            : count(array_diff($trabajados, $programados));
+
+        foreach ($fila['detalle'] as $i => $dia) {
+            $fila['detalle'][$i]['programado'] = in_array($dia['fecha'], $programados, true);
+        }
+
+        return $fila;
     }
 
     /** @param  Collection<int, Asistencia>  $turnos */

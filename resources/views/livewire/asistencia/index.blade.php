@@ -78,8 +78,8 @@
 
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-sm-6">
-            <x-stat-card label="Personas" value="{{ $totales['personas'] }}" icon="bx-group" color="primary"
-                caption="Con al menos un día marcado" />
+            <x-stat-card label="Faltas" value="{{ $totales['faltas'] }}" icon="bx-calendar-x" color="danger"
+                caption="Días programados sin entrada ({{ $totales['personas'] }} personas)" />
         </div>
         <div class="col-xl-3 col-sm-6">
             <x-stat-card label="Días trabajados" value="{{ $totales['dias'] }}" icon="bx-calendar-check" color="success"
@@ -114,6 +114,7 @@
                                 <th class="text-end">Días</th>
                                 <th class="text-end">Horas</th>
                                 <th class="text-end">Atrasos</th>
+                                <th class="text-end" title="Días programados que ya pasaron sin entrada">Faltas</th>
                                 <th class="text-end pe-4">Sin salida</th>
                             </tr>
                         </thead>
@@ -125,7 +126,12 @@
                                         <i class="ri-arrow-{{ $abierto === $f['user_id'] ? 'down' : 'right' }}-s-line text-muted"></i>
                                         <span class="fw-semibold">{{ $f['trabajador'] }}</span>
                                     </td>
-                                    <td class="text-end tabular fw-semibold">{{ $f['dias'] }}</td>
+                                    <td class="text-end tabular">
+                                        <span class="fw-semibold">{{ $f['dias'] }}</span>
+                                        @if (($f['programados'] ?? 0) > 0)
+                                            <small class="d-block text-muted">de {{ $f['programados'] }} programados</small>
+                                        @endif
+                                    </td>
                                     <td class="text-end tabular">{{ R::horas($f['minutos']) }}</td>
                                     <td class="text-end tabular">
                                         @if ($f['atrasos'] > 0)
@@ -133,6 +139,13 @@
                                             <small class="d-block text-muted">{{ R::horas($f['minutos_atraso']) }}</small>
                                         @else
                                             <span class="text-muted">0</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end tabular">
+                                        @if (($f['faltas'] ?? 0) > 0)
+                                            <span class="asistencia-sin-salida" title="{{ collect($f['fechas_falta'])->map(fn ($d) => Carbon::parse($d)->format('d/m'))->join(', ') }}">{{ $f['faltas'] }}</span>
+                                        @else
+                                            <span class="text-muted">{{ ($f['programados'] ?? 0) > 0 ? 0 : '—' }}</span>
                                         @endif
                                     </td>
                                     <td class="text-end tabular pe-4">
@@ -146,7 +159,7 @@
 
                                 @if ($abierto === $f['user_id'])
                                     <tr class="asistencia-detalle">
-                                        <td colspan="5" class="px-4 pb-4">
+                                        <td colspan="6" class="px-4 pb-4">
                                             <div class="table-responsive">
                                                 <table class="table table-sm mb-0">
                                                     <thead>

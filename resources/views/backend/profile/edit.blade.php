@@ -1,3 +1,4 @@
+@php($debeCambiar = (bool) auth()->user()?->debe_cambiar_password)
 @extends('backend.layouts.master')
 
 @section('title', 'Mi perfil')
@@ -94,12 +95,12 @@
                     <div class="profile-tabs">
                         <ul class="nav nav-tabs-custom" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#datos" role="tab">
+                                <a class="nav-link @unless ($debeCambiar) active @endunless" data-bs-toggle="tab" href="#datos" role="tab">
                                     <i class="ri-user-line"></i> Datos personales
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#password" role="tab">
+                                <a class="nav-link @if ($debeCambiar) active @endif" data-bs-toggle="tab" href="#password" role="tab">
                                     <i class="ri-lock-password-line"></i> Contraseña
                                 </a>
                             </li>
@@ -115,7 +116,7 @@
                         <div class="tab-content">
 
                             {{-- Datos personales --}}
-                            <div class="tab-pane active" id="datos" role="tabpanel">
+                            <div class="tab-pane @unless ($debeCambiar) active @endunless" id="datos" role="tabpanel">
                                 @if (session('status') === 'profile-information-updated')
                                     <div class="alert alert-success alert-borderless d-flex align-items-center gap-2">
                                         <i class="ri-checkbox-circle-line fs-18"></i>
@@ -165,7 +166,15 @@
                             </div>
 
                             {{-- Contraseña --}}
-                            <div class="tab-pane" id="password" role="tabpanel">
+                            <div class="tab-pane @if ($debeCambiar) active @endif" id="password" role="tabpanel">
+                                @if ($debeCambiar)
+                                    {{-- Cuenta nueva o reiniciada: entró con su carnet. --}}
+                                    <div class="alert alert-warning alert-borderless d-flex align-items-start gap-2">
+                                        <i class="ri-lock-password-line fs-18"></i>
+                                        <span><strong>Elige tu propia contraseña.</strong> Entraste con la contraseña temporal (tu carnet); para seguir usando el sistema, cámbiala aquí. En «Contraseña actual» va tu carnet.</span>
+                                    </div>
+                                @endif
+
                                 @if (session('status') === 'password-updated')
                                     <div class="alert alert-success alert-borderless d-flex align-items-center gap-2">
                                         <i class="ri-checkbox-circle-line fs-18"></i>

@@ -197,10 +197,21 @@ class AuthController extends Controller
             ]);
         }
 
+        // Volver a poner la temporal (el carnet) no es cambiarla.
+        if (Hash::check($datos['password_nuevo'], $usuario->password)) {
+            throw ValidationException::withMessages([
+                'password_nuevo' => 'La nueva contraseña tiene que ser distinta de la actual.',
+            ]);
+        }
+
         $usuario->update([
             'password' => Hash::make($datos['password_nuevo']),
+            'debe_cambiar_password' => false,
         ]);
 
-        return response()->json(['mensaje' => 'Contraseña actualizada.']);
+        return response()->json([
+            'mensaje' => 'Contraseña actualizada.',
+            'usuario' => new UsuarioResource($usuario->fresh('persona')),
+        ]);
     }
 }

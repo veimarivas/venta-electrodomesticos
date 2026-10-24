@@ -14,7 +14,8 @@ use Illuminate\Support\Str;
  * users.persona_id, que ya existía. No se agrega ninguna relación nueva; el
  * camino es trabajador → persona → user.
  *
- * Convención pedida para el alta y para cada reinicio:
+ * Convención pedida para el alta y para cada reinicio (al entrar con ella,
+ * el sistema pide una contraseña propia: debe_cambiar_password):
  *   · usuario    = inicial de los nombres + apellido paterno + apellido materno
  *                  ("Juan Carlos Pérez Gómez" → "jperezgomez")
  *   · contraseña = el carnet de la persona
@@ -103,6 +104,8 @@ class CuentaDeTrabajador
                 'password' => $this->passwordDe($persona),
                 'phone' => $persona->celular,
                 'is_active' => true,
+                // Entra con el carnet y al entrar pone una propia.
+                'debe_cambiar_password' => true,
             ]);
 
             $user->syncRoles([$rol]);
@@ -119,10 +122,19 @@ class CuentaDeTrabajador
      */
     public function reiniciar(User $user, Persona $persona): void
     {
-        $user->forceFill([
-            'name' => $this->usuario($persona, $user->id),
-            'password' => $this->passwordDe($persona),
-        ])->save();
+        DB::transaction(function () use ($user, $persona): void {
+            $user->forceFill([
+                'name' => $this->usuario($persona, $user->id),
+                'password' => $this->passwordDe($persona),
+                // El carnet lo conoce cualquiera: al entrar se le pide otra.
+                'debe_cambiar_password' => true,
+            ])->save();
+
+            // Se cierran todas sus sesiones: si alguien entró con la clave
+            // vieja, deja de poder usarla. La huella se borra sola al
+            // cambiar la contraseña (User::booted).
+            $user->tokens()->delete();
+        });
     }
 
     /**

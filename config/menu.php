@@ -161,6 +161,15 @@ return [
         'permission' => 'cargos.ver',
     ],
 
+    // Cuenta de cada vendedor (crear, reiniciar) y sus días de trabajo.
+    [
+        'label' => 'Vendedores',
+        'icon' => 'ri-team-line',
+        'route' => 'vendedores.index',
+        'active' => 'vendedores*',
+        'permission' => ['trabajadores.ver', 'asistencia.programar'],
+    ],
+
     // Asistencia marcada desde el teléfono dentro de cada tienda.
     [
         'label' => 'Asistencia',

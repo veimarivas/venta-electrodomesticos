@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Persona;
 use App\Models\User;
+use App\Support\CuentaDeTrabajador;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -96,6 +97,8 @@ class UsuarioController extends Controller
             'persona_id' => $datos['persona_id'],
             'password' => Hash::make($datos['password']),
             'is_active' => $datos['is_active'],
+            // La puso el administrador: al entrar, la cuenta elige la suya.
+            'debe_cambiar_password' => true,
         ]);
 
         $usuario->syncRoles($datos['roles']);
@@ -117,6 +120,8 @@ class UsuarioController extends Controller
         // Vacía significa «no cambiarla», no «dejarla en blanco».
         if (($datos['password'] ?? '') !== '') {
             $cambios['password'] = Hash::make($datos['password']);
+            // Puesta por otro: se pide cambiarla al entrar.
+            $cambios['debe_cambiar_password'] = ! $usuario->is($request->user());
         }
 
         // Quitarse el propio último rol de administrador dejaría al sistema sin
@@ -146,6 +151,42 @@ class UsuarioController extends Controller
         $usuario->update(['is_active' => ! $usuario->is_active]);
 
         return response()->json(['data' => $this->aJson($usuario->fresh()->load('persona', 'roles'))]);
+    }
+
+    /**
+     * Reinicia el acceso de alguien que olvidó su usuario o su contraseña.
+     *
+     * Vuelve a la convención de la tienda —usuario = inicial y apellidos,
+     * contraseña = carnet— y le pide una propia al entrar. Cierra todas sus
+     * sesiones abiertas. Devuelve el usuario y la contraseña temporal para
+     * dárselos al trabajador (es su carnet: quien reinicia ya la conoce).
+     */
+    public function reiniciar(Request $request, User $usuario): JsonResponse
+    {
+        if ($usuario->is($request->user())) {
+            throw ValidationException::withMessages([
+                'usuario' => 'Tu propia contraseña se cambia desde tu perfil.',
+            ]);
+        }
+
+        $persona = $usuario->persona;
+
+        if ($persona === null || trim((string) $persona->carnet) === '') {
+            throw ValidationException::withMessages([
+                'usuario' => 'La cuenta no está vinculada a una persona con carnet: edítala y ponle una contraseña.',
+            ]);
+        }
+
+        app(CuentaDeTrabajador::class)->reiniciar($usuario, $persona);
+
+        return response()->json([
+            'data' => $this->aJson($usuario->fresh()->load('persona', 'roles')),
+            'acceso' => [
+                'usuario' => $usuario->fresh()->name,
+                'contrasena_temporal' => app(CuentaDeTrabajador::class)->passwordDe($persona),
+            ],
+            'mensaje' => 'Acceso reiniciado. Al entrar se le pedirá una contraseña nueva.',
+        ]);
     }
 
     public function destroy(Request $request, User $usuario): JsonResponse
@@ -237,6 +278,8 @@ class UsuarioController extends Controller
             'correo' => $usuario->email,
             'telefono' => $usuario->phone,
             'activa' => (bool) $usuario->is_active,
+            // Reiniciada o recién creada: todavía entra con el carnet.
+            'debe_cambiar_password' => (bool) $usuario->debe_cambiar_password,
             'roles' => $usuario->getRoleNames()->all(),
             'ultimo_acceso' => $usuario->last_login_at?->toIso8601String(),
             'persona' => $usuario->persona === null ? null : [

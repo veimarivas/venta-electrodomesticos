@@ -123,7 +123,10 @@ class MenuBuilder
 
         $user = Auth::user();
 
-        return $user !== null && $user->can($item['permission']);
+        // Una lista de permisos basta con tener cualquiera.
+        return $user !== null && (is_array($item['permission'])
+            ? $user->canAny($item['permission'])
+            : $user->can($item['permission']));
     }
 
     /**

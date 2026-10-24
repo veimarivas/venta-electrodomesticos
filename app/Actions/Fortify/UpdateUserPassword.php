@@ -28,8 +28,16 @@ class UpdateUserPassword implements UpdatesUserPasswords
             'current_password.current_password' => __('The provided password does not match your current password.'),
         ])->validateWithBag('updatePassword');
 
+        if (Hash::check($input['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => 'La nueva contraseña tiene que ser distinta de la actual.',
+            ])->errorBag('updatePassword');
+        }
+
         $user->forceFill([
             'password' => Hash::make($input['password']),
+            // Ya tiene una propia: se deja de pedir.
+            'debe_cambiar_password' => false,
         ])->save();
     }
 }

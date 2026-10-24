@@ -838,6 +838,23 @@ del día por método. Solo el administrador los anota.
 
 ## 9. Personal y accesos
 
+### Vendedores: cuentas y días de trabajo
+
+En *Personal → Vendedores* (panel) o *Administración → Vendedores* (app) está
+cada trabajador activo con su cuenta y los días que tiene programados en el mes.
+
+- **Crear cuenta.** Para quien todavía no tiene. El usuario es su inicial y sus
+  apellidos («Ana Rojas Paz» → `arojaspaz`) y la contraseña temporal, su
+  carnet. Al entrar por primera vez, el sistema le pide una contraseña propia.
+- **Reiniciar acceso.** Si alguien olvidó su usuario o su contraseña (también
+  desde *Usuarios*). La cuenta vuelve a esos mismos datos, se cierran sus
+  sesiones en todos los teléfonos y al entrar pone otra contraseña. La pantalla
+  enseña el usuario para dárselo o mandárselo por WhatsApp.
+- **Días de trabajo.** Toca *Días de trabajo* y marca en el calendario los días
+  que le toca trabajar ese mes. Los atajos arman el mes de un toque: *Lunes a
+  sábado*, *Como el mes anterior*… Con el calendario, la asistencia muestra
+  cuántos días vino de los programados y sus **faltas**.
+
 ### Asistencia en las tiendas
 
 Cada trabajador marca su **entrada y salida desde el teléfono**, y solo se

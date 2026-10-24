@@ -33,7 +33,7 @@ Route::get('/producto/{producto:slug}', [StorefrontController::class, 'producto'
     ->where('producto', '[A-Za-z0-9\-]+')
     ->name('tienda.producto');
 
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'active', 'contrasena.nueva'])->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
@@ -303,6 +303,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         'title' => 'Asistencia',
         'breadcrumbs' => ['Inicio' => null, 'Personal' => null, 'Asistencia' => null],
     ])->middleware('permission:asistencia.ver')->name('asistencia.index');
+
+    Route::view('/vendedores', 'backend.personal.vendedores', [
+        'title' => 'Vendedores',
+        'breadcrumbs' => ['Inicio' => null, 'Personal' => null, 'Vendedores' => null],
+    ])->middleware('permission:trabajadores.ver|asistencia.programar')->name('vendedores.index');
 
     Route::get('/asistencia/exportar', \App\Http\Controllers\AsistenciaExportController::class)
         ->middleware('permission:asistencia.ver')

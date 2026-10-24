@@ -32,7 +32,8 @@ class RolePermissionSeeder extends Seeder
         // Sucursales con su ubicación y radio para marcar asistencia.
         'tiendas' => ['ver', 'crear', 'editar', 'eliminar'],
         // `marcar`: la propia entrada y salida; `ver`: el historial de todos.
-        'asistencia' => ['marcar', 'ver'],
+        // programar = fijar los días de trabajo del mes de cada vendedor.
+        'asistencia' => ['marcar', 'ver', 'programar'],
         'inventario' => ['ver', 'ajustar'],
         'stock' => ['ver'],
         // El arqueo lo abre y lo cierra quien está en el mostrador; verlo
@@ -84,7 +85,7 @@ class RolePermissionSeeder extends Seeder
             'qrs_cobro.ver', 'qrs_cobro.crear', 'qrs_cobro.editar',
             'clientes.ver', 'clientes.crear', 'clientes.editar',
             'reportes.ver', 'reportes.ver_costos',
-            'asistencia.marcar', 'asistencia.ver',
+            'asistencia.marcar', 'asistencia.ver', 'asistencia.programar',
         ],
         'vendedor' => [
             'personas.ver',

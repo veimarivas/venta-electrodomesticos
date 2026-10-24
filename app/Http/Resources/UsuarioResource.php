@@ -27,6 +27,9 @@ class UsuarioResource extends JsonResource
             'usuario' => $this->name,
             'correo' => $this->email,
             'activo' => (bool) $this->is_active,
+            // Entró con la contraseña temporal (el carnet): la app le pide una
+            // propia antes de dejarlo seguir.
+            'debe_cambiar_password' => (bool) $this->debe_cambiar_password,
             'avatar' => $this->avatar_url,
             'roles' => $this->getRoleNames()->all(),
 

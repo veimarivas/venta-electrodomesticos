@@ -43,7 +43,7 @@ precisión es peor que 50 m.
 | GET | `/asistencia` | turno `abierta`, los de `hoy` y las `tiendas` (ubicación, radio, hora de entrada) para medir en vivo; `precision_maxima`, `puede_ver_todos`, `puede_fijar_tiendas` | `asistencia.marcar o asistencia.ver` |
 | POST | `/asistencia/entrada` | marca la entrada en la tienda más cercana si está dentro de su radio; calcula el atraso | `asistencia.marcar` |
 | POST | `/asistencia/salida` | marca la salida dentro de la tienda donde entró | `asistencia.marcar` |
-| GET | `/asistencia/historial?mes=2026-10&user_id=&tienda_id=` | por trabajador: días, minutos, atrasos, sin salida y `detalle` por día con sus turnos. Sin `asistencia.ver`, solo el propio | `asistencia.marcar o asistencia.ver` |
+| GET | `/asistencia/historial?mes=2026-10&user_id=&tienda_id=` | por trabajador: días, minutos, atrasos, sin salida, `programados`, `faltas` y `fechas_falta` (con calendario del mes) y `detalle` por día con sus turnos. Sin `asistencia.ver`, solo el propio | `asistencia.marcar o asistencia.ver` |
 | POST | `/asistencia/{asistencia}/corregir` | `salida` (HH:mm) y `motivo`: pone la salida olvidada | `asistencia.ver` |
 
 ## /autorizaciones
@@ -356,6 +356,19 @@ Solo las suyas (el administrador, con `compras.crear`, puede abrir cualquiera).
 | POST | `/usuarios/{usuario}` | alta y edición; contraseña vacía = no cambiarla | `usuarios.editar` |
 | DELETE | `/usuarios/{usuario}` | elimina la cuenta; la persona se conserva | `usuarios.eliminar` |
 | POST | `/usuarios/{usuario}/estado` | activa o desactiva la cuenta | `usuarios.editar` |
+| POST | `/usuarios/{usuario}/reiniciar` | olvidó su usuario o su contraseña: vuelve a usuario = inicial y apellidos, contraseña = carnet; cierra sus sesiones y la pide cambiar al entrar. Devuelve `acceso.usuario` y `acceso.contrasena_temporal`. No la propia | `usuarios.editar` |
+
+> **Contraseña temporal.** Una cuenta creada o reiniciada (o con contraseña puesta por el administrador) trae `debe_cambiar_password: true` en `usuario` del login y del perfil. Hasta que `PUT /auth/password` la cambie (no vale repetirla), **todo lo demás responde 403** con `debe_cambiar_password: true`.
+
+## /vendedores y /dias-de-trabajo
+
+| Método | Ruta | Qué hace | Permiso / notas |
+|---|---|---|---|
+| GET | `/vendedores?mes=2026-11&buscar=` | trabajadores activos con `cuenta` (usuario, roles, `debe_cambiar_password`) o null, y `dias_programados` del mes | `trabajadores.ver o asistencia.programar` |
+| POST | `/vendedores/{trabajador}/cuenta` | crea la cuenta (`rol` opcional, `vendedor` por defecto) → `acceso` | `usuarios.crear` |
+| POST | `/vendedores/{trabajador}/reiniciar` | igual que `/usuarios/{usuario}/reiniciar` | `usuarios.editar` |
+| GET | `/dias-de-trabajo?mes=&user_id=` | `fechas` del mes y `como_mes_anterior`. Sin `asistencia.programar`, solo las propias | autenticado |
+| PUT | `/dias-de-trabajo` | `user_id`, `mes`, `fechas[]`: reemplaza el mes entero (lo no enviado se borra); 422 si una fecha es de otro mes | `asistencia.programar` |
 
 ## /ventas
 

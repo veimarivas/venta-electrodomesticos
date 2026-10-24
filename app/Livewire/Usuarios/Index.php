@@ -277,6 +277,8 @@ class Index extends Component
         // Contraseña vacía al editar = se conserva la actual.
         if ($datos['password'] !== '') {
             $usuario->password = $datos['password'];
+            // La puso el administrador para otro: al entrar elige la suya.
+            $usuario->debe_cambiar_password = $usuario->id !== auth()->id();
         }
 
         $usuario->save();

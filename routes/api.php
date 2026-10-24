@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\RolController;
 use App\Http\Controllers\Api\V1\TrabajadorController;
 use App\Http\Controllers\Api\V1\UnidadController;
 use App\Http\Controllers\Api\V1\UsuarioController;
+use App\Http\Controllers\Api\V1\VendedorController;
 use App\Http\Controllers\Api\V1\VentaController;
 use App\Http\Controllers\Api\V1\VersionController;
 use Illuminate\Support\Facades\Route;
@@ -72,7 +73,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         ->name('auth.huella.entrar');
 
     // ---- Autenticado ------------------------------------------------------
-    Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    // `contrasena.nueva`: con la contraseña temporal solo se puede cambiarla.
+    Route::middleware(['auth:sanctum', 'throttle:60,1', 'contrasena.nueva'])->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('/auth/perfil', [AuthController::class, 'perfil'])->name('auth.perfil');
@@ -104,6 +106,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/asistencia/{asistencia}/corregir', [AsistenciaController::class, 'corregir'])
             ->middleware('permission:asistencia.ver')
             ->name('asistencia.corregir');
+
+        // Días de trabajo del mes: cada uno ve los suyos; quien programa, los
+        // de todos (el controlador lo comprueba) y los guarda.
+        Route::get('/dias-de-trabajo', [VendedorController::class, 'dias'])->name('dias-de-trabajo.index');
+        Route::put('/dias-de-trabajo', [VendedorController::class, 'guardarDias'])
+            ->middleware('permission:asistencia.programar')
+            ->name('dias-de-trabajo.guardar');
+
+        // Vendedores: el personal con su cuenta y sus días del mes.
+        Route::get('/vendedores', [VendedorController::class, 'index'])
+            ->middleware('permission:trabajadores.ver|asistencia.programar')
+            ->name('vendedores.index');
+        Route::post('/vendedores/{trabajador}/cuenta', [VendedorController::class, 'crearCuenta'])
+            ->middleware('permission:usuarios.crear')
+            ->name('vendedores.cuenta');
+        Route::post('/vendedores/{trabajador}/reiniciar', [VendedorController::class, 'reiniciar'])
+            ->middleware('permission:usuarios.editar')
+            ->name('vendedores.reiniciar');
 
         // En qué tienda se trabaja (ventas, caja y cobros se anotan en ella).
         Route::get('/tienda-actual', [TiendaActualController::class, 'show'])->name('tienda-actual');
@@ -470,6 +490,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             ->middleware('permission:usuarios.editar')->name('usuarios.update');
         Route::post('/usuarios/{usuario}/estado', [UsuarioController::class, 'alternarEstado'])
             ->middleware('permission:usuarios.editar')->name('usuarios.estado');
+        // Olvidó su usuario o su contraseña: vuelve al carnet y la cambia al entrar.
+        Route::post('/usuarios/{usuario}/reiniciar', [UsuarioController::class, 'reiniciar'])
+            ->middleware('permission:usuarios.editar')->name('usuarios.reiniciar');
         Route::delete('/usuarios/{usuario}', [UsuarioController::class, 'destroy'])
             ->middleware('permission:usuarios.eliminar')->name('usuarios.destroy');
 
